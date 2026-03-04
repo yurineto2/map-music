@@ -22,7 +22,7 @@ body{
   color:white;
   padding:40px;
   overflow:auto;
-  font-size:28px;
+  font-size:36px;
 }
 #stageMode h2{
   color:#c00000;
@@ -102,7 +102,13 @@ select{
 <textarea id="ending"></textarea>
 </div>
 <div id="stageMode">
-  <button onclick="closeStageMode()">Fechar</button>
+  <div style="margin-bottom:20px;">
+    <button onclick="startScroll()">Iniciar</button>
+    <button onclick="stopScroll()">Parar</button>
+    <label>Velocidade:</label>
+    <input type="range" id="speedControl" min="1" max="10" value="3">
+    <button onclick="closeStageMode()">Fechar</button>
+  </div>
   <div id="stageContent"></div>
 </div>
 <script>
@@ -165,5 +171,24 @@ function transpose(){
 
 function closeStageMode(){
   document.getElementById("stageMode").style.display = "none";
+}
+  let scrollInterval = null;
+
+function startScroll(){
+  const speed = document.getElementById("speedControl").value;
+  const stage = document.getElementById("stageMode");
+
+  stopScroll();
+
+  scrollInterval = setInterval(()=>{
+    stage.scrollTop += speed;
+  }, 100);
+}
+
+function stopScroll(){
+  if(scrollInterval){
+    clearInterval(scrollInterval);
+    scrollInterval = null;
+  }
 }
 </script>
