@@ -86,16 +86,30 @@ select{
 </div>
 
 <script>
-const notes = ["C","C#","D","D#","E","F","F#","G","G#","A","A#","B"];
+const sharpNotes = ["C","C#","D","D#","E","F","F#","G","G#","A","A#","B"];
+const flatNotes  = ["C","Db","D","Eb","E","F","Gb","G","Ab","A","Bb","B"];
+
+function normalizeNote(note){
+  let index = sharpNotes.indexOf(note);
+  if(index !== -1) return index;
+
+  index = flatNotes.indexOf(note);
+  return index;
+}
 
 function transposeChord(chord, shift){
-  for(let i=0;i<notes.length;i++){
-    if(chord.startsWith(notes[i])){
-      let newIndex = (i + shift + 12) % 12;
-      return chord.replace(notes[i], notes[newIndex]);
-    }
-  }
-  return chord;
+  const match = chord.match(/^([A-G][b#]?)(.*)$/);
+  if(!match) return chord;
+
+  const root = match[1];
+  const suffix = match[2];
+
+  const index = normalizeNote(root);
+  if(index === -1) return chord;
+
+  const newIndex = (index + shift + 12) % 12;
+
+  return sharpNotes[newIndex] + suffix;
 }
 
 function transpose(){
@@ -106,12 +120,9 @@ function transpose(){
 
   areas.forEach(id=>{
     let content = document.getElementById(id).value;
-    let words = content.split(" ");
+    let words = content.split(/\s+/);
     let transposed = words.map(w=>transposeChord(w, shift));
     document.getElementById(id).value = transposed.join(" ");
   });
 }
 </script>
-
-</body>
-</html>
