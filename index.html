@@ -14,36 +14,30 @@
    DESIGN SYSTEM - MOBILE | IPAD | PC
    ============================================ */
 :root {
-  /* Cores Base */
   --bg-primary: #0a0a0f;
   --bg-secondary: #12121a;
   --bg-tertiary: #1a1a25;
   --bg-elevated: #242433;
   --bg-input: #0f0f14;
   
-  /* Cores de Acento */
   --accent-primary: #1db954;
   --accent-secondary: #1ed760;
   --accent-hover: #1fdf64;
   --accent-glow: rgba(29, 185, 84, 0.3);
   
-  /* Texto */
   --text-primary: #ffffff;
   --text-secondary: #b3b3b3;
   --text-muted: #6a6a6a;
   --text-inverse: #000000;
   
-  /* Bordas */
   --border-color: rgba(255, 255, 255, 0.1);
   --border-hover: rgba(255, 255, 255, 0.2);
   --glass-bg: rgba(18, 18, 26, 0.85);
   --glass-border: rgba(255, 255, 255, 0.08);
   
-  /* Tipografia */
   --font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
   --font-mono: 'SF Mono', 'Fira Code', Consolas, monospace;
   
-  /* Espaçamento */
   --space-xs: 4px;
   --space-sm: 8px;
   --space-md: 12px;
@@ -52,25 +46,21 @@
   --space-2xl: 24px;
   --space-3xl: 32px;
   
-  /* Touch */
   --touch-min: 44px;
   --touch-comfort: 56px;
   --touch-large: 64px;
   
-  /* Bordas */
   --radius-sm: 8px;
   --radius-md: 12px;
   --radius-lg: 16px;
   --radius-xl: 20px;
   --radius-full: 9999px;
   
-  /* Sombras */
   --shadow-sm: 0 2px 4px rgba(0, 0, 0, 0.3);
   --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.4);
   --shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.5);
   --shadow-glow: 0 0 30px var(--accent-glow);
   
-  /* Transições */
   --transition-fast: 150ms cubic-bezier(0.4, 0, 0.2, 1);
   --transition-base: 250ms cubic-bezier(0.4, 0, 0.2, 1);
 }
@@ -82,9 +72,6 @@
 [data-theme="orange"] { --accent-primary: #f97316; --accent-secondary: #fb923c; --accent-hover: #fdba74; --accent-glow: rgba(249, 115, 22, 0.3); }
 [data-theme="pink"] { --accent-primary: #ec4899; --accent-secondary: #f472b6; --accent-hover: #f9a8d4; --accent-glow: rgba(236, 72, 153, 0.3); }
 
-/* ============================================
-   RESET E BASE
-   ============================================ */
 * {
   margin: 0;
   padding: 0;
@@ -117,9 +104,7 @@ body {
   -moz-osx-font-smoothing: grayscale;
 }
 
-/* ============================================
-   MOBILE: < 768px
-   ============================================ */
+/* MOBILE FIRST */
 .app-header {
   background: linear-gradient(180deg, rgba(18,18,26,0.98) 0%, rgba(10,10,15,0.95) 100%);
   backdrop-filter: blur(20px) saturate(180%);
@@ -176,7 +161,7 @@ body {
   padding-bottom: calc(var(--space-lg) + env(safe-area-inset-bottom));
 }
 
-/* Metronomo Mobile */
+/* Metronomo */
 .metronome-panel {
   background: linear-gradient(145deg, var(--bg-tertiary), var(--bg-secondary));
   border: 1px solid var(--border-color);
@@ -355,7 +340,7 @@ body {
   margin-top: -4px;
 }
 
-/* Cards Mobile */
+/* Cards */
 .card {
   background: var(--bg-secondary);
   border: 1px solid var(--border-color);
@@ -395,7 +380,6 @@ body {
   color: var(--accent-primary);
 }
 
-/* Inputs */
 .input-group {
   display: flex;
   flex-direction: column;
@@ -848,9 +832,7 @@ select {
   flex-shrink: 0;
 }
 
-/* ============================================
-   IPAD: 768px - 1023px
-   ============================================ */
+/* IPAD */
 @media (min-width: 768px) and (max-width: 1023px) {
   :root {
     --space-md: 14px;
@@ -979,9 +961,7 @@ select {
   }
 }
 
-/* ============================================
-   PC: >= 1024px
-   ============================================ */
+/* PC */
 @media (min-width: 1024px) {
   :root {
     --space-md: 16px;
@@ -1157,9 +1137,7 @@ select {
   }
 }
 
-/* ============================================
-   LARGE SCREENS >= 1440px
-   ============================================ */
+/* LARGE SCREENS */
 @media (min-width: 1440px) {
   .section-grid {
     gap: var(--space-2xl);
@@ -1170,7 +1148,7 @@ select {
   }
 }
 
-/* iPad Pro especifico */
+/* iPad Pro */
 @media (min-width: 1024px) and (max-width: 1366px) and (hover: none) and (pointer: coarse) {
   .btn {
     min-height: 52px;
@@ -1483,19 +1461,46 @@ var timerID = null;
 var NOTES = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"];
 
 // ============================================
+// UTILIDADES
+// ============================================
+function showToast(message) {
+  var toast = document.getElementById('toast');
+  var toastMessage = document.getElementById('toastMessage');
+  toastMessage.textContent = message;
+  toast.classList.add('show');
+  setTimeout(function() {
+    toast.classList.remove('show');
+  }, 3000);
+}
+
+function escapeHtml(text) {
+  if (!text) return '';
+  var div = document.createElement('div');
+  div.textContent = text;
+  return div.innerHTML;
+}
+
+// ============================================
 // INICIALIZACAO
 // ============================================
 document.addEventListener('DOMContentLoaded', function() {
+  // Carregar dados
   loadTheme();
   loadLibrary();
-  loadFromURL();
+  
+  // Inicializar audio (mas so ativar apos interacao)
   initAudioContext();
+  
+  // Carregar da URL se houver
+  setTimeout(loadFromURL, 100);
   
   // Prevenir double-tap zoom no iOS
   var lastTouchEnd = 0;
   document.addEventListener('touchend', function(e) {
     var now = Date.now();
-    if (now - lastTouchEnd <= 300) e.preventDefault();
+    if (now - lastTouchEnd <= 300) {
+      e.preventDefault();
+    }
     lastTouchEnd = now;
   }, false);
   
@@ -1535,20 +1540,32 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 
 // ============================================
-// METRONOMO
+// METRONOMO - CORRIGIDO PARA MOBILE
 // ============================================
 function initAudioContext() {
   try {
     window.AudioContext = window.AudioContext || window.webkitAudioContext;
-    audioContext = new AudioContext();
+    if (!audioContext) {
+      audioContext = new AudioContext();
+    }
   } catch(e) {
-    console.error('Web Audio API nao suportada');
-    showToast('Audio nao suportado neste navegador');
+    console.error('Web Audio API nao suportada:', e);
   }
 }
 
 function toggleMetronome() {
-  if (!audioContext) initAudioContext();
+  // Mobile requer iniciar AudioContext apos interacao do usuario
+  if (!audioContext) {
+    initAudioContext();
+  }
+  
+  // Tentar resumir se suspenso (necessario em mobile)
+  if (audioContext && audioContext.state === 'suspended') {
+    audioContext.resume().then(function() {
+      console.log('AudioContext resumido');
+    });
+  }
+  
   if (isPlaying) {
     stopMetronome();
   } else {
@@ -1557,13 +1574,19 @@ function toggleMetronome() {
 }
 
 function startMetronome() {
+  if (!audioContext) {
+    showToast('Audio nao disponivel');
+    return;
+  }
+  
+  // Garantir que esta resumido
   if (audioContext.state === 'suspended') {
     audioContext.resume();
   }
   
   isPlaying = true;
   currentBeat = 0;
-  nextNoteTime = audioContext.currentTime + 0.05;
+  nextNoteTime = audioContext.currentTime + 0.1;
   
   document.getElementById('metronomeToggle').classList.add('playing');
   document.getElementById('playIcon').innerHTML = '&#10074;&#10074;';
@@ -1577,41 +1600,55 @@ function stopMetronome() {
   clearTimeout(timerID);
   document.getElementById('metronomeToggle').classList.remove('playing');
   document.getElementById('playIcon').innerHTML = '&#9654;';
+  
   document.querySelectorAll('.beat-dot').forEach(function(d) {
     d.classList.remove('active');
   });
 }
 
 function scheduler() {
+  if (!isPlaying) return;
+  
   while (nextNoteTime < audioContext.currentTime + scheduleAheadTime) {
     scheduleNote(currentBeat, nextNoteTime);
     nextNote();
   }
+  
   timerID = setTimeout(scheduler, lookahead);
 }
 
 function nextNote() {
-  nextNoteTime += 60.0 / currentBPM;
+  var secondsPerBeat = 60.0 / currentBPM;
+  nextNoteTime += secondsPerBeat;
   currentBeat = (currentBeat + 1) % 4;
 }
 
 function scheduleNote(beatNumber, time) {
-  var osc = audioContext.createOscillator();
-  var envelope = audioContext.createGain();
-  
-  osc.frequency.value = beatNumber === 0 ? 1000 : 800;
-  envelope.gain.value = 1;
-  envelope.gain.exponentialRampToValueAtTime(0.001, time + 0.05);
-  
-  osc.connect(envelope);
-  envelope.connect(audioContext.destination);
-  osc.start(time);
-  osc.stop(time + 0.05);
-  
-  var drawTime = Math.max(0, (time - audioContext.currentTime) * 1000);
-  setTimeout(function() {
-    updateBeatVisual(beatNumber);
-  }, drawTime);
+  try {
+    var osc = audioContext.createOscillator();
+    var envelope = audioContext.createGain();
+    
+    // Frequencia diferente para acento no primeiro beat
+    osc.frequency.value = beatNumber === 0 ? 1000 : 800;
+    osc.type = 'sine';
+    
+    envelope.gain.value = 1;
+    envelope.gain.exponentialRampToValueAtTime(0.001, time + 0.05);
+    
+    osc.connect(envelope);
+    envelope.connect(audioContext.destination);
+    
+    osc.start(time);
+    osc.stop(time + 0.05);
+    
+    // Atualizar visual
+    var drawTime = Math.max(0, (time - audioContext.currentTime) * 1000);
+    setTimeout(function() {
+      updateBeatVisual(beatNumber);
+    }, drawTime);
+  } catch(e) {
+    console.error('Erro no audio:', e);
+  }
 }
 
 function updateBeatVisual(beatNumber) {
@@ -1623,7 +1660,7 @@ function updateBeatVisual(beatNumber) {
 }
 
 function updateBPM(value) {
-  currentBPM = parseInt(value);
+  currentBPM = parseInt(value) || 120;
   document.getElementById('bpmDisplay').textContent = currentBPM;
   document.getElementById('bpmSlider').value = currentBPM;
 }
@@ -1645,7 +1682,13 @@ function setTheme(theme) {
   document.querySelectorAll('.theme-btn').forEach(function(btn) {
     btn.classList.remove('active');
   });
-  event.target.classList.add('active');
+  
+  // Usar event.target ou encontrar o botao correto
+  var clickedBtn = event.target;
+  if (clickedBtn && clickedBtn.classList) {
+    clickedBtn.classList.add('active');
+  }
+  
   showToast('Tema: ' + getThemeName(theme));
 }
 
@@ -1666,7 +1709,8 @@ function loadTheme() {
   if (saved) {
     document.body.setAttribute('data-theme', saved);
     document.querySelectorAll('.theme-btn').forEach(function(btn) {
-      btn.classList.toggle('active', btn.classList.contains('theme-' + saved));
+      var isActive = btn.classList.contains('theme-' + saved);
+      btn.classList.toggle('active', isActive);
     });
   }
 }
@@ -1709,6 +1753,8 @@ function transpose() {
 }
 
 function transposeChord(chord, shift) {
+  if (!chord) return chord;
+  
   if (chord.indexOf("/") >= 0) {
     var parts = chord.split("/");
     return transposeRoot(parts[0], shift) + "/" + transposeRoot(parts[1], shift);
@@ -1717,7 +1763,7 @@ function transposeChord(chord, shift) {
 }
 
 function transposeRoot(chord, shift) {
-  if (!chord) return chord;
+  if (!chord || chord.length === 0) return chord;
   
   var note = chord.charAt(0).toUpperCase();
   var rest = chord.slice(1);
@@ -1764,15 +1810,15 @@ function loadLibrary() {
       renderLibrary();
     }
   } catch(e) {
-    library = [];
     console.error('Erro ao carregar biblioteca:', e);
+    library = [];
   }
 }
 
 function renderLibrary() {
   var container = document.getElementById("songList");
   
-  if (library.length === 0) {
+  if (!library || library.length === 0) {
     container.innerHTML = '<div class="text-muted" style="text-align:center;padding:40px 20px;grid-column:1/-1;">Nenhuma musica salva ainda.<br>Crie sua primeira musica!</div>';
     return;
   }
@@ -1794,13 +1840,6 @@ function formatDate(dateStr) {
   } catch(e) {
     return '';
   }
-}
-
-function escapeHtml(text) {
-  if (!text) return '';
-  var div = document.createElement('div');
-  div.textContent = text;
-  return div.innerHTML;
 }
 
 function saveCurrentSong() {
@@ -1861,6 +1900,7 @@ function loadSong(id) {
   renderLibrary();
   showToast('Carregado: ' + song.name);
   
+  // Scroll para o topo em mobile
   if (window.innerWidth < 768) {
     window.scrollTo({top: 0, behavior: 'smooth'});
   }
@@ -1901,7 +1941,7 @@ function newSong(confirmFirst) {
 }
 
 // ============================================
-// EXPORTAR/IMPORTAR
+// EXPORTAR/IMPORTAR - CORRIGIDO
 // ============================================
 function exportJSON() {
   var name = document.getElementById("songName").value || "musica";
@@ -1959,6 +1999,7 @@ function downloadFile(content, filename, type) {
   URL.revokeObjectURL(url);
 }
 
+// CORRIGIDO: Usar encodeURIComponent/decodeURIComponent em vez de escape/unescape
 function shareURL() {
   var data = {
     n: document.getElementById("songName").value || "musica",
@@ -1973,7 +2014,11 @@ function shareURL() {
   
   try {
     var json = JSON.stringify(data);
-    var compressed = btoa(encodeURIComponent(json));
+    // CORRECAO: encodeURIComponent em vez de escape
+    var compressed = btoa(encodeURIComponent(json).replace(/%([0-9A-F]{2})/g, function(match, p1) {
+      return String.fromCharCode('0x' + p1);
+    }));
+    
     var url = window.location.origin + window.location.pathname + "?data=" + compressed;
     
     if (navigator.clipboard) {
@@ -1986,13 +2031,16 @@ function shareURL() {
       prompt('Copie este link:', url);
     }
   } catch(e) {
+    console.error('Erro ao gerar link:', e);
     showToast('Erro ao gerar link');
   }
 }
 
 function showImportModal() {
   document.getElementById("importModal").style.display = "flex";
-  document.getElementById("importArea").focus();
+  setTimeout(function() {
+    document.getElementById("importArea").focus();
+  }, 100);
 }
 
 function closeImportModal() {
@@ -2029,7 +2077,7 @@ function importData() {
     // Nao e JSON valido, tentar TXT
   }
   
-  // Importar como TXT (formato simples)
+  // Importar como TXT
   importTXT(text);
 }
 
@@ -2087,79 +2135,23 @@ function importTXT(text) {
   showToast('Importacao realizada!');
 }
 
+// CORRIGIDO: Decodificacao da URL
 function loadFromURL() {
   var params = new URLSearchParams(window.location.search);
   var data = params.get("data");
   if (!data) return;
   
   try {
-    var json = decodeURIComponent(atob(data));
-    var song = JSON.parse(json);
+    // CORRECAO: decodeURIComponent em vez de unescape
+    var decoded = decodeURIComponent(data.split('').map(function(c) {
+      return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
+    }).join(''));
+    
+    var song = JSON.parse(decoded);
     
     document.getElementById("songName").value = song.n || "";
     document.getElementById("intro").value = song.i || "";
     document.getElementById("verse").value = song.v || "";
     document.getElementById("prechorus").value = song.p || "";
     document.getElementById("chorus").value = song.c || "";
-    document.getElementById("bridge").value = song.b || "";
-    document.getElementById("ending").value = song.e || "";
-    
-    currentShift = song.s || 0;
-    document.getElementById("keyShift").value = currentShift;
-    updateKeyDisplay();
-    
-    showToast('Musica carregada do link!');
-  } catch(e) {
-    console.error('Erro ao carregar da URL:', e);
-  }
-}
-
-// ============================================
-// UNDO/REDO
-// ============================================
-function saveState() {
-  var state = {
-    name: document.getElementById("songName").value,
-    sections: {
-      intro: document.getElementById("intro").value,
-      verse: document.getElementById("verse").value,
-      prechorus: document.getElementById("prechorus").value,
-      chorus: document.getElementById("chorus").value,
-      bridge: document.getElementById("bridge").value,
-      ending: document.getElementById("ending").value
-    },
-    shift: currentShift
-  };
-  undoStack.push(state);
-  if (undoStack.length > 20) undoStack.shift();
-  redoStack = [];
-}
-
-function undo() {
-  if (undoStack.length === 0) {
-    showToast('Nada para desfazer');
-    return;
-  }
-  redoStack.push(getCurrentState());
-  restoreState(undoStack.pop());
-  showToast('Desfeito');
-}
-
-function redo() {
-  if (redoStack.length === 0) {
-    showToast('Nada para refazer');
-    return;
-  }
-  undoStack.push(getCurrentState());
-  restoreState(redoStack.pop());
-  showToast('Refeito');
-}
-
-function getCurrentState() {
-  return {
-    name: document.getElementById("songName").value,
-    sections: {
-      intro: document.getElementById("intro").value,
-      verse: document.getElementById("verse").value,
-      prechorus: document.getElementById("prechorus").value,
-      chorus: document.getElementById("chorus").value
+    document.getElementById("bridge").value = song.b
