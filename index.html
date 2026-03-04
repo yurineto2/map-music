@@ -2,240 +2,1227 @@
 <html lang="pt-BR">
 <head>
 <meta charset="UTF-8">
-<title>Map Music - Transposição Funcional</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Map Music Pro - Completo</title>
+
 <style>
-body { 
-  background: #111; 
-  color: #fff; 
-  font-family: Arial; 
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  margin: 0;
+  background: #0a0a0a;
+  color: #fff;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
   padding: 20px;
-  max-width: 800px;
-  margin: 0 auto;
+  line-height: 1.6;
 }
-h1 { 
-  background: #c00000; 
-  padding: 15px; 
-  text-align: center;
+
+h1 {
+  background: linear-gradient(135deg, #c00000 0%, #800000 100%);
+  padding: 20px;
   margin: -20px -20px 20px -20px;
+  text-align: center;
+  font-size: 2em;
+  text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
 }
-.section { 
-  background: #222; 
-  padding: 15px; 
-  margin-bottom: 15px; 
+
+/* BIBLIOTECA */
+.library-panel {
+  background: #1a1a1a;
+  padding: 15px;
+  border-radius: 8px;
+  margin-bottom: 20px;
+  border: 2px solid #c00000;
+}
+
+.library-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 10px;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.library-header h2 {
+  margin: 0;
+  color: #ff4444;
+  font-size: 1.2em;
+}
+
+.song-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  max-height: 150px;
+  overflow-y: auto;
+  padding: 10px;
+  background: #0f0f0f;
+  border-radius: 5px;
+  min-height: 50px;
+}
+
+.song-item {
+  background: #2a2a2a;
+  padding: 8px 12px;
+  border-radius: 20px;
+  cursor: pointer;
+  border: 2px solid transparent;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 0.9em;
+  transition: all 0.2s;
+}
+
+.song-item:hover {
+  background: #3a3a3a;
+  border-color: #c00000;
+}
+
+.song-item.active {
+  background: #c00000;
+  border-color: #ff0000;
+}
+
+.song-item .delete-btn {
+  background: none;
+  border: none;
+  color: #ff6666;
+  cursor: pointer;
+  font-weight: bold;
+  font-size: 18px;
+  line-height: 1;
+  padding: 0;
+  margin-left: 5px;
+}
+
+.song-item.active .delete-btn {
+  color: #fff;
+}
+
+.empty-msg {
+  color: #666;
+  font-style: italic;
+}
+
+/* CONTROLES */
+.controls {
+  background: #1a1a1a;
+  padding: 15px;
+  border-radius: 8px;
+  margin-bottom: 20px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: center;
+  border: 1px solid #333;
+}
+
+.controls label {
+  font-weight: bold;
+  color: #ff4444;
+  font-size: 0.9em;
+}
+
+input[type="text"], select {
+  padding: 8px 12px;
+  border-radius: 4px;
+  border: 1px solid #c00000;
+  background: #2a2a2a;
+  color: white;
+  font-size: 14px;
+}
+
+input[type="text"] {
+  min-width: 180px;
+}
+
+button {
+  padding: 8px 15px;
+  border-radius: 4px;
+  border: none;
+  background: #c00000;
+  color: white;
+  cursor: pointer;
+  font-weight: bold;
+  font-size: 13px;
+  transition: all 0.2s;
+}
+
+button:hover {
+  background: #ff0000;
+  transform: translateY(-1px);
+}
+
+button.secondary {
+  background: #444;
+}
+
+button.secondary:hover {
+  background: #666;
+}
+
+button.success {
+  background: #228b22;
+}
+
+button.success:hover {
+  background: #2ecc71;
+}
+
+#currentKeyDisplay {
+  color: #ff4444;
+  font-weight: bold;
+  padding: 8px 12px;
+  background: #2a2a2a;
+  border-radius: 4px;
+  border: 1px solid #c00000;
+  margin-left: auto;
+}
+
+/* SEÇÕES */
+.section {
+  margin-top: 15px;
+  background: #1a1a1a;
+  padding: 15px;
   border-radius: 8px;
   border-left: 4px solid #c00000;
 }
-h3 { 
-  color: #ff4444; 
+
+.section h3 {
+  margin: 0 0 10px 0;
+  color: #ff4444;
+  font-size: 1.1em;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+textarea {
+  width: 100%;
+  min-height: 100px;
+  background: #0f0f0f;
+  color: #fff;
+  border: 1px solid #333;
+  padding: 12px;
+  font-family: 'Courier New', monospace;
+  font-size: 15px;
+  line-height: 1.6;
+  border-radius: 4px;
+  resize: vertical;
+}
+
+textarea:focus {
+  outline: none;
+  border-color: #c00000;
+}
+
+/* MODAL */
+.modal-overlay {
+  display: none;
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0,0,0,0.9);
+  z-index: 2000;
+  justify-content: center;
+  align-items: center;
+}
+
+.modal {
+  background: #1a1a1a;
+  padding: 25px;
+  border-radius: 8px;
+  border: 2px solid #c00000;
+  width: 90%;
+  max-width: 500px;
+  max-height: 80vh;
+  overflow-y: auto;
+}
+
+.modal h3 {
+  color: #ff4444;
+  margin-bottom: 15px;
+}
+
+.modal textarea {
+  min-height: 200px;
+  margin: 15px 0;
+}
+
+.modal-buttons {
+  display: flex;
+  gap: 10px;
+  justify-content: flex-end;
+}
+
+/* MODO PALCO */
+#stageMode {
+  display: none;
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: #000;
+  color: #fff;
+  padding: 30px;
+  overflow: auto;
+  font-size: 36px;
+  line-height: 1.8;
+  z-index: 1000;
+}
+
+#stageMode h2 {
+  color: #ff0000;
+  font-size: 1.3em;
+  margin-top: 40px;
+  margin-bottom: 15px;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  border-bottom: 3px solid #c00000;
+  padding-bottom: 8px;
+}
+
+#stageMode h2:first-child {
   margin-top: 0;
 }
-textarea { 
-  width: 100%; 
-  min-height: 80px; 
-  background: #000; 
-  color: #0f0;
-  border: 1px solid #444;
-  padding: 10px;
-  font-family: monospace;
+
+#stageMode p {
+  color: #fff;
+  margin-bottom: 30px;
+  white-space: pre-wrap;
+}
+
+.stage-controls {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  background: rgba(30,30,30,0.95);
+  padding: 15px;
+  border-radius: 8px;
+  border: 2px solid #c00000;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  z-index: 1001;
+}
+
+.stage-controls button {
+  padding: 12px 20px;
   font-size: 16px;
 }
-button { 
-  background: #c00000; 
-  color: #fff; 
-  border: none; 
-  padding: 10px 20px; 
-  cursor: pointer;
-  font-weight: bold;
-  margin-right: 10px;
-}
-select {
-  padding: 10px;
-  background: #333;
+
+.speed-control {
+  display: flex;
+  align-items: center;
+  gap: 8px;
   color: #fff;
-  border: 1px solid #c00000;
+  font-size: 14px;
 }
-#status {
-  color: #ff0;
-  margin-top: 10px;
+
+#speedValue {
+  color: #ff4444;
   font-weight: bold;
+  min-width: 20px;
+}
+
+input[type="range"] {
+  width: 120px;
+}
+
+.scroll-indicator {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  height: 4px;
+  background: #c00000;
+  width: 0%;
+  transition: width 0.1s;
+}
+
+/* NOTIFICAÇÃO */
+.notification {
+  position: fixed;
+  top: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: #c00000;
+  color: white;
+  padding: 12px 25px;
+  border-radius: 4px;
+  font-weight: bold;
+  z-index: 9999;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+}
+
+@media print {
+  body * { visibility: hidden; }
+  #stageMode, #stageMode * { visibility: visible; }
+  #stageMode {
+    position: absolute;
+    left: 0;
+    top: 0;
+    display: block !important;
+    font-size: 24px;
+    padding: 20px;
+  }
+  .stage-controls { display: none; }
 }
 </style>
 </head>
 <body>
 
-<h1>🎸 Map Music - Teste de Transposição</h1>
+<h1>🎸 Map Music Pro</h1>
 
-<div class="section">
-  <h3>Controles</h3>
-  <select id="shift">
+<!-- BIBLIOTECA -->
+<div class="library-panel">
+  <div class="library-header">
+    <h2>📚 Minhas Músicas</h2>
+    <div>
+      <input type="text" id="songName" placeholder="Nome da música...">
+      <button onclick="saveCurrentSong()">💾 Salvar</button>
+      <button onclick="newSong()" class="secondary">➕ Nova</button>
+    </div>
+  </div>
+  <div class="song-list" id="songList">
+    <span class="empty-msg">Nenhuma música salva ainda...</span>
+  </div>
+</div>
+
+<!-- CONTROLES -->
+<div class="controls">
+  <label>🎵 Transpor:</label>
+  <select id="keyShift">
     <option value="0">Original</option>
-    <option value="1">+1 (C→C#)</option>
-    <option value="2">+2 (C→D)</option>
-    <option value="3">+3 (C→D#)</option>
-    <option value="4">+4 (C→E)</option>
-    <option value="5">+5 (C→F)</option>
-    <option value="-1">-1 (C→B)</option>
-    <option value="-2">-2 (C→A#)</option>
-    <option value="-3">-3 (C→A)</option>
+    <option value="1">+1 semitom</option>
+    <option value="2">+2 semitons</option>
+    <option value="3">+3 semitons</option>
+    <option value="4">+4 semitons</option>
+    <option value="5">+5 semitons</option>
+    <option value="6">+6 semitons</option>
+    <option value="-1">-1 semitom</option>
+    <option value="-2">-2 semitons</option>
+    <option value="-3">-3 semitons</option>
+    <option value="-4">-4 semitons</option>
+    <option value="-5">-5 semitons</option>
+    <option value="-6">-6 semitons</option>
   </select>
-  <button onclick="doTranspose()">TRANSPOR AGORA</button>
-  <button onclick="resetTest()" style="background:#444;">Resetar</button>
-  <div id="status"></div>
+  <button onclick="transpose()">Aplicar</button>
+  <button onclick="resetAll()" class="secondary">🗑️ Limpar</button>
+  
+  <label style="margin-left:15px;">📤</label>
+  <button onclick="exportJSON()" class="success">JSON</button>
+  <button onclick="exportTXT()" class="success">TXT</button>
+  <button onclick="shareURL()" class="success">Link</button>
+  
+  <label style="margin-left:15px;">📥</label>
+  <button onclick="showImportModal()" class="secondary">Importar</button>
+  
+  <button onclick="openStageMode()" style="margin-left:auto;">🎭 Palco</button>
+  <span id="currentKeyDisplay">Tom: Original</span>
+</div>
+
+<!-- SEÇÕES -->
+<div class="section">
+  <h3>Introdução</h3>
+  <textarea id="intro" placeholder="C G Am F..."></textarea>
 </div>
 
 <div class="section">
-  <h3>Teste 1 - Acordes Simples</h3>
-  <textarea id="test1">C G Am F</textarea>
+  <h3>Verso</h3>
+  <textarea id="verse" placeholder="C G Am F..."></textarea>
 </div>
 
 <div class="section">
-  <h3>Teste 2 - Com Espaços</h3>
-  <textarea id="test2">C        G        Am       F</textarea>
+  <h3>Pré-Refrão</h3>
+  <textarea id="prechorus" placeholder="Am F C G..."></textarea>
 </div>
 
 <div class="section">
-  <h3>Teste 3 - Múltiplas Linhas</h3>
-  <textarea id="test3">C G Am F
-F G Am C/G</textarea>
+  <h3>Refrão</h3>
+  <textarea id="chorus" placeholder="F G Am C..."></textarea>
 </div>
 
 <div class="section">
-  <h3>Teste 4 - Acordes Complexos</h3>
-  <textarea id="test4">Cmaj7 Dm G7 C/G</textarea>
+  <h3>Ponte</h3>
+  <textarea id="bridge" placeholder="Dm G C..."></textarea>
+</div>
+
+<div class="section">
+  <h3>Final</h3>
+  <textarea id="ending" placeholder="C..."></textarea>
+</div>
+
+<!-- MODAL IMPORT -->
+<div class="modal-overlay" id="importModal" onclick="if(event.target===this)closeImportModal()">
+  <div class="modal">
+    <h3>📥 Importar Música</h3>
+    <p>Cole JSON ou TXT:</p>
+    <textarea id="importArea" placeholder='{"name":"Musica","sections":{"intro":"C G"...}}'></textarea>
+    <div class="modal-buttons">
+      <button onclick="closeImportModal()" class="secondary">Cancelar</button>
+      <button onclick="importData()">Importar</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODO PALCO -->
+<div id="stageMode">
+  <div class="stage-controls">
+    <button onclick="startScroll()">▶️ Iniciar</button>
+    <button onclick="stopScroll()">⏸️ Parar</button>
+    <div class="speed-control">
+      <label>Vel:</label>
+      <input type="range" id="speedControl" min="1" max="10" value="3" oninput="updateSpeedDisplay()">
+      <span id="speedValue">3</span>
+    </div>
+    <button onclick="closeStageMode()">❌ Fechar</button>
+  </div>
+  <div id="stageContent"></div>
+  <div class="scroll-indicator" id="scrollIndicator"></div>
 </div>
 
 <script>
-// NOTAS
-var NOTAS = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"];
+// ============================================
+// VARIÁVEIS GLOBAIS
+// ============================================
+var library = [];
+var currentSongId = null;
+var currentShift = 0;
+var scrollAnimation = null;
+var undoStack = [];
+var redoStack = [];
 
-// FUNÇÃO PRINCIPAL
-function doTranspose() {
-  var shift = parseInt(document.getElementById("shift").value);
-  var status = document.getElementById("status");
+// Notas musicais
+var NOTES = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"];
+
+// ============================================
+// INICIALIZAÇÃO
+// ============================================
+document.addEventListener('DOMContentLoaded', function() {
+  loadLibrary();
+  loadFromURL();
+  
+  // Auto-save para undo
+  var textareas = document.querySelectorAll('textarea');
+  for(var i = 0; i < textareas.length; i++) {
+    textareas[i].addEventListener('focus', function() {
+      saveState();
+    });
+  }
+  
+  // Atalhos
+  document.addEventListener('keydown', function(e) {
+    if(e.key === 'Escape') {
+      closeStageMode();
+      closeImportModal();
+    }
+    if(e.key === ' ' && document.getElementById("stageMode").style.display === 'block') {
+      e.preventDefault();
+      if(scrollAnimation) stopScroll();
+      else startScroll();
+    }
+    if(e.ctrlKey && e.key === 'z') {
+      e.preventDefault();
+      undo();
+    }
+    if(e.ctrlKey && e.key === 'y') {
+      e.preventDefault();
+      redo();
+    }
+  });
+});
+
+// ============================================
+// TRANSPOSIÇÃO - LÓGICA FUNCIONAL (ES5)
+// ============================================
+function transpose() {
+  var shift = parseInt(document.getElementById("keyShift").value);
   
   if(shift === 0) {
-    status.innerHTML = "Selecione um valor diferente de 'Original'";
+    showNotification("Tom original selecionado");
     return;
   }
   
-  status.innerHTML = "Transpondo " + shift + " semitons...";
+  saveState();
+  currentShift = shift;
   
-  // Transpor cada textarea
-  transposeElement("test1", shift);
-  transposeElement("test2", shift);
-  transposeElement("test3", shift);
-  transposeElement("test4", shift);
+  var areas = ["intro", "verse", "prechorus", "chorus", "bridge", "ending"];
   
-  status.innerHTML = "✅ TRANSPOSIÇÃO CONCLUÍDA! Verifique os resultados.";
-  
-  setTimeout(function() {
-    status.innerHTML = "";
-  }, 3000);
-}
-
-function transposeElement(id, shift) {
-  var el = document.getElementById(id);
-  var texto = el.value;
-  
-  if(!texto) return;
-  
-  // Dividir em linhas
-  var linhas = texto.split("\\n");
-  var novasLinhas = [];
-  
-  for(var i = 0; i < linhas.length; i++) {
-    var linha = linhas[i];
+  for(var i = 0; i < areas.length; i++) {
+    var id = areas[i];
+    var el = document.getElementById(id);
+    var content = el.value;
     
-    // Preservar espaços iniciais
-    var espacosIniciais = "";
-    while(linha.length > 0 && linha.charAt(0) === " ") {
-      espacosIniciais += " ";
-      linha = linha.substring(1);
-    }
+    if(!content || !content.trim()) continue;
     
-    // Dividir por espaços
-    var partes = linha.split(" ");
-    var novasPartes = [];
+    // Dividir em linhas
+    var lines = content.split("\\n");
+    var newLines = [];
     
-    for(var j = 0; j < partes.length; j++) {
-      var parte = partes[j];
-      if(parte === "") {
-        novasPartes.push("");
-      } else {
-        novasPartes.push(transporAcorde(parte, shift));
+    for(var j = 0; j < lines.length; j++) {
+      var line = lines[j];
+      
+      // Preservar espaços iniciais
+      var leadingSpace = "";
+      while(line.length > 0 && line.charAt(0) === " ") {
+        leadingSpace += " ";
+        line = line.substring(1);
       }
+      
+      // Dividir por espaços
+      var parts = line.split(" ");
+      var newParts = [];
+      
+      for(var k = 0; k < parts.length; k++) {
+        var part = parts[k];
+        if(part === "") {
+          newParts.push("");
+        } else {
+          newParts.push(transposeChord(part, shift));
+        }
+      }
+      
+      newLines.push(leadingSpace + newParts.join(" "));
     }
     
-    novasLinhas.push(espacosIniciais + novasPartes.join(" "));
+    el.value = newLines.join("\\n");
   }
   
-  el.value = novasLinhas.join("\\n");
+  updateKeyDisplay();
+  showNotification("Transposto " + (shift > 0 ? "+" : "") + shift + " semitons!");
 }
 
-function transporAcorde(acorde, shift) {
+function transposeChord(chord, shift) {
   // Verificar se é acorde com baixo (C/G)
-  if(acorde.indexOf("/") >= 0) {
-    var partes = acorde.split("/");
-    return transporRaiz(partes[0], shift) + "/" + transporRaiz(partes[1], shift);
+  if(chord.indexOf("/") >= 0) {
+    var parts = chord.split("/");
+    return transposeRoot(parts[0], shift) + "/" + transposeRoot(parts[1], shift);
   }
   
-  return transporRaiz(acorde, shift);
+  return transposeRoot(chord, shift);
 }
 
-function transporRaiz(acorde, shift) {
-  // Pegar apenas a nota (primeiro caractere + opcional # ou b)
-  var nota = "";
-  var sufixo = "";
+function transposeRoot(chord, shift) {
+  if(!chord || chord.length === 0) return chord;
   
-  if(acorde.length === 0) return acorde;
-  
-  // Primeira letra
-  nota = acorde.charAt(0).toUpperCase();
+  // Pegar a nota (primeiro caractere + opcional # ou b)
+  var note = chord.charAt(0).toUpperCase();
+  var suffix = "";
   
   // Verificar se tem # ou b
-  if(acorde.length > 1) {
-    var segundo = acorde.charAt(1);
-    if(segundo === "#" || segundo === "b") {
-      nota += segundo;
-      sufixo = acorde.substring(2);
+  if(chord.length > 1) {
+    var second = chord.charAt(1);
+    if(second === "#" || second === "b") {
+      note += second;
+      suffix = chord.substring(2);
     } else {
-      sufixo = acorde.substring(1);
+      suffix = chord.substring(1);
     }
   }
   
   // Converter enarmônicas
-  if(nota === "Db") nota = "C#";
-  if(nota === "Eb") nota = "D#";
-  if(nota === "Gb") nota = "F#";
-  if(nota === "Ab") nota = "G#";
-  if(nota === "Bb") nota = "A#";
+  if(note === "Db") note = "C#";
+  if(note === "Eb") note = "D#";
+  if(note === "Gb") note = "F#";
+  if(note === "Ab") note = "G#";
+  if(note === "Bb") note = "A#";
+  if(note === "Cb") note = "B";
+  if(note === "Fb") note = "E";
+  if(note === "E#") note = "F";
+  if(note === "B#") note = "C";
   
-  // Encontrar índice
+  // Encontrar índice na escala cromática
   var idx = -1;
-  for(var i = 0; i < NOTAS.length; i++) {
-    if(NOTAS[i] === nota) {
+  for(var i = 0; i < NOTES.length; i++) {
+    if(NOTES[i] === note) {
       idx = i;
       break;
     }
   }
   
-  if(idx === -1) return acorde; // Não encontrou, retorna original
+  if(idx === -1) return chord; // Não é uma nota válida, retorna original
   
   // Calcular nova posição
-  var novoIdx = idx + shift;
-  while(novoIdx < 0) novoIdx += 12;
-  while(novoIdx >= 12) novoIdx -= 12;
+  var newIdx = idx + shift;
+  while(newIdx < 0) newIdx += 12;
+  while(newIdx >= 12) newIdx -= 12;
   
-  return NOTAS[novoIdx] + sufixo;
+  return NOTES[newIdx] + suffix;
 }
 
-function resetTest() {
-  document.getElementById("test1").value = "C G Am F";
-  document.getElementById("test2").value = "C        G        Am       F";
-  document.getElementById("test3").value = "C G Am F\\nF G Am C/G";
-  document.getElementById("test4").value = "Cmaj7 Dm G7 C/G";
-  document.getElementById("shift").value = "0";
-  document.getElementById("status").innerHTML = "Resetado!";
+function updateKeyDisplay() {
+  var shift = parseInt(document.getElementById("keyShift").value);
+  var display = document.getElementById("currentKeyDisplay");
+  if(shift === 0) {
+    display.textContent = "Tom: Original";
+  } else {
+    display.textContent = "Tom: " + (shift > 0 ? "+" : "") + shift;
+  }
+}
+
+// ============================================
+// BIBLIOTECA
+// ============================================
+function loadLibrary() {
+  try {
+    var saved = localStorage.getItem('mapmusic_library_v4');
+    if(saved) {
+      library = JSON.parse(saved);
+      renderLibrary();
+    }
+  } catch(e) {
+    library = [];
+  }
+}
+
+function saveLibrary() {
+  try {
+    localStorage.setItem('mapmusic_library_v4', JSON.stringify(library));
+    renderLibrary();
+  } catch(e) {
+    showNotification("Erro ao salvar");
+  }
+}
+
+function renderLibrary() {
+  var container = document.getElementById("songList");
+  
+  if(library.length === 0) {
+    container.innerHTML = '<span class="empty-msg">Nenhuma música salva ainda...</span>';
+    return;
+  }
+  
+  var html = "";
+  for(var i = 0; i < library.length; i++) {
+    var song = library[i];
+    var isActive = song.id === currentSongId;
+    html += '<div class="song-item ' + (isActive ? 'active' : '') + '" onclick="loadSong(' + "'" + song.id + "'" + ')">';
+    html += escapeHtml(song.name);
+    html += '<button class="delete-btn" onclick="event.stopPropagation(); deleteSong(' + "'" + song.id + "'" + ')">×</button>';
+    html += '</div>';
+  }
+  container.innerHTML = html;
+}
+
+function saveCurrentSong() {
+  var nameInput = document.getElementById("songName");
+  var name = nameInput.value.trim();
+  
+  if(!name) {
+    showNotification("Digite um nome!");
+    nameInput.focus();
+    return;
+  }
+  
+  var songData = {
+    id: currentSongId || Date.now().toString(),
+    name: name,
+    date: new Date().toISOString(),
+    sections: {
+      intro: document.getElementById("intro").value,
+      verse: document.getElementById("verse").value,
+      prechorus: document.getElementById("prechorus").value,
+      chorus: document.getElementById("chorus").value,
+      bridge: document.getElementById("bridge").value,
+      ending: document.getElementById("ending").value
+    },
+    shift: currentShift
+  };
+  
+  var found = false;
+  for(var i = 0; i < library.length; i++) {
+    if(library[i].id === songData.id) {
+      library[i] = songData;
+      found = true;
+      break;
+    }
+  }
+  
+  if(!found) {
+    library.push(songData);
+    currentSongId = songData.id;
+  }
+  
+  saveLibrary();
+  showNotification("Música salva!");
+}
+
+function loadSong(id) {
+  saveState();
+  
+  var song = null;
+  for(var i = 0; i < library.length; i++) {
+    if(library[i].id === id) {
+      song = library[i];
+      break;
+    }
+  }
+  
+  if(!song) return;
+  
+  currentSongId = song.id;
+  document.getElementById("songName").value = song.name;
+  
+  for(var section in song.sections) {
+    var el = document.getElementById(section);
+    if(el) el.value = song.sections[section] || "";
+  }
+  
+  currentShift = song.shift || 0;
+  document.getElementById("keyShift").value = currentShift;
+  updateKeyDisplay();
+  
+  renderLibrary();
+  showNotification("Carregado: " + song.name);
+}
+
+function deleteSong(id) {
+  if(!confirm("Excluir esta música?")) return;
+  
+  var newLibrary = [];
+  for(var i = 0; i < library.length; i++) {
+    if(library[i].id !== id) {
+      newLibrary.push(library[i]);
+    }
+  }
+  library = newLibrary;
+  
+  if(currentSongId === id) {
+    currentSongId = null;
+    newSong(false);
+  }
+  
+  saveLibrary();
+  showNotification("Excluída");
+}
+
+function newSong(confirmFirst) {
+  if(confirmFirst !== false) {
+    var hasContent = document.getElementById("intro").value || document.getElementById("verse").value;
+    if(hasContent && !confirm("Descartar alterações?")) return;
+  }
+  
+  saveState();
+  currentSongId = null;
+  document.getElementById("songName").value = "";
+  
+  var areas = ["intro", "verse", "prechorus", "chorus", "bridge", "ending"];
+  for(var i = 0; i < areas.length; i++) {
+    document.getElementById(areas[i]).value = "";
+  }
+  
+  currentShift = 0;
+  document.getElementById("keyShift").value = 0;
+  updateKeyDisplay();
+  renderLibrary();
+}
+
+// ============================================
+// EXPORTAR/IMPORTAR
+// ============================================
+function exportJSON() {
+  var name = document.getElementById("songName").value || "musica";
+  
+  var data = {
+    name: name,
+    date: new Date().toISOString(),
+    sections: {
+      intro: document.getElementById("intro").value,
+      verse: document.getElementById("verse").value,
+      prechorus: document.getElementById("prechorus").value,
+      chorus: document.getElementById("chorus").value,
+      bridge: document.getElementById("bridge").value,
+      ending: document.getElementById("ending").value
+    },
+    shift: currentShift
+  };
+  
+  downloadFile(JSON.stringify(data, null, 2), name.replace(/\\s+/g, "_") + ".json", "application/json");
+  showNotification("JSON exportado!");
+}
+
+function exportTXT() {
+  var name = document.getElementById("songName").value || "musica";
+  var sections = {
+    "INTRODUÇÃO": document.getElementById("intro").value,
+    "VERSO": document.getElementById("verse").value,
+    "PRÉ-REFRÃO": document.getElementById("prechorus").value,
+    "REFRÃO": document.getElementById("chorus").value,
+    "PONTE": document.getElementById("bridge").value,
+    "FINAL": document.getElementById("ending").value
+  };
+  
+  var txt = name + "\\n";
+  txt += "=".repeat(name.length) + "\\n\\n";
+  txt += "Tom: " + (currentShift === 0 ? "Original" : (currentShift > 0 ? "+" : "") + currentShift) + "\\n\\n";
+  
+  for(var title in sections) {
+    if(sections[title].trim()) {
+      txt += "[" + title + "]\\n" + sections[title] + "\\n\\n";
+    }
+  }
+  
+  downloadFile(txt, name.replace(/\\s+/g, "_") + ".txt", "text/plain");
+  showNotification("TXT exportado!");
+}
+
+function downloadFile(content, filename, type) {
+  var blob = new Blob([content], {type: type});
+  var url = URL.createObjectURL(blob);
+  var a = document.createElement("a");
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+
+function shareURL() {
+  var data = {
+    n: document.getElementById("songName").value || "musica",
+    i: document.getElementById("intro").value,
+    v: document.getElementById("verse").value,
+    p: document.getElementById("prechorus").value,
+    c: document.getElementById("chorus").value,
+    b: document.getElementById("bridge").value,
+    e: document.getElementById("ending").value,
+    s: currentShift
+  };
+  
+  try {
+    var json = JSON.stringify(data);
+    var compressed = btoa(unescape(encodeURIComponent(json)));
+    var url = window.location.origin + window.location.pathname + "?data=" + compressed;
+    
+    navigator.clipboard.writeText(url).then(function() {
+      showNotification("Link copiado!");
+    }).catch(function() {
+      prompt("Copie este link:", url);
+    });
+  } catch(e) {
+    showNotification("Erro ao gerar link");
+  }
+}
+
+function showImportModal() {
+  document.getElementById("importModal").style.display = "flex";
+  document.getElementById("importArea").value = "";
+  document.getElementById("importArea").focus();
+}
+
+function closeImportModal() {
+  document.getElementById("importModal").style.display = "none";
+}
+
+function importData() {
+  var text = document.getElementById("importArea").value.trim();
+  if(!text) {
+    showNotification("Cole algum conteúdo!");
+    return;
+  }
+  
+  saveState();
+  
+  // Tentar JSON
+  try {
+    var data = JSON.parse(text);
+    if(data.sections) {
+      document.getElementById("songName").value = data.name || "importada";
+      for(var section in data.sections) {
+        var el = document.getElementById(section);
+        if(el) el.value = data.sections[section] || "";
+      }
+      currentShift = data.shift || 0;
+      document.getElementById("keyShift").value = currentShift;
+      updateKeyDisplay();
+      closeImportModal();
+      showNotification("JSON importado!");
+      return;
+    }
+  } catch(e) {
+    // Não é JSON
+  }
+  
+  // Importar TXT
+  importTXT(text);
+}
+
+function importTXT(text) {
+  var lines = text.split("\\n");
+  var currentSection = "";
+  var name = "";
+  
+  var areas = ["intro", "verse", "prechorus", "chorus", "bridge", "ending"];
+  for(var i = 0; i < areas.length; i++) {
+    document.getElementById(areas[i]).value = "";
+  }
+  
+  var map = {
+    "INTRODUÇÃO": "intro", "INTRO": "intro",
+    "VERSO": "verse", "VERSES": "verse",
+    "PRÉ-REFRÃO": "prechorus", "PRE-CHORUS": "prechorus", "PRECHORUS": "prechorus",
+    "REFRÃO": "chorus", "CHORUS": "chorus",
+    "PONTE": "bridge", "BRIDGE": "bridge",
+    "FINAL": "ending", "ENDING": "ending", "OUTRO": "ending"
+  };
+  
+  for(var i = 0; i < lines.length; i++) {
+    var trimmed = lines[i].trim();
+    
+    if(!name && trimmed && !trimmed.startsWith("[") && !trimmed.startsWith("=")) {
+      name = trimmed;
+      document.getElementById("songName").value = name;
+      continue;
+    }
+    
+    var sectionMatch = trimmed.match(/^\\[(.+?)\\]$/);
+    if(sectionMatch) {
+      currentSection = map[sectionMatch[1].toUpperCase()] || "";
+      continue;
+    }
+    
+    if(currentSection && trimmed) {
+      var el = document.getElementById(currentSection);
+      if(el) {
+        el.value += (el.value ? "\\n" : "") + trimmed;
+      }
+    }
+  }
+  
+  closeImportModal();
+  showNotification("TXT importado!");
+}
+
+function loadFromURL() {
+  var params = new URLSearchParams(window.location.search);
+  var data = params.get("data");
+  if(!data) return;
+  
+  try {
+    var json = decodeURIComponent(escape(atob(data)));
+    var song = JSON.parse(json);
+    
+    document.getElementById("songName").value = song.n || "";
+    document.getElementById("intro").value = song.i || "";
+    document.getElementById("verse").value = song.v || "";
+    document.getElementById("prechorus").value = song.p || "";
+    document.getElementById("chorus").value = song.c || "";
+    document.getElementById("bridge").value = song.b || "";
+    document.getElementById("ending").value = song.e || "";
+    
+    currentShift = song.s || 0;
+    document.getElementById("keyShift").value = currentShift;
+    updateKeyDisplay();
+    
+    showNotification("Carregado do link!");
+  } catch(e) {
+    console.error("Erro URL:", e);
+  }
+}
+
+// ============================================
+// UNDO/REDO
+// ============================================
+function saveState() {
+  var state = {
+    name: document.getElementById("songName").value,
+    sections: {
+      intro: document.getElementById("intro").value,
+      verse: document.getElementById("verse").value,
+      prechorus: document.getElementById("prechorus").value,
+      chorus: document.getElementById("chorus").value,
+      bridge: document.getElementById("bridge").value,
+      ending: document.getElementById("ending").value
+    },
+    shift: currentShift
+  };
+  
+  undoStack.push(state);
+  if(undoStack.length > 20) undoStack.shift();
+  redoStack = [];
+}
+
+function undo() {
+  if(undoStack.length === 0) {
+    showNotification("Nada para desfazer");
+    return;
+  }
+  
+  redoStack.push(getCurrentState());
+  var state = undoStack.pop();
+  restoreState(state);
+  showNotification("Desfeito");
+}
+
+function redo() {
+  if(redoStack.length === 0) {
+    showNotification("Nada para refazer");
+    return;
+  }
+  
+  undoStack.push(getCurrentState());
+  var state = redoStack.pop();
+  restoreState(state);
+  showNotification("Refeito");
+}
+
+function getCurrentState() {
+  return {
+    name: document.getElementById("songName").value,
+    sections: {
+      intro: document.getElementById("intro").value,
+      verse: document.getElementById("verse").value,
+      prechorus: document.getElementById("prechorus").value,
+      chorus: document.getElementById("chorus").value,
+      bridge: document.getElementById("bridge").value,
+      ending: document.getElementById("ending").value
+    },
+    shift: currentShift
+  };
+}
+
+function restoreState(state) {
+  document.getElementById("songName").value = state.name;
+  for(var section in state.sections) {
+    var el = document.getElementById(section);
+    if(el) el.value = state.sections[section];
+  }
+  currentShift = state.shift;
+  document.getElementById("keyShift").value = currentShift;
+  updateKeyDisplay();
+}
+
+// ============================================
+// MODO PALCO
+// ============================================
+function openStageMode() {
+  var fields = {
+    "Introdução": "intro",
+    "Verso": "verse",
+    "Pré-Refrão": "prechorus",
+    "Refrão": "chorus",
+    "Ponte": "bridge",
+    "Final": "ending"
+  };
+  
+  var content = "";
+  var hasContent = false;
+  
+  for(var label in fields) {
+    var id = fields[label];
+    var textarea = document.getElementById(id);
+    var value = textarea.value.trim();
+    if(value) {
+      hasContent = true;
+      var escaped = escapeHtml(value);
+      var formatted = escaped.replace(/\\n/g, "<br>");
+      content += "<h2>" + label + "</h2><p>" + formatted + "</p>";
+    }
+  }
+  
+  if(!hasContent) {
+    content = "<h2>⚠️ Nenhum conteúdo</h2><p>Adicione acordes primeiro.</p>";
+  }
+  
+  document.getElementById("stageContent").innerHTML = content;
+  document.getElementById("stageMode").style.display = "block";
+  document.body.style.overflow = "hidden";
+  document.getElementById("stageMode").scrollTop = 0;
+  updateScrollIndicator();
+}
+
+function closeStageMode() {
+  stopScroll();
+  document.getElementById("stageMode").style.display = "none";
+  document.body.style.overflow = "auto";
+}
+
+function startScroll() {
+  stopScroll();
+  
+  var stage = document.getElementById("stageMode");
+  var speed = parseInt(document.getElementById("speedControl").value);
+  var pixelsPerFrame = 0.5 + (speed * 0.3);
+  
+  function scroll() {
+    if(stage.scrollTop + stage.clientHeight >= stage.scrollHeight - 10) {
+      stopScroll();
+      return;
+    }
+    
+    stage.scrollTop += pixelsPerFrame;
+    updateScrollIndicator();
+    scrollAnimation = requestAnimationFrame(scroll);
+  }
+  
+  scrollAnimation = requestAnimationFrame(scroll);
+}
+
+function stopScroll() {
+  if(scrollAnimation) {
+    cancelAnimationFrame(scrollAnimation);
+    scrollAnimation = null;
+  }
+}
+
+function updateScrollIndicator() {
+  var stage = document.getElementById("stageMode");
+  var indicator = document.getElementById("scrollIndicator");
+  var maxScroll = stage.scrollHeight - stage.clientHeight;
+  if(maxScroll <= 0) {
+    indicator.style.width = "0%";
+    return;
+  }
+  var scrollPercent = (stage.scrollTop / maxScroll) * 100;
+  indicator.style.width = Math.min(100, Math.max(0, scrollPercent)) + "%";
+}
+
+function updateSpeedDisplay() {
+  document.getElementById("speedValue").textContent = 
+    document.getElementById("speedControl").value;
+}
+
+function resetAll() {
+  if(!confirm("Limpar todas as seções?")) return;
+  
+  saveState();
+  var areas = ["intro", "verse", "prechorus", "chorus", "bridge", "ending"];
+  for(var i = 0; i < areas.length; i++) {
+    document.getElementById(areas[i]).value = "";
+  }
+  document.getElementById("keyShift").value = "0";
+  currentShift = 0;
+  updateKeyDisplay();
+  showNotification("Limpo");
+}
+
+// ============================================
+// UTILITÁRIOS
+// ============================================
+function escapeHtml(text) {
+  if(!text) return "";
+  var div = document.createElement("div");
+  div.textContent = text;
+  return div.innerHTML;
+}
+
+function showNotification(message) {
+  var existing = document.querySelector(".notification");
+  if(existing) existing.remove();
+  
+  var notif = document.createElement("div");
+  notif.className = "notification";
+  notif.textContent = message;
+  document.body.appendChild(notif);
+  
+  setTimeout(function() {
+    notif.remove();
+  }, 2500);
 }
 </script>
 
