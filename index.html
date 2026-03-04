@@ -3,67 +3,266 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Map Music Pro - Completo</title>
+<title>Map Music Pro - Temas</title>
 
 <style>
-* { box-sizing: border-box; margin: 0; padding: 0; }
+/* ============================================
+   TEMA 1: DARK RED (Padrão)
+   ============================================ */
+:root {
+  --bg-primary: #0a0a0a;
+  --bg-secondary: #1a1a1a;
+  --bg-tertiary: #2a2a2a;
+  --bg-input: #0f0f0f;
+  --accent-primary: #c00000;
+  --accent-secondary: #ff4444;
+  --accent-hover: #ff0000;
+  --text-primary: #ffffff;
+  --text-secondary: #cccccc;
+  --text-muted: #666666;
+  --border-color: #333333;
+  --font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  --font-mono: 'Courier New', monospace;
+  --font-size-base: 15px;
+  --font-size-large: 18px;
+  --font-size-xlarge: 22px;
+  --spacing-xs: 5px;
+  --spacing-sm: 10px;
+  --spacing-md: 15px;
+  --spacing-lg: 20px;
+  --border-radius: 8px;
+  --shadow: 0 4px 6px rgba(0,0,0,0.3);
+}
+
+/* TEMA 2: DARK BLUE */
+[data-theme="blue"] {
+  --bg-primary: #0a0a1a;
+  --bg-secondary: #1a1a2e;
+  --bg-tertiary: #2a2a3e;
+  --bg-input: #0f0f1f;
+  --accent-primary: #0066cc;
+  --accent-secondary: #4499ff;
+  --accent-hover: #0088ff;
+  --border-color: #33334d;
+}
+
+/* TEMA 3: DARK GREEN */
+[data-theme="green"] {
+  --bg-primary: #0a1a0a;
+  --bg-secondary: #1a2e1a;
+  --bg-tertiary: #2a3e2a;
+  --bg-input: #0f1f0f;
+  --accent-primary: #228b22;
+  --accent-secondary: #44cc44;
+  --accent-hover: #00ff00;
+  --border-color: #334d33;
+}
+
+/* TEMA 4: DARK PURPLE */
+[data-theme="purple"] {
+  --bg-primary: #1a0a1a;
+  --bg-secondary: #2e1a2e;
+  --bg-tertiary: #3e2a3e;
+  --bg-input: #1f0f1f;
+  --accent-primary: #800080;
+  --accent-secondary: #cc44cc;
+  --accent-hover: #ff00ff;
+  --border-color: #4d334d;
+}
+
+/* TEMA 5: LIGHT (Modo Claro) */
+[data-theme="light"] {
+  --bg-primary: #f5f5f5;
+  --bg-secondary: #ffffff;
+  --bg-tertiary: #e8e8e8;
+  --bg-input: #fafafa;
+  --accent-primary: #c00000;
+  --accent-secondary: #ff4444;
+  --accent-hover: #ff0000;
+  --text-primary: #222222;
+  --text-secondary: #444444;
+  --text-muted: #888888;
+  --border-color: #dddddd;
+  --shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+/* TEMA 6: HIGH CONTRAST (Acessibilidade) */
+[data-theme="contrast"] {
+  --bg-primary: #000000;
+  --bg-secondary: #000000;
+  --bg-tertiary: #111111;
+  --bg-input: #000000;
+  --accent-primary: #ffff00;
+  --accent-secondary: #ffff00;
+  --accent-hover: #ffffff;
+  --text-primary: #ffffff;
+  --text-secondary: #ffffff;
+  --text-muted: #cccccc;
+  --border-color: #ffffff;
+  --font-size-base: 18px;
+  --font-size-large: 22px;
+  --font-size-xlarge: 28px;
+}
+
+/* ============================================
+   ESTILOS BASE
+   ============================================ */
+* { 
+  box-sizing: border-box; 
+  margin: 0; 
+  padding: 0;
+  transition: background-color 0.3s, color 0.3s, border-color 0.3s;
+}
 
 body {
   margin: 0;
-  background: #0a0a0a;
-  color: #fff;
-  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-  padding: 20px;
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  font-family: var(--font-family);
+  font-size: var(--font-size-base);
+  padding: var(--spacing-lg);
   line-height: 1.6;
+  min-height: 100vh;
 }
 
 h1 {
-  background: linear-gradient(135deg, #c00000 0%, #800000 100%);
-  padding: 20px;
-  margin: -20px -20px 20px -20px;
+  background: linear-gradient(135deg, var(--accent-primary) 0%, var(--accent-secondary) 100%);
+  padding: var(--spacing-lg);
+  margin: calc(-1 * var(--spacing-lg)) calc(-1 * var(--spacing-lg)) var(--spacing-lg) calc(-1 * var(--spacing-lg));
   text-align: center;
   font-size: 2em;
   text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
+  box-shadow: var(--shadow);
+  color: white;
 }
 
-/* BIBLIOTECA */
+/* ============================================
+   PAINEL DE CONFIGURAÇÕES
+   ============================================ */
+.config-panel {
+  background: var(--bg-secondary);
+  padding: var(--spacing-md);
+  border-radius: var(--border-radius);
+  margin-bottom: var(--spacing-lg);
+  border: 2px solid var(--accent-primary);
+}
+
+.config-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--spacing-md);
+  align-items: center;
+  margin-bottom: var(--spacing-sm);
+}
+
+.config-row:last-child {
+  margin-bottom: 0;
+}
+
+.config-label {
+  font-weight: bold;
+  color: var(--accent-secondary);
+  min-width: 120px;
+}
+
+/* Botões de tema */
+.theme-buttons {
+  display: flex;
+  gap: var(--spacing-xs);
+  flex-wrap: wrap;
+}
+
+.theme-btn {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  border: 3px solid transparent;
+  cursor: pointer;
+  transition: transform 0.2s, border-color 0.2s;
+}
+
+.theme-btn:hover {
+  transform: scale(1.1);
+}
+
+.theme-btn.active {
+  border-color: var(--text-primary);
+  box-shadow: 0 0 10px rgba(255,255,255,0.5);
+}
+
+.theme-red { background: linear-gradient(135deg, #c00000, #800000); }
+.theme-blue { background: linear-gradient(135deg, #0066cc, #003399); }
+.theme-green { background: linear-gradient(135deg, #228b22, #006400); }
+.theme-purple { background: linear-gradient(135deg, #800080, #4b0082); }
+.theme-light { background: linear-gradient(135deg, #f5f5f5, #cccccc); border: 2px solid #666; }
+.theme-contrast { background: linear-gradient(135deg, #000, #333); border: 2px solid #ff0; }
+
+/* Botões de fonte */
+.font-buttons {
+  display: flex;
+  gap: var(--spacing-xs);
+}
+
+.font-btn {
+  padding: 8px 16px;
+  background: var(--bg-tertiary);
+  border: 2px solid var(--border-color);
+  color: var(--text-primary);
+  cursor: pointer;
+  border-radius: 4px;
+  font-weight: bold;
+}
+
+.font-btn:hover {
+  border-color: var(--accent-primary);
+}
+
+.font-btn.active {
+  background: var(--accent-primary);
+  border-color: var(--accent-primary);
+  color: white;
+}
+
+/* ============================================
+   BIBLIOTECA
+   ============================================ */
 .library-panel {
-  background: #1a1a1a;
-  padding: 15px;
-  border-radius: 8px;
-  margin-bottom: 20px;
-  border: 2px solid #c00000;
+  background: var(--bg-secondary);
+  padding: var(--spacing-md);
+  border-radius: var(--border-radius);
+  margin-bottom: var(--spacing-lg);
+  border: 2px solid var(--accent-primary);
 }
 
 .library-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 10px;
+  margin-bottom: var(--spacing-sm);
   flex-wrap: wrap;
-  gap: 10px;
+  gap: var(--spacing-sm);
 }
 
 .library-header h2 {
   margin: 0;
-  color: #ff4444;
+  color: var(--accent-secondary);
   font-size: 1.2em;
 }
 
 .song-list {
   display: flex;
   flex-wrap: wrap;
-  gap: 8px;
+  gap: var(--spacing-xs);
   max-height: 150px;
   overflow-y: auto;
-  padding: 10px;
-  background: #0f0f0f;
+  padding: var(--spacing-sm);
+  background: var(--bg-input);
   border-radius: 5px;
   min-height: 50px;
 }
 
 .song-item {
-  background: #2a2a2a;
+  background: var(--bg-tertiary);
   padding: 8px 12px;
   border-radius: 20px;
   cursor: pointer;
@@ -73,64 +272,70 @@ h1 {
   gap: 5px;
   font-size: 0.9em;
   transition: all 0.2s;
+  color: var(--text-primary);
 }
 
 .song-item:hover {
-  background: #3a3a3a;
-  border-color: #c00000;
+  background: var(--bg-secondary);
+  border-color: var(--accent-primary);
+  transform: translateY(-2px);
 }
 
 .song-item.active {
-  background: #c00000;
-  border-color: #ff0000;
+  background: var(--accent-primary);
+  border-color: var(--accent-hover);
+  color: white;
 }
 
 .song-item .delete-btn {
   background: none;
   border: none;
-  color: #ff6666;
+  color: inherit;
   cursor: pointer;
   font-weight: bold;
   font-size: 18px;
   line-height: 1;
   padding: 0;
   margin-left: 5px;
+  opacity: 0.7;
 }
 
-.song-item.active .delete-btn {
-  color: #fff;
+.song-item .delete-btn:hover {
+  opacity: 1;
 }
 
 .empty-msg {
-  color: #666;
+  color: var(--text-muted);
   font-style: italic;
 }
 
-/* CONTROLES */
+/* ============================================
+   CONTROLES
+   ============================================ */
 .controls {
-  background: #1a1a1a;
-  padding: 15px;
-  border-radius: 8px;
-  margin-bottom: 20px;
+  background: var(--bg-secondary);
+  padding: var(--spacing-md);
+  border-radius: var(--border-radius);
+  margin-bottom: var(--spacing-lg);
   display: flex;
   flex-wrap: wrap;
-  gap: 10px;
+  gap: var(--spacing-sm);
   align-items: center;
-  border: 1px solid #333;
+  border: 1px solid var(--border-color);
 }
 
 .controls label {
   font-weight: bold;
-  color: #ff4444;
+  color: var(--accent-secondary);
   font-size: 0.9em;
 }
 
 input[type="text"], select {
   padding: 8px 12px;
   border-radius: 4px;
-  border: 1px solid #c00000;
-  background: #2a2a2a;
-  color: white;
+  border: 1px solid var(--accent-primary);
+  background: var(--bg-tertiary);
+  color: var(--text-primary);
   font-size: 14px;
 }
 
@@ -142,7 +347,7 @@ button {
   padding: 8px 15px;
   border-radius: 4px;
   border: none;
-  background: #c00000;
+  background: var(--accent-primary);
   color: white;
   cursor: pointer;
   font-weight: bold;
@@ -151,16 +356,19 @@ button {
 }
 
 button:hover {
-  background: #ff0000;
+  background: var(--accent-hover);
   transform: translateY(-1px);
+  box-shadow: 0 4px 8px rgba(0,0,0,0.2);
 }
 
 button.secondary {
-  background: #444;
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border-color);
+  color: var(--text-primary);
 }
 
 button.secondary:hover {
-  background: #666;
+  background: var(--border-color);
 }
 
 button.success {
@@ -172,28 +380,30 @@ button.success:hover {
 }
 
 #currentKeyDisplay {
-  color: #ff4444;
+  color: var(--accent-secondary);
   font-weight: bold;
   padding: 8px 12px;
-  background: #2a2a2a;
+  background: var(--bg-tertiary);
   border-radius: 4px;
-  border: 1px solid #c00000;
+  border: 1px solid var(--accent-primary);
   margin-left: auto;
 }
 
-/* SEÇÕES */
+/* ============================================
+   SEÇÕES
+   ============================================ */
 .section {
-  margin-top: 15px;
-  background: #1a1a1a;
-  padding: 15px;
-  border-radius: 8px;
-  border-left: 4px solid #c00000;
+  margin-top: var(--spacing-md);
+  background: var(--bg-secondary);
+  padding: var(--spacing-md);
+  border-radius: var(--border-radius);
+  border-left: 4px solid var(--accent-primary);
 }
 
 .section h3 {
-  margin: 0 0 10px 0;
-  color: #ff4444;
-  font-size: 1.1em;
+  margin: 0 0 var(--spacing-sm) 0;
+  color: var(--accent-secondary);
+  font-size: var(--font-size-large);
   text-transform: uppercase;
   letter-spacing: 1px;
 }
@@ -201,12 +411,12 @@ button.success:hover {
 textarea {
   width: 100%;
   min-height: 100px;
-  background: #0f0f0f;
-  color: #fff;
-  border: 1px solid #333;
+  background: var(--bg-input);
+  color: var(--text-primary);
+  border: 1px solid var(--border-color);
   padding: 12px;
-  font-family: 'Courier New', monospace;
-  font-size: 15px;
+  font-family: var(--font-mono);
+  font-size: var(--font-size-base);
   line-height: 1.6;
   border-radius: 4px;
   resize: vertical;
@@ -214,10 +424,13 @@ textarea {
 
 textarea:focus {
   outline: none;
-  border-color: #c00000;
+  border-color: var(--accent-primary);
+  box-shadow: 0 0 10px rgba(192,0,0,0.2);
 }
 
-/* MODAL */
+/* ============================================
+   MODAL
+   ============================================ */
 .modal-overlay {
   display: none;
   position: fixed;
@@ -232,18 +445,19 @@ textarea:focus {
 }
 
 .modal {
-  background: #1a1a1a;
+  background: var(--bg-secondary);
   padding: 25px;
-  border-radius: 8px;
-  border: 2px solid #c00000;
+  border-radius: var(--border-radius);
+  border: 2px solid var(--accent-primary);
   width: 90%;
   max-width: 500px;
   max-height: 80vh;
   overflow-y: auto;
+  color: var(--text-primary);
 }
 
 .modal h3 {
-  color: #ff4444;
+  color: var(--accent-secondary);
   margin-bottom: 15px;
 }
 
@@ -258,7 +472,9 @@ textarea:focus {
   justify-content: flex-end;
 }
 
-/* MODO PALCO */
+/* ============================================
+   MODO PALCO
+   ============================================ */
 #stageMode {
   display: none;
   position: fixed;
@@ -266,23 +482,23 @@ textarea:focus {
   left: 0;
   width: 100%;
   height: 100%;
-  background: #000;
-  color: #fff;
+  background: var(--bg-primary);
+  color: var(--text-primary);
   padding: 30px;
   overflow: auto;
-  font-size: 36px;
+  font-size: var(--font-size-xlarge);
   line-height: 1.8;
   z-index: 1000;
 }
 
 #stageMode h2 {
-  color: #ff0000;
+  color: var(--accent-secondary);
   font-size: 1.3em;
   margin-top: 40px;
   margin-bottom: 15px;
   text-transform: uppercase;
   letter-spacing: 2px;
-  border-bottom: 3px solid #c00000;
+  border-bottom: 3px solid var(--accent-primary);
   padding-bottom: 8px;
 }
 
@@ -291,7 +507,7 @@ textarea:focus {
 }
 
 #stageMode p {
-  color: #fff;
+  color: var(--text-primary);
   margin-bottom: 30px;
   white-space: pre-wrap;
 }
@@ -300,14 +516,15 @@ textarea:focus {
   position: fixed;
   top: 20px;
   right: 20px;
-  background: rgba(30,30,30,0.95);
+  background: var(--bg-secondary);
   padding: 15px;
-  border-radius: 8px;
-  border: 2px solid #c00000;
+  border-radius: var(--border-radius);
+  border: 2px solid var(--accent-primary);
   display: flex;
   flex-direction: column;
   gap: 10px;
   z-index: 1001;
+  box-shadow: var(--shadow);
 }
 
 .stage-controls button {
@@ -319,18 +536,19 @@ textarea:focus {
   display: flex;
   align-items: center;
   gap: 8px;
-  color: #fff;
+  color: var(--text-primary);
   font-size: 14px;
 }
 
 #speedValue {
-  color: #ff4444;
+  color: var(--accent-secondary);
   font-weight: bold;
   min-width: 20px;
 }
 
 input[type="range"] {
   width: 120px;
+  accent-color: var(--accent-primary);
 }
 
 .scroll-indicator {
@@ -338,18 +556,20 @@ input[type="range"] {
   bottom: 0;
   left: 0;
   height: 4px;
-  background: #c00000;
+  background: var(--accent-primary);
   width: 0%;
   transition: width 0.1s;
 }
 
-/* NOTIFICAÇÃO */
+/* ============================================
+   NOTIFICAÇÃO
+   ============================================ */
 .notification {
   position: fixed;
   top: 20px;
   left: 50%;
   transform: translateX(-50%);
-  background: #c00000;
+  background: var(--accent-primary);
   color: white;
   padding: 12px 25px;
   border-radius: 4px;
@@ -358,6 +578,9 @@ input[type="range"] {
   box-shadow: 0 4px 12px rgba(0,0,0,0.5);
 }
 
+/* ============================================
+   PRINT
+   ============================================ */
 @media print {
   body * { visibility: hidden; }
   #stageMode, #stageMode * { visibility: visible; }
@@ -368,14 +591,39 @@ input[type="range"] {
     display: block !important;
     font-size: 24px;
     padding: 20px;
+    background: white;
+    color: black;
   }
   .stage-controls { display: none; }
 }
 </style>
 </head>
-<body>
+<body data-theme="red">
 
 <h1>🎸 Map Music Pro</h1>
+
+<!-- PAINEL DE CONFIGURAÇÃO -->
+<div class="config-panel">
+  <div class="config-row">
+    <span class="config-label">🎨 Tema:</span>
+    <div class="theme-buttons">
+      <div class="theme-btn theme-red active" onclick="setTheme('red')" title="Vermelho"></div>
+      <div class="theme-btn theme-blue" onclick="setTheme('blue')" title="Azul"></div>
+      <div class="theme-btn theme-green" onclick="setTheme('green')" title="Verde"></div>
+      <div class="theme-btn theme-purple" onclick="setTheme('purple')" title="Roxo"></div>
+      <div class="theme-btn theme-light" onclick="setTheme('light')" title="Claro"></div>
+      <div class="theme-btn theme-contrast" onclick="setTheme('contrast')" title="Alto Contraste"></div>
+    </div>
+  </div>
+  <div class="config-row">
+    <span class="config-label">🔤 Fonte:</span>
+    <div class="font-buttons">
+      <button class="font-btn active" onclick="setFontSize('normal')">Normal</button>
+      <button class="font-btn" onclick="setFontSize('large')">Grande</button>
+      <button class="font-btn" onclick="setFontSize('xlarge')">Extra</button>
+    </div>
+  </div>
+</div>
 
 <!-- BIBLIOTECA -->
 <div class="library-panel">
@@ -495,14 +743,110 @@ var currentShift = 0;
 var scrollAnimation = null;
 var undoStack = [];
 var redoStack = [];
+var currentTheme = 'red';
+var currentFontSize = 'normal';
 
 // Notas musicais
 var NOTES = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"];
 
 // ============================================
+// TEMAS E FONTES
+// ============================================
+function setTheme(theme) {
+  currentTheme = theme;
+  document.body.setAttribute('data-theme', theme);
+  localStorage.setItem('mapmusic_theme', theme);
+  
+  // Atualizar botões ativos
+  var buttons = document.querySelectorAll('.theme-btn');
+  for(var i = 0; i < buttons.length; i++) {
+    buttons[i].classList.remove('active');
+  }
+  document.querySelector('.theme-' + theme).classList.add('active');
+  
+  showNotification('Tema: ' + getThemeName(theme));
+}
+
+function getThemeName(theme) {
+  var names = {
+    'red': 'Vermelho',
+    'blue': 'Azul',
+    'green': 'Verde',
+    'purple': 'Roxo',
+    'light': 'Claro',
+    'contrast': 'Alto Contraste'
+  };
+  return names[theme] || theme;
+}
+
+function setFontSize(size) {
+  currentFontSize = size;
+  var root = document.documentElement;
+  
+  if(size === 'normal') {
+    root.style.setProperty('--font-size-base', '15px');
+    root.style.setProperty('--font-size-large', '18px');
+    root.style.setProperty('--font-size-xlarge', '22px');
+  } else if(size === 'large') {
+    root.style.setProperty('--font-size-base', '18px');
+    root.style.setProperty('--font-size-large', '22px');
+    root.style.setProperty('--font-size-xlarge', '28px');
+  } else if(size === 'xlarge') {
+    root.style.setProperty('--font-size-base', '22px');
+    root.style.setProperty('--font-size-large', '28px');
+    root.style.setProperty('--font-size-xlarge', '36px');
+  }
+  
+  localStorage.setItem('mapmusic_fontsize', size);
+  
+  // Atualizar botões
+  var buttons = document.querySelectorAll('.font-btn');
+  for(var i = 0; i < buttons.length; i++) {
+    buttons[i].classList.remove('active');
+  }
+  event.target.classList.add('active');
+  
+  showNotification('Fonte: ' + (size === 'normal' ? 'Normal' : size === 'large' ? 'Grande' : 'Extra Grande'));
+}
+
+function loadPreferences() {
+  var savedTheme = localStorage.getItem('mapmusic_theme');
+  if(savedTheme) {
+    setTheme(savedTheme);
+  }
+  
+  var savedFont = localStorage.getItem('mapmusic_fontsize');
+  if(savedFont) {
+    // Simular click no botão correto
+    var buttons = document.querySelectorAll('.font-btn');
+    for(var i = 0; i < buttons.length; i++) {
+      buttons[i].classList.remove('active');
+      if((savedFont === 'normal' && i === 0) ||
+         (savedFont === 'large' && i === 1) ||
+         (savedFont === 'xlarge' && i === 2)) {
+        buttons[i].classList.add('active');
+        // Aplicar sem notificação
+        var root = document.documentElement;
+        if(savedFont === 'large') {
+          root.style.setProperty('--font-size-base', '18px');
+          root.style.setProperty('--font-size-large', '22px');
+          root.style.setProperty('--font-size-xlarge', '28px');
+        } else if(savedFont === 'xlarge') {
+          root.style.setProperty('--font-size-base', '22px');
+          root.style.setProperty('--font-size-large', '28px');
+          root.style.setProperty('--font-size-xlarge', '36px');
+        }
+      }
+    }
+    currentFontSize = savedFont;
+  }
+}
+
+// ============================================
 // INICIALIZAÇÃO
 // ============================================
 document.addEventListener('DOMContentLoaded', function() {
+  loadPreferences();
   loadLibrary();
   loadFromURL();
   
@@ -537,7 +881,7 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 
 // ============================================
-// TRANSPOSIÇÃO - LÓGICA FUNCIONAL (ES5)
+// TRANSPOSIÇÃO
 // ============================================
 function transpose() {
   var shift = parseInt(document.getElementById("keyShift").value);
@@ -559,21 +903,18 @@ function transpose() {
     
     if(!content || !content.trim()) continue;
     
-    // Dividir em linhas
     var lines = content.split("\\n");
     var newLines = [];
     
     for(var j = 0; j < lines.length; j++) {
       var line = lines[j];
       
-      // Preservar espaços iniciais
       var leadingSpace = "";
       while(line.length > 0 && line.charAt(0) === " ") {
         leadingSpace += " ";
         line = line.substring(1);
       }
       
-      // Dividir por espaços
       var parts = line.split(" ");
       var newParts = [];
       
@@ -597,23 +938,19 @@ function transpose() {
 }
 
 function transposeChord(chord, shift) {
-  // Verificar se é acorde com baixo (C/G)
   if(chord.indexOf("/") >= 0) {
     var parts = chord.split("/");
     return transposeRoot(parts[0], shift) + "/" + transposeRoot(parts[1], shift);
   }
-  
   return transposeRoot(chord, shift);
 }
 
 function transposeRoot(chord, shift) {
   if(!chord || chord.length === 0) return chord;
   
-  // Pegar a nota (primeiro caractere + opcional # ou b)
   var note = chord.charAt(0).toUpperCase();
   var suffix = "";
   
-  // Verificar se tem # ou b
   if(chord.length > 1) {
     var second = chord.charAt(1);
     if(second === "#" || second === "b") {
@@ -635,7 +972,6 @@ function transposeRoot(chord, shift) {
   if(note === "E#") note = "F";
   if(note === "B#") note = "C";
   
-  // Encontrar índice na escala cromática
   var idx = -1;
   for(var i = 0; i < NOTES.length; i++) {
     if(NOTES[i] === note) {
@@ -644,9 +980,8 @@ function transposeRoot(chord, shift) {
     }
   }
   
-  if(idx === -1) return chord; // Não é uma nota válida, retorna original
+  if(idx === -1) return chord;
   
-  // Calcular nova posição
   var newIdx = idx + shift;
   while(newIdx < 0) newIdx += 12;
   while(newIdx >= 12) newIdx -= 12;
@@ -669,7 +1004,7 @@ function updateKeyDisplay() {
 // ============================================
 function loadLibrary() {
   try {
-    var saved = localStorage.getItem('mapmusic_library_v4');
+    var saved = localStorage.getItem('mapmusic_library_v5');
     if(saved) {
       library = JSON.parse(saved);
       renderLibrary();
@@ -681,7 +1016,7 @@ function loadLibrary() {
 
 function saveLibrary() {
   try {
-    localStorage.setItem('mapmusic_library_v4', JSON.stringify(library));
+    localStorage.setItem('mapmusic_library_v5', JSON.stringify(library));
     renderLibrary();
   } catch(e) {
     showNotification("Erro ao salvar");
@@ -928,7 +1263,6 @@ function importData() {
   
   saveState();
   
-  // Tentar JSON
   try {
     var data = JSON.parse(text);
     if(data.sections) {
@@ -948,7 +1282,6 @@ function importData() {
     // Não é JSON
   }
   
-  // Importar TXT
   importTXT(text);
 }
 
