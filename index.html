@@ -3,15 +3,81 @@
 <head>
 <meta charset="UTF-8">
 <title>Map Music</title>
+
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+
+<style>
+body{
+  margin:0;
+  background:black;
+  color:white;
+  font-family:Arial;
+  text-align:center;
+}
+header{
+  background:#c00000;
+  padding:20px;
+  font-size:24px;
+  font-weight:bold;
+}
+button{
+  background:#c00000;
+  color:white;
+  border:none;
+  padding:15px;
+  margin-top:30px;
+  font-size:16px;
+  cursor:pointer;
+}
+</style>
+
 </head>
-<body style="background:black; color:white; text-align:center; font-family:Arial;">
+<body>
 
-<h1 style="color:#c00000;">Map Music</h1>
+<header>Map Music</header>
 
-<button onclick="alert('Funcionando corretamente!')" 
-style="padding:15px; background:#c00000; color:white; border:none;">
-Testar Sistema
-</button>
+<div id="loginArea">
+  <button onclick="login()">Entrar com Google</button>
+</div>
+
+<div id="userArea" style="display:none;">
+  <h2 id="userName"></h2>
+  <button onclick="logout()">Sair</button>
+</div>
+
+<script>
+
+// 🔴 COLE AQUI SUAS CHAVES DO FIREBASE
+const firebaseConfig = {
+  apiKey: "AIzaSyBausGqamGuEbxV8NdHfuRY0Tx21LELj-Y",
+  authDomain: "map-music-eb8aa.firebaseapp.com",
+  projectId: "map-music-eb8aa",
+};
+
+firebase.initializeApp(firebaseConfig);
+
+const auth = firebase.auth();
+
+auth.onAuthStateChanged(user => {
+  if(user){
+    document.getElementById("loginArea").style.display="none";
+    document.getElementById("userArea").style.display="block";
+    document.getElementById("userName").innerText = "Bem-vindo, " + user.displayName;
+  }
+});
+
+function login(){
+  const provider = new firebase.auth.GoogleAuthProvider();
+  auth.signInWithPopup(provider);
+}
+
+function logout(){
+  auth.signOut();
+  location.reload();
+}
+
+</script>
 
 </body>
 </html>
