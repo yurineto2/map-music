@@ -11,9 +11,11 @@
 
 <style>
 /* ============================================
-   DESIGN SYSTEM - RESPONSIVE PROFESSIONAL
-   Mobile First Approach
-   Breakpoints: 480px (mobile), 768px (tablet), 1024px (desktop), 1440px (wide)
+   DESIGN SYSTEM - MOBILE | IPAD | PC
+   ============================================
+   Mobile: < 768px (touch otimizado, vertical)
+   iPad: 768px - 1023px (touch + stylus, split view)
+   PC: >= 1024px (mouse/keyboard, multi-coluna)
    ============================================ */
 :root {
   /* Cores Base */
@@ -35,15 +37,15 @@
   --text-muted: #6a6a6a;
   --text-inverse: #000000;
   
-  /* Bordas e Efeitos */
+  /* Bordas */
   --border-color: rgba(255, 255, 255, 0.1);
   --border-hover: rgba(255, 255, 255, 0.2);
-  --glass-bg: rgba(18, 18, 26, 0.8);
-  --glass-border: rgba(255, 255, 255, 0.05);
+  --glass-bg: rgba(18, 18, 26, 0.85);
+  --glass-border: rgba(255, 255, 255, 0.08);
   
   /* Tipografia */
   --font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-  --font-mono: 'SF Mono', 'Fira Code', monospace;
+  --font-mono: 'SF Mono', 'Fira Code', Consolas, monospace;
   
   /* Espaçamento Mobile First */
   --space-xs: 4px;
@@ -54,67 +56,39 @@
   --space-2xl: 24px;
   --space-3xl: 32px;
   
+  /* Touch Targets */
+  --touch-min: 44px;
+  --touch-comfort: 56px;
+  --touch-large: 64px;
+  
   /* Bordas */
-  --radius-sm: 6px;
-  --radius-md: 8px;
-  --radius-lg: 12px;
-  --radius-xl: 16px;
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+  --radius-xl: 20px;
   --radius-full: 9999px;
   
   /* Sombras */
-  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3);
-  --shadow-md: 0 4px 6px rgba(0, 0, 0, 0.4);
-  --shadow-lg: 0 10px 15px rgba(0, 0, 0, 0.5);
-  --shadow-glow: 0 0 20px var(--accent-glow);
-  
-  /* Touch Targets */
-  --touch-target: 44px;
-  --touch-target-lg: 56px;
+  --shadow-sm: 0 2px 4px rgba(0, 0, 0, 0.3);
+  --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.4);
+  --shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.5);
+  --shadow-glow: 0 0 30px var(--accent-glow);
   
   /* Transições */
-  --transition-fast: 150ms ease;
-  --transition-base: 250ms ease;
-  --transition-slow: 350ms ease;
+  --transition-fast: 150ms cubic-bezier(0.4, 0, 0.2, 1);
+  --transition-base: 250ms cubic-bezier(0.4, 0, 0.2, 1);
+  --transition-slow: 350ms cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-/* TEMAS ALTERNATIVOS */
-[data-theme="red"] {
-  --accent-primary: #e22134;
-  --accent-secondary: #ff4d5e;
-  --accent-hover: #ff6b7a;
-  --accent-glow: rgba(226, 33, 52, 0.3);
-}
-
-[data-theme="blue"] {
-  --accent-primary: #0d84fc;
-  --accent-secondary: #3d9eff;
-  --accent-hover: #5eb0ff;
-  --accent-glow: rgba(13, 132, 252, 0.3);
-}
-
-[data-theme="purple"] {
-  --accent-primary: #8b5cf6;
-  --accent-secondary: #a78bfa;
-  --accent-hover: #c4b5fd;
-  --accent-glow: rgba(139, 92, 246, 0.3);
-}
-
-[data-theme="orange"] {
-  --accent-primary: #f97316;
-  --accent-secondary: #fb923c;
-  --accent-hover: #fdba74;
-  --accent-glow: rgba(249, 115, 22, 0.3);
-}
-
-[data-theme="pink"] {
-  --accent-primary: #ec4899;
-  --accent-secondary: #f472b6;
-  --accent-hover: #f9a8d4;
-  --accent-glow: rgba(236, 72, 153, 0.3);
-}
+/* TEMAS */
+[data-theme="red"] { --accent-primary: #e22134; --accent-secondary: #ff4d5e; --accent-hover: #ff6b7a; --accent-glow: rgba(226, 33, 52, 0.3); }
+[data-theme="blue"] { --accent-primary: #0d84fc; --accent-secondary: #3d9eff; --accent-hover: #5eb0ff; --accent-glow: rgba(13, 132, 252, 0.3); }
+[data-theme="purple"] { --accent-primary: #8b5cf6; --accent-secondary: #a78bfa; --accent-hover: #c4b5fd; --accent-glow: rgba(139, 92, 246, 0.3); }
+[data-theme="orange"] { --accent-primary: #f97316; --accent-secondary: #fb923c; --accent-hover: #fdba74; --accent-glow: rgba(249, 115, 22, 0.3); }
+[data-theme="pink"] { --accent-primary: #ec4899; --accent-secondary: #f472b6; --accent-hover: #f9a8d4; --accent-glow: rgba(236, 72, 153, 0.3); }
 
 /* ============================================
-   RESET E BASE - MOBILE FIRST
+   RESET E BASE
    ============================================ */
 * {
   margin: 0;
@@ -122,11 +96,19 @@
   box-sizing: border-box;
   -webkit-tap-highlight-color: transparent;
   -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+input, textarea, select {
+  -webkit-user-select: text;
+  user-select: text;
 }
 
 html {
   scroll-behavior: smooth;
-  font-size: 14px;
+  font-size: 16px;
+  -webkit-text-size-adjust: 100%;
 }
 
 body {
@@ -141,11 +123,12 @@ body {
 }
 
 /* ============================================
-   HEADER - MOBILE FIRST
+   MOBILE: < 768px
+   Otimizado para touch, uma mão, vertical
    ============================================ */
 .app-header {
   background: linear-gradient(180deg, rgba(18,18,26,0.98) 0%, rgba(10,10,15,0.95) 100%);
-  backdrop-filter: blur(20px);
+  backdrop-filter: blur(20px) saturate(180%);
   border-bottom: 1px solid var(--border-color);
   padding: var(--space-md) var(--space-lg);
   position: sticky;
@@ -154,8 +137,6 @@ body {
 }
 
 .header-content {
-  max-width: 100%;
-  margin: 0 auto;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -190,61 +171,48 @@ body {
   background: linear-gradient(135deg, var(--text-primary), var(--text-secondary));
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
-  background-clip: text;
-  line-height: 1.2;
 }
 
 .logo-subtitle {
-  font-size: 10px;
-  color: var(--text-muted);
-  font-weight: 500;
-  text-transform: uppercase;
-  letter-spacing: 1px;
   display: none;
 }
 
-/* ============================================
-   CONTAINER PRINCIPAL - MOBILE FIRST
-   ============================================ */
 .app-container {
-  max-width: 100%;
-  margin: 0 auto;
   padding: var(--space-lg);
+  padding-bottom: calc(var(--space-lg) + env(safe-area-inset-bottom));
 }
 
-/* ============================================
-   METRONOMO - MOBILE FIRST
-   ============================================ */
+/* Metronomo Mobile - Grande e facil de tocar */
 .metronome-panel {
-  background: linear-gradient(135deg, var(--bg-tertiary), var(--bg-secondary));
+  background: linear-gradient(145deg, var(--bg-tertiary), var(--bg-secondary));
   border: 1px solid var(--border-color);
   border-radius: var(--radius-xl);
-  padding: var(--space-lg);
+  padding: var(--space-xl);
   margin-bottom: var(--space-xl);
+  box-shadow: var(--shadow-md);
 }
 
 .metronome-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: var(--space-md);
+  margin-bottom: var(--space-lg);
 }
 
 .metronome-title {
   font-size: 14px;
   font-weight: 700;
-  color: var(--text-primary);
   display: flex;
   align-items: center;
-  gap: var(--space-xs);
+  gap: var(--space-sm);
 }
 
 .metronome-display {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: var(--space-md);
-  margin-bottom: var(--space-lg);
+  gap: var(--space-lg);
+  margin-bottom: var(--space-xl);
 }
 
 .bpm-display {
@@ -252,34 +220,35 @@ body {
 }
 
 .bpm-value {
-  font-size: 48px;
+  font-size: 72px;
   font-weight: 800;
   color: var(--accent-primary);
   line-height: 1;
   font-variant-numeric: tabular-nums;
+  text-shadow: 0 0 30px var(--accent-glow);
 }
 
 .bpm-label {
-  font-size: 11px;
+  font-size: 12px;
   color: var(--text-muted);
   text-transform: uppercase;
-  letter-spacing: 1px;
+  letter-spacing: 2px;
   margin-top: var(--space-xs);
 }
 
 .beat-indicator {
   display: flex;
-  gap: var(--space-sm);
+  gap: var(--space-md);
   align-items: center;
-  padding: var(--space-sm) var(--space-md);
+  padding: var(--space-md) var(--space-xl);
   background: var(--bg-input);
   border-radius: var(--radius-lg);
   border: 1px solid var(--border-color);
 }
 
 .beat-dot {
-  width: 12px;
-  height: 12px;
+  width: 14px;
+  height: 14px;
   border-radius: var(--radius-full);
   background: var(--bg-elevated);
   border: 2px solid var(--border-color);
@@ -289,117 +258,41 @@ body {
 .beat-dot.active {
   background: var(--accent-primary);
   border-color: var(--accent-primary);
-  box-shadow: var(--shadow-glow);
-  transform: scale(1.3);
+  box-shadow: 0 0 20px var(--accent-primary);
+  transform: scale(1.4);
 }
 
 .beat-dot.accent {
-  width: 16px;
-  height: 16px;
+  width: 18px;
+  height: 18px;
   background: var(--accent-secondary);
   border-color: var(--accent-secondary);
 }
 
+/* Controles do metronomo otimizados para polegar */
 .metronome-controls {
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  display: grid;
+  grid-template-columns: auto 1fr auto;
   gap: var(--space-md);
-  flex-wrap: wrap;
-}
-
-.bpm-slider-container {
-  width: 100%;
-  order: 3;
-  margin-top: var(--space-sm);
-}
-
-.bpm-slider {
-  width: 100%;
-  height: 8px;
-  border-radius: var(--radius-full);
-  background: var(--bg-elevated);
-  outline: none;
-  -webkit-appearance: none;
-  touch-action: none;
-}
-
-.bpm-slider::-webkit-slider-thumb {
-  -webkit-appearance: none;
-  appearance: none;
-  width: 28px;
-  height: 28px;
-  border-radius: var(--radius-full);
-  background: var(--accent-primary);
-  cursor: pointer;
-  box-shadow: var(--shadow-md);
-  transition: all var(--transition-fast);
-  border: 3px solid var(--bg-primary);
-}
-
-.bpm-slider::-webkit-slider-thumb:hover,
-.bpm-slider::-webkit-slider-thumb:active {
-  transform: scale(1.2);
-  box-shadow: var(--shadow-glow);
-}
-
-.bpm-slider::-moz-range-thumb {
-  width: 28px;
-  height: 28px;
-  border-radius: var(--radius-full);
-  background: var(--accent-primary);
-  cursor: pointer;
-  border: 3px solid var(--bg-primary);
-  box-shadow: var(--shadow-md);
-}
-
-.metronome-btn {
-  width: var(--touch-target-lg);
-  height: var(--touch-target-lg);
-  min-width: var(--touch-target-lg);
-  min-height: var(--touch-target-lg);
-  border-radius: var(--radius-full);
-  background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
-  border: none;
-  color: var(--text-inverse);
-  font-size: 20px;
-  font-weight: 700;
-  cursor: pointer;
-  display: flex;
   align-items: center;
-  justify-content: center;
-  box-shadow: var(--shadow-glow);
-  transition: all var(--transition-fast);
-  order: 2;
-  touch-action: manipulation;
-}
-
-.metronome-btn:active {
-  transform: scale(0.95);
-}
-
-.metronome-btn.playing {
-  background: linear-gradient(135deg, #ef4444, #dc2626);
-  box-shadow: 0 0 20px rgba(239, 68, 68, 0.4);
 }
 
 .bpm-adjust {
   display: flex;
   flex-direction: column;
-  gap: var(--space-xs);
-  order: 1;
+  gap: var(--space-sm);
 }
 
 .bpm-btn {
-  width: var(--touch-target);
-  height: var(--touch-target);
-  min-width: var(--touch-target);
-  min-height: var(--touch-target);
+  width: var(--touch-large);
+  height: var(--touch-large);
+  min-width: var(--touch-large);
+  min-height: var(--touch-large);
   border-radius: var(--radius-md);
   background: var(--bg-elevated);
   border: 1px solid var(--border-color);
   color: var(--text-primary);
-  font-size: 16px;
+  font-size: 20px;
   font-weight: 700;
   cursor: pointer;
   display: flex;
@@ -415,15 +308,76 @@ body {
   transform: scale(0.95);
 }
 
-/* ============================================
-   CARDS E BIBLIOTECA - MOBILE FIRST
-   ============================================ */
+.metronome-main-btn {
+  justify-self: center;
+  width: 80px;
+  height: 80px;
+  border-radius: var(--radius-full);
+  background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
+  border: none;
+  color: var(--text-inverse);
+  font-size: 32px;
+  font-weight: 300;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: var(--shadow-glow), 0 4px 20px rgba(0,0,0,0.3);
+  transition: all var(--transition-fast);
+  touch-action: manipulation;
+}
+
+.metronome-main-btn:active {
+  transform: scale(0.95);
+  box-shadow: 0 0 40px var(--accent-glow);
+}
+
+.metronome-main-btn.playing {
+  background: linear-gradient(135deg, #ef4444, #dc2626);
+  box-shadow: 0 0 30px rgba(239, 68, 68, 0.5);
+}
+
+.bpm-slider-container {
+  grid-column: 1 / -1;
+  margin-top: var(--space-md);
+}
+
+.bpm-slider {
+  width: 100%;
+  height: 40px;
+  border-radius: var(--radius-full);
+  background: var(--bg-elevated);
+  outline: none;
+  -webkit-appearance: none;
+  touch-action: pan-y;
+}
+
+.bpm-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 48px;
+  height: 48px;
+  border-radius: var(--radius-full);
+  background: var(--accent-primary);
+  cursor: pointer;
+  box-shadow: var(--shadow-md), 0 0 20px rgba(0,0,0,0.3);
+  border: 4px solid var(--bg-primary);
+  margin-top: -4px;
+}
+
+.bpm-slider::-webkit-slider-runnable-track {
+  height: 40px;
+  border-radius: var(--radius-full);
+  background: linear-gradient(90deg, var(--bg-elevated) 0%, var(--bg-elevated) 100%);
+}
+
+/* Cards Mobile */
 .card {
   background: var(--bg-secondary);
   border: 1px solid var(--border-color);
   border-radius: var(--radius-xl);
-  padding: var(--space-lg);
+  padding: var(--space-xl);
   margin-bottom: var(--space-xl);
+  box-shadow: var(--shadow-sm);
 }
 
 .card-header {
@@ -438,7 +392,6 @@ body {
 .card-title {
   font-size: 16px;
   font-weight: 700;
-  color: var(--text-primary);
   display: flex;
   align-items: center;
   gap: var(--space-sm);
@@ -455,114 +408,9 @@ body {
   font-size: 12px;
   font-weight: 700;
   color: var(--accent-primary);
-  flex-shrink: 0;
 }
 
-.songs-grid {
-  display: grid;
-  grid-template-columns: 1fr;
-  gap: var(--space-md);
-}
-
-.song-card {
-  background: var(--bg-tertiary);
-  border: 1px solid var(--border-color);
-  border-radius: var(--radius-lg);
-  padding: var(--space-md);
-  cursor: pointer;
-  transition: all var(--transition-base);
-  position: relative;
-  overflow: hidden;
-  touch-action: manipulation;
-}
-
-.song-card::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  height: 3px;
-  background: linear-gradient(90deg, var(--accent-primary), var(--accent-secondary));
-  transform: scaleX(0);
-  transition: transform var(--transition-base);
-}
-
-.song-card:hover::before,
-.song-card:active::before {
-  transform: scaleX(1);
-}
-
-.song-card:active {
-  background: var(--bg-elevated);
-  transform: scale(0.98);
-}
-
-.song-card.active {
-  background: var(--bg-elevated);
-  border-color: var(--accent-primary);
-  box-shadow: var(--shadow-glow);
-}
-
-.song-card.active::before {
-  transform: scaleX(1);
-}
-
-.song-name {
-  font-weight: 600;
-  font-size: 14px;
-  margin-bottom: var(--space-xs);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  padding-right: 30px;
-}
-
-.song-date {
-  font-size: 11px;
-  color: var(--text-muted);
-}
-
-.song-delete {
-  position: absolute;
-  top: var(--space-md);
-  right: var(--space-md);
-  width: 28px;
-  height: 28px;
-  min-width: 28px;
-  min-height: 28px;
-  border-radius: var(--radius-full);
-  background: rgba(226, 33, 52, 0.9);
-  color: white;
-  border: none;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 16px;
-  font-weight: 700;
-  opacity: 1;
-  transition: all var(--transition-fast);
-  touch-action: manipulation;
-}
-
-.song-delete:active {
-  transform: scale(0.9);
-}
-
-/* ============================================
-   CONTROLES - MOBILE FIRST
-   ============================================ */
-.controls-bar {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-md);
-  padding: var(--space-lg);
-  background: var(--bg-tertiary);
-  border-radius: var(--radius-lg);
-  margin-bottom: var(--space-xl);
-}
-
+/* Inputs Mobile - Grandes para touch */
 .input-group {
   display: flex;
   flex-direction: column;
@@ -571,7 +419,7 @@ body {
 }
 
 .input-label {
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.5px;
@@ -586,12 +434,12 @@ textarea {
   border-radius: var(--radius-md);
   color: var(--text-primary);
   font-family: var(--font-family);
-  font-size: 16px; /* Previne zoom no iOS */
+  font-size: 16px;
   padding: var(--space-md);
+  min-height: var(--touch-comfort);
   transition: all var(--transition-fast);
   outline: none;
   width: 100%;
-  min-height: var(--touch-target);
 }
 
 input[type="text"]:focus,
@@ -601,23 +449,7 @@ textarea:focus {
   box-shadow: 0 0 0 3px var(--accent-glow);
 }
 
-input[type="text"]::placeholder,
-textarea::placeholder {
-  color: var(--text-muted);
-}
-
-select {
-  cursor: pointer;
-  appearance: none;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23b3b3b3' d='M6 8L1 3h10z'/%3E%3C/svg%3E");
-  background-repeat: no-repeat;
-  background-position: right 12px center;
-  padding-right: 32px;
-}
-
-/* ============================================
-   BOTOES - MOBILE FIRST (Touch Targets Otimizados)
-   ============================================ */
+/* Botoes Mobile - Full width, empilhados */
 .btn {
   display: inline-flex;
   align-items: center;
@@ -626,16 +458,13 @@ select {
   padding: var(--space-md) var(--space-lg);
   border-radius: var(--radius-md);
   font-family: var(--font-family);
-  font-size: 14px;
+  font-size: 15px;
   font-weight: 600;
-  text-decoration: none;
   cursor: pointer;
   transition: all var(--transition-fast);
   border: none;
   outline: none;
-  position: relative;
-  overflow: hidden;
-  min-height: var(--touch-target);
+  min-height: var(--touch-comfort);
   touch-action: manipulation;
 }
 
@@ -649,19 +478,10 @@ select {
   box-shadow: var(--shadow-sm);
 }
 
-.btn-primary:active {
-  box-shadow: var(--shadow-glow);
-}
-
 .btn-secondary {
   background: var(--bg-elevated);
   color: var(--text-primary);
   border: 1px solid var(--border-color);
-}
-
-.btn-secondary:active {
-  background: var(--bg-input);
-  border-color: var(--border-hover);
 }
 
 .btn-success {
@@ -674,30 +494,83 @@ select {
   color: white;
 }
 
-.btn-icon {
-  width: var(--touch-target);
-  height: var(--touch-target);
-  padding: 0;
-  border-radius: var(--radius-md);
-}
-
-.actions-grid {
+/* Grid de acoes mobile */
+.actions-row {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
   gap: var(--space-sm);
   width: 100%;
 }
 
-.actions-grid .btn {
+.actions-row .btn {
   width: 100%;
 }
 
-/* ============================================
-   SECOES DE ACORDES - MOBILE FIRST
-   ============================================ */
+/* Biblioteca Mobile - Lista vertical */
+.songs-grid {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md);
+}
+
+.song-card {
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-lg);
+  padding: var(--space-lg);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  position: relative;
+  touch-action: manipulation;
+}
+
+.song-card:active {
+  background: var(--bg-elevated);
+  transform: scale(0.99);
+}
+
+.song-card.active {
+  background: var(--bg-elevated);
+  border-color: var(--accent-primary);
+  box-shadow: var(--shadow-glow);
+}
+
+.song-name {
+  font-weight: 600;
+  font-size: 15px;
+  margin-bottom: var(--space-xs);
+  padding-right: 40px;
+}
+
+.song-date {
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+.song-delete {
+  position: absolute;
+  top: 50%;
+  right: var(--space-md);
+  transform: translateY(-50%);
+  width: 36px;
+  height: 36px;
+  border-radius: var(--radius-full);
+  background: rgba(239, 68, 68, 0.9);
+  color: white;
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+  font-weight: 700;
+  touch-action: manipulation;
+}
+
+/* Secoes Mobile - Uma coluna, altura fixa */
 .section-grid {
-  display: grid;
-  grid-template-columns: 1fr;
+  display: flex;
+  flex-direction: column;
   gap: var(--space-lg);
 }
 
@@ -706,7 +579,6 @@ select {
   border: 1px solid var(--border-color);
   border-radius: var(--radius-xl);
   overflow: hidden;
-  transition: all var(--transition-base);
 }
 
 .section-header {
@@ -723,7 +595,6 @@ select {
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.5px;
-  color: var(--text-primary);
   display: flex;
   align-items: center;
   gap: var(--space-sm);
@@ -733,7 +604,7 @@ select {
   background: var(--accent-primary);
   color: var(--text-inverse);
   font-size: 10px;
-  padding: 2px 6px;
+  padding: 2px 8px;
   border-radius: var(--radius-sm);
   font-weight: 700;
 }
@@ -744,69 +615,48 @@ select {
 
 .section-textarea {
   width: 100%;
-  min-height: 100px;
+  min-height: 120px;
   background: var(--bg-input);
   border: 1px solid var(--border-color);
   border-radius: var(--radius-md);
   color: var(--accent-secondary);
   font-family: var(--font-mono);
-  font-size: 16px; /* Previne zoom no iOS */
+  font-size: 17px;
   line-height: 1.8;
   padding: var(--space-md);
   resize: vertical;
-  transition: all var(--transition-fast);
 }
 
-.section-textarea:focus {
-  border-color: var(--accent-primary);
-  box-shadow: 0 0 0 3px var(--accent-glow);
-}
-
-/* ============================================
-   TEMAS - MOBILE FIRST
-   ============================================ */
-.theme-selector {
+/* Controles bar mobile */
+.controls-bar {
   display: flex;
-  gap: var(--space-xs);
-  flex-wrap: wrap;
+  flex-direction: column;
+  gap: var(--space-md);
+  padding: var(--space-lg);
+  background: var(--bg-tertiary);
+  border-radius: var(--radius-lg);
+  margin-bottom: var(--space-xl);
 }
 
-.theme-btn {
-  width: 28px;
-  height: 28px;
-  border-radius: var(--radius-full);
-  border: 2px solid transparent;
-  cursor: pointer;
-  transition: all var(--transition-fast);
-  position: relative;
-  touch-action: manipulation;
+.key-display {
+  text-align: center;
+  padding: var(--space-md);
+  background: var(--bg-input);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-color);
 }
 
-.theme-btn:active {
-  transform: scale(1.1);
+.key-display .input-label {
+  margin-bottom: var(--space-xs);
 }
 
-.theme-btn.active {
-  border-color: var(--text-primary);
-  box-shadow: 0 0 0 2px var(--bg-primary), 0 0 0 4px var(--accent-primary);
+.key-value {
+  font-size: 24px;
+  font-weight: 800;
+  color: var(--accent-primary);
 }
 
-.theme-btn.active::after {
-  content: '';
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  width: 6px;
-  height: 6px;
-  background: white;
-  border-radius: 50%;
-  box-shadow: 0 1px 2px rgba(0,0,0,0.5);
-}
-
-/* ============================================
-   MODAL - MOBILE FIRST
-   ============================================ */
+/* Modal Mobile - Bottom sheet */
 .modal-overlay {
   display: none;
   position: fixed;
@@ -814,7 +664,7 @@ select {
   left: 0;
   width: 100%;
   height: 100%;
-  background: rgba(0, 0, 0, 0.9);
+  background: rgba(0, 0, 0, 0.8);
   backdrop-filter: blur(10px);
   z-index: 2000;
   justify-content: center;
@@ -827,16 +677,14 @@ select {
   border: 1px solid var(--border-color);
   border-radius: var(--radius-xl) var(--radius-xl) 0 0;
   width: 100%;
-  max-width: 100%;
-  max-height: 90vh;
+  max-height: 85vh;
   overflow: hidden;
-  box-shadow: var(--shadow-lg);
-  animation: slideUp var(--transition-base);
+  animation: slideUp 0.3s ease;
 }
 
 @keyframes slideUp {
-  from { transform: translateY(100%); }
-  to { transform: translateY(0); }
+  from { transform: translateY(100%); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
 }
 
 .modal-header {
@@ -849,24 +697,8 @@ select {
 }
 
 .modal-title {
-  font-size: 16px;
+  font-size: 17px;
   font-weight: 700;
-  color: var(--text-primary);
-}
-
-.modal-body {
-  padding: var(--space-lg);
-  max-height: 50vh;
-  overflow-y: auto;
-}
-
-.modal-footer {
-  padding: var(--space-md) var(--space-lg);
-  background: var(--bg-tertiary);
-  border-top: 1px solid var(--border-color);
-  display: flex;
-  justify-content: flex-end;
-  gap: var(--space-sm);
 }
 
 .modal-close {
@@ -880,12 +712,24 @@ select {
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  font-size: 18px;
+  font-size: 20px;
 }
 
-/* ============================================
-   MODO PALCO - MOBILE OPTIMIZADO
-   ============================================ */
+.modal-body {
+  padding: var(--space-lg);
+  max-height: 50vh;
+  overflow-y: auto;
+}
+
+.modal-footer {
+  padding: var(--space-md) var(--space-lg);
+  background: var(--bg-tertiary);
+  border-top: 1px solid var(--border-color);
+  display: flex;
+  gap: var(--space-sm);
+}
+
+/* Modo Palco Mobile */
 .stage-mode {
   display: none;
   position: fixed;
@@ -897,22 +741,20 @@ select {
   z-index: 1000;
   overflow: auto;
   padding: var(--space-lg);
-  padding-bottom: 100px;
+  padding-bottom: 120px;
 }
 
 .stage-content {
-  max-width: 100%;
-  margin: 0 auto;
-  font-size: 24px;
-  line-height: 1.8;
+  font-size: 28px;
+  line-height: 1.6;
 }
 
 .stage-section {
-  margin-bottom: var(--space-2xl);
+  margin-bottom: var(--space-3xl);
 }
 
 .stage-title {
-  font-size: 18px;
+  font-size: 20px;
   font-weight: 800;
   text-transform: uppercase;
   letter-spacing: 2px;
@@ -926,8 +768,8 @@ select {
   color: var(--text-primary);
   white-space: pre-wrap;
   font-family: var(--font-mono);
-  font-size: 20px;
-  line-height: 2;
+  font-size: 24px;
+  line-height: 1.8;
 }
 
 .stage-controls {
@@ -936,41 +778,59 @@ select {
   left: 0;
   right: 0;
   background: var(--glass-bg);
-  backdrop-filter: blur(20px);
+  backdrop-filter: blur(20px) saturate(180%);
   border-top: 1px solid var(--glass-border);
-  border-radius: var(--radius-xl) var(--radius-xl) 0 0;
   padding: var(--space-md) var(--space-lg);
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  justify-content: space-around;
   gap: var(--space-md);
   z-index: 1001;
-  box-shadow: var(--shadow-lg);
+}
+
+.stage-btn {
+  min-height: var(--touch-large);
+  padding: var(--space-md) var(--space-xl);
+  border-radius: var(--radius-md);
+  font-size: 15px;
+  font-weight: 600;
+  border: none;
+  cursor: pointer;
+  touch-action: manipulation;
+}
+
+.stage-btn-primary {
+  background: var(--accent-primary);
+  color: var(--text-inverse);
+}
+
+.stage-btn-secondary {
+  background: var(--bg-elevated);
+  color: var(--text-primary);
+  border: 1px solid var(--border-color);
 }
 
 .stage-progress {
   position: fixed;
   bottom: 0;
   left: 0;
-  height: 4px;
+  height: 3px;
   background: var(--accent-primary);
   width: 0%;
   transition: width 0.1s linear;
   z-index: 1002;
 }
 
-/* ============================================
-   NOTIFICACOES - MOBILE
-   ============================================ */
+/* Toast Mobile */
 .toast {
   position: fixed;
-  top: var(--space-lg);
+  top: calc(var(--space-lg) + env(safe-area-inset-top));
   left: 50%;
   transform: translateX(-50%) translateY(-100px);
   background: var(--bg-elevated);
   border: 1px solid var(--border-color);
   border-radius: var(--radius-lg);
-  padding: var(--space-md) var(--space-lg);
+  padding: var(--space-md) var(--space-xl);
   display: flex;
   align-items: center;
   gap: var(--space-sm);
@@ -979,7 +839,6 @@ select {
   opacity: 0;
   transition: all var(--transition-base);
   max-width: 90vw;
-  width: max-content;
 }
 
 .toast.show {
@@ -987,96 +846,20 @@ select {
   opacity: 1;
 }
 
-.toast-icon {
-  width: 24px;
-  height: 24px;
-  border-radius: var(--radius-full);
-  background: var(--accent-primary);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 12px;
-  font-weight: 700;
-  color: var(--text-inverse);
-  flex-shrink: 0;
-}
-
 /* ============================================
-   UTILITARIOS
+   IPAD: 768px - 1023px
+   Otimizado para touch, Apple Pencil, Split View
    ============================================ */
-.flex { display: flex; }
-.flex-col { flex-direction: column; }
-.items-center { align-items: center; }
-.justify-between { justify-content: space-between; }
-.gap-sm { gap: var(--space-sm); }
-.gap-md { gap: var(--space-md); }
-.gap-lg { gap: var(--space-lg); }
-
-.w-full { width: 100%; }
-.ml-auto { margin-left: auto; }
-.mt-lg { margin-top: var(--space-lg); }
-
-.text-muted { color: var(--text-muted); }
-.text-sm { font-size: 12px; }
-.text-lg { font-size: 16px; }
-
-.hidden { display: none !important; }
-
-/* ============================================
-   ANIMACOES
-   ============================================ */
-@keyframes fadeIn {
-  from { opacity: 0; transform: translateY(10px); }
-  to { opacity: 1; transform: translateY(0); }
-}
-
-.animate-fadeIn {
-  animation: fadeIn var(--transition-base) forwards;
-}
-
-/* ============================================
-   SCROLLBAR PERSONALIZADA
-   ============================================ */
-::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
-}
-
-::-webkit-scrollbar-track {
-  background: var(--bg-secondary);
-}
-
-::-webkit-scrollbar-thumb {
-  background: var(--bg-elevated);
-  border-radius: var(--radius-full);
-}
-
-::-webkit-scrollbar-thumb:hover {
-  background: var(--accent-primary);
-}
-
-/* ============================================
-   TABLET BREAKPOINT (768px+)
-   ============================================ */
-@media (min-width: 768px) {
+@media (min-width: 768px) and (max-width: 1023px) {
   :root {
-    --space-md: 16px;
-    --space-lg: 20px;
+    --space-md: 14px;
+    --space-lg: 18px;
     --space-xl: 24px;
     --space-2xl: 32px;
-    --space-3xl: 48px;
-  }
-  
-  html {
-    font-size: 15px;
   }
   
   .app-header {
     padding: var(--space-lg) var(--space-xl);
-  }
-  
-  .header-content {
-    max-width: 1200px;
   }
   
   .logo-icon {
@@ -1091,159 +874,30 @@ select {
   
   .logo-subtitle {
     display: block;
+    font-size: 11px;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 1px;
   }
   
   .app-container {
-    max-width: 1200px;
     padding: var(--space-xl);
+    max-width: 100%;
   }
   
-  /* Metronomo Tablet */
+  /* Metronomo iPad - Layout horizontal */
   .metronome-panel {
-    padding: var(--space-xl);
+    padding: var(--space-2xl);
   }
   
   .metronome-display {
     flex-direction: row;
     justify-content: center;
-    gap: var(--space-3xl);
-  }
-  
-  .bpm-value {
-    font-size: 64px;
-  }
-  
-  .beat-dot {
-    width: 14px;
-    height: 14px;
-  }
-  
-  .beat-dot.accent {
-    width: 18px;
-    height: 18px;
-  }
-  
-  .bpm-slider-container {
-    width: 300px;
-    order: unset;
-    margin-top: 0;
-  }
-  
-  .metronome-controls {
-    flex-wrap: nowrap;
-  }
-  
-  .bpm-adjust {
-    order: unset;
-  }
-  
-  .metronome-btn {
-    order: unset;
-    width: 64px;
-    height: 64px;
-    font-size: 24px;
-  }
-  
-  /* Biblioteca Tablet */
-  .card-header {
-    flex-direction: row;
-    align-items: center;
-  }
-  
-  .songs-grid {
-    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
-  }
-  
-  .song-delete {
-    opacity: 0;
-  }
-  
-  .song-card:hover .song-delete,
-  .song-card:active .song-delete {
-    opacity: 1;
-  }
-  
-  /* Controles Tablet */
-  .controls-bar {
-    flex-direction: row;
-    flex-wrap: wrap;
-    align-items: flex-end;
-  }
-  
-  .input-group {
-    width: auto;
-  }
-  
-  .actions-grid {
-    grid-template-columns: repeat(3, 1fr);
-    width: auto;
-  }
-  
-  /* Secoes Tablet */
-  .section-grid {
-    grid-template-columns: repeat(2, 1fr);
-  }
-  
-  .section-textarea {
-    min-height: 120px;
-  }
-  
-  /* Modal Tablet */
-  .modal-overlay {
-    align-items: center;
-    padding: var(--space-xl);
-  }
-  
-  .modal {
-    border-radius: var(--radius-xl);
-    max-width: 500px;
-    animation: fadeIn var(--transition-base);
-  }
-  
-  /* Modo Palco Tablet */
-  .stage-content {
-    font-size: 28px;
-  }
-  
-  .stage-text {
-    font-size: 24px;
-  }
-  
-  .stage-controls {
-    top: var(--space-lg);
-    right: var(--space-lg);
-    bottom: auto;
-    left: auto;
-    border-radius: var(--radius-xl);
-    flex-direction: column;
-    width: auto;
-  }
-}
-
-/* ============================================
-   DESKTOP BREAKPOINT (1024px+)
-   ============================================ */
-@media (min-width: 1024px) {
-  html {
-    font-size: 16px;
-  }
-  
-  .header-content,
-  .app-container {
-    max-width: 1400px;
-  }
-  
-  /* Metronomo Desktop */
-  .metronome-display {
     gap: 48px;
   }
   
   .bpm-value {
-    font-size: 72px;
-  }
-  
-  .beat-indicator {
-    padding: var(--space-md) var(--space-lg);
+    font-size: 80px;
   }
   
   .beat-dot {
@@ -1256,18 +910,375 @@ select {
     height: 20px;
   }
   
+  .metronome-controls {
+    display: flex;
+    justify-content: center;
+    gap: var(--space-xl);
+  }
+  
   .bpm-slider-container {
-    width: 400px;
+    width: 300px;
+    margin-top: 0;
   }
   
-  /* Biblioteca Desktop */
+  .metronome-main-btn {
+    width: 72px;
+    height: 72px;
+    font-size: 28px;
+  }
+  
+  /* Biblioteca iPad - Grid 2 colunas */
+  .card-header {
+    flex-direction: row;
+    align-items: center;
+    gap: var(--space-lg);
+  }
+  
+  .card-header .input-group {
+    flex: 1;
+    max-width: 300px;
+  }
+  
   .songs-grid {
-    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: var(--space-md);
   }
   
-  /* Secoes Desktop */
+  .song-card {
+    padding: var(--space-lg);
+  }
+  
+  .song-delete {
+    opacity: 0;
+    transition: opacity var(--transition-fast);
+  }
+  
+  .song-card:hover .song-delete {
+    opacity: 1;
+  }
+  
+  /* Controles iPad - Row com wrap */
+  .controls-bar {
+    flex-direction: row;
+    flex-wrap: wrap;
+    align-items: flex-end;
+    gap: var(--space-lg);
+  }
+  
+  .actions-row {
+    grid-template-columns: repeat(3, 1fr);
+    width: auto;
+    flex: 1;
+  }
+  
+  .key-display {
+    min-width: 100px;
+  }
+  
+  /* Secoes iPad - 2 colunas */
+  .section-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: var(--space-lg);
+  }
+  
+  .section-textarea {
+    min-height: 140px;
+    font-size: 16px;
+  }
+  
+  /* Modal iPad - Centralizado */
+  .modal-overlay {
+    align-items: center;
+    padding: var(--space-xl);
+  }
+  
+  .modal {
+    border-radius: var(--radius-xl);
+    max-width: 600px;
+    max-height: 80vh;
+  }
+  
+  /* Modo Palco iPad */
+  .stage-content {
+    font-size: 32px;
+    max-width: 100%;
+  }
+  
+  .stage-text {
+    font-size: 28px;
+    line-height: 1.8;
+  }
+  
+  .stage-controls {
+    top: var(--space-lg);
+    right: var(--space-lg);
+    bottom: auto;
+    left: auto;
+    border-radius: var(--radius-xl);
+    flex-direction: column;
+    width: auto;
+    min-width: 120px;
+  }
+}
+
+/* ============================================
+   PC: >= 1024px
+   Otimizado para mouse/keyboard, multi-monitor
+   ============================================ */
+@media (min-width: 1024px) {
+  :root {
+    --space-md: 16px;
+    --space-lg: 20px;
+    --space-xl: 24px;
+    --space-2xl: 32px;
+    --space-3xl: 48px;
+  }
+  
+  html {
+    font-size: 15px;
+  }
+  
+  .app-header {
+    padding: var(--space-lg) var(--space-3xl);
+  }
+  
+  .header-content {
+    max-width: 1600px;
+    margin: 0 auto;
+  }
+  
+  .logo-icon {
+    width: 44px;
+    height: 44px;
+    font-size: 22px;
+  }
+  
+  .logo-text {
+    font-size: 26px;
+  }
+  
+  .logo-subtitle {
+    display: block;
+    font-size: 12px;
+  }
+  
+  .app-container {
+    max-width: 1600px;
+    margin: 0 auto;
+    padding: var(--space-2xl) var(--space-3xl);
+  }
+  
+  /* Metronomo PC - Layout premium */
+  .metronome-panel {
+    display: grid;
+    grid-template-columns: 1fr auto 1fr;
+    gap: var(--space-3xl);
+    align-items: center;
+    padding: var(--space-3xl);
+  }
+  
+  .metronome-header {
+    grid-column: 1 / -1;
+    margin-bottom: 0;
+  }
+  
+  .metronome-display {
+    justify-content: flex-start;
+    gap: 64px;
+    margin-bottom: 0;
+  }
+  
+  .bpm-value {
+    font-size: 96px;
+    text-shadow: 0 0 40px var(--accent-glow);
+  }
+  
+  .beat-indicator {
+    padding: var(--space-lg) var(--space-2xl);
+    gap: var(--space-lg);
+  }
+  
+  .beat-dot {
+    width: 18px;
+    height: 18px;
+    border-width: 3px;
+  }
+  
+  .beat-dot.accent {
+    width: 24px;
+    height: 24px;
+  }
+  
+  .metronome-controls {
+    justify-content: flex-end;
+    gap: var(--space-2xl);
+  }
+  
+  .bpm-adjust {
+    gap: var(--space-md);
+  }
+  
+  .bpm-btn {
+    width: 48px;
+    height: 48px;
+    font-size: 18px;
+    transition: all var(--transition-fast);
+  }
+  
+  .bpm-btn:hover {
+    background: var(--accent-primary);
+    color: var(--text-inverse);
+    transform: translateY(-2px);
+  }
+  
+  .metronome-main-btn {
+    width: 88px;
+    height: 88px;
+    font-size: 36px;
+    cursor: pointer;
+    transition: all var(--transition-fast);
+  }
+  
+  .metronome-main-btn:hover {
+    transform: scale(1.05);
+    box-shadow: 0 0 50px var(--accent-glow);
+  }
+  
+  .metronome-main-btn.playing:hover {
+    box-shadow: 0 0 40px rgba(239, 68, 68, 0.6);
+  }
+  
+  .bpm-slider-container {
+    width: 350px;
+  }
+  
+  .bpm-slider {
+    height: 8px;
+  }
+  
+  .bpm-slider::-webkit-slider-thumb {
+    width: 24px;
+    height: 24px;
+    border-width: 3px;
+    transition: transform var(--transition-fast);
+  }
+  
+  .bpm-slider::-webkit-slider-thumb:hover {
+    transform: scale(1.3);
+  }
+  
+  /* Biblioteca PC - Grid 4 colunas */
+  .card {
+    padding: var(--space-2xl);
+  }
+  
+  .card-header {
+    flex-direction: row;
+    align-items: center;
+    padding-bottom: var(--space-lg);
+  }
+  
+  .card-title {
+    font-size: 18px;
+  }
+  
+  .card-title-icon {
+    width: 32px;
+    height: 32px;
+    font-size: 14px;
+  }
+  
+  .songs-grid {
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    gap: var(--space-lg);
+  }
+  
+  .song-card {
+    padding: var(--space-lg);
+    transition: all var(--transition-base);
+  }
+  
+  .song-card:hover {
+    border-color: var(--border-hover);
+    transform: translateY(-4px);
+    box-shadow: var(--shadow-lg);
+  }
+  
+  .song-card.active {
+    box-shadow: var(--shadow-glow);
+  }
+  
+  .song-name {
+    font-size: 15px;
+  }
+  
+  .song-delete {
+    opacity: 0;
+    transition: all var(--transition-fast);
+  }
+  
+  .song-card:hover .song-delete {
+    opacity: 1;
+  }
+  
+  .song-delete:hover {
+    background: #dc2626;
+    transform: scale(1.1);
+  }
+  
+  /* Controles PC */
+  .controls-bar {
+    flex-direction: row;
+    align-items: flex-end;
+    gap: var(--space-xl);
+    padding: var(--space-xl);
+  }
+  
+  .input-group select,
+  .input-group input {
+    min-width: 160px;
+  }
+  
+  .actions-row {
+    display: flex;
+    gap: var(--space-sm);
+    width: auto;
+  }
+  
+  .btn {
+    padding: var(--space-md) var(--space-xl);
+    transition: all var(--transition-fast);
+  }
+  
+  .btn:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-md);
+  }
+  
+  .btn-primary:hover {
+    box-shadow: var(--shadow-glow);
+  }
+  
+  .btn:active {
+    transform: translateY(0);
+  }
+  
+  .key-display {
+    min-width: 120px;
+    text-align: center;
+    transition: all var(--transition-fast);
+  }
+  
+  .key-display:hover {
+    border-color: var(--accent-primary);
+  }
+  
+  /* Secoes PC - 3 colunas com hover effects */
   .section-grid {
     grid-template-columns: repeat(3, 1fr);
+    gap: var(--space-xl);
   }
   
   .section-card {
@@ -1276,102 +1287,200 @@ select {
   
   .section-card:hover {
     border-color: var(--border-hover);
-    box-shadow: var(--shadow-md);
-    transform: translateY(-2px);
+    transform: translateY(-4px);
+    box-shadow: var(--shadow-lg);
   }
   
-  /* Modo Palco Desktop */
+  .section-header {
+    padding: var(--space-lg) var(--space-xl);
+  }
+  
+  .section-title {
+    font-size: 14px;
+  }
+  
+  .section-body {
+    padding: var(--space-lg);
+  }
+  
+  .section-textarea {
+    min-height: 150px;
+    font-size: 16px;
+    transition: all var(--transition-fast);
+  }
+  
+  .section-textarea:focus {
+    transform: scale(1.01);
+  }
+  
+  /* Modal PC */
+  .modal-overlay {
+    align-items: center;
+  }
+  
+  .modal {
+    max-width: 600px;
+    border-radius: var(--radius-xl);
+    animation: fadeIn var(--transition-base);
+  }
+  
+  .modal:hover {
+    box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+  }
+  
+  /* Modo Palco PC */
   .stage-mode {
     padding: var(--space-3xl);
+    padding-bottom: var(--space-3xl);
   }
   
   .stage-content {
-    max-width: 900px;
-    font-size: 32px;
+    max-width: 1000px;
+    margin: 0 auto;
+    font-size: 36px;
+  }
+  
+  .stage-section {
+    margin-bottom: 48px;
   }
   
   .stage-title {
     font-size: 24px;
+    letter-spacing: 3px;
   }
   
   .stage-text {
-    font-size: 28px;
+    font-size: 32px;
     line-height: 2;
+  }
+  
+  .stage-controls {
+    top: var(--space-xl);
+    right: var(--space-xl);
+    padding: var(--space-lg);
+    gap: var(--space-md);
+    border-radius: var(--radius-xl);
+    flex-direction: column;
+    min-width: 140px;
+  }
+  
+  .stage-btn {
+    transition: all var(--transition-fast);
+  }
+  
+  .stage-btn:hover {
+    transform: scale(1.05);
+  }
+  
+  /* Scrollbar PC - Mais visivel */
+  ::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+  }
+  
+  ::-webkit-scrollbar-thumb {
+    background: var(--bg-elevated);
+    border-radius: var(--radius-full);
+    border: 2px solid var(--bg-secondary);
+  }
+  
+  ::-webkit-scrollbar-thumb:hover {
+    background: var(--accent-primary);
+  }
+  
+  /* Tema selector PC */
+  .theme-selector {
+    gap: var(--space-sm);
+  }
+  
+  .theme-btn {
+    width: 36px;
+    height: 36px;
+    transition: transform var(--transition-fast);
+  }
+  
+  .theme-btn:hover {
+    transform: scale(1.15);
   }
 }
 
 /* ============================================
-   WIDE SCREENS (1440px+)
+   LARGE SCREENS >= 1440px
    ============================================ */
 @media (min-width: 1440px) {
   .section-grid {
     grid-template-columns: repeat(3, 1fr);
-    gap: var(--space-xl);
+    gap: var(--space-2xl);
+  }
+  
+  .songs-grid {
+    grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
   }
   
   .metronome-panel {
-    display: grid;
-    grid-template-columns: 1fr auto;
-    gap: var(--space-xl);
-    align-items: center;
-  }
-  
-  .metronome-header {
-    grid-column: 1 / -1;
-  }
-  
-  .metronome-display {
-    justify-content: flex-start;
-  }
-  
-  .metronome-controls {
-    justify-content: flex-end;
+    gap: 80px;
   }
 }
 
 /* ============================================
-   LANDSCAPE MOBILE ESPECIFICO
+   IPAD PRO / LARGE TABLETS >= 1024px mas < 1366px
+   Ajustes especificos para iPad Pro 12.9"
    ============================================ */
-@media (max-height: 500px) and (orientation: landscape) {
+@media (min-width: 1024px) and (max-width: 1366px) and (hover: none) and (pointer: coarse) {
+  /* Detecta iPad - touch otimizado mesmo em tela grande */
+  .btn {
+    min-height: 52px;
+  }
+  
+  .song-delete {
+    opacity: 1;
+    width: 40px;
+    height: 40px;
+  }
+  
+  .metronome-main-btn {
+    width: 80px;
+    height: 80px;
+  }
+}
+
+/* ============================================
+   UTILITARIOS E ANIMACOES
+   ============================================ */
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.animate-fadeIn {
+  animation: fadeIn var(--transition-base) forwards;
+}
+
+/* Reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* Landscape mobile */
+@media (max-height: 500px) and (orientation: landscape) and (max-width: 767px) {
   .metronome-display {
     flex-direction: row;
     gap: var(--space-xl);
   }
   
   .bpm-value {
-    font-size: 36px;
+    font-size: 48px;
   }
   
   .app-header {
     padding: var(--space-sm) var(--space-md);
   }
-  
-  .logo-subtitle {
-    display: none;
-  }
 }
 
-/* ============================================
-   DARK MODE PREFERENCE (sempre dark neste app)
-   ============================================ */
-@media (prefers-color-scheme: light) {
-  /* Mantem dark mode independente da preferencia */
-}
-
-/* ============================================
-   REDUCED MOTION
-   ============================================ */
-@media (prefers-reduced-motion: reduce) {
-  * {
-    animation-duration: 0.01ms !important;
-    animation-iteration-count: 1 !important;
-    transition-duration: 0.01ms !important;
-  }
-}
-
-/* ============================================
-   PRINT
-   ============================================ */
+/* Print */
 @media print {
   body * { visibility: hidden; }
   .stage-mode, .stage-mode * { visibility: visible; }
@@ -1383,8 +1492,7 @@ select {
     background: white;
     color: black;
   }
-  .stage-controls { display: none !important; }
-  .stage-progress { display: none !important; }
+  .stage-controls, .stage-progress { display: none !important; }
 }
 </style>
 </head>
@@ -1401,15 +1509,13 @@ select {
       </div>
     </div>
     
-    <div class="flex items-center gap-md">
-      <div class="theme-selector">
-        <div class="theme-btn theme-green active" onclick="setTheme('green')" title="Green" style="background: linear-gradient(135deg, #1db954, #1ed760);"></div>
-        <div class="theme-btn theme-red" onclick="setTheme('red')" title="Red" style="background: linear-gradient(135deg, #e22134, #ff4d5e);"></div>
-        <div class="theme-btn theme-blue" onclick="setTheme('blue')" title="Blue" style="background: linear-gradient(135deg, #0d84fc, #3d9eff);"></div>
-        <div class="theme-btn theme-purple" onclick="setTheme('purple')" title="Purple" style="background: linear-gradient(135deg, #8b5cf6, #a78bfa);"></div>
-        <div class="theme-btn theme-orange" onclick="setTheme('orange')" title="Orange" style="background: linear-gradient(135deg, #f97316, #fb923c);"></div>
-        <div class="theme-btn theme-pink" onclick="setTheme('pink')" title="Pink" style="background: linear-gradient(135deg, #ec4899, #f472b6);"></div>
-      </div>
+    <div class="theme-selector">
+      <div class="theme-btn theme-green active" onclick="setTheme('green')" title="Green" style="background: linear-gradient(135deg, #1db954, #1ed760);"></div>
+      <div class="theme-btn theme-red" onclick="setTheme('red')" title="Red" style="background: linear-gradient(135deg, #e22134, #ff4d5e);"></div>
+      <div class="theme-btn theme-blue" onclick="setTheme('blue')" title="Blue" style="background: linear-gradient(135deg, #0d84fc, #3d9eff);"></div>
+      <div class="theme-btn theme-purple" onclick="setTheme('purple')" title="Purple" style="background: linear-gradient(135deg, #8b5cf6, #a78bfa);"></div>
+      <div class="theme-btn theme-orange" onclick="setTheme('orange')" title="Orange" style="background: linear-gradient(135deg, #f97316, #fb923c);"></div>
+      <div class="theme-btn theme-pink" onclick="setTheme('pink')" title="Pink" style="background: linear-gradient(135deg, #ec4899, #f472b6);"></div>
     </div>
   </div>
 </header>
@@ -1417,11 +1523,11 @@ select {
 <!-- CONTAINER PRINCIPAL -->
 <div class="app-container">
   
-  <!-- METRONOMO PROFISSIONAL -->
+  <!-- METRONOMO -->
   <div class="metronome-panel animate-fadeIn">
     <div class="metronome-header">
       <div class="metronome-title">
-        <div class="card-title-icon" style="width: 24px; height: 24px; font-size: 10px;">MET</div>
+        <div class="card-title-icon" style="width: 28px; height: 28px; font-size: 12px;">MET</div>
         Metronomo Profissional
       </div>
       <div class="text-sm text-muted">Web Audio API</div>
@@ -1443,22 +1549,22 @@ select {
     
     <div class="metronome-controls">
       <div class="bpm-adjust">
-        <button class="bpm-btn" onclick="adjustBPM(-10)" aria-label="Diminuir 10 BPM">--</button>
-        <button class="bpm-btn" onclick="adjustBPM(-1)" aria-label="Diminuir 1 BPM">-</button>
+        <button class="bpm-btn" onclick="adjustBPM(-10)">--</button>
+        <button class="bpm-btn" onclick="adjustBPM(-1)">-</button>
       </div>
       
-      <button class="metronome-btn" id="metronomeToggle" onclick="toggleMetronome()" aria-label="Iniciar/Parar metronomo">
-        <span id="playIcon">></span>
+      <button class="metronome-main-btn" id="metronomeToggle" onclick="toggleMetronome()">
+        <span id="playIcon" style="margin-left: 4px;">▶</span>
       </button>
       
       <div class="bpm-adjust">
-        <button class="bpm-btn" onclick="adjustBPM(1)" aria-label="Aumentar 1 BPM">+</button>
-        <button class="bpm-btn" onclick="adjustBPM(10)" aria-label="Aumentar 10 BPM">++</button>
+        <button class="bpm-btn" onclick="adjustBPM(1)">+</button>
+        <button class="bpm-btn" onclick="adjustBPM(10)">++</button>
       </div>
       
       <div class="bpm-slider-container">
-        <label class="input-label" style="text-align: center; margin-bottom: var(--space-sm); display: block;">Tempo</label>
-        <input type="range" class="bpm-slider" id="bpmSlider" min="40" max="240" value="120" oninput="updateBPM(this.value)" aria-label="Controle de tempo">
+        <label class="input-label" style="text-align: center; margin-bottom: 8px; display: block;">Ajuste Fino</label>
+        <input type="range" class="bpm-slider" id="bpmSlider" min="40" max="240" value="120" oninput="updateBPM(this.value)">
       </div>
     </div>
   </div>
@@ -1468,18 +1574,18 @@ select {
     <div class="card-header">
       <div class="card-title">
         <div class="card-title-icon">LIB</div>
-        Biblioteca
+        Biblioteca de Musicas
       </div>
-      <div class="flex gap-md w-full" style="flex-direction: column;">
-        <input type="text" id="songName" placeholder="Nome da musica..." style="flex: 1;">
-        <div class="flex gap-sm" style="flex-direction: row;">
-          <button class="btn btn-primary w-full" onclick="saveCurrentSong()">Salvar</button>
-          <button class="btn btn-secondary w-full" onclick="newSong()">Nova</button>
-        </div>
+      <div class="input-group">
+        <input type="text" id="songName" placeholder="Nome da musica...">
+      </div>
+      <div style="display: flex; gap: 8px;">
+        <button class="btn btn-primary" onclick="saveCurrentSong()">Salvar</button>
+        <button class="btn btn-secondary" onclick="newSong()">Nova</button>
       </div>
     </div>
     <div class="songs-grid" id="songList">
-      <div class="text-muted text-sm" style="grid-column: 1/-1; text-align: center; padding: var(--space-xl);">
+      <div class="text-muted" style="text-align: center; padding: 40px 20px; grid-column: 1/-1;">
         Nenhuma musica salva ainda.<br>Crie sua primeira musica!
       </div>
     </div>
@@ -1506,25 +1612,25 @@ select {
       </select>
     </div>
     
-    <div class="flex gap-sm" style="flex-direction: row; width: 100%;">
-      <button class="btn btn-primary w-full" onclick="transpose()">Aplicar</button>
-      <button class="btn btn-secondary w-full" onclick="resetAll()">Limpar</button>
+    <div style="display: flex; gap: 8px;">
+      <button class="btn btn-primary" onclick="transpose()">Aplicar</button>
+      <button class="btn btn-secondary" onclick="resetAll()">Limpar</button>
     </div>
     
-    <div class="actions-grid">
+    <div class="actions-row">
       <button class="btn btn-success" onclick="exportJSON()">JSON</button>
       <button class="btn btn-success" onclick="exportTXT()">TXT</button>
       <button class="btn btn-success" onclick="shareURL()">Link</button>
       <button class="btn btn-secondary" onclick="showImportModal()">Importar</button>
     </div>
     
-    <button class="btn btn-primary w-full" onclick="openStageMode()" style="margin-top: var(--space-sm);">
+    <button class="btn btn-primary" onclick="openStageMode()" style="min-width: 120px;">
       Modo Palco
     </button>
     
-    <div class="input-group" style="text-align: center; margin-top: var(--space-sm);">
-      <label class="input-label">Tom Atual</label>
-      <div id="currentKeyDisplay" style="font-weight: 700; color: var(--accent-primary); font-size: 18px;">Original</div>
+    <div class="key-display">
+      <div class="input-label">Tom Atual</div>
+      <div class="key-value" id="currentKeyDisplay">Original</div>
     </div>
   </div>
   
@@ -1532,73 +1638,61 @@ select {
   <div class="section-grid">
     <div class="section-card animate-fadeIn">
       <div class="section-header">
-        <div class="section-title">
-          <span>INT</span> Introducao
-        </div>
+        <div class="section-title"><span>INT</span> Introducao</div>
         <span class="section-badge">INTRO</span>
       </div>
       <div class="section-body">
-        <textarea class="section-textarea" id="intro" placeholder="C G Am F..." aria-label="Introducao"></textarea>
+        <textarea class="section-textarea" id="intro" placeholder="C G Am F..."></textarea>
       </div>
     </div>
     
     <div class="section-card animate-fadeIn" style="animation-delay: 50ms;">
       <div class="section-header">
-        <div class="section-title">
-          <span>VRS</span> Verso
-        </div>
+        <div class="section-title"><span>VRS</span> Verso</div>
         <span class="section-badge">VERSE</span>
       </div>
       <div class="section-body">
-        <textarea class="section-textarea" id="verse" placeholder="C G Am F..." aria-label="Verso"></textarea>
+        <textarea class="section-textarea" id="verse" placeholder="C G Am F..."></textarea>
       </div>
     </div>
     
     <div class="section-card animate-fadeIn" style="animation-delay: 100ms;">
       <div class="section-header">
-        <div class="section-title">
-          <span>PRE</span> Pre-Refrão
-        </div>
+        <div class="section-title"><span>PRE</span> Pre-Refrão</div>
         <span class="section-badge">PRE</span>
       </div>
       <div class="section-body">
-        <textarea class="section-textarea" id="prechorus" placeholder="Am F C G..." aria-label="Pre-Refrão"></textarea>
+        <textarea class="section-textarea" id="prechorus" placeholder="Am F C G..."></textarea>
       </div>
     </div>
     
     <div class="section-card animate-fadeIn" style="animation-delay: 150ms;">
       <div class="section-header">
-        <div class="section-title">
-          <span>REF</span> Refrão
-        </div>
+        <div class="section-title"><span>REF</span> Refrão</div>
         <span class="section-badge">CHORUS</span>
       </div>
       <div class="section-body">
-        <textarea class="section-textarea" id="chorus" placeholder="F G Am C..." aria-label="Refrão"></textarea>
+        <textarea class="section-textarea" id="chorus" placeholder="F G Am C..."></textarea>
       </div>
     </div>
     
     <div class="section-card animate-fadeIn" style="animation-delay: 200ms;">
       <div class="section-header">
-        <div class="section-title">
-          <span>PON</span> Ponte
-        </div>
+        <div class="section-title"><span>PON</span> Ponte</div>
         <span class="section-badge">BRIDGE</span>
       </div>
       <div class="section-body">
-        <textarea class="section-textarea" id="bridge" placeholder="Dm G C..." aria-label="Ponte"></textarea>
+        <textarea class="section-textarea" id="bridge" placeholder="Dm G C..."></textarea>
       </div>
     </div>
     
     <div class="section-card animate-fadeIn" style="animation-delay: 250ms;">
       <div class="section-header">
-        <div class="section-title">
-          <span>END</span> Final
-        </div>
+        <div class="section-title"><span>END</span> Final</div>
         <span class="section-badge">OUTRO</span>
       </div>
       <div class="section-body">
-        <textarea class="section-textarea" id="ending" placeholder="C..." aria-label="Final"></textarea>
+        <textarea class="section-textarea" id="ending" placeholder="C..."></textarea>
       </div>
     </div>
   </div>
@@ -1613,8 +1707,8 @@ select {
       <button class="modal-close" onclick="closeImportModal()">×</button>
     </div>
     <div class="modal-body">
-      <p class="text-muted text-sm" style="margin-bottom: var(--space-md);">Cole o codigo JSON ou o texto da musica:</p>
-      <textarea id="importArea" placeholder='{"name":"Minha Musica","sections":{"intro":"C G Am F"...}}' style="width: 100%; min-height: 200px; font-family: var(--font-mono); font-size: 14px;"></textarea>
+      <p class="text-muted" style="margin-bottom: 16px; font-size: 14px;">Cole o codigo JSON ou o texto da musica:</p>
+      <textarea id="importArea" placeholder='{"name":"Minha Musica","sections":{"intro":"C G Am F"...}}' style="width: 100%; min-height: 200px; font-family: monospace; font-size: 14px;"></textarea>
     </div>
     <div class="modal-footer">
       <button class="btn btn-secondary" onclick="closeImportModal()">Cancelar</button>
@@ -1626,22 +1720,22 @@ select {
 <!-- MODO PALCO -->
 <div class="stage-mode" id="stageMode">
   <div class="stage-controls">
-    <button class="btn btn-primary" onclick="startScroll()">Iniciar</button>
-    <button class="btn btn-secondary" onclick="stopScroll()">Parar</button>
-    <div style="padding: var(--space-sm);">
-      <label class="input-label" style="margin-bottom: var(--space-xs); display: block; text-align: center;">Velocidade</label>
-      <input type="range" id="speedControl" min="1" max="10" value="3" style="width: 120px;">
+    <button class="stage-btn stage-btn-primary" onclick="startScroll()">▶ Iniciar</button>
+    <button class="stage-btn stage-btn-secondary" onclick="stopScroll()">⏸ Parar</button>
+    <div style="padding: 8px;">
+      <label class="input-label" style="text-align: center; display: block; margin-bottom: 4px;">Velocidade</label>
+      <input type="range" id="speedControl" min="1" max="10" value="3" style="width: 100px;">
     </div>
-    <button class="btn btn-danger" onclick="closeStageMode()">Fechar</button>
+    <button class="stage-btn stage-btn-secondary" onclick="closeStageMode()" style="color: #ef4444;">✕ Fechar</button>
   </div>
   <div class="stage-content" id="stageContent"></div>
   <div class="stage-progress" id="stageProgress"></div>
 </div>
 
-<!-- TOAST NOTIFICATION -->
-<div class="toast" id="toast" role="alert" aria-live="polite">
-  <div class="toast-icon">OK</div>
-  <span id="toastMessage">Operacao realizada com sucesso!</span>
+<!-- TOAST -->
+<div class="toast" id="toast">
+  <div class="toast-icon">✓</div>
+  <span id="toastMessage">Operacao realizada!</span>
 </div>
 
 <script>
@@ -1664,7 +1758,6 @@ var nextNoteTime = 0.0;
 var scheduleAheadTime = 0.1;
 var lookahead = 25.0;
 var timerID = null;
-var notesInQueue = [];
 
 var NOTES = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"];
 
@@ -1677,23 +1770,18 @@ document.addEventListener('DOMContentLoaded', function() {
   loadFromURL();
   initAudioContext();
   
-  // Prevenir zoom em double tap no iOS
+  // Prevenir double-tap zoom no iOS
   var lastTouchEnd = 0;
-  document.addEventListener('touchend', function(event) {
+  document.addEventListener('touchend', function(e) {
     var now = Date.now();
-    if (now - lastTouchEnd <= 300) {
-      event.preventDefault();
-    }
+    if (now - lastTouchEnd <= 300) e.preventDefault();
     lastTouchEnd = now;
   }, false);
   
   // Auto-save para undo
-  var textareas = document.querySelectorAll('.section-textarea');
-  for(var i = 0; i < textareas.length; i++) {
-    textareas[i].addEventListener('focus', function() {
-      saveState();
-    });
-  }
+  document.querySelectorAll('.section-textarea').forEach(function(el) {
+    el.addEventListener('focus', saveState);
+  });
   
   // Atalhos de teclado
   document.addEventListener('keydown', function(e) {
@@ -1703,8 +1791,7 @@ document.addEventListener('DOMContentLoaded', function() {
     }
     if(e.key === ' ' && document.getElementById("stageMode").style.display === 'block') {
       e.preventDefault();
-      if(scrollAnimation) stopScroll();
-      else startScroll();
+      scrollAnimation ? stopScroll() : startScroll();
     }
     if(e.ctrlKey && e.key === 'z') {
       e.preventDefault();
@@ -1714,22 +1801,15 @@ document.addEventListener('DOMContentLoaded', function() {
       e.preventDefault();
       redo();
     }
-    if(e.code === 'Space' && e.target.tagName !== 'TEXTAREA' && e.target.tagName !== 'INPUT' && e.target.tagName !== 'SELECT') {
+    if(e.code === 'Space' && !e.target.matches('input, textarea, select')) {
       e.preventDefault();
       toggleMetronome();
     }
   });
-  
-  // Detectar orientacao para ajustes especificos
-  window.addEventListener('orientationchange', function() {
-    setTimeout(function() {
-      window.scrollTo(0, 0);
-    }, 100);
-  });
 });
 
 // ============================================
-// METRONOMO PROFISSIONAL (Web Audio API)
+// METRONOMO
 // ============================================
 function initAudioContext() {
   try {
@@ -1741,26 +1821,18 @@ function initAudioContext() {
 
 function toggleMetronome() {
   if(!audioContext) initAudioContext();
-  
-  if(isPlaying) {
-    stopMetronome();
-  } else {
-    startMetronome();
-  }
+  isPlaying ? stopMetronome() : startMetronome();
 }
 
 function startMetronome() {
-  if(audioContext.state === 'suspended') {
-    audioContext.resume();
-  }
+  if(audioContext.state === 'suspended') audioContext.resume();
   
   isPlaying = true;
   currentBeat = 0;
   nextNoteTime = audioContext.currentTime + 0.05;
-  notesInQueue = [];
   
   document.getElementById('metronomeToggle').classList.add('playing');
-  document.getElementById('playIcon').textContent = '||';
+  document.getElementById('playIcon').innerHTML = '&#10074;&#10074;';
   
   scheduler();
   showToast('Metronomo: ' + currentBPM + ' BPM');
@@ -1769,15 +1841,9 @@ function startMetronome() {
 function stopMetronome() {
   isPlaying = false;
   clearTimeout(timerID);
-  
   document.getElementById('metronomeToggle').classList.remove('playing');
-  document.getElementById('playIcon').textContent = '>';
-  
-  // Reset visual
-  var dots = document.querySelectorAll('.beat-dot');
-  for(var i = 0; i < dots.length; i++) {
-    dots[i].classList.remove('active');
-  }
+  document.getElementById('playIcon').innerHTML = '&#9654;';
+  document.querySelectorAll('.beat-dot').forEach(function(d) { d.classList.remove('active'); });
 }
 
 function scheduler() {
@@ -1789,50 +1855,31 @@ function scheduler() {
 }
 
 function nextNote() {
-  var secondsPerBeat = 60.0 / currentBPM;
-  nextNoteTime += secondsPerBeat;
-  currentBeat++;
-  if(currentBeat === 4) {
-    currentBeat = 0;
-  }
+  nextNoteTime += 60.0 / currentBPM;
+  currentBeat = (currentBeat + 1) % 4;
 }
 
 function scheduleNote(beatNumber, time) {
-  notesInQueue.push({ note: beatNumber, time: time });
-  
   var osc = audioContext.createOscillator();
   var envelope = audioContext.createGain();
   
-  // Frequencia diferente para o primeiro beat (acento)
-  osc.frequency.value = (beatNumber === 0) ? 1000 : 800;
-  
+  osc.frequency.value = beatNumber === 0 ? 1000 : 800;
   envelope.gain.value = 1;
-  envelope.gain.exponentialRampToValueAtTime(1, time + 0.001);
   envelope.gain.exponentialRampToValueAtTime(0.001, time + 0.05);
   
   osc.connect(envelope);
   envelope.connect(audioContext.destination);
-  
   osc.start(time);
   osc.stop(time + 0.05);
   
-  // Atualizar visual sincronizado
-  var drawTime = (time - audioContext.currentTime) * 1000;
-  setTimeout(function() {
-    updateBeatVisual(beatNumber);
-  }, Math.max(0, drawTime));
+  var drawTime = Math.max(0, (time - audioContext.currentTime) * 1000);
+  setTimeout(function() { updateBeatVisual(beatNumber); }, drawTime);
 }
 
 function updateBeatVisual(beatNumber) {
-  var dots = document.querySelectorAll('.beat-dot');
-  for(var i = 0; i < dots.length; i++) {
-    dots[i].classList.remove('active');
-  }
-  
-  var activeDot = document.querySelector('.beat-dot[data-beat="' + beatNumber + '"]');
-  if(activeDot) {
-    activeDot.classList.add('active');
-  }
+  document.querySelectorAll('.beat-dot').forEach(function(d) { d.classList.remove('active'); });
+  var dot = document.querySelector('.beat-dot[data-beat="' + beatNumber + '"]');
+  if(dot) dot.classList.add('active');
 }
 
 function updateBPM(value) {
@@ -1843,9 +1890,7 @@ function updateBPM(value) {
 
 function adjustBPM(delta) {
   var newBPM = currentBPM + delta;
-  if(newBPM >= 40 && newBPM <= 240) {
-    updateBPM(newBPM);
-  }
+  if(newBPM >= 40 && newBPM <= 240) updateBPM(newBPM);
 }
 
 // ============================================
@@ -1855,25 +1900,15 @@ function setTheme(theme) {
   document.body.setAttribute('data-theme', theme);
   localStorage.setItem('mapmusic_theme_pro', theme);
   
-  // Atualizar botoes
-  var buttons = document.querySelectorAll('.theme-btn');
-  for(var i = 0; i < buttons.length; i++) {
-    buttons[i].classList.remove('active');
-  }
+  document.querySelectorAll('.theme-btn').forEach(function(btn) {
+    btn.classList.remove('active');
+  });
   event.target.classList.add('active');
-  
   showToast('Tema: ' + getThemeName(theme));
 }
 
 function getThemeName(theme) {
-  var names = {
-    'green': 'Spotify Green',
-    'red': 'Ruby Red',
-    'blue': 'Ocean Blue',
-    'purple': 'Royal Purple',
-    'orange': 'Sunset Orange',
-    'pink': 'Neon Pink'
-  };
+  var names = {green:'Spotify Green',red:'Ruby Red',blue:'Ocean Blue',purple:'Royal Purple',orange:'Sunset Orange',pink:'Neon Pink'};
   return names[theme] || theme;
 }
 
@@ -1881,13 +1916,9 @@ function loadTheme() {
   var saved = localStorage.getItem('mapmusic_theme_pro');
   if(saved) {
     document.body.setAttribute('data-theme', saved);
-    var buttons = document.querySelectorAll('.theme-btn');
-    for(var i = 0; i < buttons.length; i++) {
-      buttons[i].classList.remove('active');
-      if(buttons[i].classList.contains('theme-' + saved)) {
-        buttons[i].classList.add('active');
-      }
-    }
+    document.querySelectorAll('.theme-btn').forEach(function(btn) {
+      btn.classList.toggle('active', btn.classList.contains('theme-' + saved));
+    });
   }
 }
 
@@ -1896,53 +1927,26 @@ function loadTheme() {
 // ============================================
 function transpose() {
   var shift = parseInt(document.getElementById("keyShift").value);
-  
-  if(shift === 0) {
-    showToast('Selecione um valor de transposicao');
-    return;
-  }
+  if(shift === 0) { showToast('Selecione um valor de transposicao'); return; }
   
   saveState();
   currentShift = shift;
   
-  var areas = ["intro", "verse", "prechorus", "chorus", "bridge", "ending"];
-  
-  for(var i = 0; i < areas.length; i++) {
-    var id = areas[i];
+  ["intro","verse","prechorus","chorus","bridge","ending"].forEach(function(id) {
     var el = document.getElementById(id);
-    var content = el.value;
+    if(!el.value.trim()) return;
     
-    if(!content || !content.trim()) continue;
+    var lines = el.value.split("\n").map(function(line) {
+      var spaces = line.match(/^ */) ? line.match(/^ */)[0] : "";
+      var parts = line.trim().split(" ");
+      var newParts = parts.map(function(part) {
+        return part ? transposeChord(part, shift) : "";
+      });
+      return spaces + newParts.join(" ");
+    });
     
-    var lines = content.split("\\n");
-    var newLines = [];
-    
-    for(var j = 0; j < lines.length; j++) {
-      var line = lines[j];
-      
-      var leadingSpace = "";
-      while(line.length > 0 && line.charAt(0) === " ") {
-        leadingSpace += " ";
-        line = line.substring(1);
-      }
-      
-      var parts = line.split(" ");
-      var newParts = [];
-      
-      for(var k = 0; k < parts.length; k++) {
-        var part = parts[k];
-        if(part === "") {
-          newParts.push("");
-        } else {
-          newParts.push(transposeChord(part, shift));
-        }
-      }
-      
-      newLines.push(leadingSpace + newParts.join(" "));
-    }
-    
-    el.value = newLines.join("\\n");
-  }
+    el.value = lines.join("\n");
+  });
   
   updateKeyDisplay();
   showToast('Transposto ' + (shift > 0 ? '+' : '') + shift + ' semitons');
@@ -1957,47 +1961,25 @@ function transposeChord(chord, shift) {
 }
 
 function transposeRoot(chord, shift) {
-  if(!chord || chord.length === 0) return chord;
+  if(!chord) return chord;
   
   var note = chord.charAt(0).toUpperCase();
-  var suffix = "";
+  var rest = chord.slice(1);
   
-  if(chord.length > 1) {
-    var second = chord.charAt(1);
-    if(second === "#" || second === "b") {
-      note += second;
-      suffix = chord.substring(2);
-    } else {
-      suffix = chord.substring(1);
-    }
+  if(rest.charAt(0) === '#' || rest.charAt(0) === 'b') {
+    note += rest.charAt(0);
+    rest = rest.slice(1);
   }
   
-  // Enarmonicas
-  if(note === "Db") note = "C#";
-  if(note === "Eb") note = "D#";
-  if(note === "Gb") note = "F#";
-  if(note === "Ab") note = "G#";
-  if(note === "Bb") note = "A#";
-  if(note === "Cb") note = "B";
-  if(note === "Fb") note = "E";
-  if(note === "E#") note = "F";
-  if(note === "B#") note = "C";
+  // Normalizar enarmonicas
+  var enharmonics = {Db:'C#',Eb:'D#',Gb:'F#',Ab:'G#',Bb:'A#',Cb:'B',Fb:'E',E#:'F',B#:'C'};
+  if(enharmonics[note]) note = enharmonics[note];
   
-  var idx = -1;
-  for(var i = 0; i < NOTES.length; i++) {
-    if(NOTES[i] === note) {
-      idx = i;
-      break;
-    }
-  }
-  
+  var idx = NOTES.indexOf(note);
   if(idx === -1) return chord;
   
-  var newIdx = idx + shift;
-  while(newIdx < 0) newIdx += 12;
-  while(newIdx >= 12) newIdx -= 12;
-  
-  return NOTES[newIdx] + suffix;
+  var newIdx = (idx + shift + 12) % 12;
+  return NOTES[newIdx] + rest;
 }
 
 function updateKeyDisplay() {
@@ -2022,44 +2004,34 @@ function loadLibrary() {
       library = JSON.parse(saved);
       renderLibrary();
     }
-  } catch(e) {
-    library = [];
-  }
+  } catch(e) { library = []; }
 }
 
 function renderLibrary() {
   var container = document.getElementById("songList");
   
   if(library.length === 0) {
-    container.innerHTML = '<div class="text-muted text-sm" style="grid-column: 1/-1; text-align: center; padding: var(--space-xl);">Nenhuma musica salva ainda.<br>Crie sua primeira musica!</div>';
+    container.innerHTML = '<div class="text-muted" style="text-align:center;padding:40px 20px;grid-column:1/-1;">Nenhuma musica salva ainda.<br>Crie sua primeira musica!</div>';
     return;
   }
   
-  var html = "";
-  for(var i = 0; i < library.length; i++) {
-    var song = library[i];
+  container.innerHTML = library.map(function(song) {
     var isActive = song.id === currentSongId;
-    html += '<div class="song-card ' + (isActive ? 'active' : '') + '" onclick="loadSong(' + "'" + song.id + "'" + ')">';
-    html += '<div class="song-name">' + escapeHtml(song.name) + '</div>';
-    html += '<div class="song-date">' + formatDate(song.date) + '</div>';
-    html += '<button class="song-delete" onclick="event.stopPropagation(); deleteSong(' + "'" + song.id + "'" + ')">×</button>';
-    html += '</div>';
-  }
-  container.innerHTML = html;
+    return '<div class="song-card ' + (isActive ? 'active' : '') + '" onclick="loadSong(\'' + song.id + '\')">' +
+      '<div class="song-name">' + escapeHtml(song.name) + '</div>' +
+      '<div class="song-date">' + formatDate(song.date) + '</div>' +
+      '<button class="song-delete" onclick="event.stopPropagation();deleteSong(\'' + song.id + '\')">×</button>' +
+      '</div>';
+  }).join('');
 }
 
 function formatDate(dateStr) {
-  if(!dateStr) return '';
-  var date = new Date(dateStr);
-  return date.toLocaleDateString('pt-BR');
+  return dateStr ? new Date(dateStr).toLocaleDateString('pt-BR') : '';
 }
 
 function saveCurrentSong() {
   var name = document.getElementById("songName").value.trim();
-  if(!name) {
-    showToast('Digite um nome para a musica');
-    return;
-  }
+  if(!name) { showToast('Digite um nome para a musica'); return; }
   
   var songData = {
     id: currentSongId || Date.now().toString(),
@@ -2076,19 +2048,9 @@ function saveCurrentSong() {
     shift: currentShift
   };
   
-  var found = false;
-  for(var i = 0; i < library.length; i++) {
-    if(library[i].id === songData.id) {
-      library[i] = songData;
-      found = true;
-      break;
-    }
-  }
-  
-  if(!found) {
-    library.push(songData);
-    currentSongId = songData.id;
-  }
+  var idx = library.findIndex(function(s) { return s.id === songData.id; });
+  if(idx >= 0) library[idx] = songData;
+  else { library.push(songData); currentSongId = songData.id; }
   
   localStorage.setItem('mapmusic_library_pro', JSON.stringify(library));
   renderLibrary();
@@ -2097,54 +2059,30 @@ function saveCurrentSong() {
 
 function loadSong(id) {
   saveState();
-  
-  var song = null;
-  for(var i = 0; i < library.length; i++) {
-    if(library[i].id === id) {
-      song = library[i];
-      break;
-    }
-  }
-  
+  var song = library.find(function(s) { return s.id === id; });
   if(!song) return;
   
   currentSongId = song.id;
   document.getElementById("songName").value = song.name;
   
-  for(var section in song.sections) {
-    var el = document.getElementById(section);
-    if(el) el.value = song.sections[section] || "";
-  }
+  Object.keys(song.sections).forEach(function(key) {
+    var el = document.getElementById(key);
+    if(el) el.value = song.sections[key] || "";
+  });
   
   currentShift = song.shift || 0;
   document.getElementById("keyShift").value = currentShift;
   updateKeyDisplay();
-  
   renderLibrary();
   showToast('Carregado: ' + song.name);
   
-  // Scroll para o topo em mobile
-  if(window.innerWidth < 768) {
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-  }
+  if(window.innerWidth < 768) window.scrollTo({top:0,behavior:'smooth'});
 }
 
 function deleteSong(id) {
   if(!confirm('Excluir esta musica?')) return;
-  
-  var newLibrary = [];
-  for(var i = 0; i < library.length; i++) {
-    if(library[i].id !== id) {
-      newLibrary.push(library[i]);
-    }
-  }
-  library = newLibrary;
-  
-  if(currentSongId === id) {
-    currentSongId = null;
-    newSong(false);
-  }
-  
+  library = library.filter(function(s) { return s.id !== id; });
+  if(currentSongId === id) { currentSongId = null; newSong(false); }
   localStorage.setItem('mapmusic_library_pro', JSON.stringify(library));
   renderLibrary();
   showToast('Musica excluida');
@@ -2159,12 +2097,9 @@ function newSong(confirmFirst) {
   saveState();
   currentSongId = null;
   document.getElementById("songName").value = "";
-  
-  var areas = ["intro", "verse", "prechorus", "chorus", "bridge", "ending"];
-  for(var i = 0; i < areas.length; i++) {
-    document.getElementById(areas[i]).value = "";
-  }
-  
+  ["intro","verse","prechorus","chorus","bridge","ending"].forEach(function(id) {
+    document.getElementById(id).value = "";
+  });
   currentShift = 0;
   document.getElementById("keyShift").value = 0;
   updateKeyDisplay();
@@ -2189,15 +2124,14 @@ function exportJSON() {
     },
     shift: currentShift
   };
-  
-  downloadFile(JSON.stringify(data, null, 2), name.replace(/\\s+/g, "_") + ".json", "application/json");
+  downloadFile(JSON.stringify(data, null, 2), name.replace(/\s+/g, "_") + ".json", "application/json");
   showToast('JSON exportado!');
 }
 
 function exportTXT() {
   var name = document.getElementById("songName").value || "musica";
-  var txt = name + "\\n" + "=".repeat(name.length) + "\\n\\n";
-  txt += "Tom: " + (currentShift === 0 ? "Original" : (currentShift > 0 ? "+" : "") + currentShift) + "\\n\\n";
+  var txt = name + "\n" + "=".repeat(name.length) + "\n\n";
+  txt += "Tom: " + (currentShift === 0 ? "Original" : (currentShift > 0 ? "+" : "") + currentShift) + "\n\n";
   
   var sections = {
     "INTRODUCAO": document.getElementById("intro").value,
@@ -2208,13 +2142,11 @@ function exportTXT() {
     "FINAL": document.getElementById("ending").value
   };
   
-  for(var title in sections) {
-    if(sections[title].trim()) {
-      txt += "[" + title + "]\\n" + sections[title] + "\\n\\n";
-    }
-  }
+  Object.keys(sections).forEach(function(title) {
+    if(sections[title].trim()) txt += "[" + title + "]\n" + sections[title] + "\n\n";
+  });
   
-  downloadFile(txt, name.replace(/\\s+/g, "_") + ".txt", "text/plain");
+  downloadFile(txt, name.replace(/\s+/g, "_") + ".txt", "text/plain");
   showToast('TXT exportado!');
 }
 
@@ -2242,4 +2174,13 @@ function shareURL() {
     s: currentShift
   };
   
-  var
+  var json = JSON.stringify(data);
+  var compressed = btoa(unescape(encodeURIComponent(json)));
+  var url = window.location.origin + window.location.pathname + "?data=" + compressed;
+  
+  if(navigator.clipboard) {
+    navigator.clipboard.writeText(url).then(function() {
+      showToast('Link copiado!');
+    });
+  } else {
+    prompt('Copie este link:', url
