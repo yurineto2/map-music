@@ -1,51 +1,158 @@
-<!DOCTYPE html>
+
+html_code = '''<!DOCTYPE html>
 <html>
 <head>
 <meta charset="UTF-8">
-<title>Map Music</title>
+<title>Map Music Pro</title>
 
 <style>
+*{
+  box-sizing:border-box;
+}
+
 body{
   margin:0;
-  background:black;
-  color:white;
-  font-family:Arial;
+  background:#0a0a0a;
+  color:#fff;
+  font-family:'Segoe UI',Arial,sans-serif;
   padding:20px;
+  line-height:1.6;
 }
 
 h1{
-  background:#c00000;
-  padding:15px;
+  background:linear-gradient(135deg,#c00000 0%,#800000 100%);
+  padding:20px;
+  margin:-20px -20px 20px -20px;
+  text-align:center;
+  font-size:2.5em;
+  text-shadow:2px 2px 4px rgba(0,0,0,0.5);
+  box-shadow:0 4px 6px rgba(0,0,0,0.3);
 }
 
-.section{
-  margin-top:20px;
+.controls{
+  background:#1a1a1a;
+  padding:20px;
+  border-radius:10px;
+  margin-bottom:20px;
+  display:flex;
+  flex-wrap:wrap;
+  gap:15px;
+  align-items:center;
+  border:1px solid #333;
 }
 
-textarea{
-  width:100%;
-  height:80px;
-  background:#111;
+.controls label{
+  font-weight:bold;
+  color:#ff4444;
+}
+
+select, button{
+  padding:10px 15px;
+  border-radius:5px;
+  border:none;
+  font-size:14px;
+}
+
+select{
+  background:#2a2a2a;
   color:white;
   border:1px solid #c00000;
-  padding:10px;
 }
 
 button{
   background:#c00000;
   color:white;
-  border:none;
-  padding:10px;
-  margin-top:10px;
   cursor:pointer;
+  transition:all 0.3s;
+  font-weight:bold;
+  text-transform:uppercase;
+  letter-spacing:1px;
 }
 
-select{
-  padding:5px;
+button:hover{
+  background:#ff0000;
+  transform:translateY(-2px);
+  box-shadow:0 4px 8px rgba(192,0,0,0.4);
+}
+
+button.secondary{
+  background:#444;
+}
+
+button.secondary:hover{
+  background:#666;
+}
+
+#currentKeyDisplay{
+  color:#ff4444;
+  font-weight:bold;
+  font-size:1.2em;
+  margin-left:auto;
+  padding:10px;
+  background:#2a2a2a;
+  border-radius:5px;
+  border:1px solid #c00000;
+}
+
+.section{
+  margin-top:20px;
+  background:#1a1a1a;
+  padding:20px;
+  border-radius:10px;
+  border-left:4px solid #c00000;
+  transition:transform 0.2s;
+}
+
+.section:hover{
+  transform:translateX(5px);
+}
+
+.section h3{
+  margin-top:0;
+  color:#ff4444;
+  font-size:1.3em;
+  text-transform:uppercase;
+  letter-spacing:2px;
+}
+
+textarea{
+  width:100%;
+  min-height:120px;
+  background:#0f0f0f;
+  color:#fff;
+  border:1px solid #333;
+  padding:15px;
+  font-family:'Courier New',monospace;
+  font-size:16px;
+  line-height:1.8;
+  border-radius:5px;
+  resize:vertical;
+  transition:border-color 0.3s;
+}
+
+textarea:focus{
+  outline:none;
+  border-color:#c00000;
+  box-shadow:0 0 10px rgba(192,0,0,0.2);
+}
+
+/* Status indicator */
+.status{
+  display:inline-block;
+  width:8px;
+  height:8px;
+  border-radius:50%;
+  background:#00ff00;
   margin-left:10px;
+  animation:pulse 2s infinite;
 }
 
-/* 🔴 MODO PALCO */
+@keyframes pulse{
+  0%,100%{opacity:1;}
+  50%{opacity:0.5;}
+}
+
+/* MODO PALCO */
 #stageMode{
   display:none;
   position:fixed;
@@ -53,159 +160,492 @@ select{
   left:0;
   width:100%;
   height:100%;
-  background:black;
-  color:white;
+  background:#000;
+  color:#fff;
   padding:40px;
   overflow:auto;
-  font-size:36px;
+  font-size:42px;
+  line-height:1.8;
+  z-index:1000;
 }
 
 #stageMode h2{
-  color:#c00000;
+  color:#ff0000;
+  font-size:1.5em;
+  margin-top:50px;
+  margin-bottom:20px;
+  text-transform:uppercase;
+  letter-spacing:3px;
+  border-bottom:3px solid #c00000;
+  padding-bottom:10px;
+}
+
+#stageMode h2:first-child{
+  margin-top:0;
+}
+
+#stageMode p{
+  color:#fff;
+  margin-bottom:40px;
+  white-space:pre-wrap;
+}
+
+.stage-controls{
+  position:fixed;
+  top:20px;
+  right:20px;
+  background:rgba(20,20,20,0.95);
+  padding:20px;
+  border-radius:10px;
+  border:2px solid #c00000;
+  display:flex;
+  flex-direction:column;
+  gap:15px;
+  z-index:1001;
+  box-shadow:0 10px 30px rgba(0,0,0,0.8);
+}
+
+.stage-controls button{
+  padding:15px 25px;
+  font-size:18px;
+}
+
+.speed-control{
+  display:flex;
+  align-items:center;
+  gap:10px;
+  color:#fff;
+  font-size:16px;
+}
+
+#speedValue{
+  color:#ff4444;
+  font-weight:bold;
+  min-width:30px;
+}
+
+input[type="range"]{
+  width:150px;
+  accent-color:#c00000;
+}
+
+/* Scroll indicator */
+.scroll-indicator{
+  position:fixed;
+  bottom:0;
+  left:0;
+  height:4px;
+  background:#c00000;
+  width:0%;
+  transition:width 0.1s;
+}
+
+/* Print styles */
+@media print{
+  body *{visibility:hidden;}
+  #stageMode,#stageMode *{visibility:visible;}
+  #stageMode{
+    position:absolute;
+    left:0;
+    top:0;
+    display:block !important;
+    font-size:24px;
+    padding:20px;
+  }
+  .stage-controls{display:none;}
 }
 </style>
 </head>
 <body>
 
-<h1>Map Music</h1>
+<h1>🎸 Map Music Pro</h1>
 
-<label>Alterar Tom:</label>
-<select id="keyShift">
-  <option value="0">Original</option>
-  <option value="1">+1</option>
-  <option value="2">+2</option>
-  <option value="-1">-1</option>
-  <option value="-2">-2</option>
-</select>
-<button onclick="transpose()">Aplicar</button>
-  <button onclick="openStageMode()">Modo Palco</button>
-
-<div class="section">
-<h3>Introdução</h3>
-<textarea id="intro"></textarea>
+<div class="controls">
+  <label>🎵 Transpor Tom:</label>
+  <select id="keyShift">
+    <option value="0">Original</option>
+    <option value="1">+1 (semitom)</option>
+    <option value="2">+2 (semitons)</option>
+    <option value="3">+3 (semitons)</option>
+    <option value="-1">-1 (semitom)</option>
+    <option value="-2">-2 (semitons)</option>
+    <option value="-3">-3 (semitons)</option>
+  </select>
+  <button onclick="transpose()">Aplicar Transposição</button>
+  <button onclick="resetAll()" class="secondary">🗑️ Limpar Tudo</button>
+  <button onclick="openStageMode()">🎭 Modo Palco</button>
+  <button onclick="window.print()" class="secondary">🖨️ Imprimir</button>
+  <span id="currentKeyDisplay">Tom: Original</span>
 </div>
 
 <div class="section">
-<h3>Verso</h3>
-<textarea id="verse"></textarea>
+<h3>Introdução <span class="status"></span></h3>
+<textarea id="intro" placeholder="C G Am F..."></textarea>
 </div>
 
 <div class="section">
-<h3>Pré-Refrão</h3>
-<textarea id="prechorus"></textarea>
+<h3>Verso <span class="status"></span></h3>
+<textarea id="verse" placeholder="C G Am F..."></textarea>
 </div>
 
 <div class="section">
-<h3>Refrão</h3>
-<textarea id="chorus"></textarea>
+<h3>Pré-Refrão <span class="status"></span></h3>
+<textarea id="prechorus" placeholder="Am F C G..."></textarea>
 </div>
 
 <div class="section">
-<h3>Ponte</h3>
-<textarea id="bridge"></textarea>
+<h3>Refrão <span class="status"></span></h3>
+<textarea id="chorus" placeholder="F G Am C..."></textarea>
 </div>
 
 <div class="section">
-<h3>Final</h3>
-<textarea id="ending"></textarea>
+<h3>Ponte <span class="status"></span></h3>
+<textarea id="bridge" placeholder="Dm G C..."></textarea>
 </div>
+
+<div class="section">
+<h3>Final <span class="status"></span></h3>
+<textarea id="ending" placeholder="C..."></textarea>
+</div>
+
 <div id="stageMode">
-  <div style="margin-bottom:20px;">
-    <button onclick="startScroll()">Iniciar</button>
-    <button onclick="stopScroll()">Parar</button>
-    <label>Velocidade:</label>
-    <input type="range" id="speedControl" min="1" max="10" value="3">
-    <button onclick="closeStageMode()">Fechar</button>
+  <div class="stage-controls">
+    <button onclick="startScroll()">▶️ Iniciar</button>
+    <button onclick="stopScroll()">⏸️ Parar</button>
+    <div class="speed-control">
+      <label>Velocidade:</label>
+      <input type="range" id="speedControl" min="1" max="10" value="3" oninput="updateSpeedDisplay()">
+      <span id="speedValue">3</span>
+    </div>
+    <button onclick="closeStageMode()">❌ Fechar</button>
   </div>
   <div id="stageContent"></div>
+  <div class="scroll-indicator" id="scrollIndicator"></div>
 </div>
+
 <script>
+// Notas musicais e enarmônicas
 const notes = ["C","C#","D","D#","E","F","F#","G","G#","A","A#","B"];
 const enharmonics = {
-  "Db":"C#",
-  "Eb":"D#",
-  "Gb":"F#",
-  "Ab":"G#",
-  "Bb":"A#",
-  "Cb":"B",
-  "Fb":"E"
+  "Db":"C#", "Eb":"D#", "Gb":"F#", "Ab":"G#", "Bb":"A#",
+  "C#":"C#", "D#":"D#", "F#":"F#", "G#":"G#", "A#":"A#",
+  "Cb":"B", "Fb":"E", "E#":"F", "B#":"C"
 };
 
+let currentShift = 0;
+let scrollAnimation = null;
+
+// Normalizar notas (converter enarmônicas)
 function normalize(note){
   if(enharmonics[note]) return enharmonics[note];
   return note;
 }
 
+// Verificar se é um acorde válido
+function isChord(word){
+  if(!word || word.length === 0) return false;
+  // Regex para acordes: C, C#, Cm, C#m7, Cmaj7, C/G, etc.
+  return /^[A-G](b|#)?(m|maj|min|dim|aug|sus|add|m7|maj7|7|9|11|13)?(\/[A-G](b|#)?)?$/i.test(word);
+}
+
+// Transpor um acorde individual
 function transposeChord(chord, shift){
-  const match = chord.match(/^([A-G][b#]?)(.*)$/);
+  // Lidar com acordes com baixo (ex: C/G)
+  if(chord.includes('/')){
+    const parts = chord.split('/');
+    const mainChord = transposeSingleChord(parts[0], shift);
+    const bassNote = transposeSingleChord(parts[1], shift);
+    return mainChord + '/' + bassNote;
+  }
+  return transposeSingleChord(chord, shift);
+}
+
+function transposeSingleChord(chord, shift){
+  // Extrair raiz e sufixo
+  const match = chord.match(/^([A-G][b#]?)(.*)$/i);
   if(!match) return chord;
 
-  let root = normalize(match[1]);
-  const suffix = match[2];
-
+  let root = match[1];
+  const suffix = match[2] || '';
+  
+  // Normalizar (Cb -> B, etc.)
+  root = normalize(root);
+  
   let index = notes.indexOf(root);
   if(index === -1) return chord;
 
   let newIndex = (index + shift + 12) % 12;
-
   return notes[newIndex] + suffix;
 }
 
+// Função principal de transposição
 function transpose(){
   const shift = parseInt(document.getElementById("keyShift").value);
-  if(shift === 0) return;
+  currentShift = shift;
+  
+  if(shift === 0){
+    updateKeyDisplay();
+    return;
+  }
 
   const areas = ["intro","verse","prechorus","chorus","bridge","ending"];
 
-  areas.forEach(id=>{
-    let content = document.getElementById(id).value;
-    let words = content.split(/\s+/);
-    let transposed = words.map(w=>transposeChord(w, shift));
-    document.getElementById(id).value = transposed.join(" ");
+  areas.forEach(id => {
+    const textarea = document.getElementById(id);
+    const content = textarea.value;
+    if(!content.trim()) return;
+    
+    // Preservar linhas
+    const lines = content.split('\\n');
+    
+    const transposedLines = lines.map(line => {
+      // Preservar espaços iniciais (indentação)
+      const leadingSpace = line.match(/^\\s*/)[0];
+      const words = line.trim().split(/(\\s+)/);
+      
+      const transposed = words.map(word => {
+        // Se for espaço, manter
+        if(/^\\s+$/.test(word)) return word;
+        // Se for acorde, transpor
+        if(isChord(word)){
+          return transposeChord(word, shift);
+        }
+        // Senão, manter original (letra da música)
+        return word;
+      });
+      
+      return leadingSpace + transposed.join('');
+    });
+    
+    textarea.value = transposedLines.join('\\n');
   });
+  
+  updateKeyDisplay();
+  saveToLocalStorage();
+  
+  // Feedback visual
+  showNotification(`Transposto ${shift > 0 ? '+' : ''}${shift} semitom(s)`);
 }
-  function openStageMode(){
-  let content = `
-    <h2>Introdução</h2><p>${intro.value}</p>
-    <h2>Verso</h2><p>${verse.value}</p>
-    <h2>Pré-Refrão</h2><p>${prechorus.value}</p>
-    <h2>Refrão</h2><p>${chorus.value}</p>
-    <h2>Ponte</h2><p>${bridge.value}</p>
-    <h2>Final</h2><p>${ending.value}</p>
-  `;
+
+function updateKeyDisplay(){
+  const shift = parseInt(document.getElementById("keyShift").value);
+  const display = document.getElementById("currentKeyDisplay");
+  if(shift === 0){
+    display.textContent = "Tom: Original";
+  } else {
+    display.textContent = `Tom: ${shift > 0 ? '+' : ''}${shift}`;
+  }
+}
+
+function updateSpeedDisplay(){
+  document.getElementById("speedValue").textContent = 
+    document.getElementById("speedControl").value;
+}
+
+// Modo Palco
+function openStageMode(){
+  const fields = {
+    "Introdução": "intro",
+    "Verso": "verse", 
+    "Pré-Refrão": "prechorus",
+    "Refrão": "chorus",
+    "Ponte": "bridge",
+    "Final": "ending"
+  };
+  
+  let content = '';
+  let hasContent = false;
+  
+  for(const [label, id] of Object.entries(fields)){
+    const textarea = document.getElementById(id);
+    const value = textarea.value.trim();
+    if(value){
+      hasContent = true;
+      // Escapar HTML e preservar quebras de linha
+      const escaped = escapeHtml(value);
+      const formatted = escaped.replace(/\\n/g, '<br>');
+      content += `<h2>${label}</h2><p>${formatted}</p>`;
+    }
+  }
+  
+  if(!hasContent){
+    content = '<h2>⚠️ Nenhum conteúdo</h2><p>Adicione acordes nas seções primeiro.</p>';
+  }
+  
   document.getElementById("stageContent").innerHTML = content;
   document.getElementById("stageMode").style.display = "block";
+  document.body.style.overflow = "hidden";
+  
+  // Resetar scroll
+  document.getElementById("stageMode").scrollTop = 0;
+  updateScrollIndicator();
 }
 
 function closeStageMode(){
+  stopScroll();
   document.getElementById("stageMode").style.display = "none";
+  document.body.style.overflow = "auto";
 }
-let scrollAnimation = null;
 
+function escapeHtml(text){
+  const map = {
+    '&': '&amp;',
+    '<': '&lt;',
+    '>': '&gt;',
+    '"': '&quot;',
+    "'": '&#039;'
+  };
+  return text.replace(/[&<>"']/g, m => map[m]);
+}
+
+// Auto-scroll
 function startScroll(){
   stopScroll();
-
+  
   const stage = document.getElementById("stageMode");
   const speed = parseInt(document.getElementById("speedControl").value);
-
-  const step = 0.4;
-  const delay = 200 - (speed * 15); // muito mais lento
-
-  scrollAnimation = setInterval(()=>{
-
-    stage.scrollTop += step;
-
+  
+  // Velocidade: 1 = muito lento, 10 = rápido
+  const pixelsPerFrame = 0.5 + (speed * 0.3);
+  
+  function scroll(){
     if(stage.scrollTop + stage.clientHeight >= stage.scrollHeight){
       stopScroll();
+      return;
     }
-
-  }, delay);
+    
+    stage.scrollTop += pixelsPerFrame;
+    updateScrollIndicator();
+    scrollAnimation = requestAnimationFrame(scroll);
+  }
+  
+  scrollAnimation = requestAnimationFrame(scroll);
 }
 
 function stopScroll(){
   if(scrollAnimation){
-    clearInterval(scrollAnimation);
+    cancelAnimationFrame(scrollAnimation);
     scrollAnimation = null;
   }
 }
+
+function updateScrollIndicator(){
+  const stage = document.getElementById("stageMode");
+  const indicator = document.getElementById("scrollIndicator");
+  const scrollPercent = (stage.scrollTop / (stage.scrollHeight - stage.clientHeight)) * 100;
+  indicator.style.width = Math.min(100, Math.max(0, scrollPercent)) + '%';
+}
+
+// LocalStorage - Auto-save
+function saveToLocalStorage(){
+  const areas = ["intro","verse","prechorus","chorus","bridge","ending"];
+  areas.forEach(id => {
+    const value = document.getElementById(id).value;
+    localStorage.setItem('mapmusic_' + id, value);
+  });
+  localStorage.setItem('mapmusic_shift', currentShift);
+}
+
+function loadFromLocalStorage(){
+  const areas = ["intro","verse","prechorus","chorus","bridge","ending"];
+  areas.forEach(id => {
+    const saved = localStorage.getItem('mapmusic_' + id);
+    if(saved !== null){
+      document.getElementById(id).value = saved;
+    }
+  });
+  
+  const savedShift = localStorage.getItem('mapmusic_shift');
+  if(savedShift !== null){
+    currentShift = parseInt(savedShift);
+    document.getElementById("keyShift").value = currentShift;
+    updateKeyDisplay();
+  }
+}
+
+// Limpar tudo
+function resetAll(){
+  if(confirm('Tem certeza que deseja limpar todas as seções?')){
+    const areas = ["intro","verse","prechorus","chorus","bridge","ending"];
+    areas.forEach(id => {
+      document.getElementById(id).value = '';
+    });
+    document.getElementById("keyShift").value = "0";
+    currentShift = 0;
+    updateKeyDisplay();
+    saveToLocalStorage();
+  }
+}
+
+// Notificação visual
+function showNotification(message){
+  const notif = document.createElement('div');
+  notif.style.cssText = `
+    position:fixed;
+    top:20px;
+    left:50%;
+    transform:translateX(-50%);
+    background:#c00000;
+    color:white;
+    padding:15px 30px;
+    border-radius:5px;
+    font-weight:bold;
+    z-index:9999;
+    box-shadow:0 4px 12px rgba(0,0,0,0.5);
+  `;
+  notif.textContent = message;
+  document.body.appendChild(notif);
+  
+  setTimeout(() => {
+    notif.remove();
+  }, 3000);
+}
+
+// Event listeners
+window.onload = function(){
+  loadFromLocalStorage();
+  
+  // Auto-save ao digitar
+  const areas = ["intro","verse","prechorus","chorus","bridge","ending"];
+  areas.forEach(id => {
+    document.getElementById(id).addEventListener('input', saveToLocalStorage);
+  });
+  
+  // Atualizar indicador de scroll no modo palco
+  document.getElementById("stageMode").addEventListener('scroll', updateScrollIndicator);
+  
+  // Tecla ESC fecha modo palco
+  document.addEventListener('keydown', function(e){
+    if(e.key === 'Escape'){
+      closeStageMode();
+    }
+    // Barra de espaço inicia/para scroll no modo palco
+    if(e.key === ' ' && document.getElementById("stageMode").style.display === 'block'){
+      e.preventDefault();
+      if(scrollAnimation){
+        stopScroll();
+      } else {
+        startScroll();
+      }
+    }
+  });
+};
 </script>
+
+</body>
+</html>'''
+
+print("✅ Código HTML completo gerado com sucesso!")
+print(f"📊 Tamanho: {len(html_code)} caracteres")
+print("\n🎸 NOVAS FUNCIONALIDADES INCLUÍDAS:")
+print("   ✓ Correção do bug de variáveis não declaradas")
+print("   ✓ Preservação de formatação e quebras de linha")
+print("   ✓ Suporte a acordes com baixo (C/G, Dm/F)")
+print("   ✓ Auto-save no LocalStorage")
+print("   ✓ Botão Limpar Tudo com confirmação")
+print("   ✓ Indicador de progresso de scroll")
+print("   ✓ Controle de velocidade melhorado")
+print("   ✓ Teclas de atalho (ESC fecha, BARRA inicia/para)")
+print("   ✓ Impressão otimizada (Ctrl+P no modo palco)")
+print("   ✓ Interface visual aprimorada")
+
