@@ -4,79 +4,113 @@
 <meta charset="UTF-8">
 <title>Map Music</title>
 
-<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
-
 <style>
 body{
   margin:0;
   background:black;
   color:white;
   font-family:Arial;
-  text-align:center;
-}
-header{
-  background:#c00000;
   padding:20px;
-  font-size:24px;
-  font-weight:bold;
+}
+h1{
+  background:#c00000;
+  padding:15px;
+}
+.section{
+  margin-top:20px;
+}
+textarea{
+  width:100%;
+  height:80px;
+  background:#111;
+  color:white;
+  border:1px solid #c00000;
+  padding:10px;
 }
 button{
   background:#c00000;
   color:white;
   border:none;
-  padding:15px;
-  margin-top:30px;
-  font-size:16px;
+  padding:10px;
+  margin-top:10px;
   cursor:pointer;
 }
+select{
+  padding:5px;
+  margin-left:10px;
+}
 </style>
-
 </head>
 <body>
 
-<header>Map Music</header>
+<h1>Map Music</h1>
 
-<div id="loginArea">
-  <button onclick="login()">Entrar com Google</button>
+<label>Alterar Tom:</label>
+<select id="keyShift">
+  <option value="0">Original</option>
+  <option value="1">+1</option>
+  <option value="2">+2</option>
+  <option value="-1">-1</option>
+  <option value="-2">-2</option>
+</select>
+<button onclick="transpose()">Aplicar</button>
+
+<div class="section">
+<h3>Introdução</h3>
+<textarea id="intro"></textarea>
 </div>
 
-<div id="userArea" style="display:none;">
-  <h2 id="userName"></h2>
-  <button onclick="logout()">Sair</button>
+<div class="section">
+<h3>Verso</h3>
+<textarea id="verse"></textarea>
+</div>
+
+<div class="section">
+<h3>Pré-Refrão</h3>
+<textarea id="prechorus"></textarea>
+</div>
+
+<div class="section">
+<h3>Refrão</h3>
+<textarea id="chorus"></textarea>
+</div>
+
+<div class="section">
+<h3>Ponte</h3>
+<textarea id="bridge"></textarea>
+</div>
+
+<div class="section">
+<h3>Final</h3>
+<textarea id="ending"></textarea>
 </div>
 
 <script>
+const notes = ["C","C#","D","D#","E","F","F#","G","G#","A","A#","B"];
 
-// 🔴 COLE AQUI SUAS CHAVES DO FIREBASE
-const firebaseConfig = {
-  apiKey: "AIzaSyBausGqamGuEbxV8NdHfuRY0Tx21LELj-Y",
-  authDomain: "map-music-eb8aa.firebaseapp.com",
-  projectId: "map-music-eb8aa",
-};
-
-firebase.initializeApp(firebaseConfig);
-
-const auth = firebase.auth();
-
-auth.onAuthStateChanged(user => {
-  if(user){
-    document.getElementById("loginArea").style.display="none";
-    document.getElementById("userArea").style.display="block";
-    document.getElementById("userName").innerText = "Bem-vindo, " + user.displayName;
+function transposeChord(chord, shift){
+  for(let i=0;i<notes.length;i++){
+    if(chord.startsWith(notes[i])){
+      let newIndex = (i + shift + 12) % 12;
+      return chord.replace(notes[i], notes[newIndex]);
+    }
   }
-});
-
-function login(){
-  const provider = new firebase.auth.GoogleAuthProvider();
-  auth.signInWithPopup(provider);
+  return chord;
 }
 
-function logout(){
-  auth.signOut();
-  location.reload();
-}
+function transpose(){
+  const shift = parseInt(document.getElementById("keyShift").value);
+  if(shift === 0) return;
 
+  const areas = ["intro","verse","prechorus","chorus","bridge","ending"];
+
+  areas.forEach(id=>{
+    let content = document.getElementById(id).value;
+    let words = content.split(" ");
+    let transposed = words.map(w=>transposeChord(w, shift));
+    document.getElementById(id).value = transposed.join(" ");
+  });
+}
 </script>
 
 </body>
