@@ -172,23 +172,27 @@ function transpose(){
 function closeStageMode(){
   document.getElementById("stageMode").style.display = "none";
 }
-  let scrollInterval = null;
+let scrollAnimation = null;
 
 function startScroll(){
-  const speed = document.getElementById("speedControl").value;
-  const stage = document.getElementById("stageMode");
-
   stopScroll();
 
-  scrollInterval = setInterval(()=>{
-    stage.scrollTop += speed;
-  }, 100);
+  const stage = document.getElementById("stageMode");
+  const speed = document.getElementById("speedControl").value;
+
+  let step = 0.5; // suavidade fixa
+  let delay = 60 - (speed * 5); 
+  if(delay < 10) delay = 10;
+
+  scrollAnimation = setInterval(()=>{
+    stage.scrollTop += step;
+  }, delay);
 }
 
 function stopScroll(){
-  if(scrollInterval){
-    clearInterval(scrollInterval);
-    scrollInterval = null;
+  if(scrollAnimation){
+    clearInterval(scrollAnimation);
+    scrollAnimation = null;
   }
 }
 </script>
