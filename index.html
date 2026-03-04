@@ -11,6 +11,22 @@ body{
   color:white;
   font-family:Arial;
   padding:20px;
+  #stageMode{
+  display:none;
+  position:fixed;
+  top:0;
+  left:0;
+  width:100%;
+  height:100%;
+  background:black;
+  color:white;
+  padding:40px;
+  overflow:auto;
+  font-size:28px;
+}
+#stageMode h2{
+  color:#c00000;
+}
 }
 h1{
   background:#c00000;
@@ -54,6 +70,7 @@ select{
   <option value="-2">-2</option>
 </select>
 <button onclick="transpose()">Aplicar</button>
+  <button onclick="openStageMode()">Modo Palco</button>
 
 <div class="section">
 <h3>Introdução</h3>
@@ -84,7 +101,10 @@ select{
 <h3>Final</h3>
 <textarea id="ending"></textarea>
 </div>
-
+<div id="stageMode">
+  <button onclick="closeStageMode()">Fechar</button>
+  <div id="stageContent"></div>
+</div>
 <script>
 const notes = ["C","C#","D","D#","E","F","F#","G","G#","A","A#","B"];
 const enharmonics = {
@@ -129,5 +149,21 @@ function transpose(){
     let transposed = words.map(w=>transposeChord(w, shift));
     document.getElementById(id).value = transposed.join(" ");
   });
+}
+  function openStageMode(){
+  let content = `
+    <h2>Introdução</h2><p>${intro.value}</p>
+    <h2>Verso</h2><p>${verse.value}</p>
+    <h2>Pré-Refrão</h2><p>${prechorus.value}</p>
+    <h2>Refrão</h2><p>${chorus.value}</p>
+    <h2>Ponte</h2><p>${bridge.value}</p>
+    <h2>Final</h2><p>${ending.value}</p>
+  `;
+  document.getElementById("stageContent").innerHTML = content;
+  document.getElementById("stageMode").style.display = "block";
+}
+
+function closeStageMode(){
+  document.getElementById("stageMode").style.display = "none";
 }
 </script>
