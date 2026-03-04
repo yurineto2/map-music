@@ -11,7 +11,42 @@ body{
   color:white;
   font-family:Arial;
   padding:20px;
-  #stageMode{
+}
+
+h1{
+  background:#c00000;
+  padding:15px;
+}
+
+.section{
+  margin-top:20px;
+}
+
+textarea{
+  width:100%;
+  height:80px;
+  background:#111;
+  color:white;
+  border:1px solid #c00000;
+  padding:10px;
+}
+
+button{
+  background:#c00000;
+  color:white;
+  border:none;
+  padding:10px;
+  margin-top:10px;
+  cursor:pointer;
+}
+
+select{
+  padding:5px;
+  margin-left:10px;
+}
+
+/* 🔴 MODO PALCO */
+#stageMode{
   display:none;
   position:fixed;
   top:0;
@@ -24,36 +59,9 @@ body{
   overflow:auto;
   font-size:36px;
 }
+
 #stageMode h2{
   color:#c00000;
-}
-}
-h1{
-  background:#c00000;
-  padding:15px;
-}
-.section{
-  margin-top:20px;
-}
-textarea{
-  width:100%;
-  height:80px;
-  background:#111;
-  color:white;
-  border:1px solid #c00000;
-  padding:10px;
-}
-button{
-  background:#c00000;
-  color:white;
-  border:none;
-  padding:10px;
-  margin-top:10px;
-  cursor:pointer;
-}
-select{
-  padding:5px;
-  margin-left:10px;
 }
 </style>
 </head>
@@ -178,14 +186,19 @@ function startScroll(){
   stopScroll();
 
   const stage = document.getElementById("stageMode");
-  const speed = document.getElementById("speedControl").value;
+  const speed = parseInt(document.getElementById("speedControl").value);
 
-  let step = 0.5; // suavidade fixa
-  let delay = 60 - (speed * 5); 
-  if(delay < 10) delay = 10;
+  const step = 0.4;
+  const delay = 200 - (speed * 15); // muito mais lento
 
   scrollAnimation = setInterval(()=>{
+
     stage.scrollTop += step;
+
+    if(stage.scrollTop + stage.clientHeight >= stage.scrollHeight){
+      stopScroll();
+    }
+
   }, delay);
 }
 
