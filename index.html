@@ -12,10 +12,6 @@
 <style>
 /* ============================================
    DESIGN SYSTEM - MOBILE | IPAD | PC
-   ============================================
-   Mobile: < 768px (touch otimizado, vertical)
-   iPad: 768px - 1023px (touch + stylus, split view)
-   PC: >= 1024px (mouse/keyboard, multi-coluna)
    ============================================ */
 :root {
   /* Cores Base */
@@ -47,7 +43,7 @@
   --font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
   --font-mono: 'SF Mono', 'Fira Code', Consolas, monospace;
   
-  /* Espaçamento Mobile First */
+  /* Espaçamento */
   --space-xs: 4px;
   --space-sm: 8px;
   --space-md: 12px;
@@ -56,7 +52,7 @@
   --space-2xl: 24px;
   --space-3xl: 32px;
   
-  /* Touch Targets */
+  /* Touch */
   --touch-min: 44px;
   --touch-comfort: 56px;
   --touch-large: 64px;
@@ -77,7 +73,6 @@
   /* Transições */
   --transition-fast: 150ms cubic-bezier(0.4, 0, 0.2, 1);
   --transition-base: 250ms cubic-bezier(0.4, 0, 0.2, 1);
-  --transition-slow: 350ms cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 /* TEMAS */
@@ -124,7 +119,6 @@ body {
 
 /* ============================================
    MOBILE: < 768px
-   Otimizado para touch, uma mão, vertical
    ============================================ */
 .app-header {
   background: linear-gradient(180deg, rgba(18,18,26,0.98) 0%, rgba(10,10,15,0.95) 100%);
@@ -182,7 +176,7 @@ body {
   padding-bottom: calc(var(--space-lg) + env(safe-area-inset-bottom));
 }
 
-/* Metronomo Mobile - Grande e facil de tocar */
+/* Metronomo Mobile */
 .metronome-panel {
   background: linear-gradient(145deg, var(--bg-tertiary), var(--bg-secondary));
   border: 1px solid var(--border-color);
@@ -269,7 +263,6 @@ body {
   border-color: var(--accent-secondary);
 }
 
-/* Controles do metronomo otimizados para polegar */
 .metronome-controls {
   display: grid;
   grid-template-columns: auto 1fr auto;
@@ -317,7 +310,6 @@ body {
   border: none;
   color: var(--text-inverse);
   font-size: 32px;
-  font-weight: 300;
   cursor: pointer;
   display: flex;
   align-items: center;
@@ -329,7 +321,6 @@ body {
 
 .metronome-main-btn:active {
   transform: scale(0.95);
-  box-shadow: 0 0 40px var(--accent-glow);
 }
 
 .metronome-main-btn.playing {
@@ -362,12 +353,6 @@ body {
   box-shadow: var(--shadow-md), 0 0 20px rgba(0,0,0,0.3);
   border: 4px solid var(--bg-primary);
   margin-top: -4px;
-}
-
-.bpm-slider::-webkit-slider-runnable-track {
-  height: 40px;
-  border-radius: var(--radius-full);
-  background: linear-gradient(90deg, var(--bg-elevated) 0%, var(--bg-elevated) 100%);
 }
 
 /* Cards Mobile */
@@ -410,7 +395,7 @@ body {
   color: var(--accent-primary);
 }
 
-/* Inputs Mobile - Grandes para touch */
+/* Inputs */
 .input-group {
   display: flex;
   flex-direction: column;
@@ -449,7 +434,15 @@ textarea:focus {
   box-shadow: 0 0 0 3px var(--accent-glow);
 }
 
-/* Botoes Mobile - Full width, empilhados */
+select {
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23b3b3b3' d='M6 8L1 3h10z'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 12px center;
+  padding-right: 32px;
+}
+
+/* Botoes */
 .btn {
   display: inline-flex;
   align-items: center;
@@ -494,7 +487,6 @@ textarea:focus {
   color: white;
 }
 
-/* Grid de acoes mobile */
 .actions-row {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
@@ -506,7 +498,7 @@ textarea:focus {
   width: 100%;
 }
 
-/* Biblioteca Mobile - Lista vertical */
+/* Biblioteca */
 .songs-grid {
   display: flex;
   flex-direction: column;
@@ -567,7 +559,7 @@ textarea:focus {
   touch-action: manipulation;
 }
 
-/* Secoes Mobile - Uma coluna, altura fixa */
+/* Secoes */
 .section-grid {
   display: flex;
   flex-direction: column;
@@ -627,7 +619,7 @@ textarea:focus {
   resize: vertical;
 }
 
-/* Controles bar mobile */
+/* Controles */
 .controls-bar {
   display: flex;
   flex-direction: column;
@@ -646,17 +638,13 @@ textarea:focus {
   border: 1px solid var(--border-color);
 }
 
-.key-display .input-label {
-  margin-bottom: var(--space-xs);
-}
-
 .key-value {
   font-size: 24px;
   font-weight: 800;
   color: var(--accent-primary);
 }
 
-/* Modal Mobile - Bottom sheet */
+/* Modal */
 .modal-overlay {
   display: none;
   position: fixed;
@@ -729,7 +717,7 @@ textarea:focus {
   gap: var(--space-sm);
 }
 
-/* Modo Palco Mobile */
+/* Modo Palco */
 .stage-mode {
   display: none;
   position: fixed;
@@ -821,7 +809,7 @@ textarea:focus {
   z-index: 1002;
 }
 
-/* Toast Mobile */
+/* Toast */
 .toast {
   position: fixed;
   top: calc(var(--space-lg) + env(safe-area-inset-top));
@@ -846,9 +834,22 @@ textarea:focus {
   opacity: 1;
 }
 
+.toast-icon {
+  width: 24px;
+  height: 24px;
+  border-radius: var(--radius-full);
+  background: var(--accent-primary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--text-inverse);
+  flex-shrink: 0;
+}
+
 /* ============================================
    IPAD: 768px - 1023px
-   Otimizado para touch, Apple Pencil, Split View
    ============================================ */
 @media (min-width: 768px) and (max-width: 1023px) {
   :root {
@@ -885,7 +886,6 @@ textarea:focus {
     max-width: 100%;
   }
   
-  /* Metronomo iPad - Layout horizontal */
   .metronome-panel {
     padding: var(--space-2xl);
   }
@@ -900,16 +900,6 @@ textarea:focus {
     font-size: 80px;
   }
   
-  .beat-dot {
-    width: 16px;
-    height: 16px;
-  }
-  
-  .beat-dot.accent {
-    width: 20px;
-    height: 20px;
-  }
-  
   .metronome-controls {
     display: flex;
     justify-content: center;
@@ -921,22 +911,10 @@ textarea:focus {
     margin-top: 0;
   }
   
-  .metronome-main-btn {
-    width: 72px;
-    height: 72px;
-    font-size: 28px;
-  }
-  
-  /* Biblioteca iPad - Grid 2 colunas */
   .card-header {
     flex-direction: row;
     align-items: center;
     gap: var(--space-lg);
-  }
-  
-  .card-header .input-group {
-    flex: 1;
-    max-width: 300px;
   }
   
   .songs-grid {
@@ -945,25 +923,18 @@ textarea:focus {
     gap: var(--space-md);
   }
   
-  .song-card {
-    padding: var(--space-lg);
-  }
-  
   .song-delete {
     opacity: 0;
-    transition: opacity var(--transition-fast);
   }
   
   .song-card:hover .song-delete {
     opacity: 1;
   }
   
-  /* Controles iPad - Row com wrap */
   .controls-bar {
     flex-direction: row;
     flex-wrap: wrap;
     align-items: flex-end;
-    gap: var(--space-lg);
   }
   
   .actions-row {
@@ -972,23 +943,12 @@ textarea:focus {
     flex: 1;
   }
   
-  .key-display {
-    min-width: 100px;
-  }
-  
-  /* Secoes iPad - 2 colunas */
   .section-grid {
     display: grid;
     grid-template-columns: repeat(2, 1fr);
     gap: var(--space-lg);
   }
   
-  .section-textarea {
-    min-height: 140px;
-    font-size: 16px;
-  }
-  
-  /* Modal iPad - Centralizado */
   .modal-overlay {
     align-items: center;
     padding: var(--space-xl);
@@ -1000,15 +960,12 @@ textarea:focus {
     max-height: 80vh;
   }
   
-  /* Modo Palco iPad */
   .stage-content {
     font-size: 32px;
-    max-width: 100%;
   }
   
   .stage-text {
     font-size: 28px;
-    line-height: 1.8;
   }
   
   .stage-controls {
@@ -1019,13 +976,11 @@ textarea:focus {
     border-radius: var(--radius-xl);
     flex-direction: column;
     width: auto;
-    min-width: 120px;
   }
 }
 
 /* ============================================
    PC: >= 1024px
-   Otimizado para mouse/keyboard, multi-monitor
    ============================================ */
 @media (min-width: 1024px) {
   :root {
@@ -1070,7 +1025,6 @@ textarea:focus {
     padding: var(--space-2xl) var(--space-3xl);
   }
   
-  /* Metronomo PC - Layout premium */
   .metronome-panel {
     display: grid;
     grid-template-columns: 1fr auto 1fr;
@@ -1081,95 +1035,44 @@ textarea:focus {
   
   .metronome-header {
     grid-column: 1 / -1;
-    margin-bottom: 0;
   }
   
   .metronome-display {
     justify-content: flex-start;
     gap: 64px;
-    margin-bottom: 0;
   }
   
   .bpm-value {
     font-size: 96px;
-    text-shadow: 0 0 40px var(--accent-glow);
-  }
-  
-  .beat-indicator {
-    padding: var(--space-lg) var(--space-2xl);
-    gap: var(--space-lg);
-  }
-  
-  .beat-dot {
-    width: 18px;
-    height: 18px;
-    border-width: 3px;
-  }
-  
-  .beat-dot.accent {
-    width: 24px;
-    height: 24px;
   }
   
   .metronome-controls {
     justify-content: flex-end;
-    gap: var(--space-2xl);
-  }
-  
-  .bpm-adjust {
-    gap: var(--space-md);
   }
   
   .bpm-btn {
     width: 48px;
     height: 48px;
-    font-size: 18px;
-    transition: all var(--transition-fast);
   }
   
   .bpm-btn:hover {
     background: var(--accent-primary);
     color: var(--text-inverse);
-    transform: translateY(-2px);
   }
   
   .metronome-main-btn {
     width: 88px;
     height: 88px;
-    font-size: 36px;
-    cursor: pointer;
-    transition: all var(--transition-fast);
   }
   
   .metronome-main-btn:hover {
     transform: scale(1.05);
-    box-shadow: 0 0 50px var(--accent-glow);
-  }
-  
-  .metronome-main-btn.playing:hover {
-    box-shadow: 0 0 40px rgba(239, 68, 68, 0.6);
   }
   
   .bpm-slider-container {
     width: 350px;
   }
   
-  .bpm-slider {
-    height: 8px;
-  }
-  
-  .bpm-slider::-webkit-slider-thumb {
-    width: 24px;
-    height: 24px;
-    border-width: 3px;
-    transition: transform var(--transition-fast);
-  }
-  
-  .bpm-slider::-webkit-slider-thumb:hover {
-    transform: scale(1.3);
-  }
-  
-  /* Biblioteca PC - Grid 4 colunas */
   .card {
     padding: var(--space-2xl);
   }
@@ -1177,27 +1080,11 @@ textarea:focus {
   .card-header {
     flex-direction: row;
     align-items: center;
-    padding-bottom: var(--space-lg);
-  }
-  
-  .card-title {
-    font-size: 18px;
-  }
-  
-  .card-title-icon {
-    width: 32px;
-    height: 32px;
-    font-size: 14px;
   }
   
   .songs-grid {
     grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
     gap: var(--space-lg);
-  }
-  
-  .song-card {
-    padding: var(--space-lg);
-    transition: all var(--transition-base);
   }
   
   .song-card:hover {
@@ -1206,39 +1093,18 @@ textarea:focus {
     box-shadow: var(--shadow-lg);
   }
   
-  .song-card.active {
-    box-shadow: var(--shadow-glow);
-  }
-  
-  .song-name {
-    font-size: 15px;
-  }
-  
   .song-delete {
     opacity: 0;
-    transition: all var(--transition-fast);
   }
   
   .song-card:hover .song-delete {
     opacity: 1;
   }
   
-  .song-delete:hover {
-    background: #dc2626;
-    transform: scale(1.1);
-  }
-  
-  /* Controles PC */
   .controls-bar {
     flex-direction: row;
     align-items: flex-end;
     gap: var(--space-xl);
-    padding: var(--space-xl);
-  }
-  
-  .input-group select,
-  .input-group input {
-    min-width: 160px;
   }
   
   .actions-row {
@@ -1247,42 +1113,14 @@ textarea:focus {
     width: auto;
   }
   
-  .btn {
-    padding: var(--space-md) var(--space-xl);
-    transition: all var(--transition-fast);
-  }
-  
   .btn:hover {
     transform: translateY(-2px);
     box-shadow: var(--shadow-md);
   }
   
-  .btn-primary:hover {
-    box-shadow: var(--shadow-glow);
-  }
-  
-  .btn:active {
-    transform: translateY(0);
-  }
-  
-  .key-display {
-    min-width: 120px;
-    text-align: center;
-    transition: all var(--transition-fast);
-  }
-  
-  .key-display:hover {
-    border-color: var(--accent-primary);
-  }
-  
-  /* Secoes PC - 3 colunas com hover effects */
   .section-grid {
     grid-template-columns: repeat(3, 1fr);
     gap: var(--space-xl);
-  }
-  
-  .section-card {
-    transition: all var(--transition-base);
   }
   
   .section-card:hover {
@@ -1291,47 +1129,12 @@ textarea:focus {
     box-shadow: var(--shadow-lg);
   }
   
-  .section-header {
-    padding: var(--space-lg) var(--space-xl);
-  }
-  
-  .section-title {
-    font-size: 14px;
-  }
-  
-  .section-body {
-    padding: var(--space-lg);
-  }
-  
-  .section-textarea {
-    min-height: 150px;
-    font-size: 16px;
-    transition: all var(--transition-fast);
-  }
-  
-  .section-textarea:focus {
-    transform: scale(1.01);
-  }
-  
-  /* Modal PC */
   .modal-overlay {
     align-items: center;
   }
   
   .modal {
     max-width: 600px;
-    border-radius: var(--radius-xl);
-    animation: fadeIn var(--transition-base);
-  }
-  
-  .modal:hover {
-    box-shadow: 0 20px 60px rgba(0,0,0,0.5);
-  }
-  
-  /* Modo Palco PC */
-  .stage-mode {
-    padding: var(--space-3xl);
-    padding-bottom: var(--space-3xl);
   }
   
   .stage-content {
@@ -1340,67 +1143,17 @@ textarea:focus {
     font-size: 36px;
   }
   
-  .stage-section {
-    margin-bottom: 48px;
-  }
-  
-  .stage-title {
-    font-size: 24px;
-    letter-spacing: 3px;
-  }
-  
   .stage-text {
     font-size: 32px;
-    line-height: 2;
   }
   
   .stage-controls {
     top: var(--space-xl);
     right: var(--space-xl);
-    padding: var(--space-lg);
-    gap: var(--space-md);
-    border-radius: var(--radius-xl);
+    bottom: auto;
+    left: auto;
     flex-direction: column;
     min-width: 140px;
-  }
-  
-  .stage-btn {
-    transition: all var(--transition-fast);
-  }
-  
-  .stage-btn:hover {
-    transform: scale(1.05);
-  }
-  
-  /* Scrollbar PC - Mais visivel */
-  ::-webkit-scrollbar {
-    width: 10px;
-    height: 10px;
-  }
-  
-  ::-webkit-scrollbar-thumb {
-    background: var(--bg-elevated);
-    border-radius: var(--radius-full);
-    border: 2px solid var(--bg-secondary);
-  }
-  
-  ::-webkit-scrollbar-thumb:hover {
-    background: var(--accent-primary);
-  }
-  
-  /* Tema selector PC */
-  .theme-selector {
-    gap: var(--space-sm);
-  }
-  
-  .theme-btn {
-    width: 36px;
-    height: 36px;
-    transition: transform var(--transition-fast);
-  }
-  
-  .theme-btn:hover {
-    transform: scale(1.15);
   }
 }
 
@@ -1409,58 +1162,22 @@ textarea:focus {
    ============================================ */
 @media (min-width: 1440px) {
   .section-grid {
-    grid-template-columns: repeat(3, 1fr);
     gap: var(--space-2xl);
   }
   
   .songs-grid {
     grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
   }
-  
-  .metronome-panel {
-    gap: 80px;
-  }
 }
 
-/* ============================================
-   IPAD PRO / LARGE TABLETS >= 1024px mas < 1366px
-   Ajustes especificos para iPad Pro 12.9"
-   ============================================ */
+/* iPad Pro especifico */
 @media (min-width: 1024px) and (max-width: 1366px) and (hover: none) and (pointer: coarse) {
-  /* Detecta iPad - touch otimizado mesmo em tela grande */
   .btn {
     min-height: 52px;
   }
   
   .song-delete {
     opacity: 1;
-    width: 40px;
-    height: 40px;
-  }
-  
-  .metronome-main-btn {
-    width: 80px;
-    height: 80px;
-  }
-}
-
-/* ============================================
-   UTILITARIOS E ANIMACOES
-   ============================================ */
-@keyframes fadeIn {
-  from { opacity: 0; transform: translateY(10px); }
-  to { opacity: 1; transform: translateY(0); }
-}
-
-.animate-fadeIn {
-  animation: fadeIn var(--transition-base) forwards;
-}
-
-/* Reduced motion */
-@media (prefers-reduced-motion: reduce) {
-  * {
-    animation-duration: 0.01ms !important;
-    transition-duration: 0.01ms !important;
   }
 }
 
@@ -1474,9 +1191,13 @@ textarea:focus {
   .bpm-value {
     font-size: 48px;
   }
-  
-  .app-header {
-    padding: var(--space-sm) var(--space-md);
+}
+
+/* Reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
   }
 }
 
@@ -1510,12 +1231,12 @@ textarea:focus {
     </div>
     
     <div class="theme-selector">
-      <div class="theme-btn theme-green active" onclick="setTheme('green')" title="Green" style="background: linear-gradient(135deg, #1db954, #1ed760);"></div>
-      <div class="theme-btn theme-red" onclick="setTheme('red')" title="Red" style="background: linear-gradient(135deg, #e22134, #ff4d5e);"></div>
-      <div class="theme-btn theme-blue" onclick="setTheme('blue')" title="Blue" style="background: linear-gradient(135deg, #0d84fc, #3d9eff);"></div>
-      <div class="theme-btn theme-purple" onclick="setTheme('purple')" title="Purple" style="background: linear-gradient(135deg, #8b5cf6, #a78bfa);"></div>
-      <div class="theme-btn theme-orange" onclick="setTheme('orange')" title="Orange" style="background: linear-gradient(135deg, #f97316, #fb923c);"></div>
-      <div class="theme-btn theme-pink" onclick="setTheme('pink')" title="Pink" style="background: linear-gradient(135deg, #ec4899, #f472b6);"></div>
+      <button class="theme-btn theme-green active" onclick="setTheme('green')" title="Green" style="background: linear-gradient(135deg, #1db954, #1ed760);"></button>
+      <button class="theme-btn theme-red" onclick="setTheme('red')" title="Red" style="background: linear-gradient(135deg, #e22134, #ff4d5e);"></button>
+      <button class="theme-btn theme-blue" onclick="setTheme('blue')" title="Blue" style="background: linear-gradient(135deg, #0d84fc, #3d9eff);"></button>
+      <button class="theme-btn theme-purple" onclick="setTheme('purple')" title="Purple" style="background: linear-gradient(135deg, #8b5cf6, #a78bfa);"></button>
+      <button class="theme-btn theme-orange" onclick="setTheme('orange')" title="Orange" style="background: linear-gradient(135deg, #f97316, #fb923c);"></button>
+      <button class="theme-btn theme-pink" onclick="setTheme('pink')" title="Pink" style="background: linear-gradient(135deg, #ec4899, #f472b6);"></button>
     </div>
   </div>
 </header>
@@ -1554,7 +1275,7 @@ textarea:focus {
       </div>
       
       <button class="metronome-main-btn" id="metronomeToggle" onclick="toggleMetronome()">
-        <span id="playIcon" style="margin-left: 4px;">▶</span>
+        <span id="playIcon">▶</span>
       </button>
       
       <div class="bpm-adjust">
@@ -1700,7 +1421,7 @@ textarea:focus {
 </div>
 
 <!-- MODAL IMPORT -->
-<div class="modal-overlay" id="importModal" onclick="if(event.target===this)closeImportModal()">
+<div class="modal-overlay" id="importModal">
   <div class="modal">
     <div class="modal-header">
       <div class="modal-title">Importar Musica</div>
@@ -1708,7 +1429,7 @@ textarea:focus {
     </div>
     <div class="modal-body">
       <p class="text-muted" style="margin-bottom: 16px; font-size: 14px;">Cole o codigo JSON ou o texto da musica:</p>
-      <textarea id="importArea" placeholder='{"name":"Minha Musica","sections":{"intro":"C G Am F"...}}' style="width: 100%; min-height: 200px; font-family: monospace; font-size: 14px;"></textarea>
+      <textarea id="importArea" placeholder='{"name":"Minha Musica","sections":{"intro":"C G Am F"}}' style="width: 100%; min-height: 200px; font-family: monospace; font-size: 14px;"></textarea>
     </div>
     <div class="modal-footer">
       <button class="btn btn-secondary" onclick="closeImportModal()">Cancelar</button>
@@ -1754,9 +1475,9 @@ var audioContext = null;
 var isPlaying = false;
 var currentBPM = 120;
 var currentBeat = 0;
-var nextNoteTime = 0.0;
+var nextNoteTime = 0;
 var scheduleAheadTime = 0.1;
-var lookahead = 25.0;
+var lookahead = 25;
 var timerID = null;
 
 var NOTES = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"];
@@ -1783,25 +1504,30 @@ document.addEventListener('DOMContentLoaded', function() {
     el.addEventListener('focus', saveState);
   });
   
+  // Fechar modal ao clicar fora
+  document.getElementById('importModal').addEventListener('click', function(e) {
+    if (e.target === this) closeImportModal();
+  });
+  
   // Atalhos de teclado
   document.addEventListener('keydown', function(e) {
-    if(e.key === 'Escape') {
+    if (e.key === 'Escape') {
       closeStageMode();
       closeImportModal();
     }
-    if(e.key === ' ' && document.getElementById("stageMode").style.display === 'block') {
+    if (e.key === ' ' && document.getElementById("stageMode").style.display === 'block') {
       e.preventDefault();
       scrollAnimation ? stopScroll() : startScroll();
     }
-    if(e.ctrlKey && e.key === 'z') {
+    if (e.ctrlKey && e.key === 'z') {
       e.preventDefault();
       undo();
     }
-    if(e.ctrlKey && e.key === 'y') {
+    if (e.ctrlKey && e.key === 'y') {
       e.preventDefault();
       redo();
     }
-    if(e.code === 'Space' && !e.target.matches('input, textarea, select')) {
+    if (e.code === 'Space' && !e.target.matches('input, textarea, select')) {
       e.preventDefault();
       toggleMetronome();
     }
@@ -1813,19 +1539,27 @@ document.addEventListener('DOMContentLoaded', function() {
 // ============================================
 function initAudioContext() {
   try {
-    audioContext = new (window.AudioContext || window.webkitAudioContext)();
+    window.AudioContext = window.AudioContext || window.webkitAudioContext;
+    audioContext = new AudioContext();
   } catch(e) {
     console.error('Web Audio API nao suportada');
+    showToast('Audio nao suportado neste navegador');
   }
 }
 
 function toggleMetronome() {
-  if(!audioContext) initAudioContext();
-  isPlaying ? stopMetronome() : startMetronome();
+  if (!audioContext) initAudioContext();
+  if (isPlaying) {
+    stopMetronome();
+  } else {
+    startMetronome();
+  }
 }
 
 function startMetronome() {
-  if(audioContext.state === 'suspended') audioContext.resume();
+  if (audioContext.state === 'suspended') {
+    audioContext.resume();
+  }
   
   isPlaying = true;
   currentBeat = 0;
@@ -1843,11 +1577,13 @@ function stopMetronome() {
   clearTimeout(timerID);
   document.getElementById('metronomeToggle').classList.remove('playing');
   document.getElementById('playIcon').innerHTML = '&#9654;';
-  document.querySelectorAll('.beat-dot').forEach(function(d) { d.classList.remove('active'); });
+  document.querySelectorAll('.beat-dot').forEach(function(d) {
+    d.classList.remove('active');
+  });
 }
 
 function scheduler() {
-  while(nextNoteTime < audioContext.currentTime + scheduleAheadTime) {
+  while (nextNoteTime < audioContext.currentTime + scheduleAheadTime) {
     scheduleNote(currentBeat, nextNoteTime);
     nextNote();
   }
@@ -1873,13 +1609,17 @@ function scheduleNote(beatNumber, time) {
   osc.stop(time + 0.05);
   
   var drawTime = Math.max(0, (time - audioContext.currentTime) * 1000);
-  setTimeout(function() { updateBeatVisual(beatNumber); }, drawTime);
+  setTimeout(function() {
+    updateBeatVisual(beatNumber);
+  }, drawTime);
 }
 
 function updateBeatVisual(beatNumber) {
-  document.querySelectorAll('.beat-dot').forEach(function(d) { d.classList.remove('active'); });
+  document.querySelectorAll('.beat-dot').forEach(function(d) {
+    d.classList.remove('active');
+  });
   var dot = document.querySelector('.beat-dot[data-beat="' + beatNumber + '"]');
-  if(dot) dot.classList.add('active');
+  if (dot) dot.classList.add('active');
 }
 
 function updateBPM(value) {
@@ -1890,7 +1630,9 @@ function updateBPM(value) {
 
 function adjustBPM(delta) {
   var newBPM = currentBPM + delta;
-  if(newBPM >= 40 && newBPM <= 240) updateBPM(newBPM);
+  if (newBPM >= 40 && newBPM <= 240) {
+    updateBPM(newBPM);
+  }
 }
 
 // ============================================
@@ -1908,13 +1650,20 @@ function setTheme(theme) {
 }
 
 function getThemeName(theme) {
-  var names = {green:'Spotify Green',red:'Ruby Red',blue:'Ocean Blue',purple:'Royal Purple',orange:'Sunset Orange',pink:'Neon Pink'};
+  var names = {
+    'green': 'Spotify Green',
+    'red': 'Ruby Red',
+    'blue': 'Ocean Blue',
+    'purple': 'Royal Purple',
+    'orange': 'Sunset Orange',
+    'pink': 'Neon Pink'
+  };
   return names[theme] || theme;
 }
 
 function loadTheme() {
   var saved = localStorage.getItem('mapmusic_theme_pro');
-  if(saved) {
+  if (saved) {
     document.body.setAttribute('data-theme', saved);
     document.querySelectorAll('.theme-btn').forEach(function(btn) {
       btn.classList.toggle('active', btn.classList.contains('theme-' + saved));
@@ -1927,25 +1676,32 @@ function loadTheme() {
 // ============================================
 function transpose() {
   var shift = parseInt(document.getElementById("keyShift").value);
-  if(shift === 0) { showToast('Selecione um valor de transposicao'); return; }
+  if (shift === 0) {
+    showToast('Selecione um valor de transposicao');
+    return;
+  }
   
   saveState();
   currentShift = shift;
   
-  ["intro","verse","prechorus","chorus","bridge","ending"].forEach(function(id) {
+  var sections = ["intro", "verse", "prechorus", "chorus", "bridge", "ending"];
+  sections.forEach(function(id) {
     var el = document.getElementById(id);
-    if(!el.value.trim()) return;
+    if (!el || !el.value.trim()) return;
     
-    var lines = el.value.split("\n").map(function(line) {
-      var spaces = line.match(/^ */) ? line.match(/^ */)[0] : "";
-      var parts = line.trim().split(" ");
-      var newParts = parts.map(function(part) {
+    var lines = el.value.split('\n').map(function(line) {
+      var match = line.match(/^(\s*)(.*)$/);
+      var spaces = match ? match[1] : "";
+      var content = match ? match[2] : line;
+      
+      var parts = content.split(' ').map(function(part) {
         return part ? transposeChord(part, shift) : "";
       });
-      return spaces + newParts.join(" ");
+      
+      return spaces + parts.join(' ');
     });
     
-    el.value = lines.join("\n");
+    el.value = lines.join('\n');
   });
   
   updateKeyDisplay();
@@ -1953,7 +1709,7 @@ function transpose() {
 }
 
 function transposeChord(chord, shift) {
-  if(chord.indexOf("/") >= 0) {
+  if (chord.indexOf("/") >= 0) {
     var parts = chord.split("/");
     return transposeRoot(parts[0], shift) + "/" + transposeRoot(parts[1], shift);
   }
@@ -1961,22 +1717,25 @@ function transposeChord(chord, shift) {
 }
 
 function transposeRoot(chord, shift) {
-  if(!chord) return chord;
+  if (!chord) return chord;
   
   var note = chord.charAt(0).toUpperCase();
   var rest = chord.slice(1);
   
-  if(rest.charAt(0) === '#' || rest.charAt(0) === 'b') {
+  if (rest.charAt(0) === '#' || rest.charAt(0) === 'b') {
     note += rest.charAt(0);
     rest = rest.slice(1);
   }
   
   // Normalizar enarmonicas
-  var enharmonics = {Db:'C#',Eb:'D#',Gb:'F#',Ab:'G#',Bb:'A#',Cb:'B',Fb:'E',E#:'F',B#:'C'};
-  if(enharmonics[note]) note = enharmonics[note];
+  var enharmonics = {
+    'Db': 'C#', 'Eb': 'D#', 'Gb': 'F#', 'Ab': 'G#', 'Bb': 'A#',
+    'Cb': 'B', 'Fb': 'E', 'E#': 'F', 'B#': 'C'
+  };
+  if (enharmonics[note]) note = enharmonics[note];
   
   var idx = NOTES.indexOf(note);
-  if(idx === -1) return chord;
+  if (idx === -1) return chord;
   
   var newIdx = (idx + shift + 12) % 12;
   return NOTES[newIdx] + rest;
@@ -1985,7 +1744,7 @@ function transposeRoot(chord, shift) {
 function updateKeyDisplay() {
   var shift = parseInt(document.getElementById("keyShift").value);
   var display = document.getElementById("currentKeyDisplay");
-  if(shift === 0) {
+  if (shift === 0) {
     display.textContent = "Original";
     display.style.color = "var(--text-muted)";
   } else {
@@ -2000,17 +1759,20 @@ function updateKeyDisplay() {
 function loadLibrary() {
   try {
     var saved = localStorage.getItem('mapmusic_library_pro');
-    if(saved) {
+    if (saved) {
       library = JSON.parse(saved);
       renderLibrary();
     }
-  } catch(e) { library = []; }
+  } catch(e) {
+    library = [];
+    console.error('Erro ao carregar biblioteca:', e);
+  }
 }
 
 function renderLibrary() {
   var container = document.getElementById("songList");
   
-  if(library.length === 0) {
+  if (library.length === 0) {
     container.innerHTML = '<div class="text-muted" style="text-align:center;padding:40px 20px;grid-column:1/-1;">Nenhuma musica salva ainda.<br>Crie sua primeira musica!</div>';
     return;
   }
@@ -2026,12 +1788,27 @@ function renderLibrary() {
 }
 
 function formatDate(dateStr) {
-  return dateStr ? new Date(dateStr).toLocaleDateString('pt-BR') : '';
+  if (!dateStr) return '';
+  try {
+    return new Date(dateStr).toLocaleDateString('pt-BR');
+  } catch(e) {
+    return '';
+  }
+}
+
+function escapeHtml(text) {
+  if (!text) return '';
+  var div = document.createElement('div');
+  div.textContent = text;
+  return div.innerHTML;
 }
 
 function saveCurrentSong() {
   var name = document.getElementById("songName").value.trim();
-  if(!name) { showToast('Digite um nome para a musica'); return; }
+  if (!name) {
+    showToast('Digite um nome para a musica');
+    return;
+  }
   
   var songData = {
     id: currentSongId || Date.now().toString(),
@@ -2049,25 +1826,33 @@ function saveCurrentSong() {
   };
   
   var idx = library.findIndex(function(s) { return s.id === songData.id; });
-  if(idx >= 0) library[idx] = songData;
-  else { library.push(songData); currentSongId = songData.id; }
+  if (idx >= 0) {
+    library[idx] = songData;
+  } else {
+    library.push(songData);
+    currentSongId = songData.id;
+  }
   
-  localStorage.setItem('mapmusic_library_pro', JSON.stringify(library));
-  renderLibrary();
-  showToast('Musica salva!');
+  try {
+    localStorage.setItem('mapmusic_library_pro', JSON.stringify(library));
+    renderLibrary();
+    showToast('Musica salva!');
+  } catch(e) {
+    showToast('Erro ao salvar: armazenamento cheio');
+  }
 }
 
 function loadSong(id) {
   saveState();
   var song = library.find(function(s) { return s.id === id; });
-  if(!song) return;
+  if (!song) return;
   
   currentSongId = song.id;
   document.getElementById("songName").value = song.name;
   
   Object.keys(song.sections).forEach(function(key) {
     var el = document.getElementById(key);
-    if(el) el.value = song.sections[key] || "";
+    if (el) el.value = song.sections[key] || "";
   });
   
   currentShift = song.shift || 0;
@@ -2076,30 +1861,39 @@ function loadSong(id) {
   renderLibrary();
   showToast('Carregado: ' + song.name);
   
-  if(window.innerWidth < 768) window.scrollTo({top:0,behavior:'smooth'});
+  if (window.innerWidth < 768) {
+    window.scrollTo({top: 0, behavior: 'smooth'});
+  }
 }
 
 function deleteSong(id) {
-  if(!confirm('Excluir esta musica?')) return;
+  if (!confirm('Excluir esta musica?')) return;
+  
   library = library.filter(function(s) { return s.id !== id; });
-  if(currentSongId === id) { currentSongId = null; newSong(false); }
+  if (currentSongId === id) {
+    currentSongId = null;
+    newSong(false);
+  }
+  
   localStorage.setItem('mapmusic_library_pro', JSON.stringify(library));
   renderLibrary();
   showToast('Musica excluida');
 }
 
 function newSong(confirmFirst) {
-  if(confirmFirst !== false) {
+  if (confirmFirst !== false) {
     var hasContent = document.getElementById("intro").value || document.getElementById("verse").value;
-    if(hasContent && !confirm('Descartar alteracoes?')) return;
+    if (hasContent && !confirm('Descartar alteracoes?')) return;
   }
   
   saveState();
   currentSongId = null;
   document.getElementById("songName").value = "";
-  ["intro","verse","prechorus","chorus","bridge","ending"].forEach(function(id) {
+  
+  ["intro", "verse", "prechorus", "chorus", "bridge", "ending"].forEach(function(id) {
     document.getElementById(id).value = "";
   });
+  
   currentShift = 0;
   document.getElementById("keyShift").value = 0;
   updateKeyDisplay();
@@ -2124,6 +1918,7 @@ function exportJSON() {
     },
     shift: currentShift
   };
+  
   downloadFile(JSON.stringify(data, null, 2), name.replace(/\s+/g, "_") + ".json", "application/json");
   showToast('JSON exportado!');
 }
@@ -2143,7 +1938,9 @@ function exportTXT() {
   };
   
   Object.keys(sections).forEach(function(title) {
-    if(sections[title].trim()) txt += "[" + title + "]\n" + sections[title] + "\n\n";
+    if (sections[title].trim()) {
+      txt += "[" + title + "]\n" + sections[title] + "\n\n";
+    }
   });
   
   downloadFile(txt, name.replace(/\s+/g, "_") + ".txt", "text/plain");
@@ -2174,13 +1971,195 @@ function shareURL() {
     s: currentShift
   };
   
-  var json = JSON.stringify(data);
-  var compressed = btoa(unescape(encodeURIComponent(json)));
-  var url = window.location.origin + window.location.pathname + "?data=" + compressed;
+  try {
+    var json = JSON.stringify(data);
+    var compressed = btoa(encodeURIComponent(json));
+    var url = window.location.origin + window.location.pathname + "?data=" + compressed;
+    
+    if (navigator.clipboard) {
+      navigator.clipboard.writeText(url).then(function() {
+        showToast('Link copiado!');
+      }).catch(function() {
+        prompt('Copie este link:', url);
+      });
+    } else {
+      prompt('Copie este link:', url);
+    }
+  } catch(e) {
+    showToast('Erro ao gerar link');
+  }
+}
+
+function showImportModal() {
+  document.getElementById("importModal").style.display = "flex";
+  document.getElementById("importArea").focus();
+}
+
+function closeImportModal() {
+  document.getElementById("importModal").style.display = "none";
+  document.getElementById("importArea").value = "";
+}
+
+function importData() {
+  var text = document.getElementById("importArea").value.trim();
+  if (!text) {
+    showToast('Cole algum conteudo para importar');
+    return;
+  }
   
-  if(navigator.clipboard) {
-    navigator.clipboard.writeText(url).then(function() {
-      showToast('Link copiado!');
-    });
-  } else {
-    prompt('Copie este link:', url
+  saveState();
+  
+  // Tentar JSON primeiro
+  try {
+    var data = JSON.parse(text);
+    if (data.sections) {
+      document.getElementById("songName").value = data.name || "importada";
+      Object.keys(data.sections).forEach(function(key) {
+        var el = document.getElementById(key);
+        if (el) el.value = data.sections[key] || "";
+      });
+      currentShift = data.shift || 0;
+      document.getElementById("keyShift").value = currentShift;
+      updateKeyDisplay();
+      closeImportModal();
+      showToast('JSON importado!');
+      return;
+    }
+  } catch(e) {
+    // Nao e JSON valido, tentar TXT
+  }
+  
+  // Importar como TXT (formato simples)
+  importTXT(text);
+}
+
+function importTXT(text) {
+  var lines = text.split('\n');
+  var currentSection = null;
+  var sectionContent = [];
+  
+  // Limpar secoes primeiro
+  ["intro", "verse", "prechorus", "chorus", "bridge", "ending"].forEach(function(id) {
+    document.getElementById(id).value = "";
+  });
+  
+  lines.forEach(function(line) {
+    line = line.trim();
+    if (!line) return;
+    
+    // Detectar secao
+    var sectionMatch = line.match(/^\[(.+)\]$/i);
+    if (sectionMatch) {
+      // Salvar secao anterior
+      if (currentSection && sectionContent.length > 0) {
+        var el = document.getElementById(currentSection);
+        if (el) el.value = sectionContent.join('\n');
+      }
+      
+      // Iniciar nova secao
+      var sectionName = sectionMatch[1].toUpperCase();
+      var sectionMap = {
+        'INTRODUCAO': 'intro', 'INTRO': 'intro', 'INT': 'intro',
+        'VERSO': 'verse', 'VRS': 'verse', 'VERSE': 'verse',
+        'PRE-REFRAO': 'prechorus', 'PRE': 'prechorus', 'PRECHORUS': 'prechorus',
+        'REFRAO': 'chorus', 'REF': 'chorus', 'CHORUS': 'chorus',
+        'PONTE': 'bridge', 'PON': 'bridge', 'BRIDGE': 'bridge',
+        'FINAL': 'ending', 'END': 'ending', 'OUTRO': 'ending'
+      };
+      
+      currentSection = sectionMap[sectionName];
+      sectionContent = [];
+    } else if (currentSection) {
+      sectionContent.push(line);
+    } else if (!document.getElementById("songName").value && !line.startsWith('=') && !line.startsWith('Tom:')) {
+      // Primeira linha pode ser o nome
+      document.getElementById("songName").value = line;
+    }
+  });
+  
+  // Salvar ultima secao
+  if (currentSection && sectionContent.length > 0) {
+    var el = document.getElementById(currentSection);
+    if (el) el.value = sectionContent.join('\n');
+  }
+  
+  closeImportModal();
+  showToast('Importacao realizada!');
+}
+
+function loadFromURL() {
+  var params = new URLSearchParams(window.location.search);
+  var data = params.get("data");
+  if (!data) return;
+  
+  try {
+    var json = decodeURIComponent(atob(data));
+    var song = JSON.parse(json);
+    
+    document.getElementById("songName").value = song.n || "";
+    document.getElementById("intro").value = song.i || "";
+    document.getElementById("verse").value = song.v || "";
+    document.getElementById("prechorus").value = song.p || "";
+    document.getElementById("chorus").value = song.c || "";
+    document.getElementById("bridge").value = song.b || "";
+    document.getElementById("ending").value = song.e || "";
+    
+    currentShift = song.s || 0;
+    document.getElementById("keyShift").value = currentShift;
+    updateKeyDisplay();
+    
+    showToast('Musica carregada do link!');
+  } catch(e) {
+    console.error('Erro ao carregar da URL:', e);
+  }
+}
+
+// ============================================
+// UNDO/REDO
+// ============================================
+function saveState() {
+  var state = {
+    name: document.getElementById("songName").value,
+    sections: {
+      intro: document.getElementById("intro").value,
+      verse: document.getElementById("verse").value,
+      prechorus: document.getElementById("prechorus").value,
+      chorus: document.getElementById("chorus").value,
+      bridge: document.getElementById("bridge").value,
+      ending: document.getElementById("ending").value
+    },
+    shift: currentShift
+  };
+  undoStack.push(state);
+  if (undoStack.length > 20) undoStack.shift();
+  redoStack = [];
+}
+
+function undo() {
+  if (undoStack.length === 0) {
+    showToast('Nada para desfazer');
+    return;
+  }
+  redoStack.push(getCurrentState());
+  restoreState(undoStack.pop());
+  showToast('Desfeito');
+}
+
+function redo() {
+  if (redoStack.length === 0) {
+    showToast('Nada para refazer');
+    return;
+  }
+  undoStack.push(getCurrentState());
+  restoreState(redoStack.pop());
+  showToast('Refeito');
+}
+
+function getCurrentState() {
+  return {
+    name: document.getElementById("songName").value,
+    sections: {
+      intro: document.getElementById("intro").value,
+      verse: document.getElementById("verse").value,
+      prechorus: document.getElementById("prechorus").value,
+      chorus: document.getElementById("chorus").value
