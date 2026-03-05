@@ -74,13 +74,11 @@ body.performance-mode .chord-area { font-size: 32px; color: var(--accent-primary
 </header>
 
 <div class="main-layout">
-  <!-- SETLIST -->
   <aside class="side-panel">
     <div class="panel-header">SETLIST <span id="song-count" style="color:var(--accent-primary)">0</span></div>
     <div class="song-list" id="song-list"></div>
   </aside>
 
-  <!-- ESTRUTURA DE NOTAS -->
   <main class="notes-section">
     <div style="display: flex; align-items: center; gap: 15px; background: var(--bg-secondary); padding: 10px 20px; border-radius: 50px; width: fit-content;">
         <span style="font-size: 10px; font-weight: 800; opacity: 0.5;">TRANSPOR:</span>
@@ -91,7 +89,6 @@ body.performance-mode .chord-area { font-size: 32px; color: var(--accent-primary
     <div class="section-grid" id="notes-grid"></div>
   </main>
 
-  <!-- METRÔNOMO -->
   <aside>
     <div class="metronome-card">
       <div class="bpm-val" id="bpm-display">120</div>
@@ -111,9 +108,57 @@ body.performance-mode .chord-area { font-size: 32px; color: var(--accent-primary
 let bpm = 120;
 let isPlaying = false;
 let currentTrans = 0;
-let songs = JSON.parse(localStorage.getItem('map_pro_setlist')) || [];
-const notes = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"];
+let nextNoteTime = 0.0;
+let timerID = null;
 
+// MOTOR DE ÁUDIO WEB
+const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+const notes = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"];
+let songs = JSON.parse(localStorage.getItem('map_pro_setlist')) || [];
+
+function playClick() {
+    const osc = audioCtx.createOscillator();
+    const env = audioCtx.createGain();
+    osc.frequency.value = 1000;
+    env.gain.value = 1;
+    env.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.1);
+    osc.connect(env);
+    env.connect(audioCtx.destination);
+    osc.start(audioCtx.currentTime);
+    osc.stop(audioCtx.currentTime + 0.1);
+}
+
+function scheduler() {
+    while (nextNoteTime < audioCtx.currentTime + 0.1) {
+        playClick();
+        nextNoteTime += 60.0 / bpm;
+    }
+    timerID = setTimeout(scheduler, 25);
+}
+
+function togglePlay() {
+    if (audioCtx.state === 'suspended') audioCtx.resume();
+    isPlaying = !isPlaying;
+    const btn = document.getElementById('play-btn');
+    
+    if (isPlaying) {
+        nextNoteTime = audioCtx.currentTime;
+        scheduler();
+        btn.innerText = "PARAR";
+        btn.style.background = "#ff4d4d";
+    } else {
+        clearTimeout(timerID);
+        btn.innerText = "INICIAR";
+        btn.style.background = "var(--accent-primary)";
+    }
+}
+
+function adj(v) { 
+    bpm = Math.min(Math.max(bpm + v, 40), 240);
+    document.getElementById('bpm-display').innerText = bpm; 
+}
+
+// RESTANTE DA LÓGICA (TRANSPOR/SETLIST)
 function addPart(title = "PARTE", content = "") {
   const div = document.createElement('div');
   div.className = 'song-part';
@@ -174,12 +219,6 @@ function deleteSong(id, e) {
 }
 
 function togglePerf() { document.getElementById('app-body').classList.toggle('performance-mode'); }
-function adj(v) { bpm += v; document.getElementById('bpm-display').innerText = bpm; }
-function togglePlay() { 
-    isPlaying = !isPlaying; 
-    document.getElementById('play-btn').innerText = isPlaying ? "PARAR" : "INICIAR";
-    document.getElementById('play-btn').style.background = isPlaying ? "#ff4d4d" : "#1db954";
-}
 
 renderSetlist();
 ["INTRO", "VERSO", "REFRÃO"].forEach(p => addPart(p));
