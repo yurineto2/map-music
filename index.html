@@ -12,11 +12,13 @@
   --bg-secondary: #12121a;
   --bg-tertiary: #1a1a25;
   --accent-primary: #1db954;
+  --accent-secondary: #1ed760;
   --text-primary: #ffffff;
   --text-secondary: #b3b3b3;
   --border-color: rgba(255, 255, 255, 0.1);
   --radius-lg: 12px;
   --radius-xl: 16px;
+  --radius-full: 9999px;
 }
 
 * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
@@ -26,40 +28,48 @@ body { font-family: 'Inter', sans-serif; background: var(--bg-primary); color: v
 .app-header { background: rgba(18,18,26,0.95); backdrop-filter: blur(20px); border-bottom: 1px solid var(--border-color); padding: 15px 20px; position: sticky; top: 0; z-index: 100; }
 .header-content { max-width: 1400px; margin: 0 auto; display: flex; justify-content: space-between; align-items: center; }
 
-/* LAYOUT PRINCIPAL */
+/* LAYOUT */
 .main-layout { display: grid; grid-template-columns: 280px 1fr 300px; gap: 20px; max-width: 1400px; margin: 0 auto; width: 100%; padding: 20px; flex-grow: 1; }
 
 /* SETLIST */
 .side-panel { background: var(--bg-secondary); border-radius: var(--radius-xl); border: 1px solid var(--border-color); display: flex; flex-direction: column; max-height: 85vh; }
-.panel-header { padding: 15px; border-bottom: 1px solid var(--border-color); font-weight: 800; font-size: 14px; display: flex; justify-content: space-between; }
+.panel-header { padding: 15px; border-bottom: 1px solid var(--border-color); font-weight: 800; font-size: 14px; text-transform: uppercase; letter-spacing: 1px; color: var(--accent-primary); }
 .song-list { overflow-y: auto; padding: 10px; flex-grow: 1; }
-.song-item { background: var(--bg-tertiary); padding: 12px; border-radius: 8px; margin-bottom: 8px; cursor: pointer; border: 1px solid transparent; display: flex; justify-content: space-between; align-items: center; }
-.song-item:hover { border-color: var(--accent-primary); }
+.song-item { background: var(--bg-tertiary); padding: 12px; border-radius: 8px; margin-bottom: 8px; cursor: pointer; border: 1px solid transparent; display: flex; justify-content: space-between; align-items: center; transition: 0.2s; }
+.song-item:hover { border-color: var(--accent-primary); background: var(--bg-elevated); }
 
 /* NOTAS */
 .notes-section { display: flex; flex-direction: column; gap: 15px; }
-.section-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 15px; }
-.song-part { background: var(--bg-secondary); border-radius: var(--radius-lg); padding: 15px; border-left: 4px solid var(--accent-primary); position: relative; }
-.chord-area { font-family: 'Monaco', monospace; font-size: 18px; font-weight: 700; color: #fff; background: none; border: none; width: 100%; resize: none; outline: none; margin-top: 10px; }
+.section-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 15px; }
+.song-part { background: var(--bg-secondary); border-radius: var(--radius-lg); padding: 15px; border-left: 4px solid var(--accent-primary); position: relative; box-shadow: 0 4px 12px rgba(0,0,0,0.2); }
+.chord-area { font-family: 'Monaco', 'Consolas', monospace; font-size: 19px; font-weight: 700; color: #fff; background: none; border: none; width: 100%; resize: none; outline: none; margin-top: 10px; line-height: 1.4; }
 
-/* METRÔNOMO & TAP */
+/* METRÔNOMO */
 .metronome-card { background: var(--bg-secondary); border-radius: var(--radius-xl); border: 1px solid var(--border-color); padding: 20px; text-align: center; position: sticky; top: 100px; }
-.bpm-val { font-size: 52px; font-weight: 800; color: var(--accent-primary); line-height: 1; }
-
-.btn-tap { 
-    background: var(--bg-tertiary); border: 2px solid var(--accent-primary); color: var(--accent-primary);
-    width: 70px; height: 70px; border-radius: 50%; font-weight: 900; font-size: 14px; cursor: pointer;
-    margin: 15px 0; transition: transform 0.1s; 
-}
+.bpm-val { font-size: 56px; font-weight: 800; color: var(--accent-primary); text-shadow: 0 0 15px var(--accent-glow); }
+.btn-tap { background: var(--bg-tertiary); border: 2px solid var(--accent-primary); color: var(--accent-primary); width: 75px; height: 75px; border-radius: 50%; font-weight: 900; cursor: pointer; margin: 15px 0; transition: 0.1s; }
 .btn-tap:active { transform: scale(0.9); background: var(--accent-primary); color: #000; }
+.btn-main { background: var(--accent-primary); color: #000; border: none; padding: 14px; border-radius: var(--radius-full); font-weight: 800; cursor: pointer; width: 100%; transition: 0.2s; }
 
-.btn-main { background: var(--accent-primary); color: #000; border: none; padding: 12px; border-radius: 30px; font-weight: 800; cursor: pointer; width: 100%; }
-
-/* PERFORMANCE */
+/* MODO SHOW (PERFORMANCE) */
 body.performance-mode { background: #000; }
 body.performance-mode .app-header, body.performance-mode .side-panel, body.performance-mode .metronome-card, body.performance-mode .btn-del { display: none !important; }
 body.performance-mode .main-layout { grid-template-columns: 1fr; padding: 40px; }
-body.performance-mode .chord-area { font-size: 32px; color: var(--accent-primary); pointer-events: none; }
+body.performance-mode .chord-area { font-size: 34px; color: var(--accent-primary); pointer-events: none; }
+body.performance-mode .song-part { background: transparent; border-left-width: 8px; margin-bottom: 20px; }
+
+/* BOTÃO MODO SHOW */
+.mode-show-container {
+    position: fixed; bottom: 25px; right: 25px; z-index: 1000;
+    display: flex; align-items: center; gap: 12px;
+    background: var(--accent-primary); color: #000;
+    padding: 8px 20px; border-radius: var(--radius-full);
+    cursor: pointer; font-weight: 800; font-size: 13px; letter-spacing: 0.5px;
+    box-shadow: 0 10px 25px rgba(29, 185, 84, 0.4);
+    transition: 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+.mode-show-container:hover { transform: translateY(-3px) scale(1.05); }
+.mode-show-container svg { width: 18px; height: 18px; }
 
 @media (max-width: 1024px) { .main-layout { grid-template-columns: 1fr; } .side-panel { order: 3; } }
 </style>
@@ -69,25 +79,25 @@ body.performance-mode .chord-area { font-size: 32px; color: var(--accent-primary
 <header class="app-header">
   <div class="header-content">
     <h1>Map Music <span style="color:var(--accent-primary)">Pro</span></h1>
-    <div style="display: flex; gap: 10px;">
-        <button onclick="addPart()" style="background:none; border:1px solid #fff; color:#fff; padding: 5px 15px; border-radius: 20px; cursor:pointer; font-size:12px;">+ PARTE</button>
-        <button onclick="saveSong()" style="background:var(--accent-primary); border:none; padding: 5px 15px; border-radius: 20px; font-weight:700; cursor:pointer; font-size:12px;">SALVAR</button>
+    <div style="display: flex; gap: 12px;">
+        <button onclick="addPart()" style="background:none; border:1px solid rgba(255,255,255,0.3); color:#fff; padding: 6px 18px; border-radius: 20px; cursor:pointer; font-size:11px; font-weight:600;">+ ADICIONAR PARTE</button>
+        <button onclick="saveSong()" style="background:var(--accent-primary); border:none; padding: 6px 18px; border-radius: 20px; font-weight:800; cursor:pointer; font-size:11px; color:#000;">SALVAR NA SETLIST</button>
     </div>
   </div>
 </header>
 
 <div class="main-layout">
   <aside class="side-panel">
-    <div class="panel-header">SETLIST <span id="song-count" style="color:var(--accent-primary)">0</span></div>
+    <div class="panel-header">Minha Setlist <span id="song-count" style="margin-left:auto; opacity:0.6;">0</span></div>
     <div class="song-list" id="song-list"></div>
   </aside>
 
   <main class="notes-section">
-    <div style="display: flex; align-items: center; gap: 15px; background: var(--bg-secondary); padding: 10px 20px; border-radius: 50px; width: fit-content;">
-        <span style="font-size: 10px; font-weight: 800; opacity: 0.5;">TRANSPOR:</span>
-        <button onclick="transposeAll(-1)" style="background:none; border:1px solid var(--border-color); color:#fff; width:25px; height:25px; border-radius:50%; cursor:pointer;">-</button>
-        <span id="trans-val" style="font-weight: 800; min-width: 20px; text-align: center;">0</span>
-        <button onclick="transposeAll(1)" style="background:none; border:1px solid var(--border-color); color:#fff; width:25px; height:25px; border-radius:50%; cursor:pointer;">+</button>
+    <div style="display: flex; align-items: center; gap: 15px; background: var(--bg-secondary); padding: 10px 25px; border-radius: 50px; width: fit-content; border: 1px solid var(--border-color);">
+        <span style="font-size: 10px; font-weight: 900; opacity: 0.5; color: var(--accent-primary);">TRANSPOSE</span>
+        <button onclick="transposeAll(-1)" style="background:var(--bg-tertiary); border:1px solid var(--border-color); color:#fff; width:28px; height:28px; border-radius:50%; cursor:pointer; font-weight:bold;">-</button>
+        <span id="trans-val" style="font-weight: 800; min-width: 25px; text-align: center; font-size:16px;">0</span>
+        <button onclick="transposeAll(1)" style="background:var(--bg-tertiary); border:1px solid var(--border-color); color:#fff; width:28px; height:28px; border-radius:50%; cursor:pointer; font-weight:bold;">+</button>
     </div>
     <div class="section-grid" id="notes-grid"></div>
   </main>
@@ -95,20 +105,24 @@ body.performance-mode .chord-area { font-size: 32px; color: var(--accent-primary
   <aside>
     <div class="metronome-card">
       <div class="bpm-val" id="bpm-display">120</div>
-      <div style="font-size: 10px; font-weight: 800; opacity: 0.5;">BPM</div>
+      <div style="font-size: 10px; font-weight: 900; opacity: 0.5; letter-spacing: 2px;">BPM</div>
       
       <button class="btn-tap" id="tap-btn">TAP</button>
 
-      <div style="display: flex; gap: 10px; justify-content: center; margin-bottom: 15px;">
-        <button onclick="adj(-1)" style="width:30px; height:30px; border-radius:50%; border:1px solid var(--border-color); background:none; color:#fff; cursor:pointer;">-</button>
-        <button onclick="adj(1)" style="width:30px; height:30px; border-radius:50%; border:1px solid var(--border-color); background:none; color:#fff; cursor:pointer;">+</button>
+      <div style="display: flex; gap: 12px; justify-content: center; margin-bottom: 20px;">
+        <button onclick="adj(-1)" style="width:35px; height:35px; border-radius:50%; border:1px solid var(--border-color); background:var(--bg-tertiary); color:#fff; cursor:pointer; font-size:18px;">-</button>
+        <button onclick="adj(1)" style="width:35px; height:35px; border-radius:50%; border:1px solid var(--border-color); background:var(--bg-tertiary); color:#fff; cursor:pointer; font-size:18px;">+</button>
       </div>
-      <button class="btn-main" id="play-btn" onclick="togglePlay()">INICIAR</button>
+      <button class="btn-main" id="play-btn" onclick="togglePlay()">INICIAR METRÔNOMO</button>
     </div>
   </aside>
 </div>
 
-<button style="position: fixed; bottom: 20px; right: 20px; width: 50px; height: 50px; border-radius: 50%; background: var(--accent-primary); border: none; font-size: 20px; cursor: pointer;" onclick="togglePerf()">⛶</button>
+<!-- BOTÃO MODO SHOW PROFISSIONAL -->
+<div class="mode-show-container" onclick="togglePerf()">
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"/></svg>
+  <span id="mode-text">MODO SHOW</span>
+</div>
 
 <script>
 let bpm = 120;
@@ -121,35 +135,27 @@ const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
 const notes = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"];
 let songs = JSON.parse(localStorage.getItem('map_pro_setlist')) || [];
 
-// --- TAP TEMPO LOGIC ---
+// --- TAP TEMPO ---
 document.getElementById('tap-btn').addEventListener('click', () => {
     const now = performance.now();
     tapTimes.push(now);
     if (tapTimes.length > 4) tapTimes.shift();
-
     if (tapTimes.length > 1) {
-        const intervals = [];
-        for (let i = 1; i < tapTimes.length; i++) {
-            intervals.push(tapTimes[i] - tapTimes[i-1]);
-        }
-        const avgInterval = intervals.reduce((a, b) => a + b) / intervals.length;
-        bpm = Math.round(60000 / avgInterval);
-        bpm = Math.min(Math.max(bpm, 40), 240);
+        const avg = (tapTimes[tapTimes.length-1] - tapTimes[0]) / (tapTimes.length - 1);
+        bpm = Math.min(Math.max(Math.round(60000 / avg), 40), 240);
         document.getElementById('bpm-display').innerText = bpm;
     }
 });
 
-// --- METRONOME LOGIC ---
+// --- ÁUDIO ---
 function playClick() {
     const osc = audioCtx.createOscillator();
     const env = audioCtx.createGain();
     osc.frequency.value = 1000;
-    env.gain.value = 1;
-    env.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.08);
-    osc.connect(env);
-    env.connect(audioCtx.destination);
-    osc.start(audioCtx.currentTime);
-    osc.stop(audioCtx.currentTime + 0.08);
+    env.gain.value = 0.8;
+    env.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.07);
+    osc.connect(env); env.connect(audioCtx.destination);
+    osc.start(); osc.stop(audioCtx.currentTime + 0.07);
 }
 
 function scheduler() {
@@ -164,36 +170,26 @@ function togglePlay() {
     if (audioCtx.state === 'suspended') audioCtx.resume();
     isPlaying = !isPlaying;
     const btn = document.getElementById('play-btn');
-    if (isPlaying) {
-        nextNoteTime = audioCtx.currentTime;
-        scheduler();
-        btn.innerText = "PARAR"; btn.style.background = "#ff4d4d";
-    } else {
-        clearTimeout(timerID);
-        btn.innerText = "INICIAR"; btn.style.background = "var(--accent-primary)";
-    }
+    if (isPlaying) { nextNoteTime = audioCtx.currentTime; scheduler(); btn.innerText = "PARAR"; btn.style.background = "#ff4d4d"; }
+    else { clearTimeout(timerID); btn.innerText = "INICIAR"; btn.style.background = "var(--accent-primary)"; }
 }
 
-function adj(v) { 
-    bpm = Math.min(Math.max(bpm + v, 40), 240);
-    document.getElementById('bpm-display').innerText = bpm; 
-}
+function adj(v) { bpm = Math.min(Math.max(bpm + v, 40), 240); document.getElementById('bpm-display').innerText = bpm; }
 
-// --- NOTES & SETLIST ---
+// --- NOTAS & SETLIST ---
 function addPart(title = "PARTE", content = "") {
   const div = document.createElement('div');
   div.className = 'song-part';
   div.innerHTML = `
-    <input type="text" value="${title}" style="background:none; border:none; color:var(--accent-primary); font-weight:800; font-size:11px; width:100%; outline:none; text-transform:uppercase;">
-    <textarea class="chord-area" oninput="this.style.height='';this.style.height=this.scrollHeight+'px'" placeholder="C G Am F">${content}</textarea>
-    <button class="btn-del" onclick="this.parentElement.remove()" style="position:absolute; top:10px; right:10px; background:none; border:none; color:red; cursor:pointer;">✕</button>
+    <input type="text" value="${title}" class="part-input" style="background:none; border:none; color:var(--accent-primary); font-weight:900; font-size:11px; width:100%; outline:none; text-transform:uppercase; letter-spacing:1px;">
+    <textarea class="chord-area" oninput="this.style.height='';this.style.height=this.scrollHeight+'px'" placeholder="Ex: C G Am F">${content}</textarea>
+    <button class="btn-del" onclick="this.parentElement.remove()" style="position:absolute; top:12px; right:12px; background:none; border:none; color:#ff4d4d; cursor:pointer; font-weight:bold; font-size:14px;">✕</button>
   `;
   document.getElementById('notes-grid').appendChild(div);
 }
 
 function transposeAll(dir) {
-  const transVal = document.getElementById('trans-val');
-  transVal.innerText = parseInt(transVal.innerText) + dir;
+  document.getElementById('trans-val').innerText = parseInt(document.getElementById('trans-val').innerText) + dir;
   document.querySelectorAll('.chord-area').forEach(area => {
     area.value = area.value.replace(/[A-G][#b]?/g, m => {
       let i = notes.indexOf(m.replace('Db','C#').replace('Eb','D#').replace('Gb','F#').replace('Ab','G#').replace('Bb','A#'));
@@ -203,7 +199,7 @@ function transposeAll(dir) {
 }
 
 function saveSong() {
-  const name = prompt("Nome da música:");
+  const name = prompt("Título da Música:");
   if (!name) return;
   const parts = Array.from(document.querySelectorAll('.song-part')).map(p => ({
     title: p.querySelector('input').value,
@@ -219,8 +215,8 @@ function renderSetlist() {
   document.getElementById('song-count').innerText = songs.length;
   list.innerHTML = songs.map(s => `
     <div class="song-item" onclick="loadSong(${s.id})">
-      <div><h4>${s.name}</h4><span>${s.bpm} BPM</span></div>
-      <button onclick="deleteSong(${s.id}, event)" style="background:none; border:none; color:red; cursor:pointer;">✕</button>
+      <div><h4 style="color:#fff;">${s.name}</h4><span>${s.bpm} BPM</span></div>
+      <button onclick="deleteSong(${s.id}, event)" style="background:none; border:none; color:#ff4d4d; cursor:pointer; font-size:16px; padding:5px;">✕</button>
     </div>
   `).join('');
 }
@@ -234,12 +230,18 @@ function loadSong(id) {
 
 function deleteSong(id, e) {
   e.stopPropagation();
+  if(!confirm("Remover música da setlist?")) return;
   songs = songs.filter(s => s.id !== id);
   localStorage.setItem('map_pro_setlist', JSON.stringify(songs));
   renderSetlist();
 }
 
-function togglePerf() { document.getElementById('app-body').classList.toggle('performance-mode'); }
+function togglePerf() {
+    const isPerf = document.getElementById('app-body').classList.toggle('performance-mode');
+    document.getElementById('mode-text').innerText = isPerf ? "SAIR DO SHOW" : "MODO SHOW";
+    if (isPerf) { document.documentElement.requestFullscreen?.(); } 
+    else { document.exitFullscreen?.(); }
+}
 
 renderSetlist();
 ["INTRO", "VERSO", "REFRÃO"].forEach(p => addPart(p));
