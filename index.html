@@ -1,1818 +1,876 @@
-
-html_profissional = '''<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="pt-BR">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Map Music Pro - Professional Edition</title>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
-
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Map Music Pro</title>
 <style>
-/* ============================================
-   DESIGN SYSTEM - PROFESSIONAL EDITION
-   Inspirado em: Spotify, Figma, Notion
-   ============================================ */
-:root {
-  /* Cores Base */
-  --bg-primary: #0a0a0f;
-  --bg-secondary: #12121a;
-  --bg-tertiary: #1a1a25;
-  --bg-elevated: #242433;
-  --bg-input: #0f0f14;
-  
-  /* Cores de Acento */
-  --accent-primary: #1db954;
-  --accent-secondary: #1ed760;
-  --accent-hover: #1fdf64;
-  --accent-glow: rgba(29, 185, 84, 0.3);
-  
-  /* Texto */
-  --text-primary: #ffffff;
-  --text-secondary: #b3b3b3;
-  --text-muted: #6a6a6a;
-  --text-inverse: #000000;
-  
-  /* Bordas e Efeitos */
-  --border-color: rgba(255, 255, 255, 0.1);
-  --border-hover: rgba(255, 255, 255, 0.2);
-  --glass-bg: rgba(18, 18, 26, 0.8);
-  --glass-border: rgba(255, 255, 255, 0.05);
-  
-  /* Tipografia */
-  --font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-  --font-mono: 'SF Mono', 'Fira Code', monospace;
-  
-  /* Espaçamento */
-  --space-xs: 4px;
-  --space-sm: 8px;
-  --space-md: 16px;
-  --space-lg: 24px;
-  --space-xl: 32px;
-  --space-2xl: 48px;
-  
-  /* Bordas */
-  --radius-sm: 6px;
-  --radius-md: 8px;
-  --radius-lg: 12px;
-  --radius-xl: 16px;
-  --radius-full: 9999px;
-  
-  /* Sombras */
-  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3);
-  --shadow-md: 0 4px 6px rgba(0, 0, 0, 0.4);
-  --shadow-lg: 0 10px 15px rgba(0, 0, 0, 0.5);
-  --shadow-glow: 0 0 20px var(--accent-glow);
-  
-  /* Transições */
-  --transition-fast: 150ms ease;
-  --transition-base: 250ms ease;
-  --transition-slow: 350ms ease;
-}
-
-/* TEMAS ALTERNATIVOS */
-[data-theme="red"] {
-  --accent-primary: #e22134;
-  --accent-secondary: #ff4d5e;
-  --accent-hover: #ff6b7a;
-  --accent-glow: rgba(226, 33, 52, 0.3);
-}
-
-[data-theme="blue"] {
-  --accent-primary: #0d84fc;
-  --accent-secondary: #3d9eff;
-  --accent-hover: #5eb0ff;
-  --accent-glow: rgba(13, 132, 252, 0.3);
-}
-
-[data-theme="purple"] {
-  --accent-primary: #8b5cf6;
-  --accent-secondary: #a78bfa;
-  --accent-hover: #c4b5fd;
-  --accent-glow: rgba(139, 92, 246, 0.3);
-}
-
-[data-theme="orange"] {
-  --accent-primary: #f97316;
-  --accent-secondary: #fb923c;
-  --accent-hover: #fdba74;
-  --accent-glow: rgba(249, 115, 22, 0.3);
-}
-
-[data-theme="pink"] {
-  --accent-primary: #ec4899;
-  --accent-secondary: #f472b6;
-  --accent-hover: #f9a8d4;
-  --accent-glow: rgba(236, 72, 153, 0.3);
-}
-
-/* ============================================
-   RESET E BASE
-   ============================================ */
-* {
-  margin: 0;
-  padding: 0;
-  box-sizing: border-box;
-}
-
-html {
-  scroll-behavior: smooth;
-}
-
-body {
-  font-family: var(--font-family);
-  background: var(--bg-primary);
-  color: var(--text-primary);
-  line-height: 1.6;
-  min-height: 100vh;
-  overflow-x: hidden;
-}
-
-/* ============================================
-   HEADER PROFISSIONAL
-   ============================================ */
-.app-header {
-  background: linear-gradient(180deg, rgba(18,18,26,0.95) 0%, rgba(10,10,15,0.8) 100%);
-  backdrop-filter: blur(20px);
-  border-bottom: 1px solid var(--border-color);
-  padding: var(--space-lg) var(--space-xl);
-  position: sticky;
-  top: 0;
-  z-index: 100;
-}
-
-.header-content {
-  max-width: 1400px;
-  margin: 0 auto;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--space-lg);
-}
-
-.logo {
-  display: flex;
-  align-items: center;
-  gap: var(--space-md);
-}
-
-.logo-icon {
-  width: 40px;
-  height: 40px;
-  background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
-  border-radius: var(--radius-md);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 20px;
-  box-shadow: var(--shadow-glow);
-}
-
-.logo-text {
-  font-size: 24px;
-  font-weight: 800;
-  letter-spacing: -0.5px;
-  background: linear-gradient(135deg, var(--text-primary), var(--text-secondary));
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
-}
-
-.logo-subtitle {
-  font-size: 12px;
-  color: var(--text-muted);
-  font-weight: 500;
-  text-transform: uppercase;
-  letter-spacing: 1px;
-  margin-top: -4px;
-}
-
-/* ============================================
-   CONTAINER PRINCIPAL
-   ============================================ */
-.app-container {
-  max-width: 1400px;
-  margin: 0 auto;
-  padding: var(--space-xl);
-}
-
-/* ============================================
-   CARDS E PAINÉIS
-   ============================================ */
-.card {
-  background: var(--bg-secondary);
-  border: 1px solid var(--border-color);
-  border-radius: var(--radius-xl);
-  padding: var(--space-xl);
-  margin-bottom: var(--space-xl);
-  transition: all var(--transition-base);
-}
-
-.card:hover {
-  border-color: var(--border-hover);
-  box-shadow: var(--shadow-lg);
-}
-
-.card-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-bottom: var(--space-lg);
-  padding-bottom: var(--space-md);
-  border-bottom: 1px solid var(--border-color);
-}
-
-.card-title {
-  font-size: 18px;
-  font-weight: 700;
-  color: var(--text-primary);
-  display: flex;
-  align-items: center;
-  gap: var(--space-sm);
-}
-
-.card-title-icon {
-  width: 32px;
-  height: 32px;
-  background: var(--bg-elevated);
-  border-radius: var(--radius-md);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 16px;
-}
-
-/* ============================================
-   BIBLIOTECA DE MÚSICAS
-   ============================================ */
-.songs-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-  gap: var(--space-md);
-}
-
-.song-card {
-  background: var(--bg-tertiary);
-  border: 1px solid var(--border-color);
-  border-radius: var(--radius-lg);
-  padding: var(--space-md);
-  cursor: pointer;
-  transition: all var(--transition-base);
-  position: relative;
-  overflow: hidden;
-}
-
-.song-card::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  height: 3px;
-  background: linear-gradient(90deg, var(--accent-primary), var(--accent-secondary));
-  transform: scaleX(0);
-  transition: transform var(--transition-base);
-}
-
-.song-card:hover::before {
-  transform: scaleX(1);
-}
-
-.song-card:hover {
-  background: var(--bg-elevated);
-  transform: translateY(-2px);
-  box-shadow: var(--shadow-md);
-}
-
-.song-card.active {
-  background: var(--bg-elevated);
-  border-color: var(--accent-primary);
-  box-shadow: var(--shadow-glow);
-}
-
-.song-card.active::before {
-  transform: scaleX(1);
-}
-
-.song-name {
-  font-weight: 600;
-  font-size: 14px;
-  margin-bottom: var(--space-xs);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.song-date {
-  font-size: 12px;
-  color: var(--text-muted);
-}
-
-.song-delete {
-  position: absolute;
-  top: var(--space-sm);
-  right: var(--space-sm);
-  width: 24px;
-  height: 24px;
-  border-radius: var(--radius-full);
-  background: rgba(226, 33, 52, 0.9);
-  color: white;
-  border: none;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 14px;
-  opacity: 0;
-  transition: opacity var(--transition-fast);
-}
-
-.song-card:hover .song-delete {
-  opacity: 1;
-}
-
-/* ============================================
-   CONTROLES E INPUTS
-   ============================================ */
-.controls-bar {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--space-md);
-  align-items: center;
-  padding: var(--space-lg);
-  background: var(--bg-tertiary);
-  border-radius: var(--radius-lg);
-  margin-bottom: var(--space-xl);
-}
-
-.input-group {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-xs);
-}
-
-.input-label {
-  font-size: 11px;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-  color: var(--text-muted);
-}
-
-input[type="text"],
-select,
-textarea {
-  background: var(--bg-input);
-  border: 1px solid var(--border-color);
-  border-radius: var(--radius-md);
-  color: var(--text-primary);
-  font-family: var(--font-family);
-  font-size: 14px;
-  padding: var(--space-sm) var(--space-md);
-  transition: all var(--transition-fast);
-  outline: none;
-}
-
-input[type="text"]:focus,
-select:focus,
-textarea:focus {
-  border-color: var(--accent-primary);
-  box-shadow: 0 0 0 3px var(--accent-glow);
-}
-
-input[type="text"]::placeholder,
-textarea::placeholder {
-  color: var(--text-muted);
-}
-
-select {
-  cursor: pointer;
-  min-width: 140px;
-}
-
-/* ============================================
-   BOTÕES
-   ============================================ */
-.btn {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: var(--space-sm);
-  padding: var(--space-sm) var(--space-md);
-  border-radius: var(--radius-md);
-  font-family: var(--font-family);
-  font-size: 13px;
-  font-weight: 600;
-  text-decoration: none;
-  cursor: pointer;
-  transition: all var(--transition-fast);
-  border: none;
-  outline: none;
-  position: relative;
-  overflow: hidden;
-}
-
-.btn::after {
-  content: '';
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  width: 0;
-  height: 0;
-  border-radius: 50%;
-  background: rgba(255, 255, 255, 0.2);
-  transform: translate(-50%, -50%);
-  transition: width 0.3s, height 0.3s;
-}
-
-.btn:active::after {
-  width: 200px;
-  height: 200px;
-}
-
-.btn-primary {
-  background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
-  color: var(--text-inverse);
-  box-shadow: var(--shadow-sm);
-}
-
-.btn-primary:hover {
-  background: linear-gradient(135deg, var(--accent-secondary), var(--accent-hover));
-  transform: translateY(-1px);
-  box-shadow: var(--shadow-glow);
-}
-
-.btn-secondary {
-  background: var(--bg-elevated);
-  color: var(--text-primary);
-  border: 1px solid var(--border-color);
-}
-
-.btn-secondary:hover {
-  background: var(--bg-input);
-  border-color: var(--border-hover);
-}
-
-.btn-success {
-  background: #22c55e;
-  color: white;
-}
-
-.btn-success:hover {
-  background: #16a34a;
-}
-
-.btn-danger {
-  background: #ef4444;
-  color: white;
-}
-
-.btn-danger:hover {
-  background: #dc2626;
-}
-
-.btn-icon {
-  width: 36px;
-  height: 36px;
-  padding: 0;
-  border-radius: var(--radius-md);
-}
-
-/* ============================================
-   SEÇÕES DE ACORDES
-   ============================================ */
-.section-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-  gap: var(--space-lg);
-}
-
-.section-card {
-  background: var(--bg-secondary);
-  border: 1px solid var(--border-color);
-  border-radius: var(--radius-xl);
-  overflow: hidden;
-  transition: all var(--transition-base);
-}
-
-.section-card:hover {
-  border-color: var(--border-hover);
-  box-shadow: var(--shadow-md);
-}
-
-.section-header {
-  background: var(--bg-tertiary);
-  padding: var(--space-md) var(--space-lg);
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  border-bottom: 1px solid var(--border-color);
-}
-
-.section-title {
-  font-size: 14px;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-  color: var(--text-primary);
-  display: flex;
-  align-items: center;
-  gap: var(--space-sm);
-}
-
-.section-badge {
-  background: var(--accent-primary);
-  color: var(--text-inverse);
-  font-size: 10px;
-  padding: 2px 6px;
-  border-radius: var(--radius-sm);
-  font-weight: 700;
-}
-
-.section-body {
-  padding: var(--space-md);
-}
-
-.section-textarea {
-  width: 100%;
-  min-height: 120px;
-  background: var(--bg-input);
-  border: 1px solid var(--border-color);
-  border-radius: var(--radius-md);
-  color: var(--accent-secondary);
-  font-family: var(--font-mono);
-  font-size: 15px;
-  line-height: 1.8;
-  padding: var(--space-md);
-  resize: vertical;
-  transition: all var(--transition-fast);
-}
-
-.section-textarea:focus {
-  border-color: var(--accent-primary);
-  box-shadow: 0 0 0 3px var(--accent-glow);
-}
-
-/* ============================================
-   TEMAS E CONFIGURAÇÕES
-   ============================================ */
-.theme-selector {
-  display: flex;
-  gap: var(--space-sm);
-  flex-wrap: wrap;
-}
-
-.theme-btn {
-  width: 32px;
-  height: 32px;
-  border-radius: var(--radius-full);
-  border: 2px solid transparent;
-  cursor: pointer;
-  transition: all var(--transition-fast);
-  position: relative;
-}
-
-.theme-btn:hover {
-  transform: scale(1.1);
-}
-
-.theme-btn.active {
-  border-color: var(--text-primary);
-  box-shadow: 0 0 0 2px var(--bg-primary), 0 0 0 4px var(--accent-primary);
-}
-
-.theme-btn.active::after {
-  content: '✓';
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  font-size: 12px;
-  font-weight: bold;
-  color: white;
-  text-shadow: 0 1px 2px rgba(0,0,0,0.5);
-}
-
-/* ============================================
-   MODO PALCO
-   ============================================ */
-.stage-mode {
-  display: none;
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background: var(--bg-primary);
-  z-index: 1000;
-  overflow: auto;
-  padding: var(--space-2xl);
-}
-
-.stage-content {
-  max-width: 900px;
-  margin: 0 auto;
-  font-size: 32px;
-  line-height: 2;
-}
-
-.stage-section {
-  margin-bottom: var(--space-2xl);
-}
-
-.stage-title {
-  font-size: 24px;
-  font-weight: 800;
-  text-transform: uppercase;
-  letter-spacing: 2px;
-  color: var(--accent-primary);
-  margin-bottom: var(--space-md);
-  padding-bottom: var(--space-sm);
-  border-bottom: 3px solid var(--accent-primary);
-}
-
-.stage-text {
-  color: var(--text-primary);
-  white-space: pre-wrap;
-  font-family: var(--font-mono);
-}
-
-.stage-controls {
-  position: fixed;
-  top: var(--space-lg);
-  right: var(--space-lg);
-  background: var(--glass-bg);
-  backdrop-filter: blur(20px);
-  border: 1px solid var(--glass-border);
-  border-radius: var(--radius-xl);
-  padding: var(--space-md);
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-sm);
-  z-index: 1001;
-  box-shadow: var(--shadow-lg);
-}
-
-.stage-progress {
-  position: fixed;
-  bottom: 0;
-  left: 0;
-  height: 4px;
-  background: var(--accent-primary);
-  width: 0%;
-  transition: width 0.1s linear;
-}
-
-/* ============================================
-   MODAL
-   ============================================ */
-.modal-overlay {
-  display: none;
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background: rgba(0, 0, 0, 0.8);
-  backdrop-filter: blur(10px);
-  z-index: 2000;
-  justify-content: center;
-  align-items: center;
-  padding: var(--space-lg);
-}
-
-.modal {
-  background: var(--bg-secondary);
-  border: 1px solid var(--border-color);
-  border-radius: var(--radius-xl);
-  width: 100%;
-  max-width: 500px;
-  max-height: 80vh;
-  overflow: hidden;
-  box-shadow: var(--shadow-lg);
-}
-
-.modal-header {
-  background: var(--bg-tertiary);
-  padding: var(--space-lg);
-  border-bottom: 1px solid var(--border-color);
-}
-
-.modal-title {
-  font-size: 18px;
-  font-weight: 700;
-  color: var(--text-primary);
-}
-
-.modal-body {
-  padding: var(--space-lg);
-}
-
-.modal-footer {
-  padding: var(--space-md) var(--space-lg);
-  background: var(--bg-tertiary);
-  border-top: 1px solid var(--border-color);
-  display: flex;
-  justify-content: flex-end;
-  gap: var(--space-sm);
-}
-
-/* ============================================
-   NOTIFICAÇÕES
-   ============================================ */
-.toast {
-  position: fixed;
-  top: var(--space-lg);
-  left: 50%;
-  transform: translateX(-50%) translateY(-100px);
-  background: var(--bg-elevated);
-  border: 1px solid var(--border-color);
-  border-radius: var(--radius-lg);
-  padding: var(--space-md) var(--space-xl);
-  display: flex;
-  align-items: center;
-  gap: var(--space-sm);
-  box-shadow: var(--shadow-lg);
-  z-index: 9999;
-  opacity: 0;
-  transition: all var(--transition-base);
-}
-
-.toast.show {
-  transform: translateX(-50%) translateY(0);
-  opacity: 1;
-}
-
-.toast-icon {
-  width: 24px;
-  height: 24px;
-  border-radius: var(--radius-full);
-  background: var(--accent-primary);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 12px;
-}
-
-/* ============================================
-   UTILITÁRIOS
-   ============================================ */
-.flex { display: flex; }
-.flex-col { flex-direction: column; }
-.items-center { align-items: center; }
-.justify-between { justify-content: space-between; }
-.gap-sm { gap: var(--space-sm); }
-.gap-md { gap: var(--space-md); }
-.gap-lg { gap: var(--space-lg); }
-
-.ml-auto { margin-left: auto; }
-.mt-lg { margin-top: var(--space-lg); }
-
-.text-muted { color: var(--text-muted); }
-.text-sm { font-size: 12px; }
-.text-lg { font-size: 16px; }
-
-.hidden { display: none !important; }
-
-/* ============================================
-   ANIMAÇÕES
-   ============================================ */
-@keyframes fadeIn {
-  from { opacity: 0; transform: translateY(10px); }
-  to { opacity: 1; transform: translateY(0); }
-}
-
-@keyframes slideIn {
-  from { transform: translateX(-20px); opacity: 0; }
-  to { transform: translateX(0); opacity: 1; }
-}
-
-@keyframes pulse {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0.5; }
-}
-
-.animate-fadeIn {
-  animation: fadeIn var(--transition-base) forwards;
-}
-
-.animate-slideIn {
-  animation: slideIn var(--transition-base) forwards;
-}
-
-/* ============================================
-   SCROLLBAR PERSONALIZADA
-   ============================================ */
-::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
-}
-
-::-webkit-scrollbar-track {
-  background: var(--bg-secondary);
-}
-
-::-webkit-scrollbar-thumb {
-  background: var(--bg-elevated);
-  border-radius: var(--radius-full);
-}
-
-::-webkit-scrollbar-thumb:hover {
-  background: var(--accent-primary);
-}
-
-/* ============================================
-   PRINT
-   ============================================ */
-@media print {
-  body * { visibility: hidden; }
-  .stage-mode, .stage-mode * { visibility: visible; }
-  .stage-mode {
-    position: absolute;
-    left: 0;
-    top: 0;
-    display: block !important;
-    background: white;
-    color: black;
-  }
-  .stage-controls { display: none !important; }
-  .stage-progress { display: none !important; }
-}
-
-/* ============================================
-   RESPONSIVIDADE
-   ============================================ */
-@media (max-width: 768px) {
-  .app-container {
-    padding: var(--space-md);
-  }
-  
-  .header-content {
-    flex-direction: column;
-    align-items: flex-start;
-  }
-  
-  .controls-bar {
-    flex-direction: column;
-    align-items: stretch;
-  }
-  
-  .section-grid {
-    grid-template-columns: 1fr;
-  }
-  
-  .songs-grid {
-    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
-  }
-  
-  .stage-content {
-    font-size: 24px;
-  }
-}
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #0a0a0f; color: white; line-height: 1.5; padding: 16px; padding-bottom: 100px; }
+button { font-family: inherit; cursor: pointer; border: none; padding: 12px 20px; border-radius: 8px; font-size: 16px; margin: 4px; touch-action: manipulation; }
+input, textarea, select { font-family: inherit; font-size: 16px; padding: 12px; border-radius: 8px; border: 1px solid #333; background: #1a1a25; color: white; width: 100%; margin: 4px 0; }
+textarea { min-height: 100px; resize: vertical; }
+.card { background: #12121a; border: 1px solid #333; border-radius: 12px; padding: 16px; margin-bottom: 16px; }
+h2 { font-size: 18px; margin-bottom: 12px; color: #1db954; }
+.green { background: #1db954; color: black; font-weight: bold; }
+.gray { background: #333; color: white; }
+.red { background: #ef4444; color: white; }
+.metro { text-align: center; padding: 20px; }
+.bpm { font-size: 64px; font-weight: bold; color: #1db954; }
+.beats { display: flex; gap: 8px; justify-content: center; margin: 16px 0; }
+.beat { width: 16px; height: 16px; border-radius: 50%; background: #333; border: 2px solid #555; }
+.beat.on { background: #1db954; border-color: #1db954; box-shadow: 0 0 10px #1db954; }
+.beat.accent { width: 20px; height: 20px; background: #22c55e; }
+.song-item { background: #1a1a25; padding: 12px; margin: 8px 0; border-radius: 8px; cursor: pointer; position: relative; }
+.song-item.active { border: 2px solid #1db954; }
+.del { position: absolute; right: 8px; top: 50%; transform: translateY(-50%); background: #ef4444; color: white; width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; }
+.modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); z-index: 1000; padding: 20px; padding-top: 60px; }
+.modal.show { display: block; }
+.stage { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #0a0a0f; z-index: 2000; overflow: auto; padding: 20px; padding-bottom: 100px; }
+.stage.show { display: block; }
+.stage-bar { position: fixed; bottom: 0; left: 0; right: 0; background: #12121a; padding: 16px; display: flex; gap: 8px; border-top: 1px solid #333; }
+.toast { position: fixed; top: 20px; left: 50%; transform: translateX(-50%); background: #333; padding: 12px 24px; border-radius: 8px; display: none; z-index: 3000; }
+.toast.show { display: block; }
 </style>
 </head>
-<body data-theme="green">
+<body>
 
-<!-- HEADER -->
-<header class="app-header">
-  <div class="header-content">
-    <div class="logo">
-      <div class="logo-icon">🎸</div>
-      <div>
-        <div class="logo-text">Map Music Pro</div>
-        <div class="logo-subtitle">Professional Edition</div>
-      </div>
-    </div>
-    
-    <div class="flex items-center gap-md">
-      <div class="theme-selector">
-        <div class="theme-btn theme-green active" onclick="setTheme('green')" title="Green" style="background: linear-gradient(135deg, #1db954, #1ed760);"></div>
-        <div class="theme-btn theme-red" onclick="setTheme('red')" title="Red" style="background: linear-gradient(135deg, #e22134, #ff4d5e);"></div>
-        <div class="theme-btn theme-blue" onclick="setTheme('blue')" title="Blue" style="background: linear-gradient(135deg, #0d84fc, #3d9eff);"></div>
-        <div class="theme-btn theme-purple" onclick="setTheme('purple')" title="Purple" style="background: linear-gradient(135deg, #8b5cf6, #a78bfa);"></div>
-        <div class="theme-btn theme-orange" onclick="setTheme('orange')" title="Orange" style="background: linear-gradient(135deg, #f97316, #fb923c);"></div>
-        <div class="theme-btn theme-pink" onclick="setTheme('pink')" title="Pink" style="background: linear-gradient(135deg, #ec4899, #f472b6);"></div>
-      </div>
-    </div>
-  </div>
-</header>
+<div class="toast" id="toast">Mensagem</div>
 
-<!-- CONTAINER PRINCIPAL -->
-<div class="app-container">
+<!-- METRONOMO -->
+<div class="card metro">
+  <h2>Metronomo</h2>
+  <div class="bpm" id="bpmDisplay">120</div>
+  <div style="color: #888; font-size: 12px; margin-bottom: 16px;">BPM</div>
   
-  <!-- BIBLIOTECA -->
-  <div class="card animate-fadeIn">
-    <div class="card-header">
-      <div class="card-title">
-        <div class="card-title-icon">📚</div>
-        Biblioteca de Músicas
-      </div>
-      <div class="flex gap-sm">
-        <input type="text" id="songName" placeholder="Nome da música..." style="min-width: 200px;">
-        <button class="btn btn-primary" onclick="saveCurrentSong()">
-          <span>💾</span> Salvar
-        </button>
-        <button class="btn btn-secondary" onclick="newSong()">
-          <span>➕</span> Nova
-        </button>
-      </div>
-    </div>
-    <div class="songs-grid" id="songList">
-      <div class="text-muted text-sm" style="grid-column: 1/-1; text-align: center; padding: var(--space-xl);">
-        Nenhuma música salva ainda. Crie sua primeira música!
-      </div>
-    </div>
+  <div class="beats" id="beats">
+    <div class="beat accent" data-b="0"></div>
+    <div class="beat" data-b="1"></div>
+    <div class="beat" data-b="2"></div>
+    <div class="beat" data-b="3"></div>
   </div>
   
-  <!-- CONTROLES -->
-  <div class="controls-bar animate-slideIn">
-    <div class="input-group">
-      <label class="input-label">Transposição</label>
-      <select id="keyShift" onchange="updateKeyDisplay()">
-        <option value="0">Original</option>
-        <option value="1">+1 semitom</option>
-        <option value="2">+2 semitons</option>
-        <option value="3">+3 semitons</option>
-        <option value="4">+4 semitons</option>
-        <option value="5">+5 semitons</option>
-        <option value="6">+6 semitons</option>
-        <option value="-1">-1 semitom</option>
-        <option value="-2">-2 semitons</option>
-        <option value="-3">-3 semitons</option>
-        <option value="-4">-4 semitons</option>
-        <option value="-5">-5 semitons</option>
-        <option value="-6">-6 semitons</option>
-      </select>
-    </div>
-    
-    <button class="btn btn-primary" onclick="transpose()">
-      <span>🎵</span> Aplicar
-    </button>
-    
-    <button class="btn btn-secondary" onclick="resetAll()">
-      <span>🗑️</span> Limpar
-    </button>
-    
-    <div class="ml-auto flex gap-sm">
-      <button class="btn btn-success" onclick="exportJSON()">JSON</button>
-      <button class="btn btn-success" onclick="exportTXT()">TXT</button>
-      <button class="btn btn-success" onclick="shareURL()">Link</button>
-      <button class="btn btn-secondary" onclick="showImportModal()">Importar</button>
-      <button class="btn btn-primary" onclick="openStageMode()">
-        <span>🎭</span> Modo Palco
-      </button>
-    </div>
-    
-    <div class="input-group">
-      <label class="input-label">Tom Atual</label>
-      <div id="currentKeyDisplay" style="font-weight: 700; color: var(--accent-primary);">Original</div>
-    </div>
+  <div>
+    <button class="gray" onclick="adjBPM(-10)">-10</button>
+    <button class="gray" onclick="adjBPM(-1)">-1</button>
+    <button class="green" id="playBtn" onclick="toggleMetro()" style="font-size: 20px; padding: 16px 24px;">▶</button>
+    <button class="gray" onclick="adjBPM(1)">+1</button>
+    <button class="gray" onclick="adjBPM(10)">+10</button>
   </div>
   
-  <!-- SEÇÕES -->
-  <div class="section-grid">
-    <div class="section-card animate-fadeIn">
-      <div class="section-header">
-        <div class="section-title">
-          <span>🎼</span> Introdução
-        </div>
-        <span class="section-badge">INTRO</span>
-      </div>
-      <div class="section-body">
-        <textarea class="section-textarea" id="intro" placeholder="C G Am F..."></textarea>
-      </div>
-    </div>
-    
-    <div class="section-card animate-fadeIn" style="animation-delay: 50ms;">
-      <div class="section-header">
-        <div class="section-title">
-          <span>🎤</span> Verso
-        </div>
-        <span class="section-badge">VERSE</span>
-      </div>
-      <div class="section-body">
-        <textarea class="section-textarea" id="verse" placeholder="C G Am F..."></textarea>
-      </div>
-    </div>
-    
-    <div class="section-card animate-fadeIn" style="animation-delay: 100ms;">
-      <div class="section-header">
-        <div class="section-title">
-          <span>🎹</span> Pré-Refrão
-        </div>
-        <span class="section-badge">PRE</span>
-      </div>
-      <div class="section-body">
-        <textarea class="section-textarea" id="prechorus" placeholder="Am F C G..."></textarea>
-      </div>
-    </div>
-    
-    <div class="section-card animate-fadeIn" style="animation-delay: 150ms;">
-      <div class="section-header">
-        <div class="section-title">
-          <span>🎸</span> Refrão
-        </div>
-        <span class="section-badge">CHORUS</span>
-      </div>
-      <div class="section-body">
-        <textarea class="section-textarea" id="chorus" placeholder="F G Am C..."></textarea>
-      </div>
-    </div>
-    
-    <div class="section-card animate-fadeIn" style="animation-delay: 200ms;">
-      <div class="section-header">
-        <div class="section-title">
-          <span>🥁</span> Ponte
-        </div>
-        <span class="section-badge">BRIDGE</span>
-      </div>
-      <div class="section-body">
-        <textarea class="section-textarea" id="bridge" placeholder="Dm G C..."></textarea>
-      </div>
-    </div>
-    
-    <div class="section-card animate-fadeIn" style="animation-delay: 250ms;">
-      <div class="section-header">
-        <div class="section-title">
-          <span>🔚</span> Final
-        </div>
-        <span class="section-badge">OUTRO</span>
-      </div>
-      <div class="section-body">
-        <textarea class="section-textarea" id="ending" placeholder="C..."></textarea>
-      </div>
-    </div>
+  <input type="range" min="40" max="240" value="120" id="bpmSlider" oninput="setBPM(this.value)" style="margin-top: 16px;">
+</div>
+
+<!-- BIBLIOTECA -->
+<div class="card">
+  <h2>Biblioteca</h2>
+  <input type="text" id="songName" placeholder="Nome da musica...">
+  <div>
+    <button class="green" onclick="saveSong()">Salvar</button>
+    <button class="gray" onclick="newSong()">Nova</button>
+  </div>
+  <div id="songList" style="margin-top: 16px;">
+    <div style="color: #888; text-align: center; padding: 40px;">Nenhuma musica salva</div>
+  </div>
+</div>
+
+<!-- CONTROLES -->
+<div class="card">
+  <h2>Controles</h2>
+  <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+    <select id="trans" onchange="showTrans()">
+      <option value="0">Original</option>
+      <option value="1">+1</option>
+      <option value="2">+2</option>
+      <option value="3">+3</option>
+      <option value="4">+4</option>
+      <option value="5">+5</option>
+      <option value="6">+6</option>
+      <option value="-1">-1</option>
+      <option value="-2">-2</option>
+      <option value="-3">-3</option>
+      <option value="-4">-4</option>
+      <option value="-5">-5</option>
+      <option value="-6">-6</option>
+    </select>
+    <button class="green" onclick="doTrans()">Aplicar</button>
+    <button class="gray" onclick="clearAll()">Limpar</button>
+  </div>
+  <div style="margin-top: 12px; display: flex; gap: 8px; flex-wrap: wrap;">
+    <button class="green" onclick="expJSON()">JSON</button>
+    <button class="green" onclick="expTXT()">TXT</button>
+    <button class="green" onclick="share()">Link</button>
+    <button class="gray" onclick="showImp()">Importar</button>
+    <button class="green" onclick="openStage()">Palco</button>
+  </div>
+  <div style="margin-top: 12px; text-align: center; padding: 12px; background: #1a1a25; border-radius: 8px;">
+    <div style="font-size: 12px; color: #888;">Tom Atual</div>
+    <div id="keyDisp" style="font-size: 24px; font-weight: bold; color: #1db954;">Original</div>
+  </div>
+</div>
+
+<!-- SECOES -->
+<div class="card">
+  <h2>Secoes</h2>
+  
+  <div style="margin-bottom: 12px;">
+    <div style="font-size: 12px; color: #888; margin-bottom: 4px;">INTRO</div>
+    <textarea id="intro" placeholder="C G Am F..."></textarea>
   </div>
   
+  <div style="margin-bottom: 12px;">
+    <div style="font-size: 12px; color: #888; margin-bottom: 4px;">VERSO</div>
+    <textarea id="verse" placeholder="C G Am F..."></textarea>
+  </div>
+  
+  <div style="margin-bottom: 12px;">
+    <div style="font-size: 12px; color: #888; margin-bottom: 4px;">PRE-REFRAO</div>
+    <textarea id="prechorus" placeholder="Am F C G..."></textarea>
+  </div>
+  
+  <div style="margin-bottom: 12px;">
+    <div style="font-size: 12px; color: #888; margin-bottom: 4px;">REFRAO</div>
+    <textarea id="chorus" placeholder="F G Am C..."></textarea>
+  </div>
+  
+  <div style="margin-bottom: 12px;">
+    <div style="font-size: 12px; color: #888; margin-bottom: 4px;">PONTE</div>
+    <textarea id="bridge" placeholder="Dm G C..."></textarea>
+  </div>
+  
+  <div>
+    <div style="font-size: 12px; color: #888; margin-bottom: 4px;">FINAL</div>
+    <textarea id="ending" placeholder="C..."></textarea>
+  </div>
 </div>
 
 <!-- MODAL IMPORT -->
-<div class="modal-overlay" id="importModal" onclick="if(event.target===this)closeImportModal()">
-  <div class="modal">
-    <div class="modal-header">
-      <div class="modal-title">📥 Importar Música</div>
-    </div>
-    <div class="modal-body">
-      <p class="text-muted text-sm mb-lg">Cole o código JSON ou o texto da música no formato TXT:</p>
-      <textarea id="importArea" placeholder='{"name":"Minha Música","sections":{"intro":"C G Am F"...}}' style="width: 100%; min-height: 200px;"></textarea>
-    </div>
-    <div class="modal-footer">
-      <button class="btn btn-secondary" onclick="closeImportModal()">Cancelar</button>
-      <button class="btn btn-primary" onclick="importData()">Importar</button>
-    </div>
-  </div>
+<div class="modal" id="impModal">
+  <button class="red" onclick="hideImp()" style="position: absolute; top: 16px; right: 16px;">✕</button>
+  <h2>Importar</h2>
+  <textarea id="impText" placeholder='{"name":"Musica","sections":{"intro":"C G"}}' style="min-height: 200px; margin: 16px 0;"></textarea>
+  <button class="green" onclick="doImp()" style="width: 100%;">Importar</button>
 </div>
 
 <!-- MODO PALCO -->
-<div class="stage-mode" id="stageMode">
-  <div class="stage-controls">
-    <button class="btn btn-primary" onclick="startScroll()">
-      <span>▶️</span> Iniciar
-    </button>
-    <button class="btn btn-secondary" onclick="stopScroll()">
-      <span>⏸️</span> Parar
-    </button>
-    <div style="padding: var(--space-sm);">
-      <label class="input-label" style="margin-bottom: var(--space-xs);">Velocidade</label>
-      <input type="range" id="speedControl" min="1" max="10" value="3" style="width: 100%;">
-    </div>
-    <button class="btn btn-danger" onclick="closeStageMode()">
-      <span>❌</span> Fechar
-    </button>
+<div class="stage" id="stage">
+  <div class="stage-bar">
+    <button class="green" onclick="startScroll()">▶</button>
+    <button class="gray" onclick="stopScroll()">⏸</button>
+    <input type="range" min="1" max="10" value="3" id="speed" style="width: 100px;">
+    <button class="red" onclick="closeStage()">✕</button>
   </div>
-  <div class="stage-content" id="stageContent"></div>
-  <div class="stage-progress" id="stageProgress"></div>
-</div>
-
-<!-- TOAST NOTIFICATION -->
-<div class="toast" id="toast">
-  <div class="toast-icon">✓</div>
-  <span id="toastMessage">Operação realizada com sucesso!</span>
+  <div id="stageContent" style="padding-bottom: 100px;"></div>
+  <div id="prog" style="position: fixed; bottom: 0; left: 0; height: 3px; background: #1db954; width: 0%;"></div>
 </div>
 
 <script>
-// ============================================
-// VARIÁVEIS GLOBAIS
-// ============================================
-var library = [];
-var currentSongId = null;
-var currentShift = 0;
-var scrollAnimation = null;
-var undoStack = [];
-var redoStack = [];
+// ============== VARIAVEIS ==============
+var songs = [];
+var curId = null;
+var bpm = 120;
+var playing = false;
+var audioCtx = null;
+var nextT = 0;
+var beatN = 0;
+var tim = null;
+var scrollT = null;
+var transV = 0;
+var undo = [];
 
-var NOTES = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"];
+var NOTES = ['C','C#','D','D#','E','F','F#','G','G#','A','A#','B'];
 
-// ============================================
-// INICIALIZAÇÃO
-// ============================================
-document.addEventListener('DOMContentLoaded', function() {
-  loadTheme();
-  loadLibrary();
-  loadFromURL();
-  
-  // Auto-save para undo
-  var textareas = document.querySelectorAll('.section-textarea');
-  for(var i = 0; i < textareas.length; i++) {
-    textareas[i].addEventListener('focus', function() {
-      saveState();
-    });
-  }
-  
-  // Atalhos de teclado
-  document.addEventListener('keydown', function(e) {
-    if(e.key === 'Escape') {
-      closeStageMode();
-      closeImportModal();
-    }
-    if(e.key === ' ' && document.getElementById("stageMode").style.display === 'block') {
-      e.preventDefault();
-      if(scrollAnimation) stopScroll();
-      else startScroll();
-    }
-    if(e.ctrlKey && e.key === 'z') {
-      e.preventDefault();
-      undo();
-    }
-    if(e.ctrlKey && e.key === 'y') {
-      e.preventDefault();
-      redo();
-    }
-  });
-});
-
-// ============================================
-// TEMAS
-// ============================================
-function setTheme(theme) {
-  document.body.setAttribute('data-theme', theme);
-  localStorage.setItem('mapmusic_theme_pro', theme);
-  
-  // Atualizar botões
-  var buttons = document.querySelectorAll('.theme-btn');
-  for(var i = 0; i < buttons.length; i++) {
-    buttons[i].classList.remove('active');
-  }
-  event.target.classList.add('active');
-  
-  showToast('Tema alterado: ' + getThemeName(theme));
+// ============== UTIL ==============
+function show(msg) {
+  var t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(function() { t.classList.remove('show'); }, 3000);
 }
 
-function getThemeName(theme) {
-  var names = {
-    'green': 'Spotify Green',
-    'red': 'Ruby Red',
-    'blue': 'Ocean Blue',
-    'purple': 'Royal Purple',
-    'orange': 'Sunset Orange',
-    'pink': 'Neon Pink'
-  };
-  return names[theme] || theme;
+function esc(str) {
+  var d = document.createElement('div');
+  d.textContent = str;
+  return d.innerHTML;
 }
 
-function loadTheme() {
-  var saved = localStorage.getItem('mapmusic_theme_pro');
-  if(saved) {
-    document.body.setAttribute('data-theme', saved);
-    // Atualizar botão ativo
-    var buttons = document.querySelectorAll('.theme-btn');
-    for(var i = 0; i < buttons.length; i++) {
-      buttons[i].classList.remove('active');
-      if(buttons[i].classList.contains('theme-' + saved)) {
-        buttons[i].classList.add('active');
-      }
-    }
+// ============== METRONOMO ==============
+function initAudio() {
+  if (!audioCtx) {
+    audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  }
+  if (audioCtx.state === 'suspended') {
+    audioCtx.resume();
   }
 }
 
-// ============================================
-// TRANSPOSIÇÃO
-// ============================================
-function transpose() {
-  var shift = parseInt(document.getElementById("keyShift").value);
-  
-  if(shift === 0) {
-    showToast('Selecione um valor de transposição');
-    return;
-  }
-  
-  saveState();
-  currentShift = shift;
-  
-  var areas = ["intro", "verse", "prechorus", "chorus", "bridge", "ending"];
-  
-  for(var i = 0; i < areas.length; i++) {
-    var id = areas[i];
-    var el = document.getElementById(id);
-    var content = el.value;
-    
-    if(!content || !content.trim()) continue;
-    
-    var lines = content.split("\\n");
-    var newLines = [];
-    
-    for(var j = 0; j < lines.length; j++) {
-      var line = lines[j];
-      
-      var leadingSpace = "";
-      while(line.length > 0 && line.charAt(0) === " ") {
-        leadingSpace += " ";
-        line = line.substring(1);
-      }
-      
-      var parts = line.split(" ");
-      var newParts = [];
-      
-      for(var k = 0; k < parts.length; k++) {
-        var part = parts[k];
-        if(part === "") {
-          newParts.push("");
-        } else {
-          newParts.push(transposeChord(part, shift));
-        }
-      }
-      
-      newLines.push(leadingSpace + newParts.join(" "));
-    }
-    
-    el.value = newLines.join("\\n");
-  }
-  
-  updateKeyDisplay();
-  showToast('Transposto ' + (shift > 0 ? '+' : '') + shift + ' semitons');
-}
-
-function transposeChord(chord, shift) {
-  if(chord.indexOf("/") >= 0) {
-    var parts = chord.split("/");
-    return transposeRoot(parts[0], shift) + "/" + transposeRoot(parts[1], shift);
-  }
-  return transposeRoot(chord, shift);
-}
-
-function transposeRoot(chord, shift) {
-  if(!chord || chord.length === 0) return chord;
-  
-  var note = chord.charAt(0).toUpperCase();
-  var suffix = "";
-  
-  if(chord.length > 1) {
-    var second = chord.charAt(1);
-    if(second === "#" || second === "b") {
-      note += second;
-      suffix = chord.substring(2);
-    } else {
-      suffix = chord.substring(1);
-    }
-  }
-  
-  // Enarmônicas
-  if(note === "Db") note = "C#";
-  if(note === "Eb") note = "D#";
-  if(note === "Gb") note = "F#";
-  if(note === "Ab") note = "G#";
-  if(note === "Bb") note = "A#";
-  if(note === "Cb") note = "B";
-  if(note === "Fb") note = "E";
-  if(note === "E#") note = "F";
-  if(note === "B#") note = "C";
-  
-  var idx = -1;
-  for(var i = 0; i < NOTES.length; i++) {
-    if(NOTES[i] === note) {
-      idx = i;
-      break;
-    }
-  }
-  
-  if(idx === -1) return chord;
-  
-  var newIdx = idx + shift;
-  while(newIdx < 0) newIdx += 12;
-  while(newIdx >= 12) newIdx -= 12;
-  
-  return NOTES[newIdx] + suffix;
-}
-
-function updateKeyDisplay() {
-  var shift = parseInt(document.getElementById("keyShift").value);
-  var display = document.getElementById("currentKeyDisplay");
-  if(shift === 0) {
-    display.textContent = "Original";
-    display.style.color = "var(--text-muted)";
+function toggleMetro() {
+  initAudio();
+  if (playing) {
+    stopMetro();
   } else {
-    display.textContent = (shift > 0 ? "+" : "") + shift;
-    display.style.color = "var(--accent-primary)";
+    startMetro();
   }
 }
 
-// ============================================
-// BIBLIOTECA (simplificada para o exemplo)
-// ============================================
-function loadLibrary() {
+function startMetro() {
+  playing = true;
+  nextT = audioCtx.currentTime + 0.1;
+  beatN = 0;
+  document.getElementById('playBtn').textContent = '⏸';
+  sched();
+  show('Metronomo: ' + bpm + ' BPM');
+}
+
+function stopMetro() {
+  playing = false;
+  clearTimeout(tim);
+  document.getElementById('playBtn').textContent = '▶';
+  document.querySelectorAll('.beat').forEach(function(b) {
+    b.classList.remove('on');
+  });
+}
+
+function sched() {
+  if (!playing) return;
+  while (nextT < audioCtx.currentTime + 0.1) {
+    playNote(beatN, nextT);
+    nextT += 60 / bpm;
+    beatN = (beatN + 1) % 4;
+  }
+  tim = setTimeout(sched, 25);
+}
+
+function playNote(n, t) {
   try {
-    var saved = localStorage.getItem('mapmusic_library_pro');
-    if(saved) {
-      library = JSON.parse(saved);
-      renderLibrary();
+    var osc = audioCtx.createOscillator();
+    var g = audioCtx.createGain();
+    osc.frequency.value = n === 0 ? 1000 : 800;
+    osc.type = 'sine';
+    g.gain.setValueAtTime(0.3, t);
+    g.gain.exponentialRampToValueAtTime(0.01, t + 0.05);
+    osc.connect(g);
+    g.connect(audioCtx.destination);
+    osc.start(t);
+    osc.stop(t + 0.05);
+    
+    var d = Math.max(0, (t - audioCtx.currentTime) * 1000);
+    setTimeout(function() {
+      document.querySelectorAll('.beat').forEach(function(b) {
+        b.classList.remove('on');
+      });
+      document.querySelector('.beat[data-b="' + n + '"]').classList.add('on');
+    }, d);
+  } catch(e) {}
+}
+
+function setBPM(v) {
+  bpm = parseInt(v);
+  document.getElementById('bpmDisplay').textContent = bpm;
+  document.getElementById('bpmSlider').value = bpm;
+}
+
+function adjBPM(d) {
+  var n = bpm + d;
+  if (n >= 40 && n <= 240) setBPM(n);
+}
+
+// ============== BIBLIOTECA ==============
+function loadSongs() {
+  try {
+    var s = localStorage.getItem('songs');
+    if (s) {
+      songs = JSON.parse(s);
+      renderSongs();
     }
   } catch(e) {
-    library = [];
+    songs = [];
   }
 }
 
-function renderLibrary() {
-  var container = document.getElementById("songList");
-  
-  if(library.length === 0) {
-    container.innerHTML = '<div class="text-muted text-sm" style="grid-column: 1/-1; text-align: center; padding: var(--space-xl);">Nenhuma música salva ainda. Crie sua primeira música!</div>';
+function renderSongs() {
+  var list = document.getElementById('songList');
+  if (songs.length === 0) {
+    list.innerHTML = '<div style="color:#888;text-align:center;padding:40px;">Nenhuma musica salva</div>';
     return;
   }
   
-  var html = "";
-  for(var i = 0; i < library.length; i++) {
-    var song = library[i];
-    var isActive = song.id === currentSongId;
-    html += '<div class="song-card ' + (isActive ? 'active' : '') + '" onclick="loadSong(' + "'" + song.id + "'" + ')">';
-    html += '<div class="song-name">' + escapeHtml(song.name) + '</div>';
-    html += '<div class="song-date">' + formatDate(song.date) + '</div>';
-    html += '<button class="song-delete" onclick="event.stopPropagation(); deleteSong(' + "'" + song.id + "'" + ')">×</button>';
-    html += '</div>';
+  list.innerHTML = '';
+  for (var i = 0; i < songs.length; i++) {
+    var s = songs[i];
+    var act = s.id === curId ? 'active' : '';
+    var div = document.createElement('div');
+    div.className = 'song-item ' + act;
+    div.onclick = (function(id) {
+      return function() { loadSong(id); };
+    })(s.id);
+    
+    var name = document.createElement('div');
+    name.textContent = s.name;
+    name.style.fontWeight = 'bold';
+    name.style.marginBottom = '4px';
+    
+    var date = document.createElement('div');
+    date.textContent = new Date(s.date).toLocaleDateString('pt-BR');
+    date.style.fontSize = '12px';
+    date.style.color = '#888';
+    
+    var del = document.createElement('button');
+    del.className = 'del';
+    del.textContent = '×';
+    del.onclick = (function(id) {
+      return function(e) {
+        e.stopPropagation();
+        delSong(id);
+      };
+    })(s.id);
+    
+    div.appendChild(name);
+    div.appendChild(date);
+    div.appendChild(del);
+    list.appendChild(div);
   }
-  container.innerHTML = html;
 }
 
-function formatDate(dateStr) {
-  if(!dateStr) return '';
-  var date = new Date(dateStr);
-  return date.toLocaleDateString('pt-BR');
-}
-
-function saveCurrentSong() {
-  var name = document.getElementById("songName").value.trim();
-  if(!name) {
-    showToast('Digite um nome para a música');
+function saveSong() {
+  var name = document.getElementById('songName').value.trim();
+  if (!name) {
+    show('Digite um nome');
     return;
   }
   
-  var songData = {
-    id: currentSongId || Date.now().toString(),
+  var song = {
+    id: curId || Date.now().toString(),
     name: name,
     date: new Date().toISOString(),
-    sections: {
-      intro: document.getElementById("intro").value,
-      verse: document.getElementById("verse").value,
-      prechorus: document.getElementById("prechorus").value,
-      chorus: document.getElementById("chorus").value,
-      bridge: document.getElementById("bridge").value,
-      ending: document.getElementById("ending").value
-    },
-    shift: currentShift
+    intro: document.getElementById('intro').value,
+    verse: document.getElementById('verse').value,
+    prechorus: document.getElementById('prechorus').value,
+    chorus: document.getElementById('chorus').value,
+    bridge: document.getElementById('bridge').value,
+    ending: document.getElementById('ending').value,
+    trans: transV
   };
   
   var found = false;
-  for(var i = 0; i < library.length; i++) {
-    if(library[i].id === songData.id) {
-      library[i] = songData;
+  for (var i = 0; i < songs.length; i++) {
+    if (songs[i].id === song.id) {
+      songs[i] = song;
       found = true;
       break;
     }
   }
   
-  if(!found) {
-    library.push(songData);
-    currentSongId = songData.id;
+  if (!found) {
+    songs.push(song);
+    curId = song.id;
   }
   
-  localStorage.setItem('mapmusic_library_pro', JSON.stringify(library));
-  renderLibrary();
-  showToast('Música salva com sucesso!');
+  localStorage.setItem('songs', JSON.stringify(songs));
+  renderSongs();
+  show('Salvo!');
 }
 
 function loadSong(id) {
-  saveState();
+  saveUndo();
+  for (var i = 0; i < songs.length; i++) {
+    if (songs[i].id === id) {
+      var s = songs[i];
+      curId = s.id;
+      document.getElementById('songName').value = s.name;
+      document.getElementById('intro').value = s.intro || '';
+      document.getElementById('verse').value = s.verse || '';
+      document.getElementById('prechorus').value = s.prechorus || '';
+      document.getElementById('chorus').value = s.chorus || '';
+      document.getElementById('bridge').value = s.bridge || '';
+      document.getElementById('ending').value = s.ending || '';
+      transV = s.trans || 0;
+      document.getElementById('trans').value = transV;
+      showTrans();
+      renderSongs();
+      show('Carregado: ' + s.name);
+      
+      if (window.innerWidth < 768) {
+        window.scrollTo(0, 0);
+      }
+      return;
+    }
+  }
+}
+
+function delSong(id) {
+  if (!confirm('Excluir?')) return;
+  var newSongs = [];
+  for (var i = 0; i < songs.length; i++) {
+    if (songs[i].id !== id) {
+      newSongs.push(songs[i]);
+    }
+  }
+  songs = newSongs;
+  if (curId === id) {
+    curId = null;
+    newSong(false);
+  }
+  localStorage.setItem('songs', JSON.stringify(songs));
+  renderSongs();
+  show('Excluido');
+}
+
+function newSong(ask) {
+  if (ask !== false && document.getElementById('intro').value) {
+    if (!confirm('Descartar?')) return;
+  }
+  saveUndo();
+  curId = null;
+  document.getElementById('songName').value = '';
+  document.getElementById('intro').value = '';
+  document.getElementById('verse').value = '';
+  document.getElementById('prechorus').value = '';
+  document.getElementById('chorus').value = '';
+  document.getElementById('bridge').value = '';
+  document.getElementById('ending').value = '';
+  transV = 0;
+  document.getElementById('trans').value = 0;
+  showTrans();
+  renderSongs();
+}
+
+// ============== TRANSPOSICAO ==============
+function showTrans() {
+  var v = parseInt(document.getElementById('trans').value);
+  var d = document.getElementById('keyDisp');
+  if (v === 0) {
+    d.textContent = 'Original';
+    d.style.color = '#888';
+  } else {
+    d.textContent = (v > 0 ? '+' : '') + v;
+    d.style.color = '#1db954';
+  }
+}
+
+function doTrans() {
+  var shift = parseInt(document.getElementById('trans').value);
+  if (shift === 0) {
+    show('Selecione valor');
+    return;
+  }
   
-  var song = null;
-  for(var i = 0; i < library.length; i++) {
-    if(library[i].id === id) {
-      song = library[i];
+  saveUndo();
+  transV = shift;
+  
+  var ids = ['intro', 'verse', 'prechorus', 'chorus', 'bridge', 'ending'];
+  for (var i = 0; i < ids.length; i++) {
+    var el = document.getElementById(ids[i]);
+    if (!el.value.trim()) continue;
+    
+    var lines = el.value.split('\n');
+    var newLines = [];
+    for (var j = 0; j < lines.length; j++) {
+      var line = lines[j];
+      var spaces = '';
+      while (line.length > 0 && line.charAt(0) === ' ') {
+        spaces += ' ';
+        line = line.substring(1);
+      }
+      
+      var parts = line.split(' ');
+      var newParts = [];
+      for (var k = 0; k < parts.length; k++) {
+        if (parts[k]) {
+          newParts.push(transChord(parts[k], shift));
+        } else {
+          newParts.push('');
+        }
+      }
+      newLines.push(spaces + newParts.join(' '));
+    }
+    el.value = newLines.join('\n');
+  }
+  
+  showTrans();
+  show('Transposto ' + (shift > 0 ? '+' : '') + shift);
+}
+
+function transChord(chord, shift) {
+  if (chord.indexOf('/') >= 0) {
+    var parts = chord.split('/');
+    return transNote(parts[0], shift) + '/' + transNote(parts[1], shift);
+  }
+  return transNote(chord, shift);
+}
+
+function transNote(note, shift) {
+  var n = note.charAt(0).toUpperCase();
+  var rest = note.substring(1);
+  
+  if (rest && (rest.charAt(0) === '#' || rest.charAt(0) === 'b')) {
+    n += rest.charAt(0);
+    rest = rest.substring(1);
+  }
+  
+  var enh = {Db:'C#', Eb:'D#', Gb:'F#', Ab:'G#', Bb:'A#', Cb:'B', Fb:'E', E#:'F', B#:'C'};
+  if (enh[n]) n = enh[n];
+  
+  var idx = -1;
+  for (var i = 0; i < NOTES.length; i++) {
+    if (NOTES[i] === n) {
+      idx = i;
       break;
     }
   }
   
-  if(!song) return;
+  if (idx < 0) return note;
   
-  currentSongId = song.id;
-  document.getElementById("songName").value = song.name;
+  var newIdx = idx + shift;
+  while (newIdx < 0) newIdx += 12;
+  while (newIdx >= 12) newIdx -= 12;
   
-  for(var section in song.sections) {
-    var el = document.getElementById(section);
-    if(el) el.value = song.sections[section] || "";
-  }
-  
-  currentShift = song.shift || 0;
-  document.getElementById("keyShift").value = currentShift;
-  updateKeyDisplay();
-  
-  renderLibrary();
-  showToast('Carregado: ' + song.name);
+  return NOTES[newIdx] + rest;
 }
 
-function deleteSong(id) {
-  if(!confirm('Excluir esta música?')) return;
-  
-  var newLibrary = [];
-  for(var i = 0; i < library.length; i++) {
-    if(library[i].id !== id) {
-      newLibrary.push(library[i]);
-    }
-  }
-  library = newLibrary;
-  
-  if(currentSongId === id) {
-    currentSongId = null;
-    newSong(false);
-  }
-  
-  localStorage.setItem('mapmusic_library_pro', JSON.stringify(library));
-  renderLibrary();
-  showToast('Música excluída');
+function clearAll() {
+  if (!confirm('Limpar tudo?')) return;
+  saveUndo();
+  document.getElementById('intro').value = '';
+  document.getElementById('verse').value = '';
+  document.getElementById('prechorus').value = '';
+  document.getElementById('chorus').value = '';
+  document.getElementById('bridge').value = '';
+  document.getElementById('ending').value = '';
+  document.getElementById('trans').value = 0;
+  transV = 0;
+  showTrans();
+  show('Limpo');
 }
 
-function newSong(confirmFirst) {
-  if(confirmFirst !== false) {
-    var hasContent = document.getElementById("intro").value || document.getElementById("verse").value;
-    if(hasContent && !confirm('Descartar alterações?')) return;
-  }
-  
-  saveState();
-  currentSongId = null;
-  document.getElementById("songName").value = "";
-  
-  var areas = ["intro", "verse", "prechorus", "chorus", "bridge", "ending"];
-  for(var i = 0; i < areas.length; i++) {
-    document.getElementById(areas[i]).value = "";
-  }
-  
-  currentShift = 0;
-  document.getElementById("keyShift").value = 0;
-  updateKeyDisplay();
-  renderLibrary();
-}
-
-// ============================================
-// EXPORTAR/IMPORTAR (simplificado)
-// ============================================
-function exportJSON() {
-  var name = document.getElementById("songName").value || "musica";
+// ============== EXPORTAR ==============
+function expJSON() {
   var data = {
-    name: name,
+    name: document.getElementById('songName').value || 'musica',
     date: new Date().toISOString(),
     sections: {
-      intro: document.getElementById("intro").value,
-      verse: document.getElementById("verse").value,
-      prechorus: document.getElementById("prechorus").value,
-      chorus: document.getElementById("chorus").value,
-      bridge: document.getElementById("bridge").value,
-      ending: document.getElementById("ending").value
+      intro: document.getElementById('intro').value,
+      verse: document.getElementById('verse').value,
+      prechorus: document.getElementById('prechorus').value,
+      chorus: document.getElementById('chorus').value,
+      bridge: document.getElementById('bridge').value,
+      ending: document.getElementById('ending').value
     },
-    shift: currentShift
+    trans: transV
   };
   
-  downloadFile(JSON.stringify(data, null, 2), name.replace(/\\s+/g, "_") + ".json", "application/json");
-  showToast('JSON exportado!');
-}
-
-function exportTXT() {
-  var name = document.getElementById("songName").value || "musica";
-  var txt = name + "\\n" + "=".repeat(name.length) + "\\n\\n";
-  txt += "Tom: " + (currentShift === 0 ? "Original" : (currentShift > 0 ? "+" : "") + currentShift) + "\\n\\n";
-  
-  var sections = {
-    "INTRODUÇÃO": document.getElementById("intro").value,
-    "VERSO": document.getElementById("verse").value,
-    "PRÉ-REFRÃO": document.getElementById("prechorus").value,
-    "REFRÃO": document.getElementById("chorus").value,
-    "PONTE": document.getElementById("bridge").value,
-    "FINAL": document.getElementById("ending").value
-  };
-  
-  for(var title in sections) {
-    if(sections[title].trim()) {
-      txt += "[" + title + "]\\n" + sections[title] + "\\n\\n";
-    }
-  }
-  
-  downloadFile(txt, name.replace(/\\s+/g, "_") + ".txt", "text/plain");
-  showToast('TXT exportado!');
-}
-
-function downloadFile(content, filename, type) {
-  var blob = new Blob([content], {type: type});
+  var blob = new Blob([JSON.stringify(data, null, 2)], {type: 'application/json'});
   var url = URL.createObjectURL(blob);
-  var a = document.createElement("a");
+  var a = document.createElement('a');
   a.href = url;
-  a.download = filename;
+  a.download = data.name.replace(/\s+/g, '_') + '.json';
   document.body.appendChild(a);
   a.click();
   document.body.removeChild(a);
   URL.revokeObjectURL(url);
+  show('JSON exportado');
 }
 
-function shareURL() {
-  var data = {
-    n: document.getElementById("songName").value || "musica",
-    i: document.getElementById("intro").value,
-    v: document.getElementById("verse").value,
-    p: document.getElementById("prechorus").value,
-    c: document.getElementById("chorus").value,
-    b: document.getElementById("bridge").value,
-    e: document.getElementById("ending").value,
-    s: currentShift
+function expTXT() {
+  var name = document.getElementById('songName').value || 'musica';
+  var txt = name + '\n' + '='.repeat(name.length) + '\n\n';
+  txt += 'Tom: ' + (transV === 0 ? 'Original' : (transV > 0 ? '+' : '') + transV) + '\n\n';
+  
+  var secs = {
+    'INTRODUCAO': document.getElementById('intro').value,
+    'VERSO': document.getElementById('verse').value,
+    'PRE-REFRAO': document.getElementById('prechorus').value,
+    'REFRAO': document.getElementById('chorus').value,
+    'PONTE': document.getElementById('bridge').value,
+    'FINAL': document.getElementById('ending').value
   };
   
-  var json = JSON.stringify(data);
-  var compressed = btoa(unescape(encodeURIComponent(json)));
-  var url = window.location.origin + window.location.pathname + "?data=" + compressed;
+  for (var t in secs) {
+    if (secs[t].trim()) {
+      txt += '[' + t + ']\n' + secs[t] + '\n\n';
+    }
+  }
   
-  navigator.clipboard.writeText(url).then(function() {
-    showToast('Link copiado para a área de transferência!');
-  }).catch(function() {
-    prompt('Copie este link:', url);
-  });
+  var blob = new Blob([txt], {type: 'text/plain'});
+  var url = URL.createObjectURL(blob);
+  var a = document.createElement('a');
+  a.href = url;
+  a.download = name.replace(/\s+/g, '_') + '.txt';
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+  show('TXT exportado');
 }
 
-function showImportModal() {
-  document.getElementById("importModal").style.display = "flex";
+function share() {
+  var data = {
+    n: document.getElementById('songName').value || 'musica',
+    i: document.getElementById('intro').value,
+    v: document.getElementById('verse').value,
+    p: document.getElementById('prechorus').value,
+    c: document.getElementById('chorus').value,
+    b: document.getElementById('bridge').value,
+    e: document.getElementById('ending').value,
+    t: transV
+  };
+  
+  try {
+    var json = JSON.stringify(data);
+    var comp = btoa(encodeURIComponent(json).replace(/%([0-9A-F]{2})/g, function(m, p1) {
+      return String.fromCharCode('0x' + p1);
+    }));
+    var url = location.origin + location.pathname + '?d=' + comp;
+    
+    if (navigator.clipboard) {
+      navigator.clipboard.writeText(url).then(function() {
+        show('Link copiado!');
+      }, function() {
+        prompt('Copie:', url);
+      });
+    } else {
+      prompt('Copie:', url);
+    }
+  } catch(e) {
+    show('Erro ao gerar link');
+  }
 }
 
-function closeImportModal() {
-  document.getElementById("importModal").style.display = "none";
+// ============== IMPORTAR ==============
+function showImp() {
+  document.getElementById('impModal').classList.add('show');
 }
 
-function importData() {
-  var text = document.getElementById("importArea").value.trim();
-  if(!text) {
-    showToast('Cole algum conteúdo para importar');
+function hideImp() {
+  document.getElementById('impModal').classList.remove('show');
+}
+
+function doImp() {
+  var text = document.getElementById('impText').value.trim();
+  if (!text) {
+    show('Cole algo primeiro');
     return;
   }
   
-  saveState();
+  saveUndo();
   
+  // Tentar JSON
   try {
     var data = JSON.parse(text);
-    if(data.sections) {
-      document.getElementById("songName").value = data.name || "importada";
-      for(var section in data.sections) {
-        var el = document.getElementById(section);
-        if(el) el.value = data.sections[section] || "";
+    if (data.sections) {
+      document.getElementById('songName').value = data.name || 'importada';
+      for (var key in data.sections) {
+        var el = document.getElementById(key);
+        if (el) el.value = data.sections[key] || '';
       }
-      currentShift = data.shift || 0;
-      document.getElementById("keyShift").value = currentShift;
-      updateKeyDisplay();
-      closeImportModal();
-      showToast('JSON importado com sucesso!');
+      transV = data.trans || 0;
+      document.getElementById('trans').value = transV;
+      showTrans();
+      hideImp();
+      show('JSON importado');
       return;
     }
   } catch(e) {}
   
-  // Importar como TXT
-  importTXT(text);
-}
-
-function importTXT(text) {
-  // Implementação simplificada de importação TXT
-  showToast('Importação TXT realizada!');
-  closeImportModal();
-}
-
-function loadFromURL() {
-  var params = new URLSearchParams(window.location.search);
-  var data = params.get("data");
-  if(!data) return;
+  // Texto
+  var lines = text.split('\n');
+  var cur = null;
+  var cont = [];
   
-  try {
-    var json = decodeURIComponent(escape(atob(data)));
-    var song = JSON.parse(json);
-    
-    document.getElementById("songName").value = song.n || "";
-    document.getElementById("intro").value = song.i || "";
-    document.getElementById("verse").value = song.v || "";
-    document.getElementById("prechorus").value = song.p || "";
-    document.getElementById("chorus").value = song.c || "";
-    document.getElementById("bridge").value = song.b || "";
-    document.getElementById("ending").value = song.e || "";
-    
-    currentShift = song.s || 0;
-    document.getElementById("keyShift").value = currentShift;
-    updateKeyDisplay();
-    
-    showToast('Música carregada do link!');
-  } catch(e) {}
-}
-
-// ============================================
-// UNDO/REDO
-// ============================================
-function saveState() {
-  var state = {
-    name: document.getElementById("songName").value,
-    sections: {
-      intro: document.getElementById("intro").value,
-      verse: document.getElementById("verse").value,
-      prechorus: document.getElementById("prechorus").value,
-      chorus: document.getElementById("chorus").value,
-      bridge: document.getElementById("bridge").value,
-      ending: document.getElementById("ending").value
-    },
-    shift: currentShift
-  };
-  undoStack.push(state);
-  if(undoStack.length > 20) undoStack.shift();
-  redoStack = [];
-}
-
-function undo() {
-  if(undoStack.length === 0) {
-    showToast('Nada para desfazer');
-    return;
+  var ids = ['intro', 'verse', 'prechorus', 'chorus', 'bridge', 'ending'];
+  for (var i = 0; i < ids.length; i++) {
+    document.getElementById(ids[i]).value = '';
   }
-  redoStack.push(getCurrentState());
-  restoreState(undoStack.pop());
-  showToast('Desfeito');
-}
-
-function redo() {
-  if(redoStack.length === 0) {
-    showToast('Nada para refazer');
-    return;
-  }
-  undoStack.push(getCurrentState());
-  restoreState(redoStack.pop());
-  showToast('Refeito');
-}
-
-function getCurrentState() {
-  return {
-    name: document.getElementById("songName").value,
-    sections: {
-      intro: document.getElementById("intro").value,
-      verse: document.getElementById("verse").value,
-      prechorus: document.getElementById("prechorus").value,
-      chorus: document.getElementById("chorus").value,
-      bridge: document.getElementById("bridge").value,
-      ending: document.getElementById("ending").value
-    },
-    shift: currentShift
-  };
-}
-
-function restoreState(state) {
-  document.getElementById("songName").value = state.name;
-  for(var section in state.sections) {
-    var el = document.getElementById(section);
-    if(el) el.value = state.sections[section];
-  }
-  currentShift = state.shift;
-  document.getElementById("keyShift").value = currentShift;
-  updateKeyDisplay();
-}
-
-// ============================================
-// MODO PALCO
-// ============================================
-function openStageMode() {
-  var fields = {
-    "Introdução": "intro",
-    "Verso": "verse",
-    "Pré-Refrão": "prechorus",
-    "Refrão": "chorus",
-    "Ponte": "bridge",
-    "Final": "ending"
-  };
   
-  var content = "";
-  var hasContent = false;
-  
-  for(var label in fields) {
-    var id = fields[label];
-    var value = document.getElementById(id).value.trim();
-    if(value) {
-      hasContent = true;
-      content += '<div class="stage-section">';
-      content += '<div class="stage-title">' + label + '</div>';
-      content += '<div class="stage-text">' + escapeHtml(value) + '</div>';
-      content += '</div>';
+  for (var i = 0; i < lines.length; i++) {
+    var line = lines[i].trim();
+    if (!line) continue;
+    
+    var m = line.match(/^\[(.+)\]$/i);
+    if (m) {
+      if (cur && cont.length) {
+        document.getElementById(cur).value = cont.join('\n');
+      }
+      
+      var n = m[1].toUpperCase();
+      var map = {
+        'INTRODUCAO':'intro', 'INTRO':'intro', 'INT':'intro',
+        'VERSO':'verse', 'VRS':'verse', 'VERSE':'verse',
+        'PRE-REFRAO':'prechorus', 'PRE':'prechorus', 'PRECHORUS':'prechorus',
+        'REFRAO':'chorus', 'REF':'chorus', 'CHORUS':'chorus',
+        'PONTE':'bridge', 'PON':'bridge', 'BRIDGE':'bridge',
+        'FINAL':'ending', 'END':'ending', 'OUTRO':'ending'
+      };
+      cur = map[n];
+      cont = [];
+    } else if (cur) {
+      cont.push(line);
+    } else if (!document.getElementById('songName').value && line.charAt(0) !== '=' && !line.startsWith('Tom:')) {
+      document.getElementById('songName').value = line;
     }
   }
   
-  if(!hasContent) {
-    content = '<div class="stage-section"><div class="stage-title">⚠️ Nenhum conteúdo</div><div class="stage-text">Adicione acordes nas seções primeiro.</div></div>';
+  if (cur && cont.length) {
+    document.getElementById(cur).value = cont.join('\n');
   }
   
-  document.getElementById("stageContent").innerHTML = content;
-  document.getElementById("stageMode").style.display = "block";
-  document.body.style.overflow = "hidden";
+  hideImp();
+  show('Importado');
 }
 
-function closeStageMode() {
+function loadURL() {
+  var p = new URLSearchParams(location.search);
+  var d = p.get('d');
+  if (!d) return;
+  
+  try {
+    var dec = decodeURIComponent(d.split('').map(function(c) {
+      return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
+    }).join(''));
+    
+    var s = JSON.parse(dec);
+    document.getElementById('songName').value = s.n || '';
+    document.getElementById('intro').value = s.i || '';
+    document.getElementById('verse').value = s.v || '';
+    document.getElementById('prechorus').value = s.p || '';
+    document.getElementById('chorus').value = s.c || '';
+    document.getElementById('bridge').value = s.b || '';
+    document.getElementById('ending').value = s.e || '';
+    transV = s.t || 0;
+    document.getElementById('trans').value = transV;
+    showTrans();
+    show('Carregado da URL');
+  } catch(e) {
+    console.error('Erro URL:', e);
+  }
+}
+
+// ============== MODO PALCO ==============
+function openStage() {
+  var html = '';
+  var map = {
+    'Introducao': 'intro',
+    'Verso': 'verse',
+    'Pre-Refrão': 'prechorus',
+    'Refrão': 'chorus',
+    'Ponte': 'bridge',
+    'Final': 'ending'
+  };
+  
+  for (var t in map) {
+    var v = document.getElementById(map[t]).value.trim();
+    if (v) {
+      html += '<div style="margin-bottom: 40px;">' +
+        '<div style="color: #1db954; font-size: 20px; margin-bottom: 12px; text-transform: uppercase; border-bottom: 3px solid #1db954; padding-bottom: 8px;">' + t + '</div>' +
+        '<div style="font-family: monospace; white-space: pre-wrap; font-size: 24px; line-height: 1.8;">' + esc(v) + '</div>' +
+        '</div>';
+    }
+  }
+  
+  if (!html) {
+    html = '<div style="color: #888; text-align: center; padding: 40px;">Sem conteudo</div>';
+  }
+  
+  document.getElementById('stageContent').innerHTML = html;
+  document.getElementById('stage').classList.add('show');
+}
+
+function closeStage() {
   stopScroll();
-  document.getElementById("stageMode").style.display = "none";
-  document.body.style.overflow = "auto";
+  document.getElementById('stage').classList.remove('show');
 }
 
 function startScroll() {
   stopScroll();
-  var stage = document.getElementById("stageMode");
-  var speed = parseInt(document.getElementById("speedControl").value);
-  var pixelsPerFrame = 0.5 + (speed * 0.3);
+  var st = document.getElementById('stage');
+  var sp = parseInt(document.getElementById('speed').value);
+  var px = 0.5 + (sp * 0.5);
   
   function scroll() {
-    if(stage.scrollTop + stage.clientHeight >= stage.scrollHeight - 10) {
+    if (st.scrollTop + st.clientHeight >= st.scrollHeight - 10) {
       stopScroll();
       return;
     }
-    stage.scrollTop += pixelsPerFrame;
-    updateStageProgress();
-    scrollAnimation = requestAnimationFrame(scroll);
+    st.scrollTop += px;
+    
+    var max = st.scrollHeight - st.clientHeight;
+    var pct = (st.scrollTop / max) * 100;
+    document.getElementById('prog').style.width = Math.min(100, pct) + '%';
+    
+    scrollT = requestAnimationFrame(scroll);
   }
-  scrollAnimation = requestAnimationFrame(scroll);
+  
+  scrollT = requestAnimationFrame(scroll);
 }
 
 function stopScroll() {
-  if(scrollAnimation) {
-    cancelAnimationFrame(scrollAnimation);
-    scrollAnimation = null;
+  if (scrollT) {
+    cancelAnimationFrame(scrollT);
+    scrollT = null;
   }
 }
 
-function updateStageProgress() {
-  var stage = document.getElementById("stageMode");
-  var progress = document.getElementById("stageProgress");
-  var maxScroll = stage.scrollHeight - stage.clientHeight;
-  if(maxScroll <= 0) {
-    progress.style.width = "0%";
+// ============== UNDO ==============
+function saveUndo() {
+  var st = {
+    name: document.getElementById('songName').value,
+    intro: document.getElementById('intro').value,
+    verse: document.getElementById('verse').value,
+    prechorus: document.getElementById('prechorus').value,
+    chorus: document.getElementById('chorus').value,
+    bridge: document.getElementById('bridge').value,
+    ending: document.getElementById('ending').value,
+    trans: transV
+  };
+  undo.push(st);
+  if (undo.length > 10) undo.shift();
+}
+
+function doUndo() {
+  if (undo.length === 0) {
+    show('Nada para desfazer');
     return;
   }
-  var percent = (stage.scrollTop / maxScroll) * 100;
-  progress.style.width = Math.min(100, Math.max(0, percent)) + "%";
+  var st = undo.pop();
+  document.getElementById('songName').value = st.name;
+  document.getElementById('intro').value = st.intro;
+  document.getElementById('verse').value = st.verse;
+  document.getElementById('prechorus').value = st.prechorus;
+  document.getElementById('chorus').value = st.chorus;
+  document.getElementById('bridge').value = st.bridge;
+  document.getElementById('ending').value = st.ending;
+  transV = st.trans;
+  document.getElementById('trans').value = transV;
+  showTrans();
+  show('Desfeito');
 }
 
-function resetAll() {
-  if(!confirm('Limpar todas as seções?')) return;
-  saveState();
-  var areas = ["intro", "verse", "prechorus", "chorus", "bridge", "ending"];
-  for(var i = 0; i < areas.length; i++) {
-    document.getElementById(areas[i]).value = "";
-  }
-  document.getElementById("keyShift").value = "0";
-  currentShift = 0;
-  updateKeyDisplay();
-  showToast('Todas as seções foram limpas');
-}
-
-// ============================================
-// UTILITÁRIOS
-// ============================================
-function escapeHtml(text) {
-  if(!text) return "";
-  var div = document.createElement("div");
-  div.textContent = text;
-  return div.innerHTML;
-}
-
-function showToast(message) {
-  var toast = document.getElementById("toast");
-  var toastMessage = document.getElementById("toastMessage");
-  toastMessage.textContent = message;
-  toast.classList.add("show");
-  setTimeout(function() {
-    toast.classList.remove("show");
-  }, 3000);
-}
+// ============== INICIALIZAR ==============
+window.onload = function() {
+  loadSongs();
+  setTimeout(loadURL, 100);
+  
+  // Atalhos
+  document.onkeydown = function(e) {
+    if (e.key === 'Escape') {
+      closeStage();
+      hideImp();
+    }
+    if (e.ctrlKey && e.key === 'z') {
+      e.preventDefault();
+      doUndo();
+    }
+  };
+  
+  // Prevenir zoom duplo iOS
+  var last = 0;
+  document.ontouchend = function(e) {
+    var now = Date.now();
+    if (now - last <= 300) e.preventDefault();
+    last = now;
+  };
+};
 </script>
 
 </body>
-</html>'''
-
-print("=" * 80)
-print("🎨 MAP MUSIC PRO - EDIÇÃO PROFISSIONAL")
-print("=" * 80)
-print(f"\n📊 Tamanho: {len(html_profissional):,} caracteres")
-print("\n✨ CARACTERÍSTICAS PROFISSIONAIS:")
-print("   • Design System completo com CSS Variables")
-print("   • Tipografia Inter (fonte profissional)")
-print("   • 6 temas de cores (Green, Red, Blue, Purple, Orange, Pink)")
-print("   • Glassmorphism e efeitos de blur")
-print("   • Animações suaves e micro-interações")
-print("   • Layout em grid responsivo")
-print("   • Cards com hover effects")
-print("   • Scrollbar personalizada")
-print("   • Sistema de notificações toast")
-print("   • Totalmente responsivo (mobile/desktop)")
-print("   • Código limpo e organizado")
-print("\n🎯 INSPIRAÇÕES:")
-print("   • Spotify (cores e layout)")
-print("   • Figma (tipografia e espaçamento)")
-print("   • Notion (simplicidade)")
-print("   • Tendências 2024 (glassmorphism, dark mode)")
-print("\n" + "=" * 80)
+</html>
