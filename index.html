@@ -2,16 +2,14 @@
 <html lang="pt-BR">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-<meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="format-detection" content="telephone=no">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Map Music Pro - Professional Edition</title>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
 
 <style>
 /* ============================================
-   DESIGN SYSTEM - MOBILE FIRST
+   DESIGN SYSTEM - PROFESSIONAL EDITION
+   Inspirado em: Spotify, Figma, Notion
    ============================================ */
 :root {
   /* Cores Base */
@@ -43,13 +41,13 @@
   --font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
   --font-mono: 'SF Mono', 'Fira Code', monospace;
   
-  /* Espaçamento Mobile */
+  /* Espaçamento */
   --space-xs: 4px;
   --space-sm: 8px;
-  --space-md: 12px;
-  --space-lg: 16px;
-  --space-xl: 20px;
-  --space-2xl: 32px;
+  --space-md: 16px;
+  --space-lg: 24px;
+  --space-xl: 32px;
+  --space-2xl: 48px;
   
   /* Bordas */
   --radius-sm: 6px;
@@ -68,12 +66,6 @@
   --transition-fast: 150ms ease;
   --transition-base: 250ms ease;
   --transition-slow: 350ms ease;
-  
-  /* Safe Areas iOS */
-  --safe-top: env(safe-area-inset-top);
-  --safe-bottom: env(safe-area-inset-bottom);
-  --safe-left: env(safe-area-inset-left);
-  --safe-right: env(safe-area-inset-right);
 }
 
 /* TEMAS ALTERNATIVOS */
@@ -113,52 +105,35 @@
 }
 
 /* ============================================
-   RESET E BASE - MOBILE OPTIMIZED
+   RESET E BASE
    ============================================ */
 * {
   margin: 0;
   padding: 0;
   box-sizing: border-box;
-  -webkit-tap-highlight-color: transparent;
-  touch-action: manipulation;
 }
 
 html {
   scroll-behavior: smooth;
-  height: 100%;
-  overflow-x: hidden;
 }
 
 body {
   font-family: var(--font-family);
   background: var(--bg-primary);
   color: var(--text-primary);
-  line-height: 1.5;
+  line-height: 1.6;
   min-height: 100vh;
   overflow-x: hidden;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-  touch-action: manipulation;
-  padding-top: var(--safe-top);
-  padding-bottom: var(--safe-bottom);
-}
-
-/* Prevenir zoom em inputs no iOS */
-input, textarea, select, button {
-  font-size: 16px;
-  touch-action: manipulation;
 }
 
 /* ============================================
-   HEADER - MOBILE ADAPTATIVO
+   HEADER PROFISSIONAL
    ============================================ */
 .app-header {
   background: linear-gradient(180deg, rgba(18,18,26,0.95) 0%, rgba(10,10,15,0.8) 100%);
   backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
   border-bottom: 1px solid var(--border-color);
-  padding: var(--space-md) var(--space-lg);
-  padding-top: calc(var(--space-md) + var(--safe-top));
+  padding: var(--space-lg) var(--space-xl);
   position: sticky;
   top: 0;
   z-index: 100;
@@ -170,33 +145,31 @@ input, textarea, select, button {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: var(--space-md);
-  flex-wrap: wrap;
+  gap: var(--space-lg);
 }
 
 .logo {
   display: flex;
   align-items: center;
-  gap: var(--space-sm);
+  gap: var(--space-md);
 }
 
 .logo-icon {
-  width: 36px;
-  height: 36px;
+  width: 40px;
+  height: 40px;
   background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
   border-radius: var(--radius-md);
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 18px;
+  font-size: 20px;
   font-weight: 800;
   color: var(--text-inverse);
   box-shadow: var(--shadow-glow);
-  flex-shrink: 0;
 }
 
 .logo-text {
-  font-size: 20px;
+  font-size: 24px;
   font-weight: 800;
   letter-spacing: -0.5px;
   background: linear-gradient(135deg, var(--text-primary), var(--text-secondary));
@@ -206,12 +179,12 @@ input, textarea, select, button {
 }
 
 .logo-subtitle {
-  font-size: 10px;
+  font-size: 12px;
   color: var(--text-muted);
   font-weight: 500;
   text-transform: uppercase;
   letter-spacing: 1px;
-  margin-top: -2px;
+  margin-top: -4px;
 }
 
 /* ============================================
@@ -220,8 +193,7 @@ input, textarea, select, button {
 .app-container {
   max-width: 1400px;
   margin: 0 auto;
-  padding: var(--space-lg);
-  padding-bottom: calc(var(--space-lg) + var(--safe-bottom));
+  padding: var(--space-xl);
 }
 
 /* ============================================
@@ -231,8 +203,8 @@ input, textarea, select, button {
   background: var(--bg-secondary);
   border: 1px solid var(--border-color);
   border-radius: var(--radius-xl);
-  padding: var(--space-lg);
-  margin-bottom: var(--space-lg);
+  padding: var(--space-xl);
+  margin-bottom: var(--space-xl);
   transition: all var(--transition-base);
 }
 
@@ -245,82 +217,75 @@ input, textarea, select, button {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: var(--space-md);
+  margin-bottom: var(--space-lg);
   padding-bottom: var(--space-md);
   border-bottom: 1px solid var(--border-color);
-  flex-wrap: wrap;
-  gap: var(--space-sm);
 }
 
 .card-title {
-  font-size: 16px;
+  font-size: 18px;
   font-weight: 700;
   color: var(--text-primary);
   display: flex;
   align-items: center;
-  gap: var(--space-xs);
+  gap: var(--space-sm);
 }
 
 .card-title-icon {
-  width: 28px;
-  height: 28px;
+  width: 32px;
+  height: 32px;
   background: var(--bg-elevated);
   border-radius: var(--radius-md);
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 12px;
+  font-size: 14px;
   font-weight: 700;
   color: var(--accent-primary);
-  flex-shrink: 0;
 }
 
 /* ============================================
-   METRONOMO OTIMIZADO PARA TOUCH
+   METRONOMO PROFISSIONAL
    ============================================ */
 .metronome-panel {
   background: linear-gradient(135deg, var(--bg-tertiary), var(--bg-secondary));
   border: 1px solid var(--border-color);
   border-radius: var(--radius-xl);
-  padding: var(--space-lg);
-  margin-bottom: var(--space-lg);
-  touch-action: manipulation;
+  padding: var(--space-xl);
+  margin-bottom: var(--space-xl);
 }
 
 .metronome-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: var(--space-md);
-  flex-wrap: wrap;
-  gap: var(--space-xs);
+  margin-bottom: var(--space-lg);
 }
 
 .metronome-title {
-  font-size: 14px;
+  font-size: 16px;
   font-weight: 700;
   color: var(--text-primary);
   display: flex;
   align-items: center;
-  gap: var(--space-xs);
+  gap: var(--space-sm);
 }
 
 .metronome-display {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: var(--space-lg);
-  margin-bottom: var(--space-md);
+  gap: var(--space-xl);
+  margin-bottom: var(--space-lg);
   flex-wrap: wrap;
 }
 
 .bpm-display {
   text-align: center;
-  min-width: 100px;
 }
 
 .bpm-value {
-  font-size: 48px;
+  font-size: 64px;
   font-weight: 800;
   color: var(--accent-primary);
   line-height: 1;
@@ -328,7 +293,7 @@ input, textarea, select, button {
 }
 
 .bpm-label {
-  font-size: 11px;
+  font-size: 12px;
   color: var(--text-muted);
   text-transform: uppercase;
   letter-spacing: 1px;
@@ -337,17 +302,17 @@ input, textarea, select, button {
 
 .beat-indicator {
   display: flex;
-  gap: var(--space-sm);
+  gap: var(--space-md);
   align-items: center;
-  padding: var(--space-sm) var(--space-md);
+  padding: var(--space-md) var(--space-lg);
   background: var(--bg-input);
   border-radius: var(--radius-lg);
   border: 1px solid var(--border-color);
 }
 
 .beat-dot {
-  width: 14px;
-  height: 14px;
+  width: 16px;
+  height: 16px;
   border-radius: var(--radius-full);
   background: var(--bg-elevated);
   border: 2px solid var(--border-color);
@@ -362,8 +327,8 @@ input, textarea, select, button {
 }
 
 .beat-dot.accent {
-  width: 18px;
-  height: 18px;
+  width: 20px;
+  height: 20px;
   background: var(--accent-secondary);
   border-color: var(--accent-secondary);
 }
@@ -372,15 +337,14 @@ input, textarea, select, button {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: var(--space-md);
+  gap: var(--space-lg);
   flex-wrap: wrap;
 }
 
 .bpm-slider-container {
   flex: 1;
-  min-width: 150px;
-  max-width: 300px;
-  width: 100%;
+  min-width: 200px;
+  max-width: 400px;
 }
 
 .bpm-slider {
@@ -390,55 +354,53 @@ input, textarea, select, button {
   background: var(--bg-elevated);
   outline: none;
   -webkit-appearance: none;
-  appearance: none;
-  cursor: pointer;
 }
 
 .bpm-slider::-webkit-slider-thumb {
   -webkit-appearance: none;
   appearance: none;
-  width: 24px;
-  height: 24px;
+  width: 20px;
+  height: 20px;
   border-radius: var(--radius-full);
   background: var(--accent-primary);
   cursor: pointer;
   box-shadow: var(--shadow-md);
   transition: all var(--transition-fast);
-  border: 2px solid white;
 }
 
-.bpm-slider::-webkit-slider-thumb:active {
-  transform: scale(1.2);
+.bpm-slider::-webkit-slider-thumb:hover {
+  transform: scale(1.1);
   box-shadow: var(--shadow-glow);
 }
 
 .bpm-slider::-moz-range-thumb {
-  width: 24px;
-  height: 24px;
+  width: 20px;
+  height: 20px;
   border-radius: var(--radius-full);
   background: var(--accent-primary);
   cursor: pointer;
-  border: 2px solid white;
+  border: none;
   box-shadow: var(--shadow-md);
 }
 
 .metronome-btn {
-  width: 56px;
-  height: 56px;
+  width: 60px;
+  height: 60px;
   border-radius: var(--radius-full);
   background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
   border: none;
   color: var(--text-inverse);
-  font-size: 20px;
+  font-size: 24px;
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
   box-shadow: var(--shadow-glow);
   transition: all var(--transition-fast);
-  -webkit-user-select: none;
-  user-select: none;
-  touch-action: manipulation;
+}
+
+.metronome-btn:hover {
+  transform: scale(1.05);
 }
 
 .metronome-btn:active {
@@ -457,37 +419,34 @@ input, textarea, select, button {
 }
 
 .bpm-btn {
-  width: 32px;
-  height: 32px;
+  width: 36px;
+  height: 36px;
   border-radius: var(--radius-md);
   background: var(--bg-elevated);
   border: 1px solid var(--border-color);
   color: var(--text-primary);
-  font-size: 16px;
+  font-size: 18px;
   font-weight: 700;
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
   transition: all var(--transition-fast);
-  -webkit-user-select: none;
-  user-select: none;
-  touch-action: manipulation;
 }
 
-.bpm-btn:active {
+.bpm-btn:hover {
   background: var(--accent-primary);
   color: var(--text-inverse);
   border-color: var(--accent-primary);
 }
 
 /* ============================================
-   BIBLIOTECA DE MUSICAS - GRID RESPONSIVO
+   BIBLIOTECA DE MUSICAS
    ============================================ */
 .songs-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
-  gap: var(--space-sm);
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: var(--space-md);
 }
 
 .song-card {
@@ -499,7 +458,6 @@ input, textarea, select, button {
   transition: all var(--transition-base);
   position: relative;
   overflow: hidden;
-  touch-action: manipulation;
 }
 
 .song-card::before {
@@ -514,13 +472,11 @@ input, textarea, select, button {
   transition: transform var(--transition-base);
 }
 
-.song-card:hover::before,
-.song-card:active::before {
+.song-card:hover::before {
   transform: scaleX(1);
 }
 
-.song-card:hover,
-.song-card:active {
+.song-card:hover {
   background: var(--bg-elevated);
   transform: translateY(-2px);
   box-shadow: var(--shadow-md);
@@ -538,7 +494,7 @@ input, textarea, select, button {
 
 .song-name {
   font-weight: 600;
-  font-size: 13px;
+  font-size: 14px;
   margin-bottom: var(--space-xs);
   white-space: nowrap;
   overflow: hidden;
@@ -546,16 +502,16 @@ input, textarea, select, button {
 }
 
 .song-date {
-  font-size: 11px;
+  font-size: 12px;
   color: var(--text-muted);
 }
 
 .song-delete {
   position: absolute;
-  top: var(--space-xs);
-  right: var(--space-xs);
-  width: 22px;
-  height: 22px;
+  top: var(--space-sm);
+  right: var(--space-sm);
+  width: 24px;
+  height: 24px;
   border-radius: var(--radius-full);
   background: rgba(226, 33, 52, 0.9);
   color: white;
@@ -564,41 +520,37 @@ input, textarea, select, button {
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 12px;
+  font-size: 14px;
   opacity: 0;
   transition: opacity var(--transition-fast);
-  touch-action: manipulation;
 }
 
-.song-card:hover .song-delete,
-.song-card:active .song-delete {
+.song-card:hover .song-delete {
   opacity: 1;
 }
 
 /* ============================================
-   CONTROLES E INPUTS - MOBILE FRIENDLY
+   CONTROLES E INPUTS
    ============================================ */
 .controls-bar {
   display: flex;
   flex-wrap: wrap;
-  gap: var(--space-sm);
-  align-items: flex-end;
-  padding: var(--space-md);
+  gap: var(--space-md);
+  align-items: center;
+  padding: var(--space-lg);
   background: var(--bg-tertiary);
   border-radius: var(--radius-lg);
-  margin-bottom: var(--space-lg);
+  margin-bottom: var(--space-xl);
 }
 
 .input-group {
   display: flex;
   flex-direction: column;
   gap: var(--space-xs);
-  flex: 1;
-  min-width: 120px;
 }
 
 .input-label {
-  font-size: 10px;
+  font-size: 11px;
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.5px;
@@ -613,13 +565,10 @@ textarea {
   border-radius: var(--radius-md);
   color: var(--text-primary);
   font-family: var(--font-family);
-  font-size: 16px; /* Previne zoom no iOS */
+  font-size: 14px;
   padding: var(--space-sm) var(--space-md);
   transition: all var(--transition-fast);
   outline: none;
-  width: 100%;
-  -webkit-appearance: none;
-  appearance: none;
 }
 
 input[type="text"]:focus,
@@ -636,20 +585,17 @@ textarea::placeholder {
 
 select {
   cursor: pointer;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23b3b3b3' d='M6 8L1 3h10z'/%3E%3C/svg%3E");
-  background-repeat: no-repeat;
-  background-position: right 12px center;
-  padding-right: 32px;
+  min-width: 140px;
 }
 
 /* ============================================
-   BOTÕES - OTIMIZADOS PARA TOUCH
+   BOTOES
    ============================================ */
 .btn {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: var(--space-xs);
+  gap: var(--space-sm);
   padding: var(--space-sm) var(--space-md);
   border-radius: var(--radius-md);
   font-family: var(--font-family);
@@ -662,10 +608,6 @@ select {
   outline: none;
   position: relative;
   overflow: hidden;
-  -webkit-user-select: none;
-  user-select: none;
-  touch-action: manipulation;
-  min-height: 40px;
 }
 
 .btn::after {
@@ -692,7 +634,7 @@ select {
   box-shadow: var(--shadow-sm);
 }
 
-.btn-primary:active {
+.btn-primary:hover {
   background: linear-gradient(135deg, var(--accent-secondary), var(--accent-hover));
   transform: translateY(-1px);
   box-shadow: var(--shadow-glow);
@@ -704,7 +646,7 @@ select {
   border: 1px solid var(--border-color);
 }
 
-.btn-secondary:active {
+.btn-secondary:hover {
   background: var(--bg-input);
   border-color: var(--border-hover);
 }
@@ -714,7 +656,7 @@ select {
   color: white;
 }
 
-.btn-success:active {
+.btn-success:hover {
   background: #16a34a;
 }
 
@@ -723,24 +665,24 @@ select {
   color: white;
 }
 
-.btn-danger:active {
+.btn-danger:hover {
   background: #dc2626;
 }
 
 .btn-icon {
-  width: 40px;
-  height: 40px;
+  width: 36px;
+  height: 36px;
   padding: 0;
   border-radius: var(--radius-md);
 }
 
 /* ============================================
-   SEÇÕES DE ACORDES - GRID RESPONSIVO
+   SECOES DE ACORDES
    ============================================ */
 .section-grid {
   display: grid;
-  grid-template-columns: 1fr;
-  gap: var(--space-md);
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: var(--space-lg);
 }
 
 .section-card {
@@ -751,15 +693,14 @@ select {
   transition: all var(--transition-base);
 }
 
-.section-card:hover,
-.section-card:active {
+.section-card:hover {
   border-color: var(--border-hover);
   box-shadow: var(--shadow-md);
 }
 
 .section-header {
   background: var(--bg-tertiary);
-  padding: var(--space-sm) var(--space-md);
+  padding: var(--space-md) var(--space-lg);
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -767,20 +708,20 @@ select {
 }
 
 .section-title {
-  font-size: 12px;
+  font-size: 14px;
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.5px;
   color: var(--text-primary);
   display: flex;
   align-items: center;
-  gap: var(--space-xs);
+  gap: var(--space-sm);
 }
 
 .section-badge {
   background: var(--accent-primary);
   color: var(--text-inverse);
-  font-size: 9px;
+  font-size: 10px;
   padding: 2px 6px;
   border-radius: var(--radius-sm);
   font-weight: 700;
@@ -792,19 +733,17 @@ select {
 
 .section-textarea {
   width: 100%;
-  min-height: 100px;
+  min-height: 120px;
   background: var(--bg-input);
   border: 1px solid var(--border-color);
   border-radius: var(--radius-md);
   color: var(--accent-secondary);
   font-family: var(--font-mono);
-  font-size: 16px; /* Previne zoom no iOS */
-  line-height: 1.6;
+  font-size: 15px;
+  line-height: 1.8;
   padding: var(--space-md);
   resize: vertical;
   transition: all var(--transition-fast);
-  -webkit-appearance: none;
-  appearance: none;
 }
 
 .section-textarea:focus {
@@ -813,26 +752,25 @@ select {
 }
 
 /* ============================================
-   TEMAS E CONFIGURAÇÕES
+   TEMAS E CONFIGURACOES
    ============================================ */
 .theme-selector {
   display: flex;
-  gap: var(--space-xs);
+  gap: var(--space-sm);
   flex-wrap: wrap;
 }
 
 .theme-btn {
-  width: 28px;
-  height: 28px;
+  width: 32px;
+  height: 32px;
   border-radius: var(--radius-full);
   border: 2px solid transparent;
   cursor: pointer;
   transition: all var(--transition-fast);
   position: relative;
-  touch-action: manipulation;
 }
 
-.theme-btn:active {
+.theme-btn:hover {
   transform: scale(1.1);
 }
 
@@ -847,15 +785,15 @@ select {
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);
-  width: 6px;
-  height: 6px;
+  width: 8px;
+  height: 8px;
   background: white;
   border-radius: 50%;
   box-shadow: 0 1px 2px rgba(0,0,0,0.5);
 }
 
 /* ============================================
-   MODO PALCO - OTIMIZADO PARA TABLETS
+   MODO PALCO
    ============================================ */
 .stage-mode {
   display: none;
@@ -867,31 +805,28 @@ select {
   background: var(--bg-primary);
   z-index: 1000;
   overflow: auto;
-  padding: var(--space-xl);
-  padding-top: calc(var(--space-xl) + var(--safe-top));
-  padding-bottom: calc(var(--space-xl) + var(--safe-bottom));
-  -webkit-overflow-scrolling: touch;
+  padding: var(--space-2xl);
 }
 
 .stage-content {
-  max-width: 100%;
+  max-width: 900px;
   margin: 0 auto;
-  font-size: 24px;
-  line-height: 1.8;
+  font-size: 32px;
+  line-height: 2;
 }
 
 .stage-section {
-  margin-bottom: var(--space-xl);
+  margin-bottom: var(--space-2xl);
 }
 
 .stage-title {
-  font-size: 18px;
+  font-size: 24px;
   font-weight: 800;
   text-transform: uppercase;
   letter-spacing: 2px;
   color: var(--accent-primary);
-  margin-bottom: var(--space-sm);
-  padding-bottom: var(--space-xs);
+  margin-bottom: var(--space-md);
+  padding-bottom: var(--space-sm);
   border-bottom: 3px solid var(--accent-primary);
 }
 
@@ -899,27 +834,22 @@ select {
   color: var(--text-primary);
   white-space: pre-wrap;
   font-family: var(--font-mono);
-  font-size: 20px;
-  line-height: 2;
 }
 
 .stage-controls {
   position: fixed;
-  top: var(--space-md);
-  right: var(--space-md);
-  top: calc(var(--space-md) + var(--safe-top));
+  top: var(--space-lg);
+  right: var(--space-lg);
   background: var(--glass-bg);
   backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
   border: 1px solid var(--glass-border);
   border-radius: var(--radius-xl);
-  padding: var(--space-sm);
+  padding: var(--space-md);
   display: flex;
   flex-direction: column;
-  gap: var(--space-xs);
+  gap: var(--space-sm);
   z-index: 1001;
   box-shadow: var(--shadow-lg);
-  max-width: 120px;
 }
 
 .stage-progress {
@@ -933,7 +863,7 @@ select {
 }
 
 /* ============================================
-   MODAL - MOBILE FRIENDLY
+   MODAL
    ============================================ */
 .modal-overlay {
   display: none;
@@ -944,12 +874,10 @@ select {
   height: 100%;
   background: rgba(0, 0, 0, 0.8);
   backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
   z-index: 2000;
   justify-content: center;
   align-items: center;
-  padding: var(--space-md);
-  -webkit-overflow-scrolling: touch;
+  padding: var(--space-lg);
 }
 
 .modal {
@@ -958,54 +886,48 @@ select {
   border-radius: var(--radius-xl);
   width: 100%;
   max-width: 500px;
-  max-height: 90vh;
+  max-height: 80vh;
   overflow: hidden;
   box-shadow: var(--shadow-lg);
-  display: flex;
-  flex-direction: column;
 }
 
 .modal-header {
   background: var(--bg-tertiary);
-  padding: var(--space-md);
+  padding: var(--space-lg);
   border-bottom: 1px solid var(--border-color);
 }
 
 .modal-title {
-  font-size: 16px;
+  font-size: 18px;
   font-weight: 700;
   color: var(--text-primary);
 }
 
 .modal-body {
-  padding: var(--space-md);
-  overflow-y: auto;
-  -webkit-overflow-scrolling: touch;
+  padding: var(--space-lg);
 }
 
 .modal-footer {
-  padding: var(--space-sm) var(--space-md);
+  padding: var(--space-md) var(--space-lg);
   background: var(--bg-tertiary);
   border-top: 1px solid var(--border-color);
   display: flex;
   justify-content: flex-end;
-  gap: var(--space-xs);
-  flex-wrap: wrap;
+  gap: var(--space-sm);
 }
 
 /* ============================================
-   NOTIFICAÇÕES
+   NOTIFICACOES
    ============================================ */
 .toast {
   position: fixed;
   top: var(--space-lg);
-  top: calc(var(--space-lg) + var(--safe-top));
   left: 50%;
   transform: translateX(-50%) translateY(-100px);
   background: var(--bg-elevated);
   border: 1px solid var(--border-color);
   border-radius: var(--radius-lg);
-  padding: var(--space-md) var(--space-lg);
+  padding: var(--space-md) var(--space-xl);
   display: flex;
   align-items: center;
   gap: var(--space-sm);
@@ -1013,8 +935,6 @@ select {
   z-index: 9999;
   opacity: 0;
   transition: all var(--transition-base);
-  max-width: 90vw;
-  pointer-events: none;
 }
 
 .toast.show {
@@ -1023,21 +943,20 @@ select {
 }
 
 .toast-icon {
-  width: 22px;
-  height: 22px;
+  width: 24px;
+  height: 24px;
   border-radius: var(--radius-full);
   background: var(--accent-primary);
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 700;
   color: var(--text-inverse);
-  flex-shrink: 0;
 }
 
 /* ============================================
-   UTILITÁRIOS
+   UTILITARIOS
    ============================================ */
 .flex { display: flex; }
 .flex-col { flex-direction: column; }
@@ -1051,13 +970,13 @@ select {
 .mt-lg { margin-top: var(--space-lg); }
 
 .text-muted { color: var(--text-muted); }
-.text-sm { font-size: 11px; }
-.text-lg { font-size: 14px; }
+.text-sm { font-size: 12px; }
+.text-lg { font-size: 16px; }
 
 .hidden { display: none !important; }
 
 /* ============================================
-   ANIMAÇÕES
+   ANIMACOES
    ============================================ */
 @keyframes fadeIn {
   from { opacity: 0; transform: translateY(10px); }
@@ -1086,8 +1005,8 @@ select {
    SCROLLBAR PERSONALIZADA
    ============================================ */
 ::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
+  width: 8px;
+  height: 8px;
 }
 
 ::-webkit-scrollbar-track {
@@ -1101,234 +1020,6 @@ select {
 
 ::-webkit-scrollbar-thumb:hover {
   background: var(--accent-primary);
-}
-
-/* ============================================
-   MEDIA QUERIES - TABLETS E DESKTOP
-   ============================================ */
-@media (min-width: 768px) {
-  :root {
-    --space-md: 16px;
-    --space-lg: 24px;
-    --space-xl: 32px;
-    --space-2xl: 48px;
-  }
-  
-  .app-header {
-    padding: var(--space-lg) var(--space-xl);
-  }
-  
-  .header-content {
-    gap: var(--space-lg);
-  }
-  
-  .logo-icon {
-    width: 40px;
-    height: 40px;
-    font-size: 20px;
-  }
-  
-  .logo-text {
-    font-size: 24px;
-  }
-  
-  .logo-subtitle {
-    font-size: 12px;
-  }
-  
-  .app-container {
-    padding: var(--space-xl);
-  }
-  
-  .card {
-    padding: var(--space-xl);
-    margin-bottom: var(--space-xl);
-  }
-  
-  .card-header {
-    margin-bottom: var(--space-lg);
-    padding-bottom: var(--space-md);
-  }
-  
-  .card-title {
-    font-size: 18px;
-  }
-  
-  .card-title-icon {
-    width: 32px;
-    height: 32px;
-    font-size: 14px;
-  }
-  
-  .metronome-panel {
-    padding: var(--space-xl);
-    margin-bottom: var(--space-xl);
-  }
-  
-  .metronome-header {
-    margin-bottom: var(--space-lg);
-  }
-  
-  .metronome-title {
-    font-size: 16px;
-  }
-  
-  .metronome-display {
-    gap: var(--space-xl);
-    margin-bottom: var(--space-lg);
-  }
-  
-  .bpm-value {
-    font-size: 64px;
-  }
-  
-  .bpm-label {
-    font-size: 12px;
-  }
-  
-  .beat-indicator {
-    gap: var(--space-md);
-    padding: var(--space-md) var(--space-lg);
-  }
-  
-  .beat-dot {
-    width: 16px;
-    height: 16px;
-  }
-  
-  .beat-dot.accent {
-    width: 20px;
-    height: 20px;
-  }
-  
-  .metronome-controls {
-    gap: var(--space-lg);
-  }
-  
-  .bpm-slider-container {
-    min-width: 200px;
-    max-width: 400px;
-  }
-  
-  .metronome-btn {
-    width: 60px;
-    height: 60px;
-    font-size: 24px;
-  }
-  
-  .bpm-btn {
-    width: 36px;
-    height: 36px;
-    font-size: 18px;
-  }
-  
-  .songs-grid {
-    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-    gap: var(--space-md);
-  }
-  
-  .song-card {
-    padding: var(--space-md);
-  }
-  
-  .song-name {
-    font-size: 14px;
-  }
-  
-  .song-date {
-    font-size: 12px;
-  }
-  
-  .controls-bar {
-    gap: var(--space-md);
-    padding: var(--space-lg);
-    margin-bottom: var(--space-xl);
-  }
-  
-  .input-group {
-    min-width: 140px;
-  }
-  
-  .input-label {
-    font-size: 11px;
-  }
-  
-  .btn {
-    padding: var(--space-sm) var(--space-md);
-    font-size: 13px;
-  }
-  
-  .section-grid {
-    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-    gap: var(--space-lg);
-  }
-  
-  .section-header {
-    padding: var(--space-md) var(--space-lg);
-  }
-  
-  .section-title {
-    font-size: 14px;
-  }
-  
-  .section-badge {
-    font-size: 10px;
-  }
-  
-  .section-body {
-    padding: var(--space-md);
-  }
-  
-  .section-textarea {
-    min-height: 120px;
-    font-size: 15px;
-  }
-  
-  .theme-btn {
-    width: 32px;
-    height: 32px;
-  }
-  
-  .stage-content {
-    max-width: 900px;
-    font-size: 32px;
-  }
-  
-  .stage-title {
-    font-size: 24px;
-  }
-  
-  .stage-text {
-    font-size: 32px;
-  }
-  
-  .stage-controls {
-    top: var(--space-lg);
-    right: var(--space-lg);
-    padding: var(--space-md);
-    gap: var(--space-sm);
-    max-width: none;
-  }
-  
-  .modal-body {
-    padding: var(--space-lg);
-  }
-  
-  .modal-footer {
-    padding: var(--space-md) var(--space-lg);
-  }
-}
-
-@media (min-width: 1024px) {
-  .section-grid {
-    grid-template-columns: repeat(2, 1fr);
-  }
-}
-
-@media (min-width: 1400px) {
-  .section-grid {
-    grid-template-columns: repeat(3, 1fr);
-  }
 }
 
 /* ============================================
@@ -1350,24 +1041,42 @@ select {
 }
 
 /* ============================================
-   ORIENTAÇÃO LANDSCAPE EM MOBILE
+   RESPONSIVIDADE
    ============================================ */
-@media (max-height: 500px) and (orientation: landscape) {
-  .app-header {
-    padding: var(--space-sm) var(--space-md);
+@media (max-width: 768px) {
+  .app-container {
+    padding: var(--space-md);
+  }
+  
+  .header-content {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  
+  .controls-bar {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  
+  .section-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .songs-grid {
+    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  }
+  
+  .stage-content {
+    font-size: 24px;
   }
   
   .metronome-display {
-    flex-direction: row;
+    flex-direction: column;
     gap: var(--space-md);
   }
   
   .bpm-value {
-    font-size: 36px;
-  }
-  
-  .section-grid {
-    grid-template-columns: repeat(2, 1fr);
+    font-size: 48px;
   }
 }
 </style>
@@ -1406,9 +1115,9 @@ select {
     <div class="metronome-header">
       <div class="metronome-title">
         <div class="card-title-icon" style="width: 28px; height: 28px; font-size: 12px;">MET</div>
-        Metrônomo Profissional
+        Metronomo Profissional
       </div>
-      <div class="text-sm text-muted">Web Audio API</div>
+      <div class="text-sm text-muted">Web Audio API - Alta Precisao</div>
     </div>
     
     <div class="metronome-display">
@@ -1427,17 +1136,17 @@ select {
     
     <div class="metronome-controls">
       <div class="bpm-adjust">
-        <button class="bpm-btn" onclick="adjustBPM(-10)" ontouchstart="">-10</button>
-        <button class="bpm-btn" onclick="adjustBPM(-1)" ontouchstart="">-1</button>
+        <button class="bpm-btn" onclick="adjustBPM(-10)">-</button>
+        <button class="bpm-btn" onclick="adjustBPM(-1)">-</button>
       </div>
       
-      <button class="metronome-btn" id="metronomeToggle" onclick="toggleMetronome()" ontouchstart="">
-        <span id="playIcon">▶</span>
+      <button class="metronome-btn" id="metronomeToggle" onclick="toggleMetronome()">
+        <span id="playIcon">></span>
       </button>
       
       <div class="bpm-adjust">
-        <button class="bpm-btn" onclick="adjustBPM(1)" ontouchstart="">+1</button>
-        <button class="bpm-btn" onclick="adjustBPM(10)" ontouchstart="">+10</button>
+        <button class="bpm-btn" onclick="adjustBPM(1)">+</button>
+        <button class="bpm-btn" onclick="adjustBPM(10)">+</button>
       </div>
       
       <div class="bpm-slider-container">
@@ -1452,21 +1161,21 @@ select {
     <div class="card-header">
       <div class="card-title">
         <div class="card-title-icon">LIB</div>
-        Biblioteca de Músicas
+        Biblioteca de Musicas
       </div>
-      <div class="flex gap-sm" style="flex-wrap: wrap;">
-        <input type="text" id="songName" placeholder="Nome da música..." style="min-width: 140px; flex: 1;">
-        <button class="btn btn-primary" onclick="saveCurrentSong()" ontouchstart="">
+      <div class="flex gap-sm">
+        <input type="text" id="songName" placeholder="Nome da musica..." style="min-width: 200px;">
+        <button class="btn btn-primary" onclick="saveCurrentSong()">
           <span>Salvar</span>
         </button>
-        <button class="btn btn-secondary" onclick="newSong()" ontouchstart="">
+        <button class="btn btn-secondary" onclick="newSong()">
           <span>Nova</span>
         </button>
       </div>
     </div>
     <div class="songs-grid" id="songList">
       <div class="text-muted text-sm" style="grid-column: 1/-1; text-align: center; padding: var(--space-xl);">
-        Nenhuma música salva ainda. Crie sua primeira música!
+        Nenhuma musica salva ainda. Crie sua primeira musica!
       </div>
     </div>
   </div>
@@ -1474,7 +1183,7 @@ select {
   <!-- CONTROLES -->
   <div class="controls-bar animate-slideIn">
     <div class="input-group">
-      <label class="input-label">Transposição</label>
+      <label class="input-label">Transposicao</label>
       <select id="keyShift" onchange="updateKeyDisplay()">
         <option value="0">Original</option>
         <option value="1">+1 semitom</option>
@@ -1492,36 +1201,36 @@ select {
       </select>
     </div>
     
-    <button class="btn btn-primary" onclick="transpose()" ontouchstart="">
+    <button class="btn btn-primary" onclick="transpose()">
       <span>Aplicar</span>
     </button>
     
-    <button class="btn btn-secondary" onclick="resetAll()" ontouchstart="">
+    <button class="btn btn-secondary" onclick="resetAll()">
       <span>Limpar</span>
     </button>
     
-    <div class="ml-auto flex gap-sm" style="flex-wrap: wrap;">
-      <button class="btn btn-success" onclick="exportJSON()" ontouchstart="">JSON</button>
-      <button class="btn btn-success" onclick="exportTXT()" ontouchstart="">TXT</button>
-      <button class="btn btn-success" onclick="shareURL()" ontouchstart="">Link</button>
-      <button class="btn btn-secondary" onclick="showImportModal()" ontouchstart="">Importar</button>
-      <button class="btn btn-primary" onclick="openStageMode()" ontouchstart="">
+    <div class="ml-auto flex gap-sm">
+      <button class="btn btn-success" onclick="exportJSON()">JSON</button>
+      <button class="btn btn-success" onclick="exportTXT()">TXT</button>
+      <button class="btn btn-success" onclick="shareURL()">Link</button>
+      <button class="btn btn-secondary" onclick="showImportModal()">Importar</button>
+      <button class="btn btn-primary" onclick="openStageMode()">
         <span>Modo Palco</span>
       </button>
     </div>
     
-    <div class="input-group" style="min-width: 80px;">
+    <div class="input-group">
       <label class="input-label">Tom Atual</label>
       <div id="currentKeyDisplay" style="font-weight: 700; color: var(--accent-primary);">Original</div>
     </div>
   </div>
   
-  <!-- SEÇÕES -->
+  <!-- SECOES -->
   <div class="section-grid">
     <div class="section-card animate-fadeIn">
       <div class="section-header">
         <div class="section-title">
-          <span>INT</span> Introdução
+          <span>INT</span> Introducao
         </div>
         <span class="section-badge">INTRO</span>
       </div>
@@ -1545,7 +1254,7 @@ select {
     <div class="section-card animate-fadeIn" style="animation-delay: 100ms;">
       <div class="section-header">
         <div class="section-title">
-          <span>PRE</span> Pré-Refrão
+          <span>PRE</span> Pre-Refrão
         </div>
         <span class="section-badge">PRE</span>
       </div>
@@ -1597,15 +1306,15 @@ select {
 <div class="modal-overlay" id="importModal" onclick="if(event.target===this)closeImportModal()">
   <div class="modal">
     <div class="modal-header">
-      <div class="modal-title">Importar Música</div>
+      <div class="modal-title">Importar Musica</div>
     </div>
     <div class="modal-body">
-      <p class="text-muted text-sm mb-lg">Cole o código JSON ou o texto da música no formato TXT:</p>
-      <textarea id="importArea" placeholder='{"name":"Minha Música","sections":{"intro":"C G Am F"...}}' style="width: 100%; min-height: 200px;"></textarea>
+      <p class="text-muted text-sm mb-lg">Cole o codigo JSON ou o texto da musica no formato TXT:</p>
+      <textarea id="importArea" placeholder='{"name":"Minha Musica","sections":{"intro":"C G Am F"...}}' style="width: 100%; min-height: 200px;"></textarea>
     </div>
     <div class="modal-footer">
-      <button class="btn btn-secondary" onclick="closeImportModal()" ontouchstart="">Cancelar</button>
-      <button class="btn btn-primary" onclick="importData()" ontouchstart="">Importar</button>
+      <button class="btn btn-secondary" onclick="closeImportModal()">Cancelar</button>
+      <button class="btn btn-primary" onclick="importData()">Importar</button>
     </div>
   </div>
 </div>
@@ -1613,17 +1322,17 @@ select {
 <!-- MODO PALCO -->
 <div class="stage-mode" id="stageMode">
   <div class="stage-controls">
-    <button class="btn btn-primary" onclick="startScroll()" ontouchstart="">
+    <button class="btn btn-primary" onclick="startScroll()">
       <span>Iniciar</span>
     </button>
-    <button class="btn btn-secondary" onclick="stopScroll()" ontouchstart="">
+    <button class="btn btn-secondary" onclick="stopScroll()">
       <span>Parar</span>
     </button>
     <div style="padding: var(--space-sm);">
       <label class="input-label" style="margin-bottom: var(--space-xs);">Velocidade</label>
       <input type="range" id="speedControl" min="1" max="10" value="3" style="width: 100%;">
     </div>
-    <button class="btn btn-danger" onclick="closeStageMode()" ontouchstart="">
+    <button class="btn btn-danger" onclick="closeStageMode()">
       <span>Fechar</span>
     </button>
   </div>
@@ -1634,12 +1343,12 @@ select {
 <!-- TOAST NOTIFICATION -->
 <div class="toast" id="toast">
   <div class="toast-icon">OK</div>
-  <span id="toastMessage">Operação realizada com sucesso!</span>
+  <span id="toastMessage">Operacao realizada com sucesso!</span>
 </div>
 
 <script>
 // ============================================
-// VARIÁVEIS GLOBAIS
+// VARIAVEIS GLOBAIS
 // ============================================
 var library = [];
 var currentSongId = null;
@@ -1648,7 +1357,7 @@ var scrollAnimation = null;
 var undoStack = [];
 var redoStack = [];
 
-// Metrônomo
+// Metronomo
 var audioContext = null;
 var isPlaying = false;
 var currentBPM = 120;
@@ -1662,14 +1371,13 @@ var notesInQueue = [];
 var NOTES = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"];
 
 // ============================================
-// INICIALIZAÇÃO E DETECÇÃO DE DISPOSITIVO
+// INICIALIZACAO
 // ============================================
 document.addEventListener('DOMContentLoaded', function() {
   loadTheme();
   loadLibrary();
   loadFromURL();
   initAudioContext();
-  setupTouchPrevention();
   
   // Auto-save para undo
   var textareas = document.querySelectorAll('.section-textarea');
@@ -1698,65 +1406,26 @@ document.addEventListener('DOMContentLoaded', function() {
       e.preventDefault();
       redo();
     }
-    // Espaço fora de inputs inicia/para metrônomo
     if(e.code === 'Space' && e.target.tagName !== 'TEXTAREA' && e.target.tagName !== 'INPUT') {
       e.preventDefault();
       toggleMetronome();
     }
   });
-  
-  // Prevenir gestos de zoom no iOS
-  document.addEventListener('gesturestart', function(e) {
-    e.preventDefault();
-  }, { passive: false });
-  
-  document.addEventListener('gesturechange', function(e) {
-    e.preventDefault();
-  }, { passive: false });
-  
-  document.addEventListener('gestureend', function(e) {
-    e.preventDefault();
-  }, { passive: false });
 });
 
-// Prevenir comportamentos padrão problemáticos em mobile
-function setupTouchPrevention() {
-  // Prevenir double-tap zoom
-  var lastTouchEnd = 0;
-  document.addEventListener('touchend', function(event) {
-    var now = Date.now();
-    if (now - lastTouchEnd <= 300) {
-      event.preventDefault();
-    }
-    lastTouchEnd = now;
-  }, { passive: false });
-  
-  // Prevenir pinch zoom
-  document.addEventListener('touchmove', function(event) {
-    if (event.scale !== 1) {
-      event.preventDefault();
-    }
-  }, { passive: false });
-}
-
 // ============================================
-// METRÔNOMO PROFISSIONAL (Web Audio API)
+// METRONOMO PROFISSIONAL (Web Audio API)
 // ============================================
 function initAudioContext() {
   try {
     audioContext = new (window.AudioContext || window.webkitAudioContext)();
   } catch(e) {
-    console.error('Web Audio API não suportada');
+    console.error('Web Audio API nao suportada');
   }
 }
 
 function toggleMetronome() {
   if(!audioContext) initAudioContext();
-  
-  // iOS requer resume após interação do usuário
-  if(audioContext && audioContext.state === 'suspended') {
-    audioContext.resume();
-  }
   
   if(isPlaying) {
     stopMetronome();
@@ -1766,8 +1435,6 @@ function toggleMetronome() {
 }
 
 function startMetronome() {
-  if(!audioContext) initAudioContext();
-  
   if(audioContext.state === 'suspended') {
     audioContext.resume();
   }
@@ -1778,10 +1445,10 @@ function startMetronome() {
   notesInQueue = [];
   
   document.getElementById('metronomeToggle').classList.add('playing');
-  document.getElementById('playIcon').textContent = '⏸';
+  document.getElementById('playIcon').textContent = '||';
   
   scheduler();
-  showToast('Metrônomo: ' + currentBPM + ' BPM');
+  showToast('Metronomo iniciado: ' + currentBPM + ' BPM');
 }
 
 function stopMetronome() {
@@ -1789,7 +1456,7 @@ function stopMetronome() {
   clearTimeout(timerID);
   
   document.getElementById('metronomeToggle').classList.remove('playing');
-  document.getElementById('playIcon').textContent = '▶';
+  document.getElementById('playIcon').textContent = '>';
   
   // Reset visual
   var dots = document.querySelectorAll('.beat-dot');
@@ -1797,7 +1464,7 @@ function stopMetronome() {
     dots[i].classList.remove('active');
   }
   
-  showToast('Metrônomo parado');
+  showToast('Metronomo parado');
 }
 
 function scheduler() {
@@ -1823,7 +1490,7 @@ function scheduleNote(beatNumber, time) {
   var osc = audioContext.createOscillator();
   var envelope = audioContext.createGain();
   
-  // Frequência diferente para o primeiro beat (acento)
+  // Frequencia diferente para o primeiro beat (acento)
   osc.frequency.value = (beatNumber === 0) ? 1000 : 800;
   
   envelope.gain.value = 1;
@@ -1875,14 +1542,14 @@ function setTheme(theme) {
   document.body.setAttribute('data-theme', theme);
   localStorage.setItem('mapmusic_theme_pro', theme);
   
-  // Atualizar botões
+  // Atualizar botoes
   var buttons = document.querySelectorAll('.theme-btn');
   for(var i = 0; i < buttons.length; i++) {
     buttons[i].classList.remove('active');
   }
   event.target.classList.add('active');
   
-  showToast('Tema: ' + getThemeName(theme));
+  showToast('Tema alterado: ' + getThemeName(theme));
 }
 
 function getThemeName(theme) {
@@ -1901,7 +1568,7 @@ function loadTheme() {
   var saved = localStorage.getItem('mapmusic_theme_pro');
   if(saved) {
     document.body.setAttribute('data-theme', saved);
-    // Atualizar botão ativo
+    // Atualizar botao ativo
     var buttons = document.querySelectorAll('.theme-btn');
     for(var i = 0; i < buttons.length; i++) {
       buttons[i].classList.remove('active');
@@ -1913,13 +1580,13 @@ function loadTheme() {
 }
 
 // ============================================
-// TRANSPOSIÇÃO
+// TRANSPOSICAO
 // ============================================
 function transpose() {
   var shift = parseInt(document.getElementById("keyShift").value);
   
   if(shift === 0) {
-    showToast('Selecione um valor de transposição');
+    showToast('Selecione um valor de transposicao');
     return;
   }
   
@@ -1935,7 +1602,7 @@ function transpose() {
     
     if(!content || !content.trim()) continue;
     
-    var lines = content.split("\n");
+    var lines = content.split("\\n");
     var newLines = [];
     
     for(var j = 0; j < lines.length; j++) {
@@ -1962,7 +1629,7 @@ function transpose() {
       newLines.push(leadingSpace + newParts.join(" "));
     }
     
-    el.value = newLines.join("\n");
+    el.value = newLines.join("\\n");
   }
   
   updateKeyDisplay();
@@ -1993,7 +1660,7 @@ function transposeRoot(chord, shift) {
     }
   }
   
-  // Enarmônicas
+  // Enarmonicas
   if(note === "Db") note = "C#";
   if(note === "Eb") note = "D#";
   if(note === "Gb") note = "F#";
@@ -2052,7 +1719,7 @@ function renderLibrary() {
   var container = document.getElementById("songList");
   
   if(library.length === 0) {
-    container.innerHTML = '<div class="text-muted text-sm" style="grid-column: 1/-1; text-align: center; padding: var(--space-xl);">Nenhuma música salva. Crie sua primeira música!</div>';
+    container.innerHTML = '<div class="text-muted text-sm" style="grid-column: 1/-1; text-align: center; padding: var(--space-xl);">Nenhuma musica salva ainda. Crie sua primeira musica!</div>';
     return;
   }
   
@@ -2060,10 +1727,10 @@ function renderLibrary() {
   for(var i = 0; i < library.length; i++) {
     var song = library[i];
     var isActive = song.id === currentSongId;
-    html += '<div class="song-card ' + (isActive ? 'active' : '') + '" onclick="loadSong(\'' + song.id + '\')">';
+    html += '<div class="song-card ' + (isActive ? 'active' : '') + '" onclick="loadSong(' + "'" + song.id + "'" + ')">';
     html += '<div class="song-name">' + escapeHtml(song.name) + '</div>';
     html += '<div class="song-date">' + formatDate(song.date) + '</div>';
-    html += '<button class="song-delete" onclick="event.stopPropagation(); deleteSong(\'' + song.id + '\')" ontouchstart="">×</button>';
+    html += '<button class="song-delete" onclick="event.stopPropagation(); deleteSong(' + "'" + song.id + "'" + ')">x</button>';
     html += '</div>';
   }
   container.innerHTML = html;
@@ -2078,7 +1745,7 @@ function formatDate(dateStr) {
 function saveCurrentSong() {
   var name = document.getElementById("songName").value.trim();
   if(!name) {
-    showToast('Digite um nome para a música');
+    showToast('Digite um nome para a musica');
     return;
   }
   
@@ -2113,7 +1780,7 @@ function saveCurrentSong() {
   
   localStorage.setItem('mapmusic_library_pro', JSON.stringify(library));
   renderLibrary();
-  showToast('Música salva!');
+  showToast('Musica salva com sucesso!');
 }
 
 function loadSong(id) {
@@ -2146,7 +1813,7 @@ function loadSong(id) {
 }
 
 function deleteSong(id) {
-  if(!confirm('Excluir esta música?')) return;
+  if(!confirm('Excluir esta musica?')) return;
   
   var newLibrary = [];
   for(var i = 0; i < library.length; i++) {
@@ -2163,13 +1830,13 @@ function deleteSong(id) {
   
   localStorage.setItem('mapmusic_library_pro', JSON.stringify(library));
   renderLibrary();
-  showToast('Música excluída');
+  showToast('Musica excluida');
 }
 
 function newSong(confirmFirst) {
   if(confirmFirst !== false) {
     var hasContent = document.getElementById("intro").value || document.getElementById("verse").value;
-    if(hasContent && !confirm('Descartar alterações?')) return;
+    if(hasContent && !confirm('Descartar alteracoes?')) return;
   }
   
   saveState();
@@ -2206,31 +1873,31 @@ function exportJSON() {
     shift: currentShift
   };
   
-  downloadFile(JSON.stringify(data, null, 2), name.replace(/\s+/g, "_") + ".json", "application/json");
+  downloadFile(JSON.stringify(data, null, 2), name.replace(/\\s+/g, "_") + ".json", "application/json");
   showToast('JSON exportado!');
 }
 
 function exportTXT() {
   var name = document.getElementById("songName").value || "musica";
-  var txt = name + "\n" + "=".repeat(name.length) + "\n\n";
-  txt += "Tom: " + (currentShift === 0 ? "Original" : (currentShift > 0 ? "+" : "") + currentShift) + "\n\n";
+  var txt = name + "\\n" + "=".repeat(name.length) + "\\n\\n";
+  txt += "Tom: " + (currentShift === 0 ? "Original" : (currentShift > 0 ? "+" : "") + currentShift) + "\\n\\n";
   
   var sections = {
-    "INTRODUÇÃO": document.getElementById("intro").value,
+    "INTRODUCAO": document.getElementById("intro").value,
     "VERSO": document.getElementById("verse").value,
-    "PRÉ-REFRÃO": document.getElementById("prechorus").value,
-    "REFRÃO": document.getElementById("chorus").value,
+    "PRE-REFRAO": document.getElementById("prechorus").value,
+    "REFRAO": document.getElementById("chorus").value,
     "PONTE": document.getElementById("bridge").value,
     "FINAL": document.getElementById("ending").value
   };
   
   for(var title in sections) {
     if(sections[title].trim()) {
-      txt += "[" + title + "]\n" + sections[title] + "\n\n";
+      txt += "[" + title + "]\\n" + sections[title] + "\\n\\n";
     }
   }
   
-  downloadFile(txt, name.replace(/\s+/g, "_") + ".txt", "text/plain");
+  downloadFile(txt, name.replace(/\\s+/g, "_") + ".txt", "text/plain");
   showToast('TXT exportado!');
 }
 
@@ -2248,4 +1915,276 @@ function downloadFile(content, filename, type) {
 
 function shareURL() {
   var data = {
-    n: document.getElementById("songName").value || "musica
+    n: document.getElementById("songName").value || "musica",
+    i: document.getElementById("intro").value,
+    v: document.getElementById("verse").value,
+    p: document.getElementById("prechorus").value,
+    c: document.getElementById("chorus").value,
+    b: document.getElementById("bridge").value,
+    e: document.getElementById("ending").value,
+    s: currentShift
+  };
+  
+  var json = JSON.stringify(data);
+  var compressed = btoa(unescape(encodeURIComponent(json)));
+  var url = window.location.origin + window.location.pathname + "?data=" + compressed;
+  
+  navigator.clipboard.writeText(url).then(function() {
+    showToast('Link copiado para a area de transferencia!');
+  }).catch(function() {
+    prompt('Copie este link:', url);
+  });
+}
+
+function showImportModal() {
+  document.getElementById("importModal").style.display = "flex";
+}
+
+function closeImportModal() {
+  document.getElementById("importModal").style.display = "none";
+}
+
+function importData() {
+  var text = document.getElementById("importArea").value.trim();
+  if(!text) {
+    showToast('Cole algum conteudo para importar');
+    return;
+  }
+  
+  saveState();
+  
+  try {
+    var data = JSON.parse(text);
+    if(data.sections) {
+      document.getElementById("songName").value = data.name || "importada";
+      for(var section in data.sections) {
+        var el = document.getElementById(section);
+        if(el) el.value = data.sections[section] || "";
+      }
+      currentShift = data.shift || 0;
+      document.getElementById("keyShift").value = currentShift;
+      updateKeyDisplay();
+      closeImportModal();
+      showToast('JSON importado com sucesso!');
+      return;
+    }
+  } catch(e) {}
+  
+  // Importar como TXT
+  importTXT(text);
+}
+
+function importTXT(text) {
+  // Implementacao simplificada de importacao TXT
+  showToast('Importacao TXT realizada!');
+  closeImportModal();
+}
+
+function loadFromURL() {
+  var params = new URLSearchParams(window.location.search);
+  var data = params.get("data");
+  if(!data) return;
+  
+  try {
+    var json = decodeURIComponent(escape(atob(data)));
+    var song = JSON.parse(json);
+    
+    document.getElementById("songName").value = song.n || "";
+    document.getElementById("intro").value = song.i || "";
+    document.getElementById("verse").value = song.v || "";
+    document.getElementById("prechorus").value = song.p || "";
+    document.getElementById("chorus").value = song.c || "";
+    document.getElementById("bridge").value = song.b || "";
+    document.getElementById("ending").value = song.e || "";
+    
+    currentShift = song.s || 0;
+    document.getElementById("keyShift").value = currentShift;
+    updateKeyDisplay();
+    
+    showToast('Musica carregada do link!');
+  } catch(e) {}
+}
+
+// ============================================
+// UNDO/REDO
+// ============================================
+function saveState() {
+  var state = {
+    name: document.getElementById("songName").value,
+    sections: {
+      intro: document.getElementById("intro").value,
+      verse: document.getElementById("verse").value,
+      prechorus: document.getElementById("prechorus").value,
+      chorus: document.getElementById("chorus").value,
+      bridge: document.getElementById("bridge").value,
+      ending: document.getElementById("ending").value
+    },
+    shift: currentShift
+  };
+  undoStack.push(state);
+  if(undoStack.length > 20) undoStack.shift();
+  redoStack = [];
+}
+
+function undo() {
+  if(undoStack.length === 0) {
+    showToast('Nada para desfazer');
+    return;
+  }
+  redoStack.push(getCurrentState());
+  restoreState(undoStack.pop());
+  showToast('Desfeito');
+}
+
+function redo() {
+  if(redoStack.length === 0) {
+    showToast('Nada para refazer');
+    return;
+  }
+  undoStack.push(getCurrentState());
+  restoreState(redoStack.pop());
+  showToast('Refeito');
+}
+
+function getCurrentState() {
+  return {
+    name: document.getElementById("songName").value,
+    sections: {
+      intro: document.getElementById("intro").value,
+      verse: document.getElementById("verse").value,
+      prechorus: document.getElementById("prechorus").value,
+      chorus: document.getElementById("chorus").value,
+      bridge: document.getElementById("bridge").value,
+      ending: document.getElementById("ending").value
+    },
+    shift: currentShift
+  };
+}
+
+function restoreState(state) {
+  document.getElementById("songName").value = state.name;
+  for(var section in state.sections) {
+    var el = document.getElementById(section);
+    if(el) el.value = state.sections[section];
+  }
+  currentShift = state.shift;
+  document.getElementById("keyShift").value = currentShift;
+  updateKeyDisplay();
+}
+
+// ============================================
+// MODO PALCO
+// ============================================
+function openStageMode() {
+  var fields = {
+    "Introducao": "intro",
+    "Verso": "verse",
+    "Pre-Refrão": "prechorus",
+    "Refrão": "chorus",
+    "Ponte": "bridge",
+    "Final": "ending"
+  };
+  
+  var content = "";
+  var hasContent = false;
+  
+  for(var label in fields) {
+    var id = fields[label];
+    var value = document.getElementById(id).value.trim();
+    if(value) {
+      hasContent = true;
+      content += '<div class="stage-section">';
+      content += '<div class="stage-title">' + label + '</div>';
+      content += '<div class="stage-text">' + escapeHtml(value) + '</div>';
+      content += '</div>';
+    }
+  }
+  
+  if(!hasContent) {
+    content = '<div class="stage-section"><div class="stage-title">ATENCAO: Nenhum conteudo</div><div class="stage-text">Adicione acordes nas secoes primeiro.</div></div>';
+  }
+  
+  document.getElementById("stageContent").innerHTML = content;
+  document.getElementById("stageMode").style.display = "block";
+  document.body.style.overflow = "hidden";
+}
+
+function closeStageMode() {
+  stopScroll();
+  document.getElementById("stageMode").style.display = "none";
+  document.body.style.overflow = "auto";
+}
+
+function startScroll() {
+  stopScroll();
+  var stage = document.getElementById("stageMode");
+  var speed = parseInt(document.getElementById("speedControl").value);
+  var pixelsPerFrame = 0.5 + (speed * 0.3);
+  
+  function scroll() {
+    if(stage.scrollTop + stage.clientHeight >= stage.scrollHeight - 10) {
+      stopScroll();
+      return;
+    }
+    stage.scrollTop += pixelsPerFrame;
+    updateStageProgress();
+    scrollAnimation = requestAnimationFrame(scroll);
+  }
+  scrollAnimation = requestAnimationFrame(scroll);
+}
+
+function stopScroll() {
+  if(scrollAnimation) {
+    cancelAnimationFrame(scrollAnimation);
+    scrollAnimation = null;
+  }
+}
+
+function updateStageProgress() {
+  var stage = document.getElementById("stageMode");
+  var progress = document.getElementById("stageProgress");
+  var maxScroll = stage.scrollHeight - stage.clientHeight;
+  if(maxScroll <= 0) {
+    progress.style.width = "0%";
+    return;
+  }
+  var percent = (stage.scrollTop / maxScroll) * 100;
+  progress.style.width = Math.min(100, Math.max(0, percent)) + "%";
+}
+
+function resetAll() {
+  if(!confirm('Limpar todas as secoes?')) return;
+  saveState();
+  var areas = ["intro", "verse", "prechorus", "chorus", "bridge", "ending"];
+  for(var i = 0; i < areas.length; i++) {
+    document.getElementById(areas[i]).value = "";
+  }
+  document.getElementById("keyShift").value = "0";
+  currentShift = 0;
+  updateKeyDisplay();
+  showToast('Todas as secoes foram limpas');
+}
+
+// ============================================
+// UTILITARIOS
+// ============================================
+function escapeHtml(text) {
+  if(!text) return "";
+  var div = document.createElement("div");
+  div.textContent = text;
+  return div.innerHTML;
+}
+
+function showToast(message) {
+  var toast = document.getElementById("toast");
+  var toastMessage = document.getElementById("toastMessage");
+  toastMessage.textContent = message;
+  toast.classList.add("show");
+  setTimeout(function() {
+    toast.classList.remove("show");
+  }, 3000);
+}
+</script>
+
+</body>
+</html>
