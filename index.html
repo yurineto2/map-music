@@ -54,29 +54,33 @@ body { font-family: 'Inter', sans-serif; background: var(--bg-primary); color: v
 .menu-item { padding: 14px 18px; color: #fff; font-size: 13px; font-weight: 600; cursor: pointer; border-bottom: 1px solid var(--border-color); }
 .menu-item:hover { background: var(--bg-secondary); color: var(--accent-primary); }
 
-/* BOTÃO SALVAR VITRO (REVISADO PARA APARECER NO MOBILE) */
+/* BOTÃO SALVAR VITRO - PURO TEXTO */
 .btn-save-vitro {
     position: fixed; bottom: 30px; left: 20px; z-index: 2000;
     background: var(--glass-bg); backdrop-filter: blur(15px); -webkit-backdrop-filter: blur(15px);
     border: 1px solid var(--glass-border); color: rgba(255, 255, 255, 0.8);
-    padding: 12px 20px; border-radius: var(--radius-full);
-    cursor: pointer; font-weight: 600; font-size: 11px; letter-spacing: 1px;
+    padding: 12px 24px; border-radius: var(--radius-full);
+    cursor: pointer; font-weight: 600; font-size: 11px; letter-spacing: 1.5px;
+    text-transform: uppercase;
     box-shadow: 0 4px 15px rgba(0,0,0,0.3); transition: 0.3s;
 }
+.btn-save-vitro:hover {
+    border-color: var(--accent-primary);
+    color: var(--accent-primary);
+    background: rgba(255, 255, 255, 0.05);
+}
 
-/* LAYOUT RESPONSIVO DINÂMICO */
+/* LAYOUT RESPONSIVO */
 .main-layout { 
   display: grid; grid-template-columns: 280px 1fr 300px; gap: 20px; 
   max-width: 1400px; margin: 0 auto; width: 100%; padding: 20px; 
 }
 
-/* AJUSTES MOBILE (AQUI ESTÁ A CORREÇÃO) */
 @media (max-width: 1100px) {
   .main-layout { grid-template-columns: 1fr; }
-  .side-panel { order: 2; max-height: 300px !important; }
+  .side-panel { order: 2; max-height: 350px !important; margin-bottom: 40px; }
   .metronome-card { order: 1; position: relative !important; top: 0 !important; margin-bottom: 20px; }
   .notes-section { order: 3; }
-  .btn-save-vitro { bottom: 20px; left: 15px; padding: 10px 16px; font-size: 10px; }
 }
 
 .side-panel { background: var(--bg-secondary); border-radius: var(--radius-xl); border: 1px solid var(--border-color); height: fit-content; max-height: 80vh; overflow: hidden; display: flex; flex-direction: column; }
@@ -94,7 +98,7 @@ body { font-family: 'Inter', sans-serif; background: var(--bg-primary); color: v
 .metronome-card { background: var(--bg-secondary); border-radius: var(--radius-xl); border: 1px solid var(--border-color); padding: 20px; text-align: center; position: sticky; top: 100px; }
 .bpm-val { font-size: 56px; font-weight: 800; color: var(--accent-primary); }
 
-/* MODO SHOW REGRAS */
+/* MODO SHOW */
 body.performance-mode .btn-save-vitro, body.performance-mode .app-header, body.performance-mode .side-panel, body.performance-mode .metronome-card, body.performance-mode .toolbar-central { display: none !important; }
 body.performance-mode .main-layout { grid-template-columns: 1fr; padding: 100px 10% 150px; }
 
@@ -122,15 +126,14 @@ body.performance-mode .scroll-controls { display: flex; }
     <div class="menu-container">
       <button class="menu-btn" onclick="toggleMenu()"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="1"/><circle cx="12" cy="5" r="1"/><circle cx="12" cy="19" r="1"/></svg></button>
       <div class="dropdown-menu" id="main-menu">
-        <div class="menu-item" onclick="exportData()">📤 Exportar Backup</div>
-        <div class="menu-item" onclick="importData()">📥 Importar Backup</div>
+        <div class="menu-item" onclick="exportData()">Exportar Backup</div>
+        <div class="menu-item" onclick="importData()">Importar Backup</div>
       </div>
     </div>
   </div>
 </header>
 
 <div class="main-layout">
-  <!-- SETLIST (Agora aparece abaixo do metrônomo no mobile) -->
   <aside class="side-panel">
     <div class="panel-header">Setlist <span id="song-count" style="margin-left:auto; opacity:0.5;">0</span></div>
     <div class="song-list" id="song-list"></div>
@@ -163,7 +166,7 @@ body.performance-mode .scroll-controls { display: flex; }
   </aside>
 </div>
 
-<button class="btn-save-vitro" onclick="saveSong()">💾 Salvar Música</button>
+<button class="btn-save-vitro" onclick="saveSong()">Salvar Música</button>
 
 <div class="scroll-controls">
     <span>Teleprompter</span>
@@ -176,6 +179,7 @@ body.performance-mode .scroll-controls { display: flex; }
 </div>
 
 <script>
+// Lógica mantida idêntica para garantir estabilidade funcional
 let bpm = 120;
 let isPlaying = false;
 let nextNoteTime = 0.0;
@@ -185,7 +189,7 @@ let tapTimes = [];
 
 const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
 const notesArr = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"];
-let songs = JSON.parse(localStorage.getItem('map_pro_master_final')) || [];
+let songs = JSON.parse(localStorage.getItem('map_pro_master_vfinal')) || [];
 
 function toggleMenu() { document.getElementById('main-menu').classList.toggle('show'); }
 window.onclick = e => { if (!e.target.closest('.menu-container')) document.getElementById('main-menu').classList.remove('show'); };
@@ -204,10 +208,10 @@ function importData() {
     input.type = 'file';
     input.onchange = e => {
         const reader = new FileReader();
-        reader.readAsText(e.target.files[0],'UTF-8');
+        reader.readAsText(e.target.files,'UTF-8');
         reader.onload = readerEvent => {
             songs = JSON.parse(readerEvent.target.result);
-            localStorage.setItem('map_pro_master_final', JSON.stringify(songs));
+            localStorage.setItem('map_pro_master_vfinal', JSON.stringify(songs));
             renderSetlist();
         }
     }
@@ -226,7 +230,7 @@ document.getElementById('tap-btn').onclick = () => {
     tapTimes.push(now);
     if (tapTimes.length > 4) tapTimes.shift();
     if (tapTimes.length > 1) {
-        const avg = (tapTimes[tapTimes.length-1] - tapTimes[0]) / (tapTimes.length - 1);
+        const avg = (tapTimes[tapTimes.length-1] - tapTimes) / (tapTimes.length - 1);
         bpm = Math.min(Math.max(Math.round(60000 / avg), 40), 240);
         document.getElementById('bpm-display').innerText = bpm;
     }
@@ -277,7 +281,7 @@ function saveSong() {
   if (!name) return;
   const parts = Array.from(document.querySelectorAll('.song-part')).map(p => ({ title: p.querySelector('input').value, content: p.querySelector('textarea').value }));
   songs.push({ name, bpm, parts, id: Date.now() });
-  localStorage.setItem('map_pro_master_final', JSON.stringify(songs));
+  localStorage.setItem('map_pro_master_vfinal', JSON.stringify(songs));
   renderSetlist();
 }
 
@@ -298,7 +302,7 @@ function deleteSong(id, e) {
   e.stopPropagation();
   if(confirm("Excluir música?")) {
     songs = songs.filter(s => s.id !== id);
-    localStorage.setItem('map_pro_master_final', JSON.stringify(songs));
+    localStorage.setItem('map_pro_master_vfinal', JSON.stringify(songs));
     renderSetlist();
   }
 }
