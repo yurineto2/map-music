@@ -249,6 +249,75 @@
     </main>
 
     <script>
+        /* ============================================
+   RESPONSIVIDADE (MOBILE & TABLET)
+   ============================================ */
+
+/* Tablets e Telas Médias (até 1024px) */
+@media (max-width: 1024px) {
+  .app-container {
+    padding: var(--space-md);
+  }
+  
+  .metronome-display {
+    gap: var(--space-xl);
+  }
+}
+
+/* Smartphones (até 768px) */
+@media (max-width: 768px) {
+  .header-content {
+    padding: 0;
+  }
+
+  .logo-text {
+    font-size: 20px;
+  }
+
+  .metronome-display {
+    flex-direction: column; /* Empilha os círculos no mobile */
+    gap: var(--space-lg);
+  }
+
+  .bpm-circle-display {
+    width: 150px;
+    height: 150px;
+  }
+
+  .bpm-value {
+    font-size: 42px;
+  }
+
+  /* Aumentar áreas de toque para mobile (Lei de Fitts) */
+  .card, .metronome-panel {
+    padding: var(--space-md);
+    margin-bottom: var(--space-md);
+  }
+}
+
+/* Telas Pequenas (até 480px) */
+@media (max-width: 480px) {
+  .app-header {
+    padding: var(--space-md);
+  }
+
+  .logo-subtitle {
+    display: none; /* Esconde subtitulo em telas muito pequenas */
+  }
+
+  .beat-visualizer {
+    width: 120px;
+    height: 120px;
+  }
+}
+
+/* Prevenção de Zoom indesejado em inputs no iOS */
+@media screen and (-webkit-min-device-pixel-ratio:0) { 
+  select, textarea, input {
+    font-size: 16px !important;
+  }
+}
+
         let bpm = 120;
         let isPlaying = false;
         const bpmDisplay = document.getElementById('bpm-display');
