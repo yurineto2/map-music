@@ -1129,16 +1129,39 @@ input[type="text"]:focus, select:focus, textarea:focus {
 .text-muted { color: var(--text-muted); }
 .text-sm { font-size: 12px; }
 
-@media (max-width: 768px) {
-  .app-container { padding: var(--space-md); }
-  .header-content { flex-direction: column; align-items: flex-start; }
-  .controls-bar { flex-direction: column; align-items: stretch; }
-  .section-grid { grid-template-columns: 1fr; }
-  .metronome-display { flex-direction: column; gap: var(--space-lg); }
-  .bpm-circle-display { width: 150px; height: 150px; }
-  .bpm-value { font-size: 42px; }
-  .metronome-controls-grid { grid-template-columns: 1fr; }
+// ============================================
+// MENU MOBILE
+// ============================================
+function toggleMobileMenu() {
+  var btn = document.querySelector('.mobile-menu-btn');
+  var nav = document.getElementById('mobileNav');
+  var overlay = document.querySelector('.mobile-nav-overlay');
+  
+  btn.classList.toggle('active');
+  nav.classList.toggle('active');
+  overlay.classList.toggle('active');
+  
+  // Previne scroll do body quando menu aberto
+  if (nav.classList.contains('active')) {
+    document.body.style.overflow = 'hidden';
+  } else {
+    document.body.style.overflow = '';
+  }
 }
+
+// Fechar menu ao redimensionar para desktop
+window.addEventListener('resize', function() {
+  if (window.innerWidth > 768) {
+    var btn = document.querySelector('.mobile-menu-btn');
+    var nav = document.getElementById('mobileNav');
+    var overlay = document.querySelector('.mobile-nav-overlay');
+    
+    btn.classList.remove('active');
+    nav.classList.remove('active');
+    overlay.classList.remove('active');
+    document.body.style.overflow = '';
+  }
+});
 </style>
 </head>
 <body data-theme="green">
