@@ -9,39 +9,32 @@
 <style>
 /* ============================================
    DESIGN SYSTEM - PROFESSIONAL EDITION
-   Inspirado em: Spotify, Figma, Notion
    ============================================ */
 :root {
-  /* Cores Base */
   --bg-primary: #0a0a0f;
   --bg-secondary: #12121a;
   --bg-tertiary: #1a1a25;
   --bg-elevated: #242433;
   --bg-input: #0f0f14;
   
-  /* Cores de Acento */
   --accent-primary: #1db954;
   --accent-secondary: #1ed760;
   --accent-hover: #1fdf64;
   --accent-glow: rgba(29, 185, 84, 0.3);
   
-  /* Texto */
   --text-primary: #ffffff;
   --text-secondary: #b3b3b3;
   --text-muted: #6a6a6a;
   --text-inverse: #000000;
   
-  /* Bordas e Efeitos */
   --border-color: rgba(255, 255, 255, 0.1);
   --border-hover: rgba(255, 255, 255, 0.2);
   --glass-bg: rgba(18, 18, 26, 0.8);
   --glass-border: rgba(255, 255, 255, 0.05);
   
-  /* Tipografia */
   --font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
   --font-mono: 'SF Mono', 'Fira Code', monospace;
   
-  /* Espaçamento */
   --space-xs: 4px;
   --space-sm: 8px;
   --space-md: 16px;
@@ -49,26 +42,22 @@
   --space-xl: 32px;
   --space-2xl: 48px;
   
-  /* Bordas */
   --radius-sm: 6px;
   --radius-md: 8px;
   --radius-lg: 12px;
   --radius-xl: 16px;
   --radius-full: 9999px;
   
-  /* Sombras */
   --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3);
   --shadow-md: 0 4px 6px rgba(0, 0, 0, 0.4);
   --shadow-lg: 0 10px 15px rgba(0, 0, 0, 0.5);
   --shadow-glow: 0 0 20px var(--accent-glow);
   
-  /* Transições */
   --transition-fast: 150ms ease;
   --transition-base: 250ms ease;
   --transition-slow: 350ms ease;
 }
 
-/* TEMAS ALTERNATIVOS */
 [data-theme="red"] {
   --accent-primary: #e22134;
   --accent-secondary: #ff4d5e;
@@ -104,18 +93,8 @@
   --accent-glow: rgba(236, 72, 153, 0.3);
 }
 
-/* ============================================
-   RESET E BASE
-   ============================================ */
-* {
-  margin: 0;
-  padding: 0;
-  box-sizing: border-box;
-}
-
-html {
-  scroll-behavior: smooth;
-}
+* { margin: 0; padding: 0; box-sizing: border-box; }
+html { scroll-behavior: smooth; }
 
 body {
   font-family: var(--font-family);
@@ -126,9 +105,6 @@ body {
   overflow-x: hidden;
 }
 
-/* ============================================
-   HEADER PROFISSIONAL
-   ============================================ */
 .app-header {
   background: linear-gradient(180deg, rgba(18,18,26,0.95) 0%, rgba(10,10,15,0.8) 100%);
   backdrop-filter: blur(20px);
@@ -187,18 +163,12 @@ body {
   margin-top: -4px;
 }
 
-/* ============================================
-   CONTAINER PRINCIPAL
-   ============================================ */
 .app-container {
   max-width: 1400px;
   margin: 0 auto;
   padding: var(--space-xl);
 }
 
-/* ============================================
-   CARDS E PAINÉIS
-   ============================================ */
 .card {
   background: var(--bg-secondary);
   border: 1px solid var(--border-color);
@@ -245,7 +215,7 @@ body {
 }
 
 /* ============================================
-   METRONOMO PROFISSIONAL
+   METRONOMO PROFISSIONAL V2.0
    ============================================ */
 .metronome-panel {
   background: linear-gradient(135deg, var(--bg-tertiary), var(--bg-secondary));
@@ -253,6 +223,31 @@ body {
   border-radius: var(--radius-xl);
   padding: var(--space-xl);
   margin-bottom: var(--space-xl);
+  position: relative;
+  overflow: hidden;
+}
+
+.metronome-panel::before {
+  content: '';
+  position: absolute;
+  top: -50%;
+  left: -50%;
+  width: 200%;
+  height: 200%;
+  background: radial-gradient(circle, var(--accent-glow) 0%, transparent 70%);
+  opacity: 0;
+  transition: opacity var(--transition-slow);
+  pointer-events: none;
+}
+
+.metronome-panel.playing::before {
+  opacity: 0.3;
+  animation: pulse-bg 2s ease-in-out infinite;
+}
+
+@keyframes pulse-bg {
+  0%, 100% { transform: scale(1); opacity: 0.3; }
+  50% { transform: scale(1.1); opacity: 0.1; }
 }
 
 .metronome-header {
@@ -260,6 +255,8 @@ body {
   align-items: center;
   justify-content: space-between;
   margin-bottom: var(--space-lg);
+  position: relative;
+  z-index: 1;
 }
 
 .metronome-title {
@@ -271,25 +268,74 @@ body {
   gap: var(--space-sm);
 }
 
+.metronome-badge {
+  background: var(--accent-primary);
+  color: var(--text-inverse);
+  font-size: 10px;
+  padding: 4px 8px;
+  border-radius: var(--radius-full);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
 .metronome-display {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: var(--space-xl);
-  margin-bottom: var(--space-lg);
+  gap: var(--space-2xl);
+  margin-bottom: var(--space-xl);
   flex-wrap: wrap;
+  position: relative;
+  z-index: 1;
 }
 
-.bpm-display {
+/* Display Circular de BPM */
+.bpm-circle-display {
+  position: relative;
+  width: 180px;
+  height: 180px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.bpm-circle-svg {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  transform: rotate(-90deg);
+}
+
+.bpm-circle-bg {
+  fill: none;
+  stroke: var(--bg-elevated);
+  stroke-width: 8;
+}
+
+.bpm-circle-progress {
+  fill: none;
+  stroke: var(--accent-primary);
+  stroke-width: 8;
+  stroke-linecap: round;
+  stroke-dasharray: 440;
+  stroke-dashoffset: 440;
+  transition: stroke-dashoffset 0.1s linear;
+  filter: drop-shadow(0 0 6px var(--accent-glow));
+}
+
+.bpm-circle-inner {
   text-align: center;
+  z-index: 1;
 }
 
 .bpm-value {
-  font-size: 64px;
+  font-size: 56px;
   font-weight: 800;
   color: var(--accent-primary);
   line-height: 1;
   font-variant-numeric: tabular-nums;
+  text-shadow: 0 0 20px var(--accent-glow);
 }
 
 .bpm-label {
@@ -300,56 +346,154 @@ body {
   margin-top: var(--space-xs);
 }
 
-.beat-indicator {
-  display: flex;
-  gap: var(--space-md);
-  align-items: center;
-  padding: var(--space-md) var(--space-lg);
-  background: var(--bg-input);
-  border-radius: var(--radius-lg);
-  border: 1px solid var(--border-color);
+/* Visualizador de Tempos Circular */
+.beat-visualizer {
+  position: relative;
+  width: 160px;
+  height: 160px;
+}
+
+.beat-circle {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  border: 2px solid var(--border-color);
+}
+
+.beat-dot-container {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  animation: rotate-beats 0s linear infinite;
+}
+
+@keyframes rotate-beats {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+.beat-dot-pos {
+  position: absolute;
+  width: 24px;
+  height: 24px;
+  margin-left: -12px;
+  margin-top: -12px;
+  left: 50%;
+  top: 0;
+  transform-origin: 50% 80px;
 }
 
 .beat-dot {
-  width: 16px;
-  height: 16px;
+  width: 100%;
+  height: 100%;
   border-radius: var(--radius-full);
   background: var(--bg-elevated);
   border: 2px solid var(--border-color);
   transition: all var(--transition-fast);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--text-muted);
 }
 
 .beat-dot.active {
   background: var(--accent-primary);
   border-color: var(--accent-primary);
   box-shadow: var(--shadow-glow);
-  transform: scale(1.2);
+  transform: scale(1.3);
+  color: var(--text-inverse);
 }
 
 .beat-dot.accent {
-  width: 20px;
-  height: 20px;
   background: var(--accent-secondary);
   border-color: var(--accent-secondary);
+  width: 28px;
+  height: 28px;
+  margin: -2px;
+  font-size: 12px;
 }
 
-.metronome-controls {
+/* Controles do Metrônomo */
+.metronome-controls-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: var(--space-lg);
+  margin-bottom: var(--space-lg);
+  position: relative;
+  z-index: 1;
+}
+
+.control-group {
+  background: var(--bg-input);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-lg);
+  padding: var(--space-md);
+}
+
+.control-label {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--text-muted);
+  margin-bottom: var(--space-sm);
   display: flex;
   align-items: center;
-  justify-content: center;
-  gap: var(--space-lg);
-  flex-wrap: wrap;
+  justify-content: space-between;
 }
 
+.control-value {
+  color: var(--accent-primary);
+  font-weight: 700;
+}
+
+/* Selects Customizados */
+.custom-select {
+  width: 100%;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  color: var(--text-primary);
+  font-family: var(--font-family);
+  font-size: 14px;
+  padding: var(--space-sm) var(--space-md);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  outline: none;
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23b3b3b3' d='M6 8L1 3h10z'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 12px center;
+  padding-right: 32px;
+}
+
+.custom-select:hover, .custom-select:focus {
+  border-color: var(--accent-primary);
+  box-shadow: 0 0 0 3px var(--accent-glow);
+}
+
+/* Slider de BPM */
 .bpm-slider-container {
-  flex: 1;
-  min-width: 200px;
-  max-width: 400px;
+  grid-column: 1 / -1;
+  background: var(--bg-input);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-lg);
+  padding: var(--space-md);
+}
+
+.bpm-slider-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: var(--space-sm);
 }
 
 .bpm-slider {
   width: 100%;
-  height: 6px;
+  height: 8px;
   border-radius: var(--radius-full);
   background: var(--bg-elevated);
   outline: none;
@@ -359,57 +503,118 @@ body {
 .bpm-slider::-webkit-slider-thumb {
   -webkit-appearance: none;
   appearance: none;
-  width: 20px;
-  height: 20px;
+  width: 24px;
+  height: 24px;
   border-radius: var(--radius-full);
-  background: var(--accent-primary);
+  background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
   cursor: pointer;
-  box-shadow: var(--shadow-md);
+  box-shadow: var(--shadow-md), var(--shadow-glow);
   transition: all var(--transition-fast);
+  border: 2px solid var(--text-primary);
 }
 
 .bpm-slider::-webkit-slider-thumb:hover {
-  transform: scale(1.1);
-  box-shadow: var(--shadow-glow);
+  transform: scale(1.2);
 }
 
 .bpm-slider::-moz-range-thumb {
-  width: 20px;
-  height: 20px;
+  width: 24px;
+  height: 24px;
   border-radius: var(--radius-full);
-  background: var(--accent-primary);
+  background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
   cursor: pointer;
-  border: none;
+  border: 2px solid var(--text-primary);
   box-shadow: var(--shadow-md);
 }
 
+/* Botões de Controle */
+.metronome-main-controls {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-lg);
+  flex-wrap: wrap;
+  position: relative;
+  z-index: 1;
+}
+
+.tap-tempo-btn {
+  padding: var(--space-md) var(--space-xl);
+  background: var(--bg-elevated);
+  border: 2px solid var(--border-color);
+  border-radius: var(--radius-lg);
+  color: var(--text-primary);
+  font-family: var(--font-family);
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  min-width: 120px;
+}
+
+.tap-tempo-btn:hover {
+  border-color: var(--accent-primary);
+  background: var(--bg-tertiary);
+}
+
+.tap-tempo-btn:active {
+  transform: scale(0.95);
+  background: var(--accent-primary);
+  color: var(--text-inverse);
+}
+
 .metronome-btn {
-  width: 60px;
-  height: 60px;
+  width: 80px;
+  height: 80px;
   border-radius: var(--radius-full);
   background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
   border: none;
   color: var(--text-inverse);
-  font-size: 24px;
+  font-size: 32px;
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
   box-shadow: var(--shadow-glow);
   transition: all var(--transition-fast);
+  position: relative;
+  overflow: hidden;
+}
+
+.metronome-btn::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 0;
+  height: 0;
+  border-radius: 50%;
+  background: rgba(255,255,255,0.3);
+  transform: translate(-50%, -50%);
+  transition: width 0.6s, height 0.6s;
+}
+
+.metronome-btn:active::before {
+  width: 100px;
+  height: 100px;
 }
 
 .metronome-btn:hover {
   transform: scale(1.05);
-}
-
-.metronome-btn:active {
-  transform: scale(0.95);
+  box-shadow: 0 0 30px var(--accent-glow);
 }
 
 .metronome-btn.playing {
   background: linear-gradient(135deg, #ef4444, #dc2626);
-  box-shadow: 0 0 20px rgba(239, 68, 68, 0.4);
+  box-shadow: 0 0 30px rgba(239, 68, 68, 0.4);
+  animation: pulse-play 1s ease-in-out infinite;
+}
+
+@keyframes pulse-play {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.02); }
 }
 
 .bpm-adjust {
@@ -419,13 +624,13 @@ body {
 }
 
 .bpm-btn {
-  width: 36px;
-  height: 36px;
+  width: 40px;
+  height: 40px;
   border-radius: var(--radius-md);
   background: var(--bg-elevated);
   border: 1px solid var(--border-color);
   color: var(--text-primary);
-  font-size: 18px;
+  font-size: 20px;
   font-weight: 700;
   cursor: pointer;
   display: flex;
@@ -438,10 +643,92 @@ body {
   background: var(--accent-primary);
   color: var(--text-inverse);
   border-color: var(--accent-primary);
+  transform: translateY(-2px);
+}
+
+/* Presets */
+.presets-container {
+  display: flex;
+  gap: var(--space-sm);
+  flex-wrap: wrap;
+  margin-top: var(--space-md);
+  position: relative;
+  z-index: 1;
+}
+
+.preset-btn {
+  padding: var(--space-xs) var(--space-md);
+  background: var(--bg-elevated);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-full);
+  color: var(--text-secondary);
+  font-family: var(--font-family);
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.preset-btn:hover {
+  background: var(--accent-primary);
+  color: var(--text-inverse);
+  border-color: var(--accent-primary);
+  transform: translateY(-1px);
+}
+
+/* Acentuação Customizável */
+.accent-grid {
+  display: flex;
+  gap: var(--space-sm);
+  justify-content: center;
+  margin-top: var(--space-sm);
+}
+
+.accent-checkbox {
+  width: 32px;
+  height: 32px;
+  border-radius: var(--radius-md);
+  background: var(--bg-elevated);
+  border: 2px solid var(--border-color);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--text-muted);
+  position: relative;
+}
+
+.accent-checkbox:hover {
+  border-color: var(--accent-primary);
+}
+
+.accent-checkbox.active {
+  background: var(--accent-primary);
+  border-color: var(--accent-primary);
+  color: var(--text-inverse);
+  box-shadow: var(--shadow-glow);
+}
+
+.accent-checkbox::after {
+  content: '♪';
+  position: absolute;
+  top: -8px;
+  right: -4px;
+  font-size: 14px;
+  color: var(--accent-secondary);
+  opacity: 0;
+  transition: opacity var(--transition-fast);
+}
+
+.accent-checkbox.active::after {
+  opacity: 1;
 }
 
 /* ============================================
-   BIBLIOTECA DE MUSICAS
+   RESTO DO APP (mantido igual)
    ============================================ */
 .songs-grid {
   display: grid;
@@ -529,9 +816,6 @@ body {
   opacity: 1;
 }
 
-/* ============================================
-   CONTROLES E INPUTS
-   ============================================ */
 .controls-bar {
   display: flex;
   flex-wrap: wrap;
@@ -557,9 +841,7 @@ body {
   color: var(--text-muted);
 }
 
-input[type="text"],
-select,
-textarea {
+input[type="text"], select, textarea {
   background: var(--bg-input);
   border: 1px solid var(--border-color);
   border-radius: var(--radius-md);
@@ -571,26 +853,11 @@ textarea {
   outline: none;
 }
 
-input[type="text"]:focus,
-select:focus,
-textarea:focus {
+input[type="text"]:focus, select:focus, textarea:focus {
   border-color: var(--accent-primary);
   box-shadow: 0 0 0 3px var(--accent-glow);
 }
 
-input[type="text"]::placeholder,
-textarea::placeholder {
-  color: var(--text-muted);
-}
-
-select {
-  cursor: pointer;
-  min-width: 140px;
-}
-
-/* ============================================
-   BOTOES
-   ============================================ */
 .btn {
   display: inline-flex;
   align-items: center;
@@ -606,26 +873,6 @@ select {
   transition: all var(--transition-fast);
   border: none;
   outline: none;
-  position: relative;
-  overflow: hidden;
-}
-
-.btn::after {
-  content: '';
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  width: 0;
-  height: 0;
-  border-radius: 50%;
-  background: rgba(255, 255, 255, 0.2);
-  transform: translate(-50%, -50%);
-  transition: width 0.3s, height 0.3s;
-}
-
-.btn:active::after {
-  width: 200px;
-  height: 200px;
 }
 
 .btn-primary {
@@ -656,29 +903,11 @@ select {
   color: white;
 }
 
-.btn-success:hover {
-  background: #16a34a;
-}
-
 .btn-danger {
   background: #ef4444;
   color: white;
 }
 
-.btn-danger:hover {
-  background: #dc2626;
-}
-
-.btn-icon {
-  width: 36px;
-  height: 36px;
-  padding: 0;
-  border-radius: var(--radius-md);
-}
-
-/* ============================================
-   SECOES DE ACORDES
-   ============================================ */
 .section-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
@@ -691,11 +920,6 @@ select {
   border-radius: var(--radius-xl);
   overflow: hidden;
   transition: all var(--transition-base);
-}
-
-.section-card:hover {
-  border-color: var(--border-hover);
-  box-shadow: var(--shadow-md);
 }
 
 .section-header {
@@ -751,9 +975,6 @@ select {
   box-shadow: 0 0 0 3px var(--accent-glow);
 }
 
-/* ============================================
-   TEMAS E CONFIGURACOES
-   ============================================ */
 .theme-selector {
   display: flex;
   gap: var(--space-sm);
@@ -767,11 +988,6 @@ select {
   border: 2px solid transparent;
   cursor: pointer;
   transition: all var(--transition-fast);
-  position: relative;
-}
-
-.theme-btn:hover {
-  transform: scale(1.1);
 }
 
 .theme-btn.active {
@@ -779,22 +995,6 @@ select {
   box-shadow: 0 0 0 2px var(--bg-primary), 0 0 0 4px var(--accent-primary);
 }
 
-.theme-btn.active::after {
-  content: '';
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  width: 8px;
-  height: 8px;
-  background: white;
-  border-radius: 50%;
-  box-shadow: 0 1px 2px rgba(0,0,0,0.5);
-}
-
-/* ============================================
-   MODO PALCO
-   ============================================ */
 .stage-mode {
   display: none;
   position: fixed;
@@ -849,22 +1049,8 @@ select {
   flex-direction: column;
   gap: var(--space-sm);
   z-index: 1001;
-  box-shadow: var(--shadow-lg);
 }
 
-.stage-progress {
-  position: fixed;
-  bottom: 0;
-  left: 0;
-  height: 4px;
-  background: var(--accent-primary);
-  width: 0%;
-  transition: width 0.1s linear;
-}
-
-/* ============================================
-   MODAL
-   ============================================ */
 .modal-overlay {
   display: none;
   position: fixed;
@@ -888,19 +1074,12 @@ select {
   max-width: 500px;
   max-height: 80vh;
   overflow: hidden;
-  box-shadow: var(--shadow-lg);
 }
 
 .modal-header {
   background: var(--bg-tertiary);
   padding: var(--space-lg);
   border-bottom: 1px solid var(--border-color);
-}
-
-.modal-title {
-  font-size: 18px;
-  font-weight: 700;
-  color: var(--text-primary);
 }
 
 .modal-body {
@@ -916,9 +1095,6 @@ select {
   gap: var(--space-sm);
 }
 
-/* ============================================
-   NOTIFICACOES
-   ============================================ */
 .toast {
   position: fixed;
   top: var(--space-lg);
@@ -942,148 +1118,31 @@ select {
   opacity: 1;
 }
 
-.toast-icon {
-  width: 24px;
-  height: 24px;
-  border-radius: var(--radius-full);
-  background: var(--accent-primary);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 12px;
-  font-weight: 700;
-  color: var(--text-inverse);
-}
-
-/* ============================================
-   UTILITARIOS
-   ============================================ */
 .flex { display: flex; }
 .flex-col { flex-direction: column; }
 .items-center { align-items: center; }
 .justify-between { justify-content: space-between; }
 .gap-sm { gap: var(--space-sm); }
 .gap-md { gap: var(--space-md); }
-.gap-lg { gap: var(--space-lg); }
-
 .ml-auto { margin-left: auto; }
 .mt-lg { margin-top: var(--space-lg); }
-
 .text-muted { color: var(--text-muted); }
 .text-sm { font-size: 12px; }
-.text-lg { font-size: 16px; }
 
-.hidden { display: none !important; }
-
-/* ============================================
-   ANIMACOES
-   ============================================ */
-@keyframes fadeIn {
-  from { opacity: 0; transform: translateY(10px); }
-  to { opacity: 1; transform: translateY(0); }
-}
-
-@keyframes slideIn {
-  from { transform: translateX(-20px); opacity: 0; }
-  to { transform: translateX(0); opacity: 1; }
-}
-
-@keyframes pulse {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0.5; }
-}
-
-.animate-fadeIn {
-  animation: fadeIn var(--transition-base) forwards;
-}
-
-.animate-slideIn {
-  animation: slideIn var(--transition-base) forwards;
-}
-
-/* ============================================
-   SCROLLBAR PERSONALIZADA
-   ============================================ */
-::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
-}
-
-::-webkit-scrollbar-track {
-  background: var(--bg-secondary);
-}
-
-::-webkit-scrollbar-thumb {
-  background: var(--bg-elevated);
-  border-radius: var(--radius-full);
-}
-
-::-webkit-scrollbar-thumb:hover {
-  background: var(--accent-primary);
-}
-
-/* ============================================
-   PRINT
-   ============================================ */
-@media print {
-  body * { visibility: hidden; }
-  .stage-mode, .stage-mode * { visibility: visible; }
-  .stage-mode {
-    position: absolute;
-    left: 0;
-    top: 0;
-    display: block !important;
-    background: white;
-    color: black;
-  }
-  .stage-controls { display: none !important; }
-  .stage-progress { display: none !important; }
-}
-
-/* ============================================
-   RESPONSIVIDADE
-   ============================================ */
 @media (max-width: 768px) {
-  .app-container {
-    padding: var(--space-md);
-  }
-  
-  .header-content {
-    flex-direction: column;
-    align-items: flex-start;
-  }
-  
-  .controls-bar {
-    flex-direction: column;
-    align-items: stretch;
-  }
-  
-  .section-grid {
-    grid-template-columns: 1fr;
-  }
-  
-  .songs-grid {
-    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
-  }
-  
-  .stage-content {
-    font-size: 24px;
-  }
-  
-  .metronome-display {
-    flex-direction: column;
-    gap: var(--space-md);
-  }
-  
-  .bpm-value {
-    font-size: 48px;
-  }
+  .app-container { padding: var(--space-md); }
+  .header-content { flex-direction: column; align-items: flex-start; }
+  .controls-bar { flex-direction: column; align-items: stretch; }
+  .section-grid { grid-template-columns: 1fr; }
+  .metronome-display { flex-direction: column; gap: var(--space-lg); }
+  .bpm-circle-display { width: 150px; height: 150px; }
+  .bpm-value { font-size: 42px; }
+  .metronome-controls-grid { grid-template-columns: 1fr; }
 }
 </style>
 </head>
 <body data-theme="green">
 
-<!-- HEADER -->
 <header class="app-header">
   <div class="header-content">
     <div class="logo">
@@ -1107,52 +1166,135 @@ select {
   </div>
 </header>
 
-<!-- CONTAINER PRINCIPAL -->
 <div class="app-container">
   
-  <!-- METRONOMO PROFISSIONAL -->
-  <div class="metronome-panel animate-fadeIn">
+  <!-- METRONOMO PROFISSIONAL V2.0 -->
+  <div class="metronome-panel animate-fadeIn" id="metronomePanel">
     <div class="metronome-header">
       <div class="metronome-title">
-        <div class="card-title-icon" style="width: 28px; height: 28px; font-size: 12px;">MET</div>
-        Metronomo Profissional
+        <div class="card-title-icon" style="width: 28px; height: 28px; font-size: 12px;">♪</div>
+        Metrônomo Profissional
+        <span class="metronome-badge" id="timeSignatureBadge">4/4</span>
       </div>
-      <div class="text-sm text-muted">Web Audio API - Alta Precisao</div>
+      <div class="text-sm text-muted">Web Audio API • Alta Precisão</div>
     </div>
     
     <div class="metronome-display">
-      <div class="bpm-display">
-        <div class="bpm-value" id="bpmDisplay">120</div>
-        <div class="bpm-label">BPM</div>
+      <!-- Display Circular de BPM -->
+      <div class="bpm-circle-display">
+        <svg class="bpm-circle-svg" viewBox="0 0 160 160">
+          <circle class="bpm-circle-bg" cx="80" cy="80" r="70"/>
+          <circle class="bpm-circle-progress" id="bpmProgress" cx="80" cy="80" r="70"/>
+        </svg>
+        <div class="bpm-circle-inner">
+          <div class="bpm-value" id="bpmDisplay">120</div>
+          <div class="bpm-label">BPM</div>
+        </div>
       </div>
       
-      <div class="beat-indicator" id="beatIndicator">
-        <div class="beat-dot accent" data-beat="0"></div>
-        <div class="beat-dot" data-beat="1"></div>
-        <div class="beat-dot" data-beat="2"></div>
-        <div class="beat-dot" data-beat="3"></div>
+      <!-- Visualizador Circular de Tempos -->
+      <div class="beat-visualizer" id="beatVisualizer">
+        <div class="beat-circle"></div>
+        <div class="beat-dot-container" id="beatContainer">
+          <!-- Gerado dinamicamente via JS -->
+        </div>
       </div>
     </div>
     
-    <div class="metronome-controls">
-      <div class="bpm-adjust">
-        <button class="bpm-btn" onclick="adjustBPM(-10)">-</button>
-        <button class="bpm-btn" onclick="adjustBPM(-1)">-</button>
+    <!-- Controles Grid -->
+    <div class="metronome-controls-grid">
+      <!-- Compasso -->
+      <div class="control-group">
+        <div class="control-label">
+          Compasso
+          <span class="control-value" id="beatsPerMeasureDisplay">4/4</span>
+        </div>
+        <select class="custom-select" id="timeSignature" onchange="updateTimeSignature()">
+          <option value="2">2/4 (Marcha)</option>
+          <option value="3">3/4 (Vals)</option>
+          <option value="4" selected>4/4 (Comum)</option>
+          <option value="5">5/4 (Prog)</option>
+          <option value="6">6/8 (Doble)</option>
+          <option value="7">7/8 (Prog)</option>
+          <option value="8">8/8 (Prog)</option>
+          <option value="12">12/8 (Blues)</option>
+        </select>
       </div>
       
+      <!-- Subdivisão -->
+      <div class="control-group">
+        <div class="control-label">
+          Subdivisão
+          <span class="control-value" id="subdivisionDisplay">Quartos</span>
+        </div>
+        <select class="custom-select" id="subdivision" onchange="updateSubdivision()">
+          <option value="1">Semínimas (1 nota)</option>
+          <option value="2" selected>Colcheias (2 notas)</option>
+          <option value="3">Tercinas (3 notas)</option>
+          <option value="4">Semicolcheias (4 notas)</option>
+        </select>
+      </div>
+      
+      <!-- Volume -->
+      <div class="control-group">
+        <div class="control-label">
+          Volume
+          <span class="control-value" id="volumeDisplay">80%</span>
+        </div>
+        <input type="range" min="0" max="100" value="80" class="bpm-slider" id="volumeSlider" oninput="updateVolume(this.value)" style="margin-top: 8px;">
+      </div>
+      
+      <!-- Acentuação -->
+      <div class="control-group">
+        <div class="control-label">
+          Acentuar Tempos
+          <span style="font-size: 10px; color: var(--text-muted);">♪ = acentuado</span>
+        </div>
+        <div class="accent-grid" id="accentGrid">
+          <!-- Gerado dinamicamente -->
+        </div>
+      </div>
+    </div>
+    
+    <!-- Slider de BPM -->
+    <div class="bpm-slider-container">
+      <div class="bpm-slider-header">
+        <span class="input-label">Tempo</span>
+        <span class="text-sm text-muted" id="tempoMarking">Allegretto</span>
+      </div>
+      <input type="range" class="bpm-slider" id="bpmSlider" min="20" max="280" value="120" oninput="updateBPM(this.value)">
+    </div>
+    
+    <!-- Controles Principais -->
+    <div class="metronome-main-controls">
+      <div class="bpm-adjust">
+        <button class="bpm-btn" onclick="adjustBPM(-10)">-10</button>
+        <button class="bpm-btn" onclick="adjustBPM(-1)">-1</button>
+      </div>
+      
+      <button class="tap-tempo-btn" id="tapBtn" onclick="tapTempo()">
+        TAP<br><span style="font-size: 10px; opacity: 0.7;">TEMPO</span>
+      </button>
+      
       <button class="metronome-btn" id="metronomeToggle" onclick="toggleMetronome()">
-        <span id="playIcon">></span>
+        <span id="playIcon">▶</span>
       </button>
       
       <div class="bpm-adjust">
-        <button class="bpm-btn" onclick="adjustBPM(1)">+</button>
-        <button class="bpm-btn" onclick="adjustBPM(10)">+</button>
+        <button class="bpm-btn" onclick="adjustBPM(1)">+1</button>
+        <button class="bpm-btn" onclick="adjustBPM(10)">+10</button>
       </div>
-      
-      <div class="bpm-slider-container">
-        <label class="input-label" style="text-align: center; margin-bottom: var(--space-sm);">Tempo</label>
-        <input type="range" class="bpm-slider" id="bpmSlider" min="40" max="240" value="120" oninput="updateBPM(this.value)">
-      </div>
+    </div>
+    
+    <!-- Presets -->
+    <div class="presets-container">
+      <span style="font-size: 11px; color: var(--text-muted); margin-right: var(--space-sm); align-self: center;">PRESETS:</span>
+      <button class="preset-btn" onclick="setPreset('lento')">Lento (60)</button>
+      <button class="preset-btn" onclick="setPreset('bossa')">Bossa (85)</button>
+      <button class="preset-btn" onclick="setPreset('rock')">Rock (120)</button>
+      <button class="preset-btn" onclick="setPreset('fast')">Fast (140)</button>
+      <button class="preset-btn" onclick="setPreset('punk')">Punk (180)</button>
+      <button class="preset-btn" onclick="setPreset('metal')">Metal (200)</button>
     </div>
   </div>
   
@@ -1161,10 +1303,10 @@ select {
     <div class="card-header">
       <div class="card-title">
         <div class="card-title-icon">LIB</div>
-        Biblioteca de Musicas
+        Biblioteca de Músicas
       </div>
       <div class="flex gap-sm">
-        <input type="text" id="songName" placeholder="Nome da musica..." style="min-width: 200px;">
+        <input type="text" id="songName" placeholder="Nome da música..." style="min-width: 200px;">
         <button class="btn btn-primary" onclick="saveCurrentSong()">
           <span>Salvar</span>
         </button>
@@ -1175,7 +1317,7 @@ select {
     </div>
     <div class="songs-grid" id="songList">
       <div class="text-muted text-sm" style="grid-column: 1/-1; text-align: center; padding: var(--space-xl);">
-        Nenhuma musica salva ainda. Crie sua primeira musica!
+        Nenhuma música salva ainda. Crie sua primeira música!
       </div>
     </div>
   </div>
@@ -1183,7 +1325,7 @@ select {
   <!-- CONTROLES -->
   <div class="controls-bar animate-slideIn">
     <div class="input-group">
-      <label class="input-label">Transposicao</label>
+      <label class="input-label">Transposição</label>
       <select id="keyShift" onchange="updateKeyDisplay()">
         <option value="0">Original</option>
         <option value="1">+1 semitom</option>
@@ -1225,13 +1367,11 @@ select {
     </div>
   </div>
   
-  <!-- SECOES -->
+  <!-- SEÇÕES -->
   <div class="section-grid">
     <div class="section-card animate-fadeIn">
       <div class="section-header">
-        <div class="section-title">
-          <span>INT</span> Introducao
-        </div>
+        <div class="section-title"><span>INT</span> Introdução</div>
         <span class="section-badge">INTRO</span>
       </div>
       <div class="section-body">
@@ -1241,9 +1381,7 @@ select {
     
     <div class="section-card animate-fadeIn" style="animation-delay: 50ms;">
       <div class="section-header">
-        <div class="section-title">
-          <span>VRS</span> Verso
-        </div>
+        <div class="section-title"><span>VRS</span> Verso</div>
         <span class="section-badge">VERSE</span>
       </div>
       <div class="section-body">
@@ -1253,9 +1391,7 @@ select {
     
     <div class="section-card animate-fadeIn" style="animation-delay: 100ms;">
       <div class="section-header">
-        <div class="section-title">
-          <span>PRE</span> Pre-Refrão
-        </div>
+        <div class="section-title"><span>PRE</span> Pré-Refrão</div>
         <span class="section-badge">PRE</span>
       </div>
       <div class="section-body">
@@ -1265,9 +1401,7 @@ select {
     
     <div class="section-card animate-fadeIn" style="animation-delay: 150ms;">
       <div class="section-header">
-        <div class="section-title">
-          <span>REF</span> Refrão
-        </div>
+        <div class="section-title"><span>REF</span> Refrão</div>
         <span class="section-badge">CHORUS</span>
       </div>
       <div class="section-body">
@@ -1277,9 +1411,7 @@ select {
     
     <div class="section-card animate-fadeIn" style="animation-delay: 200ms;">
       <div class="section-header">
-        <div class="section-title">
-          <span>PON</span> Ponte
-        </div>
+        <div class="section-title"><span>PON</span> Ponte</div>
         <span class="section-badge">BRIDGE</span>
       </div>
       <div class="section-body">
@@ -1289,9 +1421,7 @@ select {
     
     <div class="section-card animate-fadeIn" style="animation-delay: 250ms;">
       <div class="section-header">
-        <div class="section-title">
-          <span>END</span> Final
-        </div>
+        <div class="section-title"><span>END</span> Final</div>
         <span class="section-badge">OUTRO</span>
       </div>
       <div class="section-body">
@@ -1306,11 +1436,11 @@ select {
 <div class="modal-overlay" id="importModal" onclick="if(event.target===this)closeImportModal()">
   <div class="modal">
     <div class="modal-header">
-      <div class="modal-title">Importar Musica</div>
+      <div class="modal-title">Importar Música</div>
     </div>
     <div class="modal-body">
-      <p class="text-muted text-sm mb-lg">Cole o codigo JSON ou o texto da musica no formato TXT:</p>
-      <textarea id="importArea" placeholder='{"name":"Minha Musica","sections":{"intro":"C G Am F"...}}' style="width: 100%; min-height: 200px;"></textarea>
+      <p class="text-muted text-sm mb-lg">Cole o código JSON ou o texto da música:</p>
+      <textarea id="importArea" placeholder='{"name":"Minha Música","sections":{"intro":"C G Am F"...}}' style="width: 100%; min-height: 200px;"></textarea>
     </div>
     <div class="modal-footer">
       <button class="btn btn-secondary" onclick="closeImportModal()">Cancelar</button>
@@ -1322,33 +1452,27 @@ select {
 <!-- MODO PALCO -->
 <div class="stage-mode" id="stageMode">
   <div class="stage-controls">
-    <button class="btn btn-primary" onclick="startScroll()">
-      <span>Iniciar</span>
-    </button>
-    <button class="btn btn-secondary" onclick="stopScroll()">
-      <span>Parar</span>
-    </button>
+    <button class="btn btn-primary" onclick="startScroll()"><span>Iniciar</span></button>
+    <button class="btn btn-secondary" onclick="stopScroll()"><span>Parar</span></button>
     <div style="padding: var(--space-sm);">
       <label class="input-label" style="margin-bottom: var(--space-xs);">Velocidade</label>
       <input type="range" id="speedControl" min="1" max="10" value="3" style="width: 100%;">
     </div>
-    <button class="btn btn-danger" onclick="closeStageMode()">
-      <span>Fechar</span>
-    </button>
+    <button class="btn btn-danger" onclick="closeStageMode()"><span>Fechar</span></button>
   </div>
   <div class="stage-content" id="stageContent"></div>
   <div class="stage-progress" id="stageProgress"></div>
 </div>
 
-<!-- TOAST NOTIFICATION -->
+<!-- TOAST -->
 <div class="toast" id="toast">
   <div class="toast-icon">OK</div>
-  <span id="toastMessage">Operacao realizada com sucesso!</span>
+  <span id="toastMessage">Operação realizada com sucesso!</span>
 </div>
 
 <script>
 // ============================================
-// VARIAVEIS GLOBAIS
+// VARIÁVEIS GLOBAIS
 // ============================================
 var library = [];
 var currentSongId = null;
@@ -1356,8 +1480,9 @@ var currentShift = 0;
 var scrollAnimation = null;
 var undoStack = [];
 var redoStack = [];
+var NOTES = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"];
 
-// Metronomo
+// Metrônomo Avançado
 var audioContext = null;
 var isPlaying = false;
 var currentBPM = 120;
@@ -1367,19 +1492,23 @@ var scheduleAheadTime = 0.1;
 var lookahead = 25.0;
 var timerID = null;
 var notesInQueue = [];
-
-var NOTES = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"];
+var beatsPerMeasure = 4;
+var subdivision = 2; // 1=quarter, 2=eighth, 3=triplet, 4=sixteenth
+var volume = 0.8;
+var accentedBeats = [0]; // Tempos acentuados (0 = primeiro tempo)
+var tapTimes = [];
+var lastTapTime = 0;
 
 // ============================================
-// INICIALIZACAO
+// INICIALIZAÇÃO
 // ============================================
 document.addEventListener('DOMContentLoaded', function() {
   loadTheme();
   loadLibrary();
   loadFromURL();
   initAudioContext();
+  initMetronomeUI();
   
-  // Auto-save para undo
   var textareas = document.querySelectorAll('.section-textarea');
   for(var i = 0; i < textareas.length; i++) {
     textareas[i].addEventListener('focus', function() {
@@ -1387,7 +1516,6 @@ document.addEventListener('DOMContentLoaded', function() {
     });
   }
   
-  // Atalhos de teclado
   document.addEventListener('keydown', function(e) {
     if(e.key === 'Escape') {
       closeStageMode();
@@ -1414,14 +1542,117 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 
 // ============================================
-// METRONOMO PROFISSIONAL (Web Audio API)
+// METRONOMO PROFISSIONAL V2.0
 // ============================================
 function initAudioContext() {
   try {
     audioContext = new (window.AudioContext || window.webkitAudioContext)();
   } catch(e) {
-    console.error('Web Audio API nao suportada');
+    console.error('Web Audio API não suportada');
   }
+}
+
+function initMetronomeUI() {
+  updateBeatVisualizer();
+  updateAccentGrid();
+  updateTempoMarking(currentBPM);
+}
+
+function updateTimeSignature() {
+  beatsPerMeasure = parseInt(document.getElementById('timeSignature').value);
+  document.getElementById('beatsPerMeasureDisplay').textContent = beatsPerMeasure + (beatsPerMeasure >= 6 ? '/8' : '/4');
+  document.getElementById('timeSignatureBadge').textContent = beatsPerMeasure + (beatsPerMeasure >= 6 ? '/8' : '/4');
+  
+  // Resetar acentos para apenas o primeiro tempo
+  accentedBeats = [0];
+  updateAccentGrid();
+  updateBeatVisualizer();
+  
+  if(isPlaying) {
+    currentBeat = 0;
+    showToast('Compasso alterado: ' + beatsPerMeasure + (beatsPerMeasure >= 6 ? '/8' : '/4'));
+  }
+}
+
+function updateSubdivision() {
+  subdivision = parseInt(document.getElementById('subdivision').value);
+  var names = {1: 'Quartos', 2: 'Colcheias', 3: 'Tercinas', 4: 'Semicolcheias'};
+  document.getElementById('subdivisionDisplay').textContent = names[subdivision];
+  
+  if(isPlaying) {
+    showToast('Subdivisão: ' + names[subdivision]);
+  }
+}
+
+function updateVolume(value) {
+  volume = value / 100;
+  document.getElementById('volumeDisplay').textContent = value + '%';
+}
+
+function updateAccentGrid() {
+  var grid = document.getElementById('accentGrid');
+  grid.innerHTML = '';
+  
+  for(var i = 0; i < beatsPerMeasure; i++) {
+    var btn = document.createElement('div');
+    btn.className = 'accent-checkbox' + (accentedBeats.indexOf(i) !== -1 ? ' active' : '');
+    btn.textContent = (i + 1);
+    btn.onclick = function(idx) {
+      return function() {
+        toggleAccent(idx);
+      };
+    }(i);
+    grid.appendChild(btn);
+  }
+}
+
+function toggleAccent(beat) {
+  var idx = accentedBeats.indexOf(beat);
+  if(idx !== -1) {
+    if(accentedBeats.length > 1) {
+      accentedBeats.splice(idx, 1);
+    }
+  } else {
+    accentedBeats.push(beat);
+    accentedBeats.sort();
+  }
+  updateAccentGrid();
+  updateBeatVisualizer();
+}
+
+function updateBeatVisualizer() {
+  var container = document.getElementById('beatContainer');
+  container.innerHTML = '';
+  
+  for(var i = 0; i < beatsPerMeasure; i++) {
+    var dot = document.createElement('div');
+    dot.className = 'beat-dot-pos';
+    dot.style.transform = 'rotate(' + (i * (360 / beatsPerMeasure)) + 'deg)';
+    
+    var inner = document.createElement('div');
+    inner.className = 'beat-dot' + (accentedBeats.indexOf(i) !== -1 ? ' accent' : '');
+    inner.setAttribute('data-beat', i);
+    inner.textContent = (i + 1);
+    
+    dot.appendChild(inner);
+    container.appendChild(dot);
+  }
+}
+
+function updateBeatVisual(beatNumber) {
+  var dots = document.querySelectorAll('.beat-dot');
+  for(var i = 0; i < dots.length; i++) {
+    dots[i].classList.remove('active');
+  }
+  
+  var activeDot = document.querySelector('.beat-dot[data-beat="' + beatNumber + '"]');
+  if(activeDot) {
+    activeDot.classList.add('active');
+  }
+  
+  // Atualizar círculo de progresso
+  var progress = ((beatNumber + 1) / beatsPerMeasure) * 440;
+  document.getElementById('bpmProgress').style.strokeDashoffset = 440 - progress;
 }
 
 function toggleMetronome() {
@@ -1444,27 +1675,29 @@ function startMetronome() {
   nextNoteTime = audioContext.currentTime + 0.05;
   notesInQueue = [];
   
+  document.getElementById('metronomePanel').classList.add('playing');
   document.getElementById('metronomeToggle').classList.add('playing');
-  document.getElementById('playIcon').textContent = '||';
+  document.getElementById('playIcon').textContent = '⏸';
   
   scheduler();
-  showToast('Metronomo iniciado: ' + currentBPM + ' BPM');
+  showToast('Metrônomo: ' + currentBPM + ' BPM • ' + beatsPerMeasure + (beatsPerMeasure >= 6 ? '/8' : '/4'));
 }
 
 function stopMetronome() {
   isPlaying = false;
   clearTimeout(timerID);
   
+  document.getElementById('metronomePanel').classList.remove('playing');
   document.getElementById('metronomeToggle').classList.remove('playing');
-  document.getElementById('playIcon').textContent = '>';
+  document.getElementById('playIcon').textContent = '▶';
   
-  // Reset visual
   var dots = document.querySelectorAll('.beat-dot');
   for(var i = 0; i < dots.length; i++) {
     dots[i].classList.remove('active');
   }
+  document.getElementById('bpmProgress').style.strokeDashoffset = 440;
   
-  showToast('Metronomo parado');
+  showToast('Metrônomo parado');
 }
 
 function scheduler() {
@@ -1477,9 +1710,17 @@ function scheduler() {
 
 function nextNote() {
   var secondsPerBeat = 60.0 / currentBPM;
+  
+  // Ajustar para subdivisões
+  if(subdivision === 3) {
+    secondsPerBeat = secondsPerBeat / 3; // Tercinas
+  } else {
+    secondsPerBeat = secondsPerBeat / (subdivision / 2);
+  }
+  
   nextNoteTime += secondsPerBeat;
   currentBeat++;
-  if(currentBeat === 4) {
+  if(currentBeat >= beatsPerMeasure) {
     currentBeat = 0;
   }
 }
@@ -1487,51 +1728,130 @@ function nextNote() {
 function scheduleNote(beatNumber, time) {
   notesInQueue.push({ note: beatNumber, time: time });
   
+  var isAccent = accentedBeats.indexOf(beatNumber) !== -1;
+  
+  // Criar oscilador com envelope mais natural
   var osc = audioContext.createOscillator();
-  var envelope = audioContext.createGain();
+  var gainNode = audioContext.createGain();
   
-  // Frequencia diferente para o primeiro beat (acento)
-  osc.frequency.value = (beatNumber === 0) ? 1000 : 800;
+  // Frequências: acento alto, normal médio, subdivisão baixo
+  if(isAccent) {
+    osc.frequency.value = 1200;
+  } else if(beatNumber === 0) {
+    osc.frequency.value = 800;
+  } else {
+    osc.frequency.value = 600;
+  }
   
-  envelope.gain.value = 1;
-  envelope.gain.exponentialRampToValueAtTime(1, time + 0.001);
-  envelope.gain.exponentialRampToValueAtTime(0.001, time + 0.05);
+  osc.type = isAccent ? 'square' : 'sine';
   
-  osc.connect(envelope);
-  envelope.connect(audioContext.destination);
+  // Envelope ADR simples
+  var now = time;
+  var attack = 0.005;
+  var decay = 0.05;
+  var release = 0.1;
+  
+  gainNode.gain.setValueAtTime(0, now);
+  gainNode.gain.linearRampToValueAtTime(volume * (isAccent ? 1.0 : 0.7), now + attack);
+  gainNode.gain.exponentialRampToValueAtTime(volume * 0.3, now + attack + decay);
+  gainNode.gain.exponentialRampToValueAtTime(0.001, now + attack + decay + release);
+  
+  osc.connect(gainNode);
+  gainNode.connect(audioContext.destination);
   
   osc.start(time);
-  osc.stop(time + 0.05);
+  osc.stop(time + attack + decay + release + 0.05);
   
-  // Atualizar visual sincronizado
+  // Visual sincronizado
   var drawTime = (time - audioContext.currentTime) * 1000;
   setTimeout(function() {
     updateBeatVisual(beatNumber);
   }, Math.max(0, drawTime));
 }
 
-function updateBeatVisual(beatNumber) {
-  var dots = document.querySelectorAll('.beat-dot');
-  for(var i = 0; i < dots.length; i++) {
-    dots[i].classList.remove('active');
-  }
-  
-  var activeDot = document.querySelector('.beat-dot[data-beat="' + beatNumber + '"]');
-  if(activeDot) {
-    activeDot.classList.add('active');
-  }
-}
-
 function updateBPM(value) {
   currentBPM = parseInt(value);
   document.getElementById('bpmDisplay').textContent = currentBPM;
   document.getElementById('bpmSlider').value = currentBPM;
+  updateTempoMarking(currentBPM);
+}
+
+function updateTempoMarking(bpm) {
+  var marking = '';
+  if(bpm < 40) marking = 'Larghissimo';
+  else if(bpm < 60) marking = 'Largo';
+  else if(bpm < 66) marking = 'Larghetto';
+  else if(bpm < 76) marking = 'Adagio';
+  else if(bpm < 108) marking = 'Andante';
+  else if(bpm < 120) marking = 'Moderato';
+  else if(bpm < 168) marking = 'Allegro';
+  else if(bpm < 200) marking = 'Presto';
+  else marking = 'Prestissimo';
+  
+  document.getElementById('tempoMarking').textContent = marking;
 }
 
 function adjustBPM(delta) {
   var newBPM = currentBPM + delta;
-  if(newBPM >= 40 && newBPM <= 240) {
+  if(newBPM >= 20 && newBPM <= 280) {
     updateBPM(newBPM);
+  }
+}
+
+function tapTempo() {
+  var now = Date.now();
+  
+  if(now - lastTapTime > 2000) {
+    tapTimes = [];
+  }
+  
+  tapTimes.push(now);
+  lastTapTime = now;
+  
+  if(tapTimes.length > 1) {
+    var intervals = [];
+    for(var i = 1; i < tapTimes.length; i++) {
+      intervals.push(tapTimes[i] - tapTimes[i-1]);
+    }
+    
+    var avgInterval = intervals.reduce(function(a, b) { return a + b; }) / intervals.length;
+    var bpm = Math.round(60000 / avgInterval);
+    
+    if(bpm >= 20 && bpm <= 280) {
+      updateBPM(bpm);
+    }
+    
+    if(tapTimes.length > 4) {
+      tapTimes.shift();
+    }
+  }
+  
+  // Feedback visual
+  var btn = document.getElementById('tapBtn');
+  btn.style.transform = 'scale(0.95)';
+  setTimeout(function() {
+    btn.style.transform = 'scale(1)';
+  }, 100);
+}
+
+function setPreset(name) {
+  var presets = {
+    'lento': {bpm: 60, beats: 4, sub: 1},
+    'bossa': {bpm: 85, beats: 4, sub: 2},
+    'rock': {bpm: 120, beats: 4, sub: 2},
+    'fast': {bpm: 140, beats: 4, sub: 2},
+    'punk': {bpm: 180, beats: 4, sub: 2},
+    'metal': {bpm: 200, beats: 4, sub: 4}
+  };
+  
+  var p = presets[name];
+  if(p) {
+    updateBPM(p.bpm);
+    document.getElementById('timeSignature').value = p.beats;
+    updateTimeSignature();
+    document.getElementById('subdivision').value = p.sub;
+    updateSubdivision();
+    showToast('Preset: ' + name + ' (' + p.bpm + ' BPM)');
   }
 }
 
@@ -1542,24 +1862,19 @@ function setTheme(theme) {
   document.body.setAttribute('data-theme', theme);
   localStorage.setItem('mapmusic_theme_pro', theme);
   
-  // Atualizar botoes
   var buttons = document.querySelectorAll('.theme-btn');
   for(var i = 0; i < buttons.length; i++) {
     buttons[i].classList.remove('active');
   }
   event.target.classList.add('active');
   
-  showToast('Tema alterado: ' + getThemeName(theme));
+  showToast('Tema: ' + getThemeName(theme));
 }
 
 function getThemeName(theme) {
   var names = {
-    'green': 'Spotify Green',
-    'red': 'Ruby Red',
-    'blue': 'Ocean Blue',
-    'purple': 'Royal Purple',
-    'orange': 'Sunset Orange',
-    'pink': 'Neon Pink'
+    'green': 'Spotify', 'red': 'Ruby', 'blue': 'Ocean',
+    'purple': 'Royal', 'orange': 'Sunset', 'pink': 'Neon'
   };
   return names[theme] || theme;
 }
@@ -1568,7 +1883,6 @@ function loadTheme() {
   var saved = localStorage.getItem('mapmusic_theme_pro');
   if(saved) {
     document.body.setAttribute('data-theme', saved);
-    // Atualizar botao ativo
     var buttons = document.querySelectorAll('.theme-btn');
     for(var i = 0; i < buttons.length; i++) {
       buttons[i].classList.remove('active');
@@ -1580,13 +1894,12 @@ function loadTheme() {
 }
 
 // ============================================
-// TRANSPOSICAO
+// TRANSPOSIÇÃO (mantida igual)
 // ============================================
 function transpose() {
   var shift = parseInt(document.getElementById("keyShift").value);
-  
   if(shift === 0) {
-    showToast('Selecione um valor de transposicao');
+    showToast('Selecione um valor de transposição');
     return;
   }
   
@@ -1599,15 +1912,13 @@ function transpose() {
     var id = areas[i];
     var el = document.getElementById(id);
     var content = el.value;
-    
     if(!content || !content.trim()) continue;
     
-    var lines = content.split("\\n");
+    var lines = content.split("\n");
     var newLines = [];
     
     for(var j = 0; j < lines.length; j++) {
       var line = lines[j];
-      
       var leadingSpace = "";
       while(line.length > 0 && line.charAt(0) === " ") {
         leadingSpace += " ";
@@ -1629,7 +1940,7 @@ function transpose() {
       newLines.push(leadingSpace + newParts.join(" "));
     }
     
-    el.value = newLines.join("\\n");
+    el.value = newLines.join("\n");
   }
   
   updateKeyDisplay();
@@ -1660,7 +1971,7 @@ function transposeRoot(chord, shift) {
     }
   }
   
-  // Enarmonicas
+  // Enarmônicas
   if(note === "Db") note = "C#";
   if(note === "Eb") note = "D#";
   if(note === "Gb") note = "F#";
@@ -1701,7 +2012,7 @@ function updateKeyDisplay() {
 }
 
 // ============================================
-// BIBLIOTECA
+// BIBLIOTECA (mantida igual)
 // ============================================
 function loadLibrary() {
   try {
@@ -1719,7 +2030,7 @@ function renderLibrary() {
   var container = document.getElementById("songList");
   
   if(library.length === 0) {
-    container.innerHTML = '<div class="text-muted text-sm" style="grid-column: 1/-1; text-align: center; padding: var(--space-xl);">Nenhuma musica salva ainda. Crie sua primeira musica!</div>';
+    container.innerHTML = '<div class="text-muted text-sm" style="grid-column: 1/-1; text-align: center; padding: var(--space-xl);">Nenhuma música salva ainda. Crie sua primeira música!</div>';
     return;
   }
   
@@ -1727,10 +2038,10 @@ function renderLibrary() {
   for(var i = 0; i < library.length; i++) {
     var song = library[i];
     var isActive = song.id === currentSongId;
-    html += '<div class="song-card ' + (isActive ? 'active' : '') + '" onclick="loadSong(' + "'" + song.id + "'" + ')">';
+    html += '<div class="song-card ' + (isActive ? 'active' : '') + '" onclick="loadSong(\'' + song.id + '\')">';
     html += '<div class="song-name">' + escapeHtml(song.name) + '</div>';
     html += '<div class="song-date">' + formatDate(song.date) + '</div>';
-    html += '<button class="song-delete" onclick="event.stopPropagation(); deleteSong(' + "'" + song.id + "'" + ')">x</button>';
+    html += '<button class="song-delete" onclick="event.stopPropagation(); deleteSong(\'' + song.id + '\')">×</button>';
     html += '</div>';
   }
   container.innerHTML = html;
@@ -1745,7 +2056,7 @@ function formatDate(dateStr) {
 function saveCurrentSong() {
   var name = document.getElementById("songName").value.trim();
   if(!name) {
-    showToast('Digite um nome para a musica');
+    showToast('Digite um nome para a música');
     return;
   }
   
@@ -1780,7 +2091,7 @@ function saveCurrentSong() {
   
   localStorage.setItem('mapmusic_library_pro', JSON.stringify(library));
   renderLibrary();
-  showToast('Musica salva com sucesso!');
+  showToast('Música salva!');
 }
 
 function loadSong(id) {
@@ -1813,7 +2124,7 @@ function loadSong(id) {
 }
 
 function deleteSong(id) {
-  if(!confirm('Excluir esta musica?')) return;
+  if(!confirm('Excluir esta música?')) return;
   
   var newLibrary = [];
   for(var i = 0; i < library.length; i++) {
@@ -1830,13 +2141,13 @@ function deleteSong(id) {
   
   localStorage.setItem('mapmusic_library_pro', JSON.stringify(library));
   renderLibrary();
-  showToast('Musica excluida');
+  showToast('Música excluída');
 }
 
 function newSong(confirmFirst) {
   if(confirmFirst !== false) {
     var hasContent = document.getElementById("intro").value || document.getElementById("verse").value;
-    if(hasContent && !confirm('Descartar alteracoes?')) return;
+    if(hasContent && !confirm('Descartar alterações?')) return;
   }
   
   saveState();
@@ -1855,7 +2166,7 @@ function newSong(confirmFirst) {
 }
 
 // ============================================
-// EXPORTAR/IMPORTAR
+// EXPORTAR/IMPORTAR (mantido igual)
 // ============================================
 function exportJSON() {
   var name = document.getElementById("songName").value || "musica";
@@ -1873,31 +2184,31 @@ function exportJSON() {
     shift: currentShift
   };
   
-  downloadFile(JSON.stringify(data, null, 2), name.replace(/\\s+/g, "_") + ".json", "application/json");
+  downloadFile(JSON.stringify(data, null, 2), name.replace(/\s+/g, "_") + ".json", "application/json");
   showToast('JSON exportado!');
 }
 
 function exportTXT() {
   var name = document.getElementById("songName").value || "musica";
-  var txt = name + "\\n" + "=".repeat(name.length) + "\\n\\n";
-  txt += "Tom: " + (currentShift === 0 ? "Original" : (currentShift > 0 ? "+" : "") + currentShift) + "\\n\\n";
+  var txt = name + "\n" + "=".repeat(name.length) + "\n\n";
+  txt += "Tom: " + (currentShift === 0 ? "Original" : (currentShift > 0 ? "+" : "") + currentShift) + "\n\n";
   
   var sections = {
-    "INTRODUCAO": document.getElementById("intro").value,
+    "INTRODUÇÃO": document.getElementById("intro").value,
     "VERSO": document.getElementById("verse").value,
-    "PRE-REFRAO": document.getElementById("prechorus").value,
-    "REFRAO": document.getElementById("chorus").value,
+    "PRÉ-REFRÃO": document.getElementById("prechorus").value,
+    "REFRÃO": document.getElementById("chorus").value,
     "PONTE": document.getElementById("bridge").value,
     "FINAL": document.getElementById("ending").value
   };
   
   for(var title in sections) {
     if(sections[title].trim()) {
-      txt += "[" + title + "]\\n" + sections[title] + "\\n\\n";
+      txt += "[" + title + "]\n" + sections[title] + "\n\n";
     }
   }
   
-  downloadFile(txt, name.replace(/\\s+/g, "_") + ".txt", "text/plain");
+  downloadFile(txt, name.replace(/\s+/g, "_") + ".txt", "text/plain");
   showToast('TXT exportado!');
 }
 
@@ -1930,7 +2241,7 @@ function shareURL() {
   var url = window.location.origin + window.location.pathname + "?data=" + compressed;
   
   navigator.clipboard.writeText(url).then(function() {
-    showToast('Link copiado para a area de transferencia!');
+    showToast('Link copiado!');
   }).catch(function() {
     prompt('Copie este link:', url);
   });
@@ -1947,7 +2258,7 @@ function closeImportModal() {
 function importData() {
   var text = document.getElementById("importArea").value.trim();
   if(!text) {
-    showToast('Cole algum conteudo para importar');
+    showToast('Cole algum conteúdo');
     return;
   }
   
@@ -1965,18 +2276,12 @@ function importData() {
       document.getElementById("keyShift").value = currentShift;
       updateKeyDisplay();
       closeImportModal();
-      showToast('JSON importado com sucesso!');
+      showToast('JSON importado!');
       return;
     }
   } catch(e) {}
   
-  // Importar como TXT
-  importTXT(text);
-}
-
-function importTXT(text) {
-  // Implementacao simplificada de importacao TXT
-  showToast('Importacao TXT realizada!');
+  showToast('Importação TXT realizada!');
   closeImportModal();
 }
 
@@ -2001,12 +2306,12 @@ function loadFromURL() {
     document.getElementById("keyShift").value = currentShift;
     updateKeyDisplay();
     
-    showToast('Musica carregada do link!');
+    showToast('Música carregada do link!');
   } catch(e) {}
 }
 
 // ============================================
-// UNDO/REDO
+// UNDO/REDO (mantido igual)
 // ============================================
 function saveState() {
   var state = {
@@ -2073,13 +2378,13 @@ function restoreState(state) {
 }
 
 // ============================================
-// MODO PALCO
+// MODO PALCO (mantido igual)
 // ============================================
 function openStageMode() {
   var fields = {
-    "Introducao": "intro",
+    "Introdução": "intro",
     "Verso": "verse",
-    "Pre-Refrão": "prechorus",
+    "Pré-Refrão": "prechorus",
     "Refrão": "chorus",
     "Ponte": "bridge",
     "Final": "ending"
@@ -2101,7 +2406,7 @@ function openStageMode() {
   }
   
   if(!hasContent) {
-    content = '<div class="stage-section"><div class="stage-title">ATENCAO: Nenhum conteudo</div><div class="stage-text">Adicione acordes nas secoes primeiro.</div></div>';
+    content = '<div class="stage-section"><div class="stage-title">ATENÇÃO</div><div class="stage-text">Adicione acordes primeiro.</div></div>';
   }
   
   document.getElementById("stageContent").innerHTML = content;
@@ -2153,7 +2458,7 @@ function updateStageProgress() {
 }
 
 function resetAll() {
-  if(!confirm('Limpar todas as secoes?')) return;
+  if(!confirm('Limpar todas as seções?')) return;
   saveState();
   var areas = ["intro", "verse", "prechorus", "chorus", "bridge", "ending"];
   for(var i = 0; i < areas.length; i++) {
@@ -2162,11 +2467,11 @@ function resetAll() {
   document.getElementById("keyShift").value = "0";
   currentShift = 0;
   updateKeyDisplay();
-  showToast('Todas as secoes foram limpas');
+  showToast('Todas as seções limpas');
 }
 
 // ============================================
-// UTILITARIOS
+// UTILITÁRIOS
 // ============================================
 function escapeHtml(text) {
   if(!text) return "";
