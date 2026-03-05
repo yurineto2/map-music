@@ -1,349 +1,1563 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Map Music Pro - Professional Edition</title>
-    <link href="https://fonts.googleapis.com" rel="stylesheet">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Map Music Pro - Temas</title>
 
-    <style>
-        /* ============================================
-           DESIGN SYSTEM & VARS
-           ============================================ */
-        :root {
-            --bg-primary: #0a0a0f;
-            --bg-secondary: #12121a;
-            --bg-tertiary: #1a1a25;
-            --bg-elevated: #242433;
-            --accent-primary: #1db954;
-            --accent-glow: rgba(29, 185, 84, 0.3);
-            --text-primary: #ffffff;
-            --text-secondary: #b3b3b3;
-            --text-muted: #6a6a6a;
-            --border-color: rgba(255, 255, 255, 0.1);
-            --radius-md: 8px;
-            --radius-xl: 16px;
-            --radius-full: 9999px;
-            --space-md: 16px;
-            --space-lg: 24px;
-            --transition-base: 250ms ease;
-        }
-
-        * { 
-            margin: 0; 
-            padding: 0; 
-            box-sizing: border-box; 
-            -webkit-tap-highlight-color: transparent; /* Remove brilho azul no toque mobile */
-        }
-
-        body {
-            font-family: 'Inter', sans-serif;
-            background: var(--bg-primary);
-            color: var(--text-primary);
-            line-height: 1.6;
-            min-height: 100vh;
-            overflow-x: hidden;
-            user-select: none; /* Evita seleção de texto acidental ao clicar rápido */
-        }
-
-        /* ============================================
-           LAYOUT RESPONSIVO
-           ============================================ */
-        .app-header {
-            background: rgba(18, 18, 26, 0.95);
-            backdrop-filter: blur(20px);
-            border-bottom: 1px solid var(--border-color);
-            padding: var(--space-md) var(--space-lg);
-            position: sticky;
-            top: 0;
-            z-index: 100;
-        }
-
-        .header-content {
-            max-width: 1400px;
-            margin: 0 auto;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-        }
-
-        .logo { display: flex; align-items: center; gap: 12px; }
-        .logo-icon {
-            width: 35px; height: 35px;
-            background: linear-gradient(135deg, var(--accent-primary), #1ed760);
-            border-radius: var(--radius-md);
-            display: flex; align-items: center; justify-content: center;
-            font-weight: 800; color: #000;
-        }
-
-        .app-container {
-            max-width: 1400px;
-            margin: 0 auto;
-            padding: var(--space-lg);
-        }
-
-        /* ============================================
-           METRONOMO ADAPTÁVEL
-           ============================================ */
-        .metronome-panel {
-            background: linear-gradient(135deg, var(--bg-tertiary), var(--bg-secondary));
-            border: 1px solid var(--border-color);
-            border-radius: var(--radius-xl);
-            padding: var(--space-lg);
-            text-align: center;
-        }
-
-        .metronome-display {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 40px;
-            margin: 30px 0;
-            flex-wrap: wrap; /* Permite quebrar linha no mobile */
-        }
-
-        /* Círculo de BPM */
-        .bpm-circle-display {
-            position: relative;
-            width: 180px;
-            height: 180px;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-        }
-
-        .bpm-circle-svg {
-            position: absolute;
-            width: 100%; height: 100%;
-            transform: rotate(-90deg);
-        }
-
-        .bpm-value {
-            font-size: 52px;
-            font-weight: 800;
-            color: var(--accent-primary);
-            text-shadow: 0 0 15px var(--accent-glow);
-        }
-
-        /* Controles de Toque (Grandes para Mobile) */
-        .touch-controls {
-            display: flex;
-            justify-content: center;
-            gap: 15px;
-            margin-top: 20px;
-        }
-
-        .btn-control {
-            background: var(--bg-elevated);
-            border: 1px solid var(--border-color);
-            color: white;
-            padding: 15px 25px;
-            border-radius: var(--radius-md);
-            font-weight: bold;
-            cursor: pointer;
-            font-size: 18px;
-            min-width: 60px;
-            transition: transform 0.1s;
-        }
-
-        .btn-control:active {
-            transform: scale(0.95);
-            background: var(--accent-primary);
-        }
-
-        .btn-main {
-            background: var(--accent-primary);
-            color: black;
-            width: 100%;
-            max-width: 300px;
-            padding: 18px;
-            border-radius: var(--radius-full);
-            font-weight: 800;
-            text-transform: uppercase;
-            border: none;
-            margin-top: 25px;
-            font-size: 16px;
-            box-shadow: 0 4px 15px var(--accent-glow);
-        }
-
-        /* ============================================
-           MEDIA QUERIES (A MÁGICA DA RESPONSIVIDADE)
-           ============================================ */
-
-        /* Tablets */
-        @media (max-width: 1024px) {
-            .app-container { padding: var(--space-md); }
-            .metronome-display { gap: 20px; }
-        }
-
-        /* Mobile Smartphones */
-        @media (max-width: 768px) {
-            .logo-subtitle { display: none; }
-            .metronome-display { flex-direction: column; } /* Empilha os elementos */
-            
-            .bpm-circle-display {
-                width: 160px;
-                height: 160px;
-            }
-
-            .bpm-value { font-size: 44px; }
-            
-            .btn-control {
-                padding: 20px 30px; /* Botões ainda maiores para o polegar */
-                font-size: 22px;
-            }
-        }
-
-        /* Telas muito pequenas (iPhone SE, etc) */
-        @media (max-width: 380px) {
-            .bpm-circle-display { width: 140px; height: 140px; }
-            .bpm-value { font-size: 38px; }
-        }
-    </style>
-</head>
-<body>
-
-    <header class="app-header">
-        <div class="header-content">
-            <div class="logo">
-                <div class="logo-icon">M</div>
-                <div>
-                    <h1 class="logo-text">Map Music Pro</h1>
-                    <p class="logo-subtitle">Professional Edition</p>
-                </div>
-            </div>
-        </div>
-    </header>
-
-    <main class="app-container">
-        <section class="metronome-panel">
-            <div class="metronome-header">
-                <span class="metronome-title">METRÔNOMO</span>
-                <span class="metronome-badge">LIVE</span>
-            </div>
-
-            <div class="metronome-display">
-                <!-- Circular BPM Display -->
-                <div class="bpm-circle-display">
-                    <svg class="bpm-circle-svg" viewBox="0 0 100 100">
-                        <circle class="bpm-circle-bg" cx="50" cy="50" r="45" fill="none" stroke="#242433" stroke-width="5" />
-                        <circle id="progress-circle" cx="50" cy="50" r="45" fill="none" stroke="#1db954" stroke-width="5" 
-                                stroke-dasharray="283" stroke-dashoffset="70" stroke-linecap="round" />
-                    </svg>
-                    <div class="bpm-value" id="bpm-display">120</div>
-                    <div style="font-size: 10px; color: var(--text-muted); letter-spacing: 2px;">BPM</div>
-                </div>
-            </div>
-
-            <!-- Controles amigáveis ao toque -->
-            <div class="touch-controls">
-                <button class="btn-control" onclick="adjustBpm(-5)">-5</button>
-                <button class="btn-control" onclick="adjustBpm(-1)">-</button>
-                <button class="btn-control" onclick="adjustBpm(1)">+</button>
-                <button class="btn-control" onclick="adjustBpm(5)">+5</button>
-            </div>
-
-            <button class="btn-main" id="play-btn">Iniciar Metrônomo</button>
-        </section>
-    </main>
-
-    <script>
-        /* ============================================
-   RESPONSIVIDADE (MOBILE & TABLET)
+<style>
+/* ============================================
+   TEMA 1: DARK RED (Padrão)
    ============================================ */
+:root {
+  --bg-primary: #0a0a0a;
+  --bg-secondary: #1a1a1a;
+  --bg-tertiary: #2a2a2a;
+  --bg-input: #0f0f0f;
+  --accent-primary: #c00000;
+  --accent-secondary: #ff4444;
+  --accent-hover: #ff0000;
+  --text-primary: #ffffff;
+  --text-secondary: #cccccc;
+  --text-muted: #666666;
+  --border-color: #333333;
+  --font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  --font-mono: 'Courier New', monospace;
+  --font-size-base: 15px;
+  --font-size-large: 18px;
+  --font-size-xlarge: 22px;
+  --spacing-xs: 5px;
+  --spacing-sm: 10px;
+  --spacing-md: 15px;
+  --spacing-lg: 20px;
+  --border-radius: 8px;
+  --shadow: 0 4px 6px rgba(0,0,0,0.3);
+}
 
-/* Tablets e Telas Médias (até 1024px) */
-@media (max-width: 1024px) {
-  .app-container {
-    padding: var(--space-md);
+/* TEMA 2: DARK BLUE */
+[data-theme="blue"] {
+  --bg-primary: #0a0a1a;
+  --bg-secondary: #1a1a2e;
+  --bg-tertiary: #2a2a3e;
+  --bg-input: #0f0f1f;
+  --accent-primary: #0066cc;
+  --accent-secondary: #4499ff;
+  --accent-hover: #0088ff;
+  --border-color: #33334d;
+}
+
+/* TEMA 3: DARK GREEN */
+[data-theme="green"] {
+  --bg-primary: #0a1a0a;
+  --bg-secondary: #1a2e1a;
+  --bg-tertiary: #2a3e2a;
+  --bg-input: #0f1f0f;
+  --accent-primary: #228b22;
+  --accent-secondary: #44cc44;
+  --accent-hover: #00ff00;
+  --border-color: #334d33;
+}
+
+/* TEMA 4: DARK PURPLE */
+[data-theme="purple"] {
+  --bg-primary: #1a0a1a;
+  --bg-secondary: #2e1a2e;
+  --bg-tertiary: #3e2a3e;
+  --bg-input: #1f0f1f;
+  --accent-primary: #800080;
+  --accent-secondary: #cc44cc;
+  --accent-hover: #ff00ff;
+  --border-color: #4d334d;
+}
+
+/* TEMA 5: LIGHT (Modo Claro) */
+[data-theme="light"] {
+  --bg-primary: #f5f5f5;
+  --bg-secondary: #ffffff;
+  --bg-tertiary: #e8e8e8;
+  --bg-input: #fafafa;
+  --accent-primary: #c00000;
+  --accent-secondary: #ff4444;
+  --accent-hover: #ff0000;
+  --text-primary: #222222;
+  --text-secondary: #444444;
+  --text-muted: #888888;
+  --border-color: #dddddd;
+  --shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+/* TEMA 6: HIGH CONTRAST (Acessibilidade) */
+[data-theme="contrast"] {
+  --bg-primary: #000000;
+  --bg-secondary: #000000;
+  --bg-tertiary: #111111;
+  --bg-input: #000000;
+  --accent-primary: #ffff00;
+  --accent-secondary: #ffff00;
+  --accent-hover: #ffffff;
+  --text-primary: #ffffff;
+  --text-secondary: #ffffff;
+  --text-muted: #cccccc;
+  --border-color: #ffffff;
+  --font-size-base: 18px;
+  --font-size-large: 22px;
+  --font-size-xlarge: 28px;
+}
+
+/* ============================================
+   ESTILOS BASE
+   ============================================ */
+* { 
+  box-sizing: border-box; 
+  margin: 0; 
+  padding: 0;
+  transition: background-color 0.3s, color 0.3s, border-color 0.3s;
+}
+
+body {
+  margin: 0;
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  font-family: var(--font-family);
+  font-size: var(--font-size-base);
+  padding: var(--spacing-lg);
+  line-height: 1.6;
+  min-height: 100vh;
+}
+
+h1 {
+  background: linear-gradient(135deg, var(--accent-primary) 0%, var(--accent-secondary) 100%);
+  padding: var(--spacing-lg);
+  margin: calc(-1 * var(--spacing-lg)) calc(-1 * var(--spacing-lg)) var(--spacing-lg) calc(-1 * var(--spacing-lg));
+  text-align: center;
+  font-size: 2em;
+  text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
+  box-shadow: var(--shadow);
+  color: white;
+}
+
+/* ============================================
+   PAINEL DE CONFIGURAÇÕES
+   ============================================ */
+.config-panel {
+  background: var(--bg-secondary);
+  padding: var(--spacing-md);
+  border-radius: var(--border-radius);
+  margin-bottom: var(--spacing-lg);
+  border: 2px solid var(--accent-primary);
+}
+
+.config-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--spacing-md);
+  align-items: center;
+  margin-bottom: var(--spacing-sm);
+}
+
+.config-row:last-child {
+  margin-bottom: 0;
+}
+
+.config-label {
+  font-weight: bold;
+  color: var(--accent-secondary);
+  min-width: 120px;
+}
+
+/* Botões de tema */
+.theme-buttons {
+  display: flex;
+  gap: var(--spacing-xs);
+  flex-wrap: wrap;
+}
+
+.theme-btn {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  border: 3px solid transparent;
+  cursor: pointer;
+  transition: transform 0.2s, border-color 0.2s;
+}
+
+.theme-btn:hover {
+  transform: scale(1.1);
+}
+
+.theme-btn.active {
+  border-color: var(--text-primary);
+  box-shadow: 0 0 10px rgba(255,255,255,0.5);
+}
+
+.theme-red { background: linear-gradient(135deg, #c00000, #800000); }
+.theme-blue { background: linear-gradient(135deg, #0066cc, #003399); }
+.theme-green { background: linear-gradient(135deg, #228b22, #006400); }
+.theme-purple { background: linear-gradient(135deg, #800080, #4b0082); }
+.theme-light { background: linear-gradient(135deg, #f5f5f5, #cccccc); border: 2px solid #666; }
+.theme-contrast { background: linear-gradient(135deg, #000, #333); border: 2px solid #ff0; }
+
+/* Botões de fonte */
+.font-buttons {
+  display: flex;
+  gap: var(--spacing-xs);
+}
+
+.font-btn {
+  padding: 8px 16px;
+  background: var(--bg-tertiary);
+  border: 2px solid var(--border-color);
+  color: var(--text-primary);
+  cursor: pointer;
+  border-radius: 4px;
+  font-weight: bold;
+}
+
+.font-btn:hover {
+  border-color: var(--accent-primary);
+}
+
+.font-btn.active {
+  background: var(--accent-primary);
+  border-color: var(--accent-primary);
+  color: white;
+}
+
+/* ============================================
+   BIBLIOTECA
+   ============================================ */
+.library-panel {
+  background: var(--bg-secondary);
+  padding: var(--spacing-md);
+  border-radius: var(--border-radius);
+  margin-bottom: var(--spacing-lg);
+  border: 2px solid var(--accent-primary);
+}
+
+.library-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: var(--spacing-sm);
+  flex-wrap: wrap;
+  gap: var(--spacing-sm);
+}
+
+.library-header h2 {
+  margin: 0;
+  color: var(--accent-secondary);
+  font-size: 1.2em;
+}
+
+.song-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--spacing-xs);
+  max-height: 150px;
+  overflow-y: auto;
+  padding: var(--spacing-sm);
+  background: var(--bg-input);
+  border-radius: 5px;
+  min-height: 50px;
+}
+
+.song-item {
+  background: var(--bg-tertiary);
+  padding: 8px 12px;
+  border-radius: 20px;
+  cursor: pointer;
+  border: 2px solid transparent;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 0.9em;
+  transition: all 0.2s;
+  color: var(--text-primary);
+}
+
+.song-item:hover {
+  background: var(--bg-secondary);
+  border-color: var(--accent-primary);
+  transform: translateY(-2px);
+}
+
+.song-item.active {
+  background: var(--accent-primary);
+  border-color: var(--accent-hover);
+  color: white;
+}
+
+.song-item .delete-btn {
+  background: none;
+  border: none;
+  color: inherit;
+  cursor: pointer;
+  font-weight: bold;
+  font-size: 18px;
+  line-height: 1;
+  padding: 0;
+  margin-left: 5px;
+  opacity: 0.7;
+}
+
+.song-item .delete-btn:hover {
+  opacity: 1;
+}
+
+.empty-msg {
+  color: var(--text-muted);
+  font-style: italic;
+}
+
+/* ============================================
+   CONTROLES
+   ============================================ */
+.controls {
+  background: var(--bg-secondary);
+  padding: var(--spacing-md);
+  border-radius: var(--border-radius);
+  margin-bottom: var(--spacing-lg);
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--spacing-sm);
+  align-items: center;
+  border: 1px solid var(--border-color);
+}
+
+.controls label {
+  font-weight: bold;
+  color: var(--accent-secondary);
+  font-size: 0.9em;
+}
+
+input[type="text"], select {
+  padding: 8px 12px;
+  border-radius: 4px;
+  border: 1px solid var(--accent-primary);
+  background: var(--bg-tertiary);
+  color: var(--text-primary);
+  font-size: 14px;
+}
+
+input[type="text"] {
+  min-width: 180px;
+}
+
+button {
+  padding: 8px 15px;
+  border-radius: 4px;
+  border: none;
+  background: var(--accent-primary);
+  color: white;
+  cursor: pointer;
+  font-weight: bold;
+  font-size: 13px;
+  transition: all 0.2s;
+}
+
+button:hover {
+  background: var(--accent-hover);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+}
+
+button.secondary {
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border-color);
+  color: var(--text-primary);
+}
+
+button.secondary:hover {
+  background: var(--border-color);
+}
+
+button.success {
+  background: #228b22;
+}
+
+button.success:hover {
+  background: #2ecc71;
+}
+
+#currentKeyDisplay {
+  color: var(--accent-secondary);
+  font-weight: bold;
+  padding: 8px 12px;
+  background: var(--bg-tertiary);
+  border-radius: 4px;
+  border: 1px solid var(--accent-primary);
+  margin-left: auto;
+}
+
+/* ============================================
+   SEÇÕES
+   ============================================ */
+.section {
+  margin-top: var(--spacing-md);
+  background: var(--bg-secondary);
+  padding: var(--spacing-md);
+  border-radius: var(--border-radius);
+  border-left: 4px solid var(--accent-primary);
+}
+
+.section h3 {
+  margin: 0 0 var(--spacing-sm) 0;
+  color: var(--accent-secondary);
+  font-size: var(--font-size-large);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+textarea {
+  width: 100%;
+  min-height: 100px;
+  background: var(--bg-input);
+  color: var(--text-primary);
+  border: 1px solid var(--border-color);
+  padding: 12px;
+  font-family: var(--font-mono);
+  font-size: var(--font-size-base);
+  line-height: 1.6;
+  border-radius: 4px;
+  resize: vertical;
+}
+
+textarea:focus {
+  outline: none;
+  border-color: var(--accent-primary);
+  box-shadow: 0 0 10px rgba(192,0,0,0.2);
+}
+
+/* ============================================
+   MODAL
+   ============================================ */
+.modal-overlay {
+  display: none;
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0,0,0,0.9);
+  z-index: 2000;
+  justify-content: center;
+  align-items: center;
+}
+
+.modal {
+  background: var(--bg-secondary);
+  padding: 25px;
+  border-radius: var(--border-radius);
+  border: 2px solid var(--accent-primary);
+  width: 90%;
+  max-width: 500px;
+  max-height: 80vh;
+  overflow-y: auto;
+  color: var(--text-primary);
+}
+
+.modal h3 {
+  color: var(--accent-secondary);
+  margin-bottom: 15px;
+}
+
+.modal textarea {
+  min-height: 200px;
+  margin: 15px 0;
+}
+
+.modal-buttons {
+  display: flex;
+  gap: 10px;
+  justify-content: flex-end;
+}
+
+/* ============================================
+   MODO PALCO
+   ============================================ */
+#stageMode {
+  display: none;
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  padding: 30px;
+  overflow: auto;
+  font-size: var(--font-size-xlarge);
+  line-height: 1.8;
+  z-index: 1000;
+}
+
+#stageMode h2 {
+  color: var(--accent-secondary);
+  font-size: 1.3em;
+  margin-top: 40px;
+  margin-bottom: 15px;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  border-bottom: 3px solid var(--accent-primary);
+  padding-bottom: 8px;
+}
+
+#stageMode h2:first-child {
+  margin-top: 0;
+}
+
+#stageMode p {
+  color: var(--text-primary);
+  margin-bottom: 30px;
+  white-space: pre-wrap;
+}
+
+.stage-controls {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  background: var(--bg-secondary);
+  padding: 15px;
+  border-radius: var(--border-radius);
+  border: 2px solid var(--accent-primary);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  z-index: 1001;
+  box-shadow: var(--shadow);
+}
+
+.stage-controls button {
+  padding: 12px 20px;
+  font-size: 16px;
+}
+
+.speed-control {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--text-primary);
+  font-size: 14px;
+}
+
+#speedValue {
+  color: var(--accent-secondary);
+  font-weight: bold;
+  min-width: 20px;
+}
+
+input[type="range"] {
+  width: 120px;
+  accent-color: var(--accent-primary);
+}
+
+.scroll-indicator {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  height: 4px;
+  background: var(--accent-primary);
+  width: 0%;
+  transition: width 0.1s;
+}
+
+/* ============================================
+   NOTIFICAÇÃO
+   ============================================ */
+.notification {
+  position: fixed;
+  top: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--accent-primary);
+  color: white;
+  padding: 12px 25px;
+  border-radius: 4px;
+  font-weight: bold;
+  z-index: 9999;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+}
+
+/* ============================================
+   PRINT
+   ============================================ */
+@media print {
+  body * { visibility: hidden; }
+  #stageMode, #stageMode * { visibility: visible; }
+  #stageMode {
+    position: absolute;
+    left: 0;
+    top: 0;
+    display: block !important;
+    font-size: 24px;
+    padding: 20px;
+    background: white;
+    color: black;
+  }
+  .stage-controls { display: none; }
+}
+</style>
+</head>
+<body data-theme="red">
+
+<h1>🎸 Map Music Pro</h1>
+
+<!-- PAINEL DE CONFIGURAÇÃO -->
+<div class="config-panel">
+  <div class="config-row">
+    <span class="config-label">🎨 Tema:</span>
+    <div class="theme-buttons">
+      <div class="theme-btn theme-red active" onclick="setTheme('red')" title="Vermelho"></div>
+      <div class="theme-btn theme-blue" onclick="setTheme('blue')" title="Azul"></div>
+      <div class="theme-btn theme-green" onclick="setTheme('green')" title="Verde"></div>
+      <div class="theme-btn theme-purple" onclick="setTheme('purple')" title="Roxo"></div>
+      <div class="theme-btn theme-light" onclick="setTheme('light')" title="Claro"></div>
+      <div class="theme-btn theme-contrast" onclick="setTheme('contrast')" title="Alto Contraste"></div>
+    </div>
+  </div>
+  <div class="config-row">
+    <span class="config-label">🔤 Fonte:</span>
+    <div class="font-buttons">
+      <button class="font-btn active" onclick="setFontSize('normal')">Normal</button>
+      <button class="font-btn" onclick="setFontSize('large')">Grande</button>
+      <button class="font-btn" onclick="setFontSize('xlarge')">Extra</button>
+    </div>
+  </div>
+</div>
+
+<!-- BIBLIOTECA -->
+<div class="library-panel">
+  <div class="library-header">
+    <h2>📚 Minhas Músicas</h2>
+    <div>
+      <input type="text" id="songName" placeholder="Nome da música...">
+      <button onclick="saveCurrentSong()">💾 Salvar</button>
+      <button onclick="newSong()" class="secondary">➕ Nova</button>
+    </div>
+  </div>
+  <div class="song-list" id="songList">
+    <span class="empty-msg">Nenhuma música salva ainda...</span>
+  </div>
+</div>
+
+<!-- CONTROLES -->
+<div class="controls">
+  <label>🎵 Transpor:</label>
+  <select id="keyShift">
+    <option value="0">Original</option>
+    <option value="1">+1 semitom</option>
+    <option value="2">+2 semitons</option>
+    <option value="3">+3 semitons</option>
+    <option value="4">+4 semitons</option>
+    <option value="5">+5 semitons</option>
+    <option value="6">+6 semitons</option>
+    <option value="-1">-1 semitom</option>
+    <option value="-2">-2 semitons</option>
+    <option value="-3">-3 semitons</option>
+    <option value="-4">-4 semitons</option>
+    <option value="-5">-5 semitons</option>
+    <option value="-6">-6 semitons</option>
+  </select>
+  <button onclick="transpose()">Aplicar</button>
+  <button onclick="resetAll()" class="secondary">🗑️ Limpar</button>
+  
+  <label style="margin-left:15px;">📤</label>
+  <button onclick="exportJSON()" class="success">JSON</button>
+  <button onclick="exportTXT()" class="success">TXT</button>
+  <button onclick="shareURL()" class="success">Link</button>
+  
+  <label style="margin-left:15px;">📥</label>
+  <button onclick="showImportModal()" class="secondary">Importar</button>
+  
+  <button onclick="openStageMode()" style="margin-left:auto;">🎭 Palco</button>
+  <span id="currentKeyDisplay">Tom: Original</span>
+</div>
+
+<!-- SEÇÕES -->
+<div class="section">
+  <h3>Introdução</h3>
+  <textarea id="intro" placeholder="C G Am F..."></textarea>
+</div>
+
+<div class="section">
+  <h3>Verso</h3>
+  <textarea id="verse" placeholder="C G Am F..."></textarea>
+</div>
+
+<div class="section">
+  <h3>Pré-Refrão</h3>
+  <textarea id="prechorus" placeholder="Am F C G..."></textarea>
+</div>
+
+<div class="section">
+  <h3>Refrão</h3>
+  <textarea id="chorus" placeholder="F G Am C..."></textarea>
+</div>
+
+<div class="section">
+  <h3>Ponte</h3>
+  <textarea id="bridge" placeholder="Dm G C..."></textarea>
+</div>
+
+<div class="section">
+  <h3>Final</h3>
+  <textarea id="ending" placeholder="C..."></textarea>
+</div>
+
+<!-- MODAL IMPORT -->
+<div class="modal-overlay" id="importModal" onclick="if(event.target===this)closeImportModal()">
+  <div class="modal">
+    <h3>📥 Importar Música</h3>
+    <p>Cole JSON ou TXT:</p>
+    <textarea id="importArea" placeholder='{"name":"Musica","sections":{"intro":"C G"...}}'></textarea>
+    <div class="modal-buttons">
+      <button onclick="closeImportModal()" class="secondary">Cancelar</button>
+      <button onclick="importData()">Importar</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODO PALCO -->
+<div id="stageMode">
+  <div class="stage-controls">
+    <button onclick="startScroll()">▶️ Iniciar</button>
+    <button onclick="stopScroll()">⏸️ Parar</button>
+    <div class="speed-control">
+      <label>Vel:</label>
+      <input type="range" id="speedControl" min="1" max="10" value="3" oninput="updateSpeedDisplay()">
+      <span id="speedValue">3</span>
+    </div>
+    <button onclick="closeStageMode()">❌ Fechar</button>
+  </div>
+  <div id="stageContent"></div>
+  <div class="scroll-indicator" id="scrollIndicator"></div>
+</div>
+
+<script>
+// ============================================
+// VARIÁVEIS GLOBAIS
+// ============================================
+var library = [];
+var currentSongId = null;
+var currentShift = 0;
+var scrollAnimation = null;
+var undoStack = [];
+var redoStack = [];
+var currentTheme = 'red';
+var currentFontSize = 'normal';
+
+// Notas musicais
+var NOTES = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"];
+
+// ============================================
+// TEMAS E FONTES
+// ============================================
+function setTheme(theme) {
+  currentTheme = theme;
+  document.body.setAttribute('data-theme', theme);
+  localStorage.setItem('mapmusic_theme', theme);
+  
+  // Atualizar botões ativos
+  var buttons = document.querySelectorAll('.theme-btn');
+  for(var i = 0; i < buttons.length; i++) {
+    buttons[i].classList.remove('active');
+  }
+  document.querySelector('.theme-' + theme).classList.add('active');
+  
+  showNotification('Tema: ' + getThemeName(theme));
+}
+
+function getThemeName(theme) {
+  var names = {
+    'red': 'Vermelho',
+    'blue': 'Azul',
+    'green': 'Verde',
+    'purple': 'Roxo',
+    'light': 'Claro',
+    'contrast': 'Alto Contraste'
+  };
+  return names[theme] || theme;
+}
+
+function setFontSize(size) {
+  currentFontSize = size;
+  var root = document.documentElement;
+  
+  if(size === 'normal') {
+    root.style.setProperty('--font-size-base', '15px');
+    root.style.setProperty('--font-size-large', '18px');
+    root.style.setProperty('--font-size-xlarge', '22px');
+  } else if(size === 'large') {
+    root.style.setProperty('--font-size-base', '18px');
+    root.style.setProperty('--font-size-large', '22px');
+    root.style.setProperty('--font-size-xlarge', '28px');
+  } else if(size === 'xlarge') {
+    root.style.setProperty('--font-size-base', '22px');
+    root.style.setProperty('--font-size-large', '28px');
+    root.style.setProperty('--font-size-xlarge', '36px');
   }
   
-  .metronome-display {
-    gap: var(--space-xl);
+  localStorage.setItem('mapmusic_fontsize', size);
+  
+  // Atualizar botões
+  var buttons = document.querySelectorAll('.font-btn');
+  for(var i = 0; i < buttons.length; i++) {
+    buttons[i].classList.remove('active');
   }
+  event.target.classList.add('active');
+  
+  showNotification('Fonte: ' + (size === 'normal' ? 'Normal' : size === 'large' ? 'Grande' : 'Extra Grande'));
 }
 
-/* Smartphones (até 768px) */
-@media (max-width: 768px) {
-  .header-content {
-    padding: 0;
+function loadPreferences() {
+  var savedTheme = localStorage.getItem('mapmusic_theme');
+  if(savedTheme) {
+    setTheme(savedTheme);
   }
-
-  .logo-text {
-    font-size: 20px;
-  }
-
-  .metronome-display {
-    flex-direction: column; /* Empilha os círculos no mobile */
-    gap: var(--space-lg);
-  }
-
-  .bpm-circle-display {
-    width: 150px;
-    height: 150px;
-  }
-
-  .bpm-value {
-    font-size: 42px;
-  }
-
-  /* Aumentar áreas de toque para mobile (Lei de Fitts) */
-  .card, .metronome-panel {
-    padding: var(--space-md);
-    margin-bottom: var(--space-md);
-  }
-}
-
-/* Telas Pequenas (até 480px) */
-@media (max-width: 480px) {
-  .app-header {
-    padding: var(--space-md);
-  }
-
-  .logo-subtitle {
-    display: none; /* Esconde subtitulo em telas muito pequenas */
-  }
-
-  .beat-visualizer {
-    width: 120px;
-    height: 120px;
-  }
-}
-
-/* Prevenção de Zoom indesejado em inputs no iOS */
-@media screen and (-webkit-min-device-pixel-ratio:0) { 
-  select, textarea, input {
-    font-size: 16px !important;
-  }
-}
-
-        let bpm = 120;
-        let isPlaying = false;
-        const bpmDisplay = document.getElementById('bpm-display');
-        const playBtn = document.getElementById('play-btn');
-
-        function adjustBpm(val) {
-            bpm = Math.min(Math.max(bpm + val, 30), 280);
-            bpmDisplay.innerText = bpm;
-            updateCircle();
+  
+  var savedFont = localStorage.getItem('mapmusic_fontsize');
+  if(savedFont) {
+    // Simular click no botão correto
+    var buttons = document.querySelectorAll('.font-btn');
+    for(var i = 0; i < buttons.length; i++) {
+      buttons[i].classList.remove('active');
+      if((savedFont === 'normal' && i === 0) ||
+         (savedFont === 'large' && i === 1) ||
+         (savedFont === 'xlarge' && i === 2)) {
+        buttons[i].classList.add('active');
+        // Aplicar sem notificação
+        var root = document.documentElement;
+        if(savedFont === 'large') {
+          root.style.setProperty('--font-size-base', '18px');
+          root.style.setProperty('--font-size-large', '22px');
+          root.style.setProperty('--font-size-xlarge', '28px');
+        } else if(savedFont === 'xlarge') {
+          root.style.setProperty('--font-size-base', '22px');
+          root.style.setProperty('--font-size-large', '28px');
+          root.style.setProperty('--font-size-xlarge', '36px');
         }
+      }
+    }
+    currentFontSize = savedFont;
+  }
+}
 
-        function updateCircle() {
-            const circle = document.getElementById('progress-circle');
-            const percentage = (bpm - 30) / (280 - 30);
-            const offset = 283 - (percentage * 283);
-            circle.style.strokeDashoffset = offset;
+// ============================================
+// INICIALIZAÇÃO
+// ============================================
+document.addEventListener('DOMContentLoaded', function() {
+  loadPreferences();
+  loadLibrary();
+  loadFromURL();
+  
+  // Auto-save para undo
+  var textareas = document.querySelectorAll('textarea');
+  for(var i = 0; i < textareas.length; i++) {
+    textareas[i].addEventListener('focus', function() {
+      saveState();
+    });
+  }
+  
+  // Atalhos
+  document.addEventListener('keydown', function(e) {
+    if(e.key === 'Escape') {
+      closeStageMode();
+      closeImportModal();
+    }
+    if(e.key === ' ' && document.getElementById("stageMode").style.display === 'block') {
+      e.preventDefault();
+      if(scrollAnimation) stopScroll();
+      else startScroll();
+    }
+    if(e.ctrlKey && e.key === 'z') {
+      e.preventDefault();
+      undo();
+    }
+    if(e.ctrlKey && e.key === 'y') {
+      e.preventDefault();
+      redo();
+    }
+  });
+});
+
+// ============================================
+// TRANSPOSIÇÃO
+// ============================================
+function transpose() {
+  var shift = parseInt(document.getElementById("keyShift").value);
+  
+  if(shift === 0) {
+    showNotification("Tom original selecionado");
+    return;
+  }
+  
+  saveState();
+  currentShift = shift;
+  
+  var areas = ["intro", "verse", "prechorus", "chorus", "bridge", "ending"];
+  
+  for(var i = 0; i < areas.length; i++) {
+    var id = areas[i];
+    var el = document.getElementById(id);
+    var content = el.value;
+    
+    if(!content || !content.trim()) continue;
+    
+    var lines = content.split("\\n");
+    var newLines = [];
+    
+    for(var j = 0; j < lines.length; j++) {
+      var line = lines[j];
+      
+      var leadingSpace = "";
+      while(line.length > 0 && line.charAt(0) === " ") {
+        leadingSpace += " ";
+        line = line.substring(1);
+      }
+      
+      var parts = line.split(" ");
+      var newParts = [];
+      
+      for(var k = 0; k < parts.length; k++) {
+        var part = parts[k];
+        if(part === "") {
+          newParts.push("");
+        } else {
+          newParts.push(transposeChord(part, shift));
         }
+      }
+      
+      newLines.push(leadingSpace + newParts.join(" "));
+    }
+    
+    el.value = newLines.join("\\n");
+  }
+  
+  updateKeyDisplay();
+  showNotification("Transposto " + (shift > 0 ? "+" : "") + shift + " semitons!");
+}
 
-        playBtn.onclick = () => {
-            isPlaying = !isPlaying;
-            playBtn.innerText = isPlaying ? "Parar Metrônomo" : "Iniciar Metrônomo";
-            playBtn.style.background = isPlaying ? "#e22134" : "#1db954";
-        };
+function transposeChord(chord, shift) {
+  if(chord.indexOf("/") >= 0) {
+    var parts = chord.split("/");
+    return transposeRoot(parts[0], shift) + "/" + transposeRoot(parts[1], shift);
+  }
+  return transposeRoot(chord, shift);
+}
 
-        // Inicializar círculo
-        updateCircle();
-    </script>
+function transposeRoot(chord, shift) {
+  if(!chord || chord.length === 0) return chord;
+  
+  var note = chord.charAt(0).toUpperCase();
+  var suffix = "";
+  
+  if(chord.length > 1) {
+    var second = chord.charAt(1);
+    if(second === "#" || second === "b") {
+      note += second;
+      suffix = chord.substring(2);
+    } else {
+      suffix = chord.substring(1);
+    }
+  }
+  
+  // Converter enarmônicas
+  if(note === "Db") note = "C#";
+  if(note === "Eb") note = "D#";
+  if(note === "Gb") note = "F#";
+  if(note === "Ab") note = "G#";
+  if(note === "Bb") note = "A#";
+  if(note === "Cb") note = "B";
+  if(note === "Fb") note = "E";
+  if(note === "E#") note = "F";
+  if(note === "B#") note = "C";
+  
+  var idx = -1;
+  for(var i = 0; i < NOTES.length; i++) {
+    if(NOTES[i] === note) {
+      idx = i;
+      break;
+    }
+  }
+  
+  if(idx === -1) return chord;
+  
+  var newIdx = idx + shift;
+  while(newIdx < 0) newIdx += 12;
+  while(newIdx >= 12) newIdx -= 12;
+  
+  return NOTES[newIdx] + suffix;
+}
+
+function updateKeyDisplay() {
+  var shift = parseInt(document.getElementById("keyShift").value);
+  var display = document.getElementById("currentKeyDisplay");
+  if(shift === 0) {
+    display.textContent = "Tom: Original";
+  } else {
+    display.textContent = "Tom: " + (shift > 0 ? "+" : "") + shift;
+  }
+}
+
+// ============================================
+// BIBLIOTECA
+// ============================================
+function loadLibrary() {
+  try {
+    var saved = localStorage.getItem('mapmusic_library_v5');
+    if(saved) {
+      library = JSON.parse(saved);
+      renderLibrary();
+    }
+  } catch(e) {
+    library = [];
+  }
+}
+
+function saveLibrary() {
+  try {
+    localStorage.setItem('mapmusic_library_v5', JSON.stringify(library));
+    renderLibrary();
+  } catch(e) {
+    showNotification("Erro ao salvar");
+  }
+}
+
+function renderLibrary() {
+  var container = document.getElementById("songList");
+  
+  if(library.length === 0) {
+    container.innerHTML = '<span class="empty-msg">Nenhuma música salva ainda...</span>';
+    return;
+  }
+  
+  var html = "";
+  for(var i = 0; i < library.length; i++) {
+    var song = library[i];
+    var isActive = song.id === currentSongId;
+    html += '<div class="song-item ' + (isActive ? 'active' : '') + '" onclick="loadSong(' + "'" + song.id + "'" + ')">';
+    html += escapeHtml(song.name);
+    html += '<button class="delete-btn" onclick="event.stopPropagation(); deleteSong(' + "'" + song.id + "'" + ')">×</button>';
+    html += '</div>';
+  }
+  container.innerHTML = html;
+}
+
+function saveCurrentSong() {
+  var nameInput = document.getElementById("songName");
+  var name = nameInput.value.trim();
+  
+  if(!name) {
+    showNotification("Digite um nome!");
+    nameInput.focus();
+    return;
+  }
+  
+  var songData = {
+    id: currentSongId || Date.now().toString(),
+    name: name,
+    date: new Date().toISOString(),
+    sections: {
+      intro: document.getElementById("intro").value,
+      verse: document.getElementById("verse").value,
+      prechorus: document.getElementById("prechorus").value,
+      chorus: document.getElementById("chorus").value,
+      bridge: document.getElementById("bridge").value,
+      ending: document.getElementById("ending").value
+    },
+    shift: currentShift
+  };
+  
+  var found = false;
+  for(var i = 0; i < library.length; i++) {
+    if(library[i].id === songData.id) {
+      library[i] = songData;
+      found = true;
+      break;
+    }
+  }
+  
+  if(!found) {
+    library.push(songData);
+    currentSongId = songData.id;
+  }
+  
+  saveLibrary();
+  showNotification("Música salva!");
+}
+
+function loadSong(id) {
+  saveState();
+  
+  var song = null;
+  for(var i = 0; i < library.length; i++) {
+    if(library[i].id === id) {
+      song = library[i];
+      break;
+    }
+  }
+  
+  if(!song) return;
+  
+  currentSongId = song.id;
+  document.getElementById("songName").value = song.name;
+  
+  for(var section in song.sections) {
+    var el = document.getElementById(section);
+    if(el) el.value = song.sections[section] || "";
+  }
+  
+  currentShift = song.shift || 0;
+  document.getElementById("keyShift").value = currentShift;
+  updateKeyDisplay();
+  
+  renderLibrary();
+  showNotification("Carregado: " + song.name);
+}
+
+function deleteSong(id) {
+  if(!confirm("Excluir esta música?")) return;
+  
+  var newLibrary = [];
+  for(var i = 0; i < library.length; i++) {
+    if(library[i].id !== id) {
+      newLibrary.push(library[i]);
+    }
+  }
+  library = newLibrary;
+  
+  if(currentSongId === id) {
+    currentSongId = null;
+    newSong(false);
+  }
+  
+  saveLibrary();
+  showNotification("Excluída");
+}
+
+function newSong(confirmFirst) {
+  if(confirmFirst !== false) {
+    var hasContent = document.getElementById("intro").value || document.getElementById("verse").value;
+    if(hasContent && !confirm("Descartar alterações?")) return;
+  }
+  
+  saveState();
+  currentSongId = null;
+  document.getElementById("songName").value = "";
+  
+  var areas = ["intro", "verse", "prechorus", "chorus", "bridge", "ending"];
+  for(var i = 0; i < areas.length; i++) {
+    document.getElementById(areas[i]).value = "";
+  }
+  
+  currentShift = 0;
+  document.getElementById("keyShift").value = 0;
+  updateKeyDisplay();
+  renderLibrary();
+}
+
+// ============================================
+// EXPORTAR/IMPORTAR
+// ============================================
+function exportJSON() {
+  var name = document.getElementById("songName").value || "musica";
+  
+  var data = {
+    name: name,
+    date: new Date().toISOString(),
+    sections: {
+      intro: document.getElementById("intro").value,
+      verse: document.getElementById("verse").value,
+      prechorus: document.getElementById("prechorus").value,
+      chorus: document.getElementById("chorus").value,
+      bridge: document.getElementById("bridge").value,
+      ending: document.getElementById("ending").value
+    },
+    shift: currentShift
+  };
+  
+  downloadFile(JSON.stringify(data, null, 2), name.replace(/\\s+/g, "_") + ".json", "application/json");
+  showNotification("JSON exportado!");
+}
+
+function exportTXT() {
+  var name = document.getElementById("songName").value || "musica";
+  var sections = {
+    "INTRODUÇÃO": document.getElementById("intro").value,
+    "VERSO": document.getElementById("verse").value,
+    "PRÉ-REFRÃO": document.getElementById("prechorus").value,
+    "REFRÃO": document.getElementById("chorus").value,
+    "PONTE": document.getElementById("bridge").value,
+    "FINAL": document.getElementById("ending").value
+  };
+  
+  var txt = name + "\\n";
+  txt += "=".repeat(name.length) + "\\n\\n";
+  txt += "Tom: " + (currentShift === 0 ? "Original" : (currentShift > 0 ? "+" : "") + currentShift) + "\\n\\n";
+  
+  for(var title in sections) {
+    if(sections[title].trim()) {
+      txt += "[" + title + "]\\n" + sections[title] + "\\n\\n";
+    }
+  }
+  
+  downloadFile(txt, name.replace(/\\s+/g, "_") + ".txt", "text/plain");
+  showNotification("TXT exportado!");
+}
+
+function downloadFile(content, filename, type) {
+  var blob = new Blob([content], {type: type});
+  var url = URL.createObjectURL(blob);
+  var a = document.createElement("a");
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+
+function shareURL() {
+  var data = {
+    n: document.getElementById("songName").value || "musica",
+    i: document.getElementById("intro").value,
+    v: document.getElementById("verse").value,
+    p: document.getElementById("prechorus").value,
+    c: document.getElementById("chorus").value,
+    b: document.getElementById("bridge").value,
+    e: document.getElementById("ending").value,
+    s: currentShift
+  };
+  
+  try {
+    var json = JSON.stringify(data);
+    var compressed = btoa(unescape(encodeURIComponent(json)));
+    var url = window.location.origin + window.location.pathname + "?data=" + compressed;
+    
+    navigator.clipboard.writeText(url).then(function() {
+      showNotification("Link copiado!");
+    }).catch(function() {
+      prompt("Copie este link:", url);
+    });
+  } catch(e) {
+    showNotification("Erro ao gerar link");
+  }
+}
+
+function showImportModal() {
+  document.getElementById("importModal").style.display = "flex";
+  document.getElementById("importArea").value = "";
+  document.getElementById("importArea").focus();
+}
+
+function closeImportModal() {
+  document.getElementById("importModal").style.display = "none";
+}
+
+function importData() {
+  var text = document.getElementById("importArea").value.trim();
+  if(!text) {
+    showNotification("Cole algum conteúdo!");
+    return;
+  }
+  
+  saveState();
+  
+  try {
+    var data = JSON.parse(text);
+    if(data.sections) {
+      document.getElementById("songName").value = data.name || "importada";
+      for(var section in data.sections) {
+        var el = document.getElementById(section);
+        if(el) el.value = data.sections[section] || "";
+      }
+      currentShift = data.shift || 0;
+      document.getElementById("keyShift").value = currentShift;
+      updateKeyDisplay();
+      closeImportModal();
+      showNotification("JSON importado!");
+      return;
+    }
+  } catch(e) {
+    // Não é JSON
+  }
+  
+  importTXT(text);
+}
+
+function importTXT(text) {
+  var lines = text.split("\\n");
+  var currentSection = "";
+  var name = "";
+  
+  var areas = ["intro", "verse", "prechorus", "chorus", "bridge", "ending"];
+  for(var i = 0; i < areas.length; i++) {
+    document.getElementById(areas[i]).value = "";
+  }
+  
+  var map = {
+    "INTRODUÇÃO": "intro", "INTRO": "intro",
+    "VERSO": "verse", "VERSES": "verse",
+    "PRÉ-REFRÃO": "prechorus", "PRE-CHORUS": "prechorus", "PRECHORUS": "prechorus",
+    "REFRÃO": "chorus", "CHORUS": "chorus",
+    "PONTE": "bridge", "BRIDGE": "bridge",
+    "FINAL": "ending", "ENDING": "ending", "OUTRO": "ending"
+  };
+  
+  for(var i = 0; i < lines.length; i++) {
+    var trimmed = lines[i].trim();
+    
+    if(!name && trimmed && !trimmed.startsWith("[") && !trimmed.startsWith("=")) {
+      name = trimmed;
+      document.getElementById("songName").value = name;
+      continue;
+    }
+    
+    var sectionMatch = trimmed.match(/^\\[(.+?)\\]$/);
+    if(sectionMatch) {
+      currentSection = map[sectionMatch[1].toUpperCase()] || "";
+      continue;
+    }
+    
+    if(currentSection && trimmed) {
+      var el = document.getElementById(currentSection);
+      if(el) {
+        el.value += (el.value ? "\\n" : "") + trimmed;
+      }
+    }
+  }
+  
+  closeImportModal();
+  showNotification("TXT importado!");
+}
+
+function loadFromURL() {
+  var params = new URLSearchParams(window.location.search);
+  var data = params.get("data");
+  if(!data) return;
+  
+  try {
+    var json = decodeURIComponent(escape(atob(data)));
+    var song = JSON.parse(json);
+    
+    document.getElementById("songName").value = song.n || "";
+    document.getElementById("intro").value = song.i || "";
+    document.getElementById("verse").value = song.v || "";
+    document.getElementById("prechorus").value = song.p || "";
+    document.getElementById("chorus").value = song.c || "";
+    document.getElementById("bridge").value = song.b || "";
+    document.getElementById("ending").value = song.e || "";
+    
+    currentShift = song.s || 0;
+    document.getElementById("keyShift").value = currentShift;
+    updateKeyDisplay();
+    
+    showNotification("Carregado do link!");
+  } catch(e) {
+    console.error("Erro URL:", e);
+  }
+}
+
+// ============================================
+// UNDO/REDO
+// ============================================
+function saveState() {
+  var state = {
+    name: document.getElementById("songName").value,
+    sections: {
+      intro: document.getElementById("intro").value,
+      verse: document.getElementById("verse").value,
+      prechorus: document.getElementById("prechorus").value,
+      chorus: document.getElementById("chorus").value,
+      bridge: document.getElementById("bridge").value,
+      ending: document.getElementById("ending").value
+    },
+    shift: currentShift
+  };
+  
+  undoStack.push(state);
+  if(undoStack.length > 20) undoStack.shift();
+  redoStack = [];
+}
+
+function undo() {
+  if(undoStack.length === 0) {
+    showNotification("Nada para desfazer");
+    return;
+  }
+  
+  redoStack.push(getCurrentState());
+  var state = undoStack.pop();
+  restoreState(state);
+  showNotification("Desfeito");
+}
+
+function redo() {
+  if(redoStack.length === 0) {
+    showNotification("Nada para refazer");
+    return;
+  }
+  
+  undoStack.push(getCurrentState());
+  var state = redoStack.pop();
+  restoreState(state);
+  showNotification("Refeito");
+}
+
+function getCurrentState() {
+  return {
+    name: document.getElementById("songName").value,
+    sections: {
+      intro: document.getElementById("intro").value,
+      verse: document.getElementById("verse").value,
+      prechorus: document.getElementById("prechorus").value,
+      chorus: document.getElementById("chorus").value,
+      bridge: document.getElementById("bridge").value,
+      ending: document.getElementById("ending").value
+    },
+    shift: currentShift
+  };
+}
+
+function restoreState(state) {
+  document.getElementById("songName").value = state.name;
+  for(var section in state.sections) {
+    var el = document.getElementById(section);
+    if(el) el.value = state.sections[section];
+  }
+  currentShift = state.shift;
+  document.getElementById("keyShift").value = currentShift;
+  updateKeyDisplay();
+}
+
+// ============================================
+// MODO PALCO
+// ============================================
+function openStageMode() {
+  var fields = {
+    "Introdução": "intro",
+    "Verso": "verse",
+    "Pré-Refrão": "prechorus",
+    "Refrão": "chorus",
+    "Ponte": "bridge",
+    "Final": "ending"
+  };
+  
+  var content = "";
+  var hasContent = false;
+  
+  for(var label in fields) {
+    var id = fields[label];
+    var textarea = document.getElementById(id);
+    var value = textarea.value.trim();
+    if(value) {
+      hasContent = true;
+      var escaped = escapeHtml(value);
+      var formatted = escaped.replace(/\\n/g, "<br>");
+      content += "<h2>" + label + "</h2><p>" + formatted + "</p>";
+    }
+  }
+  
+  if(!hasContent) {
+    content = "<h2>⚠️ Nenhum conteúdo</h2><p>Adicione acordes primeiro.</p>";
+  }
+  
+  document.getElementById("stageContent").innerHTML = content;
+  document.getElementById("stageMode").style.display = "block";
+  document.body.style.overflow = "hidden";
+  document.getElementById("stageMode").scrollTop = 0;
+  updateScrollIndicator();
+}
+
+function closeStageMode() {
+  stopScroll();
+  document.getElementById("stageMode").style.display = "none";
+  document.body.style.overflow = "auto";
+}
+
+function startScroll() {
+  stopScroll();
+  
+  var stage = document.getElementById("stageMode");
+  var speed = parseInt(document.getElementById("speedControl").value);
+  var pixelsPerFrame = 0.5 + (speed * 0.3);
+  
+  function scroll() {
+    if(stage.scrollTop + stage.clientHeight >= stage.scrollHeight - 10) {
+      stopScroll();
+      return;
+    }
+    
+    stage.scrollTop += pixelsPerFrame;
+    updateScrollIndicator();
+    scrollAnimation = requestAnimationFrame(scroll);
+  }
+  
+  scrollAnimation = requestAnimationFrame(scroll);
+}
+
+function stopScroll() {
+  if(scrollAnimation) {
+    cancelAnimationFrame(scrollAnimation);
+    scrollAnimation = null;
+  }
+}
+
+function updateScrollIndicator() {
+  var stage = document.getElementById("stageMode");
+  var indicator = document.getElementById("scrollIndicator");
+  var maxScroll = stage.scrollHeight - stage.clientHeight;
+  if(maxScroll <= 0) {
+    indicator.style.width = "0%";
+    return;
+  }
+  var scrollPercent = (stage.scrollTop / maxScroll) * 100;
+  indicator.style.width = Math.min(100, Math.max(0, scrollPercent)) + "%";
+}
+
+function updateSpeedDisplay() {
+  document.getElementById("speedValue").textContent = 
+    document.getElementById("speedControl").value;
+}
+
+function resetAll() {
+  if(!confirm("Limpar todas as seções?")) return;
+  
+  saveState();
+  var areas = ["intro", "verse", "prechorus", "chorus", "bridge", "ending"];
+  for(var i = 0; i < areas.length; i++) {
+    document.getElementById(areas[i]).value = "";
+  }
+  document.getElementById("keyShift").value = "0";
+  currentShift = 0;
+  updateKeyDisplay();
+  showNotification("Limpo");
+}
+
+// ============================================
+// UTILITÁRIOS
+// ============================================
+function escapeHtml(text) {
+  if(!text) return "";
+  var div = document.createElement("div");
+  div.textContent = text;
+  return div.innerHTML;
+}
+
+function showNotification(message) {
+  var existing = document.querySelector(".notification");
+  if(existing) existing.remove();
+  
+  var notif = document.createElement("div");
+  notif.className = "notification";
+  notif.textContent = message;
+  document.body.appendChild(notif);
+  
+  setTimeout(function() {
+    notif.remove();
+  }, 2500);
+}
+</script>
+
 </body>
 </html>
