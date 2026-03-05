@@ -85,7 +85,7 @@ body { font-family: 'Inter', sans-serif; background: var(--bg-primary); color: v
 .toolbar-central { display: flex; align-items: center; gap: 15px; margin-bottom: 20px; flex-wrap: wrap; }
 .tool-group { display: flex; align-items: center; gap: 15px; background: var(--bg-secondary); padding: 8px 20px; border-radius: 50px; border: 1px solid var(--border-color); }
 .section-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 15px; }
-.song-part { background: var(--bg-secondary); border-radius: var(--radius-lg); padding: 15px; border-left: 5px solid var(--accent-primary); position: relative; }
+.song-part { background: var(--bg-secondary); border-radius: var(--radius-lg); padding: 15px; border-left: 5px solid var(--accent-primary); position: relative; margin-bottom: 15px; }
 .chord-area { font-family: 'Monaco', monospace; font-size: 19px; font-weight: 700; color: var(--note-color); background: none; border: none; width: 100%; resize: none; outline: none; margin-top: 10px; line-height: 1.4; }
 
 /* METRONOMO */
@@ -110,8 +110,6 @@ body.performance-mode .scroll-controls { display: flex; }
     <div class="menu-container">
         <button onclick="toggleMenu(event)" class="menu-btn"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="1"/><circle cx="12" cy="5" r="1"/><circle cx="12" cy="19" r="1"/></svg></button>
         <div id="m-drop" class="dropdown-menu">
-            <div class="menu-item" onclick="exportData()">Exportar Backup</div>
-            <div class="menu-item" onclick="importData()">Importar Backup</div>
             <div class="menu-item danger" onclick="resetSection()">Limpar Secao</div>
         </div>
     </div>
@@ -132,202 +130,42 @@ body.performance-mode .scroll-controls { display: flex; }
             <span id="trans-val" style="font-weight: 800; min-width: 20px; text-align: center;">0</span>
             <button onclick="transposeAll(1)" style="background:none; border:none; color:#fff; cursor:pointer; font-size:18px;">+</button>
         </div>
-        <button onclick="addPart()" style="background:var(--bg-tertiary); border:1px solid var(--border-color); color:#fff; padding: 10px 20px; border-radius: 50px; cursor:pointer; font-size:11px; font-weight:800;">+ PARTE</button>
+        <button onclick="addPart()" style="background:var(--accent-primary); border:none; color:#000; padding:10px 20px; border-radius:50px; font-weight:800; cursor:pointer;">+ ADICIONAR PARTE</button>
     </div>
-    <div class="section-grid" id="notes-grid"></div>
+
+    <div id="sections-container" class="section-grid">
+      <div class="song-part">
+        <input type="text" placeholder="Parte" style="background:none; border:none; color:var(--accent-primary); font-weight:bold; outline:none; width:100%;">
+        <textarea class="chord-area" placeholder="Acordes..."></textarea>
+      </div>
+    </div>
   </main>
 
-  <aside>
-    <div class="metronome-card">
-      <div class="bpm-val" id="bpm-display">120</div>
-      <div style="font-size: 10px; font-weight: 900; opacity: 0.5;">BPM</div>
-      <button id="tap-btn" style="border: 2px solid var(--accent-primary); background: none; color: var(--accent-primary); width: 70px; height: 70px; border-radius: 50%; font-weight: 900; margin: 15px 0; cursor: pointer;">TAP</button>
-      <div style="display: flex; gap: 15px; justify-content: center; margin-bottom: 20px;">
-        <button onclick="adj(-1)" style="width:35px; height:35px; border-radius:50%; border:1px solid var(--border-color); background:none; color:#fff; cursor:pointer;">-</button>
-        <button onclick="adj(1)" style="width:35px; height:35px; border-radius:50%; border:1px solid var(--border-color); background:none; color:#fff; cursor:pointer;">+</button>
-      </div>
-      <button onclick="togglePlay()" id="play-btn" style="background:var(--accent-primary); color:#000; border:none; padding: 14px; border-radius: 30px; font-weight: 800; width: 100%; cursor: pointer;">INICIAR</button>
-    </div>
-  </aside>
+  <div class="metronome-card">
+    <div style="font-size: 10px; font-weight: 900; opacity: 0.5; letter-spacing: 2px;">BPM</div>
+    <div class="bpm-val" id="bpm-display">120</div>
+    <input type="range" min="40" max="250" value="120" style="width:100%; accent-color:var(--accent-primary);" oninput="document.getElementById('bpm-display').innerText = this.value">
+  </div>
 </div>
 
-<button class="btn-save-vitro" onclick="saveSong()">Salvar Musica</button>
-
-<div class="scroll-controls">
-    <span>Teleprompter</span>
-    <input type="range" id="scroll-speed" min="0" max="100" value="0">
-    <button onclick="stopScroll()" style="background:none; border:none; color:#ff3e3e; font-weight:900; cursor:pointer; font-size: 11px;">STOP</button>
-</div>
-
-<div class="mode-show-container" onclick="togglePerf()">
-  <span id="mode-text">MODO SHOW</span>
-</div>
+<button class="btn-save-vitro" onclick="saveData()">Salvar Alterações</button>
 
 <script>
-let bpm = 120;
-let isPlaying = false;
-let nextNoteTime = 0.0;
-let timerID = null;
-let scrollInterval = null;
-let tapTimes = [];
+function toggleMenu(event) {
+    event.stopPropagation();
+    document.getElementById('m-drop').classList.toggle('show');
+}
 
-const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-const notesArr = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"];
-let songs = JSON.parse(localStorage.getItem('map_pro_elite_v1')) || [];
-
-function toggleMenu(e) { e.stopPropagation(); document.getElementById('m-drop').classList.toggle('show'); }
-window.onclick = () => document.getElementById('m-drop').classList.remove('show');
+window.onclick = function() {
+    document.getElementById('m-drop').classList.remove('show');
+}
 
 function resetSection() {
-    if(confirm("Limpar a secao atual?")) {
-        document.getElementById('notes-grid').innerHTML = "";
-        ["INTRO", "VERSO", "REFRÃO"].forEach(p => addPart(p));
+    if(confirm("Limpar todas as seções?")) {
+        document.getElementById('sections-container').innerHTML = '';
     }
 }
-
-document.getElementById('tap-btn').addEventListener('click', () => {
-    const now = performance.now();
-    tapTimes.push(now);
-    if (tapTimes.length > 4) tapTimes.shift();
-    if (tapTimes.length > 1) {
-        let sum = 0;
-        for (let i = 1; i < tapTimes.length; i++) sum += (tapTimes[i] - tapTimes[i-1]);
-        bpm = Math.min(Math.max(Math.round(60000 / (sum / (tapTimes.length - 1))), 40), 240);
-        document.getElementById('bpm-display').innerText = bpm;
-    }
-});
-
-function playClick() {
-    const osc = audioCtx.createOscillator();
-    const env = audioCtx.createGain();
-    osc.frequency.value = 1000;
-    env.gain.value = 0.8;
-    env.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.08);
-    osc.connect(env); env.connect(audioCtx.destination);
-    osc.start(); osc.stop(audioCtx.currentTime + 0.08);
-}
-
-function scheduler() {
-    while (nextNoteTime < audioCtx.currentTime + 0.1) { playClick(); nextNoteTime += 60.0 / bpm; }
-    timerID = setTimeout(scheduler, 25);
-}
-
-function togglePlay() {
-    if (audioCtx.state === 'suspended') audioCtx.resume();
-    isPlaying = !isPlaying;
-    const btn = document.getElementById('play-btn');
-    if (isPlaying) { nextNoteTime = audioCtx.currentTime; scheduler(); btn.innerText = "PARAR"; btn.style.background = "#ff3e3e"; }
-    else { clearTimeout(timerID); btn.innerText = "INICIAR"; btn.style.background = "var(--accent-primary)"; }
-}
-
-function adj(v) { bpm = Math.min(Math.max(bpm + v, 40), 240); document.getElementById('bpm-display').innerText = bpm; }
-
-function addPart(title = "PARTE", content = "") {
-  const div = document.createElement('div');
-  div.className = 'song-part';
-  div.innerHTML = `<input type="text" value="${title}" style="background:none; border:none; color:var(--accent-primary); font-weight:900; font-size:11px; width:100%; outline:none; text-transform:uppercase;"><textarea class="chord-area" oninput="this.style.height='';this.style.height=this.scrollHeight+'px'" placeholder="C G Am F">${content}</textarea><button onclick="this.parentElement.remove()" style="position:absolute; top:12px; right:12px; background:none; border:none; color:#ff4d4d; cursor:pointer;">✕</button>`;
-  document.getElementById('notes-grid').appendChild(div);
-  const ta = div.querySelector('textarea'); ta.style.height = ta.scrollHeight + 'px';
-}
-
-function transposeAll(dir) {
-  document.getElementById('trans-val').innerText = parseInt(document.getElementById('trans-val').innerText) + dir;
-  document.querySelectorAll('.chord-area').forEach(area => {
-    area.value = area.value.replace(/[A-G][#b]?/g, m => {
-      let i = notesArr.indexOf(m.replace('Db','C#').replace('Eb','D#').replace('Gb','F#').replace('Ab','G#').replace('Bb','A#'));
-      return i === -1 ? m : notesArr[(i + dir + 12) % 12];
-    });
-  });
-}
-
-function saveSong() {
-  const name = prompt("Nome da musica:");
-  if (!name) return;
-  const parts = Array.from(document.querySelectorAll('.song-part')).map(p => ({ title: p.querySelector('input').value, content: p.querySelector('textarea').value }));
-  songs.push({ name, bpm, parts, id: Date.now(), favorite: false });
-  updateStorage();
-}
-
-function toggleFavorite(id, e) {
-    e.stopPropagation();
-    const song = songs.find(s => s.id === id);
-    song.favorite = !song.favorite;
-    updateStorage();
-}
-
-function updateStorage() {
-    // Ordena: Favoritos primeiro
-    songs.sort((a, b) => (b.favorite === a.favorite) ? 0 : b.favorite ? 1 : -1);
-    localStorage.setItem('map_pro_elite_v1', JSON.stringify(songs));
-    renderSetlist();
-}
-
-function renderSetlist() {
-  const list = document.getElementById('song-list');
-  document.getElementById('song-count').innerText = songs.length;
-  list.innerHTML = songs.map(s => `
-    <div class="song-item ${s.favorite ? 'fav' : ''}" onclick="loadSong(${s.id})">
-      <div style="color:#fff; font-weight:700;">${s.name} <br><span style="font-size:10px; color:var(--accent-primary);">${s.bpm} BPM</span></div>
-      <div style="display:flex; align-items:center;">
-          <span class="fav-star ${s.favorite ? 'active' : ''}" onclick="toggleFavorite(${s.id}, event)">★</span>
-          <button onclick="deleteSong(${s.id}, event)" style="background:none; border:none; color:red; cursor:pointer; margin-left:5px;">✕</button>
-      </div>
-    </div>
-  `).join('');
-}
-
-function loadSong(id) {
-  const s = songs.find(x => x.id === id);
-  bpm = s.bpm; document.getElementById('bpm-display').innerText = bpm;
-  document.getElementById('notes-grid').innerHTML = "";
-  s.parts.forEach(p => addPart(p.title, p.content));
-}
-
-function deleteSong(id, e) {
-  e.stopPropagation();
-  if(confirm("Excluir?")) {
-    songs = songs.filter(s => s.id !== id);
-    updateStorage();
-  }
-}
-
-function togglePerf() {
-    const isPerf = document.getElementById('app-body').classList.toggle('performance-mode');
-    document.getElementById('mode-text').innerText = isPerf ? "SAIR DO SHOW" : "MODO SHOW";
-    if (!isPerf) { stopScroll(); window.scrollTo(0,0); }
-}
-
-const scrollSlider = document.getElementById('scroll-speed');
-scrollSlider.oninput = () => {
-    clearInterval(scrollInterval);
-    if (scrollSlider.value > 0) scrollInterval = setInterval(() => window.scrollBy(0, 1), 175 - scrollSlider.value);
-};
-function stopScroll() { clearInterval(scrollInterval); scrollSlider.value = 0; }
-
-function exportData() {
-    const blob = new Blob([JSON.stringify(songs)], {type: "application/json"});
-    const link = document.createElement("a");
-    link.href = URL.createObjectURL(blob);
-    link.download = `backup_map.json`;
-    link.click();
-}
-
-function importData() {
-    const input = document.createElement('input');
-    input.type = 'file';
-    input.onchange = e => {
-        const reader = new FileReader();
-        reader.readAsText(e.target.files[0]);
-        reader.onload = re => {
-            songs = JSON.parse(re.target.result);
-            updateStorage();
-        }
-    }
-    input.click();
-}
-
-renderSetlist();
-["INTRO", "VERSO", "REFRÃO"].forEach(p => addPart(p));
 </script>
+
 </body>
 </html>
