@@ -28,7 +28,6 @@ body.performance-mode {
   --accent-glow: rgba(255, 62, 62, 0.4);
   --note-color: #ffee00;
   background: var(--bg-primary);
-  overflow-y: overlay; /* Permite rolagem suave */
 }
 
 * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
@@ -47,7 +46,7 @@ body { font-family: 'Inter', sans-serif; background: var(--bg-primary); color: v
 .notes-section { display: flex; flex-direction: column; gap: 15px; }
 .section-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 15px; }
 
-.song-part { background: var(--bg-secondary); border-radius: var(--radius-lg); padding: 15px; border-left: 4px solid var(--accent-primary); position: relative; cursor: grab; }
+.song-part { background: var(--bg-secondary); border-radius: var(--radius-lg); padding: 15px; border-left: 4px solid var(--accent-primary); position: relative; }
 .chord-area { font-family: 'Monaco', monospace; font-size: 20px; font-weight: 700; color: var(--note-color); background: none; border: none; width: 100%; resize: none; outline: none; margin-top: 10px; line-height: 1.4; transition: all 0.3s; }
 
 .metronome-card { background: var(--bg-secondary); border-radius: var(--radius-xl); border: 1px solid var(--border-color); padding: 20px; text-align: center; position: sticky; top: 100px; }
@@ -57,27 +56,27 @@ body { font-family: 'Inter', sans-serif; background: var(--bg-primary); color: v
 
 /* MODO SHOW AJUSTES */
 body.performance-mode .app-header, body.performance-mode .side-panel, body.performance-mode .metronome-card, body.performance-mode .btn-del { display: none !important; }
-body.performance-mode .main-layout { grid-template-columns: 1fr; padding: 60px 10%; }
+body.performance-mode .main-layout { grid-template-columns: 1fr; padding: 100px 10% 150px; }
 body.performance-mode .chord-area { font-size: 48px; pointer-events: none; height: auto !important; }
 body.performance-mode .song-part { border-left-width: 15px; margin-bottom: 50px; background: transparent; }
 
-/* CONTROLE DE ROLAGEM (SÓ NO MODO SHOW) */
+/* CONTROLE DE ROLAGEM NO TOPO */
 .scroll-controls {
-    position: fixed; bottom: 25px; left: 25px; z-index: 1001;
+    position: fixed; top: 25px; right: 25px; z-index: 1001;
     display: none; align-items: center; gap: 15px;
-    background: rgba(255, 62, 62, 0.15); border: 1px solid #ff3e3e;
-    padding: 10px 20px; border-radius: var(--radius-full); backdrop-filter: blur(10px);
+    background: rgba(0, 0, 0, 0.8); border: 1px solid #ff3e3e;
+    padding: 8px 18px; border-radius: var(--radius-full); backdrop-filter: blur(10px);
 }
 body.performance-mode .scroll-controls { display: flex; }
 
-.scroll-controls input { cursor: pointer; accent-color: #ff3e3e; }
-.scroll-controls span { font-size: 10px; font-weight: 900; color: #ff3e3e; text-transform: uppercase; }
+.scroll-controls input { cursor: pointer; accent-color: #ff3e3e; width: 120px; }
+.scroll-controls span { font-size: 10px; font-weight: 900; color: #ff3e3e; text-transform: uppercase; letter-spacing: 1px; }
 
 .mode-show-container {
     position: fixed; bottom: 25px; right: 25px; z-index: 1000;
     display: flex; align-items: center; gap: 12px;
     background: var(--accent-primary); color: #000;
-    padding: 10px 25px; border-radius: var(--radius-full);
+    padding: 12px 25px; border-radius: var(--radius-full);
     cursor: pointer; font-weight: 900; font-size: 14px;
     box-shadow: 0 10px 30px var(--accent-glow);
 }
@@ -101,8 +100,8 @@ body.performance-mode .scroll-controls { display: flex; }
     <div class="song-list" id="song-list"></div>
   </aside>
 
-  <main class="notes-section" id="scroll-target">
-    <div style="display: flex; align-items: center; gap: 15px; background: var(--bg-secondary); padding: 10px 25px; border-radius: 50px; border: 1px solid var(--border-color); width: fit-content;">
+  <main class="notes-section">
+    <div id="edit-controls" style="display: flex; align-items: center; gap: 15px; background: var(--bg-secondary); padding: 10px 25px; border-radius: 50px; border: 1px solid var(--border-color); width: fit-content;">
         <span style="font-size: 10px; font-weight: 900; color: var(--accent-primary);">TRANSPOSE</span>
         <button onclick="transposeAll(-1)" style="background:none; border:none; color:#fff; cursor:pointer; font-weight:800;">-</button>
         <span id="trans-val" style="font-weight: 800; min-width: 25px; text-align: center;">0</span>
@@ -125,13 +124,14 @@ body.performance-mode .scroll-controls { display: flex; }
   </aside>
 </div>
 
-<!-- CONTROLE DE ROLAGEM -->
+<!-- CONTROLE DE ROLAGEM NO TOPO DIREITO -->
 <div class="scroll-controls">
-    <span>Velocidade Rolagem</span>
+    <span>Teleprompter</span>
     <input type="range" id="scroll-speed" min="0" max="100" value="0">
-    <button onclick="stopScroll()" style="background:none; border:none; color:#ff3e3e; font-weight:900; cursor:pointer;">STOP</button>
+    <button onclick="stopScroll()" style="background:none; border:none; color:#ff3e3e; font-weight:900; cursor:pointer; font-size: 11px;">PARAR</button>
 </div>
 
+<!-- BOTÃO MODO SHOW NO CANTO INFERIOR ISOLADO -->
 <div class="mode-show-container" onclick="togglePerf()">
   <span id="mode-text">MODO SHOW</span>
 </div>
@@ -148,14 +148,12 @@ const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
 const notesArr = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"];
 let songs = JSON.parse(localStorage.getItem('map_pro_setlist_v3')) || [];
 
-// --- AUTO SCROLL LOGIC ---
 const scrollSlider = document.getElementById('scroll-speed');
 
 scrollSlider.addEventListener('input', () => {
     clearInterval(scrollInterval);
     const speed = parseInt(scrollSlider.value);
     if (speed > 0) {
-        // Inverte a velocidade: quanto maior o valor, menor o intervalo (mais rápido)
         const ms = 150 - speed; 
         scrollInterval = setInterval(() => {
             window.scrollBy(0, 1);
@@ -168,7 +166,6 @@ function stopScroll() {
     scrollSlider.value = 0;
 }
 
-// TAP TEMPO
 document.getElementById('tap-btn').addEventListener('click', () => {
     const now = performance.now();
     tapTimes.push(now);
@@ -180,7 +177,6 @@ document.getElementById('tap-btn').addEventListener('click', () => {
     }
 });
 
-// METRONOME
 function playClick() {
     const osc = audioCtx.createOscillator();
     const env = audioCtx.createGain();
@@ -272,7 +268,7 @@ function deleteSong(id, e) {
 function togglePerf() {
     const isPerf = document.getElementById('app-body').classList.toggle('performance-mode');
     document.getElementById('mode-text').innerText = isPerf ? "SAIR DO SHOW" : "MODO SHOW";
-    if (!isPerf) stopScroll();
+    if (!isPerf) { stopScroll(); window.scrollTo(0,0); }
 }
 
 renderSetlist();
