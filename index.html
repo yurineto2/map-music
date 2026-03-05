@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>Map Music Pro - Performance Edition</title>
+<title>Map Music Pro - Full Studio Edition</title>
 <link href="https://fonts.googleapis.com" rel="stylesheet">
 
 <style>
@@ -20,151 +20,168 @@
 }
 
 * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
-body { font-family: 'Inter', sans-serif; background: var(--bg-primary); color: var(--text-primary); min-height: 100vh; transition: background 0.3s; }
+body { font-family: 'Inter', sans-serif; background: var(--bg-primary); color: var(--text-primary); min-height: 100vh; display: flex; flex-direction: column; transition: 0.3s; }
 
 /* HEADER */
-.app-header { background: rgba(18,18,26,0.95); backdrop-filter: blur(20px); border-bottom: 1px solid var(--border-color); padding: 15px 30px; position: sticky; top: 0; z-index: 100; }
-.header-content { max-width: 1200px; margin: 0 auto; display: flex; justify-content: space-between; align-items: center; }
+.app-header { background: rgba(18,18,26,0.95); backdrop-filter: blur(20px); border-bottom: 1px solid var(--border-color); padding: 15px 20px; position: sticky; top: 0; z-index: 100; }
+.header-content { max-width: 1400px; margin: 0 auto; display: flex; justify-content: space-between; align-items: center; }
 
-/* MODO FULLSCREEN ESTILIZAÇÃO */
-body.performance-mode { background: #000; }
-body.performance-mode .app-header, 
-body.performance-mode aside, 
-body.performance-mode .btn-delete,
-body.performance-mode .btn-add-part { display: none !important; }
-body.performance-mode .container { grid-template-columns: 1fr; max-width: 100vw; padding: 40px; }
-body.performance-mode .song-part { border-width: 8px; padding: 30px; }
-body.performance-mode .chord-area { font-size: 32px; color: var(--accent-primary); pointer-events: none; }
-body.performance-mode .part-title { font-size: 18px; }
+/* LAYOUT PRINCIPAL */
+.main-layout { display: grid; grid-template-columns: 280px 1fr 300px; gap: 20px; max-width: 1400px; margin: 0 auto; width: 100%; padding: 20px; flex-grow: 1; }
 
-/* LAYOUT */
-.container { max-width: 1200px; margin: 0 auto; padding: 20px; display: grid; grid-template-columns: 1fr 300px; gap: 20px; }
-.card { background: var(--bg-secondary); border-radius: var(--radius-xl); border: 1px solid var(--border-color); padding: 20px; margin-bottom: 20px; }
+/* COLUNA: SETLIST */
+.side-panel { background: var(--bg-secondary); border-radius: var(--radius-xl); border: 1px solid var(--border-color); display: flex; flex-direction: column; max-height: 85vh; }
+.panel-header { padding: 15px; border-bottom: 1px solid var(--border-color); font-weight: 800; font-size: 14px; display: flex; justify-content: space-between; }
+.song-list { overflow-y: auto; padding: 10px; flex-grow: 1; }
+.song-item { background: var(--bg-tertiary); padding: 12px; border-radius: 8px; margin-bottom: 8px; cursor: pointer; border: 1px solid transparent; display: flex; justify-content: space-between; align-items: center; }
+.song-item:hover { border-color: var(--accent-primary); }
+.song-item h4 { font-size: 13px; }
+.song-item span { font-size: 11px; color: var(--accent-primary); }
 
-/* METRONOMO */
-.bpm-display { text-align: center; margin-bottom: 15px; }
+/* COLUNA: CENTRO (NOTAS) */
+.notes-section { display: flex; flex-direction: column; gap: 15px; }
+.section-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 15px; }
+.song-part { background: var(--bg-secondary); border-radius: var(--radius-lg); padding: 15px; border-left: 4px solid var(--accent-primary); position: relative; }
+.chord-area { font-family: 'Monaco', monospace; font-size: 18px; font-weight: 700; color: #fff; background: none; border: none; width: 100%; resize: none; outline: none; margin-top: 10px; }
+
+/* COLUNA: DIREITA (METRONOMO) */
+.metronome-card { background: var(--bg-secondary); border-radius: var(--radius-xl); border: 1px solid var(--border-color); padding: 20px; text-align: center; position: sticky; top: 100px; }
 .bpm-val { font-size: 52px; font-weight: 800; color: var(--accent-primary); }
 
-/* GRADE DE NOTAS */
-.section-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 20px; }
-.song-part { background: var(--bg-tertiary); border-radius: var(--radius-lg); padding: 15px; border-left: 4px solid var(--accent-primary); position: relative; transition: 0.3s; }
-.part-title { background:none; border:none; color:var(--accent-primary); font-weight:800; font-size:12px; margin-bottom:10px; width:100%; outline:none; text-transform: uppercase; }
-.chord-area { font-family: 'Monospace', monospace; font-size: 20px; font-weight: 700; color: #fff; background: none; border: none; width: 100%; resize: none; outline: none; overflow: hidden; }
+/* MODO PERFORMANCE */
+body.performance-mode { background: #000; }
+body.performance-mode .app-header, body.performance-mode .side-panel, body.performance-mode .metronome-card, body.performance-mode .btn-del { display: none !important; }
+body.performance-mode .main-layout { grid-template-columns: 1fr; padding: 40px; }
+body.performance-mode .chord-area { font-size: 32px; color: var(--accent-primary); pointer-events: none; }
 
 /* BOTOES */
-.btn-action { padding: 10px 20px; border-radius: 50px; border: none; font-weight: 700; cursor: pointer; transition: 0.2s; }
-.btn-primary { background: var(--accent-primary); color: #000; }
-.btn-outline { background: none; border: 1px solid var(--accent-primary); color: var(--accent-primary); }
-.btn-floating { position: fixed; bottom: 30px; right: 30px; z-index: 1000; box-shadow: 0 10px 30px rgba(0,0,0,0.5); width: 60px; height: 60px; border-radius: 50%; font-size: 24px; display: flex; align-items: center; justify-content: center; }
+.btn-main { background: var(--accent-primary); color: #000; border: none; padding: 12px; border-radius: 30px; font-weight: 800; cursor: pointer; width: 100%; margin-top: 15px; }
+.btn-float { position: fixed; bottom: 20px; right: 20px; width: 50px; height: 50px; border-radius: 50%; background: var(--accent-primary); border: none; font-size: 20px; cursor: pointer; z-index: 1000; }
 
-.transpose-bar { display: flex; align-items: center; gap: 15px; margin: 20px 0; background: var(--bg-elevated); padding: 12px 25px; border-radius: 50px; width: fit-content; }
-.btn-circle { width: 30px; height: 30px; border-radius: 50%; border: 1px solid var(--border-color); background: none; color: #fff; cursor: pointer; }
-
-@media (max-width: 900px) { .container { grid-template-columns: 1fr; } }
+@media (max-width: 1024px) { .main-layout { grid-template-columns: 1fr; } .side-panel { order: 3; } }
 </style>
 </head>
-<body id="body">
+<body id="app-body">
 
 <header class="app-header">
   <div class="header-content">
-    <h1 style="font-size: 20px;">Map Music <span style="color:var(--accent-primary)">Pro</span></h1>
-    <button onclick="addPart()" class="btn-action btn-outline btn-add-part">+ PARTE</button>
+    <h1>Map Music <span style="color:var(--accent-primary)">Pro</span></h1>
+    <div style="display: flex; gap: 10px;">
+        <button onclick="addPart()" style="background:none; border:1px solid #fff; color:#fff; padding: 5px 15px; border-radius: 20px; cursor:pointer; font-size:12px;">+ PARTE</button>
+        <button onclick="saveSong()" style="background:var(--accent-primary); border:none; padding: 5px 15px; border-radius: 20px; font-weight:700; cursor:pointer; font-size:12px;">SALVAR MÚSICA</button>
+    </div>
   </div>
 </header>
 
-<div class="container">
-  <main>
-    <div class="card">
-      <div style="display: flex; align-items: center; justify-content: space-around;">
-        <div class="bpm-display">
-          <div class="bpm-val" id="bpm-val">120</div>
-          <div style="font-size: 10px; font-weight: 800; opacity: 0.5;">BPM</div>
-        </div>
-        <div style="display: flex; gap: 10px;">
-          <button onclick="adj(-1)" class="btn-circle">-</button>
-          <button onclick="toggleMetronome()" id="play-btn" class="btn-action btn-primary">PLAY</button>
-          <button onclick="adj(1)" class="btn-circle">+</button>
-        </div>
-      </div>
-    </div>
+<div class="main-layout">
+  <!-- SETLIST -->
+  <aside class="side-panel">
+    <div class="panel-header">SETLIST <span id="song-count" style="color:var(--accent-primary)">0</span></div>
+    <div class="song-list" id="song-list"></div>
+  </aside>
 
-    <div class="transpose-bar">
-      <span style="font-size: 11px; font-weight: 800; opacity: 0.6;">TOM:</span>
-      <button class="btn-circle" onclick="transpose(-1)">-</button>
-      <span id="trans-label" style="font-weight: 800; min-width: 20px; text-align: center;">0</span>
-      <button class="btn-circle" onclick="transpose(1)">+</button>
+  <!-- ESTRUTURA DE NOTAS -->
+  <main class="notes-section">
+    <div style="display: flex; align-items: center; gap: 15px; background: var(--bg-secondary); padding: 10px 20px; border-radius: 50px; width: fit-content;">
+        <span style="font-size: 10px; font-weight: 800; opacity: 0.5;">TRANSPOR:</span>
+        <button onclick="transposeAll(-1)" style="background:none; border:1px solid var(--border-color); color:#fff; width:25px; height:25px; border-radius:50%; cursor:pointer;">-</button>
+        <span id="trans-val" style="font-weight: 800; min-width: 20px; text-align: center;">0</span>
+        <button onclick="transposeAll(1)" style="background:none; border:1px solid var(--border-color); color:#fff; width:25px; height:25px; border-radius:50%; cursor:pointer;">+</button>
     </div>
-
-    <div class="section-grid" id="main-grid"></div>
+    <div class="section-grid" id="notes-grid"></div>
   </main>
 
+  <!-- METRÔNOMO -->
   <aside>
-    <div class="card">
-      <h4 style="margin-bottom: 10px;">Configurações</h4>
-      <p style="font-size: 12px; color: var(--text-secondary);">O Modo Performance bloqueia a edição para evitar toques acidentais no palco.</p>
+    <div class="metronome-card">
+      <div class="bpm-val" id="bpm-display">120</div>
+      <div style="font-size: 10px; font-weight: 800; opacity: 0.5; margin-bottom: 15px;">BPM</div>
+      <div style="display: flex; gap: 10px; justify-content: center;">
+        <button onclick="adj(-1)" style="width:30px; height:30px; border-radius:50%; border:1px solid var(--border-color); background:none; color:#fff; cursor:pointer;">-</button>
+        <button onclick="adj(1)" style="width:30px; height:30px; border-radius:50%; border:1px solid var(--border-color); background:none; color:#fff; cursor:pointer;">+</button>
+      </div>
+      <button class="btn-main" id="play-btn" onclick="togglePlay()">INICIAR</button>
     </div>
   </aside>
 </div>
 
-<!-- BOTÃO FLUTUANTE DE TELA CHEIA -->
-<button onclick="togglePerformance()" class="btn-action btn-primary btn-floating" title="Modo Performance">
-  <span id="perf-icon">⛶</span>
-</button>
+<button class="btn-float" onclick="togglePerf()">⛶</button>
 
 <script>
 let bpm = 120;
 let isPlaying = false;
-let isPerformance = false;
+let currentTrans = 0;
+let songs = JSON.parse(localStorage.getItem('map_pro_setlist')) || [];
 const notes = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"];
 
-function addPart(title = "PARTE") {
-  const grid = document.getElementById('main-grid');
+function addPart(title = "PARTE", content = "") {
   const div = document.createElement('div');
   div.className = 'song-part';
   div.innerHTML = `
-    <input type="text" class="part-title" value="${title}">
-    <textarea class="chord-area" oninput="this.style.height = '';this.style.height = this.scrollHeight + 'px'" placeholder="C G Am F"></textarea>
-    <button class="btn-delete" onclick="this.parentElement.remove()" style="position:absolute; top:10px; right:10px; background:none; border:none; color:#ff4d4d; cursor:pointer;">✕</button>
+    <input type="text" value="${title}" style="background:none; border:none; color:var(--accent-primary); font-weight:800; font-size:11px; width:100%; outline:none; text-transform:uppercase;">
+    <textarea class="chord-area" oninput="this.style.height='';this.style.height=this.scrollHeight+'px'" placeholder="C G Am F">${content}</textarea>
+    <button class="btn-del" onclick="this.parentElement.remove()" style="position:absolute; top:10px; right:10px; background:none; border:none; color:red; cursor:pointer;">✕</button>
   `;
-  grid.appendChild(div);
+  document.getElementById('notes-grid').appendChild(div);
 }
 
-function transpose(dir) {
-  const areas = document.querySelectorAll('.chord-area');
-  document.getElementById('trans-label').innerText = parseInt(document.getElementById('trans-label').innerText) + dir;
-  
-  areas.forEach(area => {
-    let content = area.value;
-    area.value = content.replace(/[A-G][#b]?/g, (match) => {
-      let idx = notes.indexOf(match.replace('Db','C#').replace('Eb','D#').replace('Gb','F#').replace('Ab','G#').replace('Bb','A#'));
-      if (idx === -1) return match;
-      let newIdx = (idx + dir + 12) % 12;
-      return notes[newIdx];
+function transposeAll(dir) {
+  currentTrans += dir;
+  document.getElementById('trans-val').innerText = currentTrans;
+  document.querySelectorAll('.chord-area').forEach(area => {
+    area.value = area.value.replace(/[A-G][#b]?/g, m => {
+      let i = notes.indexOf(m.replace('Db','C#').replace('Eb','D#').replace('Gb','F#').replace('Ab','G#').replace('Bb','A#'));
+      return i === -1 ? m : notes[(i + dir + 12) % 12];
     });
   });
 }
 
-function togglePerformance() {
-  isPerformance = !isPerformance;
-  document.getElementById('body').classList.toggle('performance-mode');
-  document.getElementById('perf-icon').innerText = isPerformance ? "✕" : "⛶";
-  
-  // No mobile, tenta forçar o Fullscreen do navegador
-  if (isPerformance && document.documentElement.requestFullscreen) {
-    document.documentElement.requestFullscreen().catch(() => {});
-  } else if (document.exitFullscreen) {
-    document.exitFullscreen().catch(() => {});
-  }
+function saveSong() {
+  const name = prompt("Nome da música:");
+  if (!name) return;
+  const parts = Array.from(document.querySelectorAll('.song-part')).map(p => ({
+    title: p.querySelector('input').value,
+    content: p.querySelector('textarea').value
+  }));
+  songs.push({ name, bpm, parts, id: Date.now() });
+  localStorage.setItem('map_pro_setlist', JSON.stringify(songs));
+  renderSetlist();
 }
 
-function adj(v) { bpm += v; document.getElementById('bpm-val').innerText = bpm; }
-function toggleMetronome() {
-  isPlaying = !isPlaying;
-  document.getElementById('play-btn').innerText = isPlaying ? "STOP" : "PLAY";
-  document.getElementById('play-btn').style.background = isPlaying ? "#ff4d4d" : "#1db954";
+function renderSetlist() {
+  const list = document.getElementById('song-list');
+  document.getElementById('song-count').innerText = songs.length;
+  list.innerHTML = songs.map(s => `
+    <div class="song-item" onclick="loadSong(${s.id})">
+      <div><h4>${s.name}</h4><span>${s.bpm} BPM</span></div>
+      <button onclick="deleteSong(${s.id}, event)" style="background:none; border:none; color:red; cursor:pointer;">✕</button>
+    </div>
+  `).join('');
 }
 
-// Inicia com as partes principais
+function loadSong(id) {
+  const s = songs.find(x => x.id === id);
+  bpm = s.bpm; document.getElementById('bpm-display').innerText = bpm;
+  document.getElementById('notes-grid').innerHTML = "";
+  s.parts.forEach(p => addPart(p.title, p.content));
+}
+
+function deleteSong(id, e) {
+  e.stopPropagation();
+  songs = songs.filter(s => s.id !== id);
+  localStorage.setItem('map_pro_setlist', JSON.stringify(songs));
+  renderSetlist();
+}
+
+function togglePerf() { document.getElementById('app-body').classList.toggle('performance-mode'); }
+function adj(v) { bpm += v; document.getElementById('bpm-display').innerText = bpm; }
+function togglePlay() { 
+    isPlaying = !isPlaying; 
+    document.getElementById('play-btn').innerText = isPlaying ? "PARAR" : "INICIAR";
+    document.getElementById('play-btn').style.background = isPlaying ? "#ff4d4d" : "#1db954";
+}
+
+renderSetlist();
 ["INTRO", "VERSO", "REFRÃO"].forEach(p => addPart(p));
 </script>
 </body>
