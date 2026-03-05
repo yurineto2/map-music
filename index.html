@@ -4,11 +4,11 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>Map Music Pro - Professional Edition</title>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com" rel="stylesheet">
 
 <style>
 /* ============================================
-   DESIGN SYSTEM & RESPONSIVE CONFIG
+   DESIGN SYSTEM - PROFESSIONAL EDITION
    ============================================ */
 :root {
   --bg-primary: #0a0a0f;
@@ -16,6 +16,7 @@
   --bg-tertiary: #1a1a25;
   --bg-elevated: #242433;
   --accent-primary: #1db954;
+  --accent-secondary: #1ed760;
   --accent-glow: rgba(29, 185, 84, 0.3);
   --text-primary: #ffffff;
   --text-secondary: #b3b3b3;
@@ -30,172 +31,100 @@
   --transition-base: 250ms ease;
 }
 
-* { 
-  margin: 0; padding: 0; box-sizing: border-box; 
-  -webkit-tap-highlight-color: transparent; 
-}
-
+* { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
 body {
   font-family: 'Inter', sans-serif;
   background: var(--bg-primary);
   color: var(--text-primary);
-  line-height: 1.6;
   min-height: 100vh;
   user-select: none;
   overflow-x: hidden;
 }
 
-/* ============================================
-   HEADER & CONTAINER
-   ============================================ */
+/* HEADER RESPONSIVO */
 .app-header {
-  background: rgba(18, 18, 26, 0.95);
+  background: linear-gradient(180deg, rgba(18,18,26,0.95) 0%, rgba(10,10,15,0.8) 100%);
   backdrop-filter: blur(20px);
   border-bottom: 1px solid var(--border-color);
   padding: var(--space-md) var(--space-lg);
-  position: sticky;
-  top: 0; z-index: 100;
+  position: sticky; top: 0; z-index: 100;
 }
 
 .header-content {
-  max-width: 1200px;
-  margin: 0 auto;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
+  max-width: 1200px; margin: 0 auto;
+  display: flex; align-items: center; justify-content: space-between;
 }
 
 .logo { display: flex; align-items: center; gap: 12px; }
 .logo-icon {
-  width: 38px; height: 38px;
-  background: linear-gradient(135deg, var(--accent-primary), #1ed760);
+  width: 40px; height: 40px;
+  background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
   border-radius: var(--radius-md);
   display: flex; align-items: center; justify-content: center;
   font-weight: 800; color: var(--text-inverse);
 }
 
-.app-container {
-  max-width: 1200px;
-  margin: 0 auto;
-  padding: var(--space-lg);
-}
+.logo-text { font-size: 22px; font-weight: 800; }
 
-/* ============================================
-   METRONOMO PANEL (ADAPTÁVEL)
-   ============================================ */
+/* CONTAINER PRINCIPAL */
+.app-container { max-width: 1200px; margin: 0 auto; padding: var(--space-lg); }
+
+/* PAINEL DO METRÔNOMO */
 .metronome-panel {
   background: linear-gradient(135deg, var(--bg-tertiary), var(--bg-secondary));
   border: 1px solid var(--border-color);
   border-radius: var(--radius-xl);
   padding: var(--space-lg);
   text-align: center;
+  position: relative;
 }
 
 .metronome-display {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 3rem;
-  margin: 2rem 0;
-  flex-wrap: wrap;
+  display: flex; align-items: center; justify-content: center;
+  gap: 30px; margin: 40px 0; flex-wrap: wrap;
 }
 
-/* BPM Circle */
+/* CIRCULO DE BPM */
 .bpm-circle-display {
-  position: relative;
-  width: 200px;
-  height: 200px;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
+  position: relative; width: 200px; height: 200px;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
 }
 
-.bpm-circle-svg {
-  position: absolute;
-  width: 100%; height: 100%;
-  transform: rotate(-90deg);
-}
+.bpm-circle-svg { position: absolute; width: 100%; height: 100%; transform: rotate(-90deg); }
 
-.bpm-value {
-  font-size: 58px;
-  font-weight: 800;
-  color: var(--accent-primary);
-  text-shadow: 0 0 20px var(--accent-glow);
-}
+.bpm-value { font-size: 64px; font-weight: 800; color: var(--accent-primary); line-height: 1; }
 
-/* Beats Visualizer */
-.beat-visualizer {
-  display: flex;
-  gap: 12px;
-  justify-content: center;
-  margin-bottom: 2rem;
-}
-
+/* VISUALIZADOR DE BEATS */
+.beat-visualizer { display: flex; gap: 15px; justify-content: center; margin-bottom: 30px; }
 .beat-dot {
-  width: 14px; height: 14px;
-  border-radius: 50%;
-  background: var(--bg-elevated);
-  border: 1px solid var(--border-color);
-  transition: all 0.1s;
+  width: 16px; height: 16px; border-radius: 50%;
+  background: var(--bg-elevated); border: 1px solid var(--border-color);
 }
+.beat-dot.active { background: var(--accent-primary); box-shadow: 0 0 15px var(--accent-primary); transform: scale(1.2); }
 
-.beat-dot.active {
-  background: var(--accent-primary);
-  box-shadow: 0 0 15px var(--accent-primary);
-  transform: scale(1.3);
-}
-
-/* Controles Mobile-Friendly */
-.touch-controls {
-  display: flex;
-  justify-content: center;
-  gap: 10px;
-  margin-bottom: 20px;
-}
-
+/* CONTROLES TOUCH (PC/MOBILE) */
+.controls-group { display: flex; justify-content: center; gap: 10px; margin-bottom: 25px; }
 .btn-adjust {
-  background: var(--bg-elevated);
-  border: 1px solid var(--border-color);
-  color: white;
-  padding: 15px;
-  min-width: 65px;
-  border-radius: var(--radius-md);
-  font-weight: 700;
-  cursor: pointer;
+  background: var(--bg-elevated); border: 1px solid var(--border-color);
+  color: white; padding: 15px 20px; border-radius: var(--radius-md);
+  font-weight: 700; cursor: pointer; min-width: 60px;
 }
-
 .btn-adjust:active { background: var(--accent-primary); color: black; }
 
 .btn-play {
-  width: 100%;
-  max-width: 350px;
-  padding: 20px;
-  border-radius: var(--radius-full);
-  border: none;
-  background: var(--accent-primary);
-  color: black;
-  font-weight: 800;
-  font-size: 1.1rem;
-  cursor: pointer;
+  width: 100%; max-width: 350px; padding: 20px;
+  border-radius: var(--radius-full); border: none;
+  background: var(--accent-primary); color: black;
+  font-weight: 800; font-size: 18px; cursor: pointer;
   box-shadow: 0 5px 20px var(--accent-glow);
 }
 
-/* ============================================
-   RESPONSIVIDADE (MEDIA QUERIES)
-   ============================================ */
+/* RESPONSIVIDADE MOBILE */
 @media (max-width: 768px) {
-  .app-container { padding: 15px; }
-  .metronome-display { flex-direction: column; gap: 1.5rem; }
+  .metronome-display { flex-direction: column; }
+  .bpm-circle-display { width: 180px; height: 180px; }
   .logo-subtitle { display: none; }
-  .bpm-circle-display { width: 160px; height: 160px; }
-  .bpm-value { font-size: 48px; }
-  .btn-adjust { padding: 18px; font-size: 1.1rem; }
-}
-
-@media (max-width: 480px) {
-  .touch-controls { display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; }
-  .btn-adjust { min-width: auto; }
+  .controls-group { display: grid; grid-template-columns: repeat(4, 1fr); width: 100%; }
 }
 </style>
 </head>
@@ -205,43 +134,40 @@ body {
   <div class="header-content">
     <div class="logo">
       <div class="logo-icon">M</div>
-      <div>
-        <h1 class="logo-text">Map Music Pro</h1>
-        <p class="logo-subtitle">Professional Edition</p>
-      </div>
+      <div class="logo-text">Map Music Pro</div>
     </div>
   </div>
 </header>
 
 <main class="app-container">
-  <section class="metronome-panel" id="main-panel">
+  <section class="metronome-panel">
     <div class="metronome-display">
       <div class="bpm-circle-display">
         <svg class="bpm-circle-svg" viewBox="0 0 100 100">
           <circle cx="50" cy="50" r="45" fill="none" stroke="rgba(255,255,255,0.05)" stroke-width="6"/>
-          <circle id="progress-bar" cx="50" cy="50" r="45" fill="none" stroke="var(--accent-primary)" 
+          <circle id="progress" cx="50" cy="50" r="45" fill="none" stroke="var(--accent-primary)" 
                   stroke-width="6" stroke-dasharray="283" stroke-dashoffset="283" stroke-linecap="round"/>
         </svg>
-        <div class="bpm-value" id="bpm-text">120</div>
-        <div style="font-size: 12px; color: var(--text-muted); font-weight: 600;">BPM</div>
+        <div class="bpm-value" id="bpm-number">120</div>
+        <div style="font-size: 12px; color: var(--text-muted); font-weight: 600; letter-spacing: 2px;">BPM</div>
       </div>
     </div>
 
-    <div class="beat-visualizer" id="visualizer">
+    <div class="beat-visualizer" id="dots-container">
       <div class="beat-dot"></div>
       <div class="beat-dot"></div>
       <div class="beat-dot"></div>
       <div class="beat-dot"></div>
     </div>
 
-    <div class="touch-controls">
-      <button class="btn-adjust" onclick="changeBpm(-5)">-5</button>
-      <button class="btn-adjust" onclick="changeBpm(-1)">-</button>
-      <button class="btn-adjust" onclick="changeBpm(1)">+</button>
-      <button class="btn-adjust" onclick="changeBpm(5)">+5</button>
+    <div class="controls-group">
+      <button class="btn-adjust" onclick="updateBpm(-5)">-5</button>
+      <button class="btn-adjust" onclick="updateBpm(-1)">-</button>
+      <button class="btn-adjust" onclick="updateBpm(1)">+</button>
+      <button class="btn-adjust" onclick="updateBpm(5)">+5</button>
     </div>
 
-    <button class="btn-play" id="play-btn">INICIAR SESSÃO</button>
+    <button class="btn-play" id="play-btn">INICIAR METRÔNOMO</button>
   </section>
 </main>
 
@@ -249,60 +175,69 @@ body {
 let bpm = 120;
 let isPlaying = false;
 let currentBeat = 0;
-let timer = null;
+let nextNoteTime = 0.0;
+let timerID = null;
 
-const bpmText = document.getElementById('bpm-text');
+const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+const bpmNumber = document.getElementById('bpm-number');
 const playBtn = document.getElementById('play-btn');
 const dots = document.querySelectorAll('.beat-dot');
-const progressBar = document.getElementById('progress-bar');
-const panel = document.getElementById('main-panel');
+const progress = document.getElementById('progress');
 
-function changeBpm(amount) {
-  bpm = Math.min(Math.max(bpm + amount, 30), 250);
-  bpmText.innerText = bpm;
-  updateProgress();
-  if(isPlaying) { stop(); start(); }
+function updateBpm(val) {
+    bpm = Math.min(Math.max(bpm + val, 40), 240);
+    bpmNumber.innerText = bpm;
+    const offset = 283 - ((bpm - 40) / (240 - 40)) * 283;
+    progress.style.strokeDashoffset = offset;
 }
 
-function updateProgress() {
-  const total = 283;
-  const perc = (bpm - 30) / (250 - 30);
-  progressBar.style.strokeDashoffset = total - (perc * total);
+function playClick() {
+    const osc = audioCtx.createOscillator();
+    const envelope = audioCtx.createGain();
+
+    osc.frequency.value = currentBeat === 0 ? 1000 : 800;
+    envelope.gain.value = 1;
+    envelope.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.1);
+
+    osc.connect(envelope);
+    envelope.connect(audioCtx.destination);
+
+    osc.start();
+    osc.stop(audioCtx.currentTime + 0.1);
+
+    // Visual
+    dots.forEach(d => d.classList.remove('active'));
+    dots[currentBeat].classList.add('active');
+    currentBeat = (currentBeat + 1) % 4;
 }
 
-function nextBeat() {
-  dots.forEach(d => d.classList.remove('active'));
-  dots[currentBeat].classList.add('active');
-  
-  // Feedback visual no painel
-  panel.style.boxShadow = currentBeat === 0 ? "0 0 30px var(--accent-glow)" : "none";
-  
-  currentBeat = (currentBeat + 1) % 4;
-}
-
-function start() {
-  const interval = (60 / bpm) * 1000;
-  timer = setInterval(nextBeat, interval);
-  playBtn.innerText = "PARAR";
-  playBtn.style.background = "#e22134";
-}
-
-function stop() {
-  clearInterval(timer);
-  currentBeat = 0;
-  dots.forEach(d => d.classList.remove('active'));
-  playBtn.innerText = "INICIAR SESSÃO";
-  playBtn.style.background = "var(--accent-primary)";
-  panel.style.boxShadow = "none";
+function scheduler() {
+    while (nextNoteTime < audioCtx.currentTime + 0.1) {
+        playClick();
+        nextNoteTime += 60.0 / bpm;
+    }
+    timerID = setTimeout(scheduler, 25.0);
 }
 
 playBtn.onclick = () => {
-  isPlaying = !isPlaying;
-  isPlaying ? start() : stop();
+    if (audioCtx.state === 'suspended') audioCtx.resume();
+    isPlaying = !isPlaying;
+    
+    if (isPlaying) {
+        currentBeat = 0;
+        nextNoteTime = audioCtx.currentTime;
+        scheduler();
+        playBtn.innerText = "PARAR";
+        playBtn.style.background = "#e22134";
+    } else {
+        clearTimeout(timerID);
+        playBtn.innerText = "INICIAR METRÔNOMO";
+        playBtn.style.background = "var(--accent-primary)";
+        dots.forEach(d => d.classList.remove('active'));
+    }
 };
 
-// Init
-updateProgress();
+updateBpm(0); // Init progress
 </script>
 </body>
 </html>
