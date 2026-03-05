@@ -16,6 +16,8 @@
   --text-primary: #ffffff;
   --text-secondary: #b3b3b3;
   --border-color: rgba(255, 255, 255, 0.1);
+  --glass-bg: rgba(255, 255, 255, 0.03);
+  --glass-border: rgba(255, 255, 255, 0.08);
   --radius-lg: 12px;
   --radius-xl: 16px;
   --radius-full: 9999px;
@@ -32,18 +34,17 @@ body.performance-mode {
 * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
 body { font-family: 'Inter', sans-serif; background: var(--bg-primary); color: var(--text-primary); min-height: 100vh; transition: 0.4s ease; overflow-x: hidden; }
 
-/* HEADER REVISADO */
+/* HEADER */
 .app-header { 
   background: rgba(18,18,26,0.95); backdrop-filter: blur(20px); 
   border-bottom: 1px solid var(--border-color); padding: 15px 25px; 
   position: sticky; top: 0; z-index: 1000; 
 }
-.header-content { max-width: 1400px; margin: 0 auto; display: flex; justify-content: space-between; align-items: center; position: relative; }
+.header-content { max-width: 1400px; margin: 0 auto; display: flex; justify-content: space-between; align-items: center; }
 
-/* MENU DROPDOWN CORRIGIDO */
+/* MENU DROPDOWN */
 .menu-container { position: relative; z-index: 1100; }
-.menu-btn { background: none; border: none; color: #fff; cursor: pointer; padding: 8px; display: flex; align-items: center; border-radius: 50%; transition: 0.2s; }
-.menu-btn:hover { background: var(--bg-tertiary); }
+.menu-btn { background: none; border: none; color: #fff; cursor: pointer; padding: 8px; border-radius: 50%; transition: 0.2s; }
 .dropdown-menu { 
   position: absolute; top: calc(100% + 10px); right: 0; background: var(--bg-tertiary); 
   border: 1px solid var(--border-color); border-radius: var(--radius-lg); 
@@ -51,8 +52,28 @@ body { font-family: 'Inter', sans-serif; background: var(--bg-primary); color: v
 }
 .dropdown-menu.show { display: flex; }
 .menu-item { padding: 14px 18px; color: #fff; font-size: 13px; font-weight: 600; cursor: pointer; border-bottom: 1px solid var(--border-color); }
-.menu-item:last-child { border-bottom: none; }
 .menu-item:hover { background: var(--bg-secondary); color: var(--accent-primary); }
+
+/* BOTÃO SALVAR VITRO (GLASSMORPHISM) */
+.btn-save-vitro {
+    position: fixed; bottom: 30px; left: 30px; z-index: 900;
+    background: var(--glass-bg);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid var(--glass-border);
+    color: rgba(255, 255, 255, 0.7);
+    padding: 12px 24px; border-radius: var(--radius-full);
+    cursor: pointer; font-weight: 500; font-size: 12px; letter-spacing: 1px;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+}
+.btn-save-vitro:hover {
+    background: rgba(255, 255, 255, 0.08);
+    border-color: var(--accent-primary);
+    color: var(--accent-primary);
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(0,0,0,0.3), 0 0 10px var(--accent-glow);
+}
 
 /* LAYOUT PRINCIPAL */
 .main-layout { 
@@ -60,46 +81,31 @@ body { font-family: 'Inter', sans-serif; background: var(--bg-primary); color: v
   max-width: 1400px; margin: 0 auto; width: 100%; padding: 25px; 
 }
 
-/* BOTÃO SALVAR MÚSICA - CANTO INFERIOR ESQUERDO */
-.btn-save-fixed {
-    position: fixed; bottom: 30px; left: 30px; z-index: 900;
-    background: var(--bg-tertiary); border: 1px solid var(--border-color); color: #fff;
-    padding: 14px 28px; border-radius: var(--radius-full);
-    cursor: pointer; font-weight: 800; font-size: 13px; letter-spacing: 0.5px;
-    box-shadow: 0 8px 20px rgba(0,0,0,0.4); transition: 0.3s;
-}
-.btn-save-fixed:hover { border-color: var(--accent-primary); color: var(--accent-primary); transform: translateY(-3px); }
-
-/* SETLIST E NOTAS */
 .side-panel { background: var(--bg-secondary); border-radius: var(--radius-xl); border: 1px solid var(--border-color); height: fit-content; max-height: 80vh; overflow: hidden; display: flex; flex-direction: column; }
-.panel-header { padding: 18px; border-bottom: 1px solid var(--border-color); font-weight: 800; font-size: 13px; text-transform: uppercase; color: var(--accent-primary); letter-spacing: 1px; }
+.panel-header { padding: 18px; border-bottom: 1px solid var(--border-color); font-weight: 800; font-size: 13px; text-transform: uppercase; color: var(--accent-primary); }
 .song-list { overflow-y: auto; padding: 12px; }
 .song-item { background: var(--bg-tertiary); padding: 14px; border-radius: 10px; margin-bottom: 10px; cursor: pointer; border: 1px solid transparent; transition: 0.2s; }
 .song-item:hover { border-color: var(--accent-primary); }
 
-/* TOOLBAR */
-.toolbar-central { display: flex; align-items: center; gap: 15px; margin-bottom: 25px; flex-wrap: wrap; }
+/* TOOLBAR CENTRAL */
+.toolbar-central { display: flex; align-items: center; gap: 15px; margin-bottom: 25px; }
 .tool-group { display: flex; align-items: center; gap: 15px; background: var(--bg-secondary); padding: 10px 22px; border-radius: 50px; border: 1px solid var(--border-color); }
 
-/* CARDS DE NOTAS */
+/* NOTAS */
 .section-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 20px; }
 .song-part { background: var(--bg-secondary); border-radius: var(--radius-lg); padding: 20px; border-left: 5px solid var(--accent-primary); position: relative; }
 .chord-area { font-family: 'Monaco', monospace; font-size: 20px; font-weight: 700; color: var(--note-color); background: none; border: none; width: 100%; resize: none; outline: none; margin-top: 12px; line-height: 1.5; }
 
 /* METRONOMO */
 .metronome-card { background: var(--bg-secondary); border-radius: var(--radius-xl); border: 1px solid var(--border-color); padding: 25px; text-align: center; position: sticky; top: 110px; }
-.bpm-val { font-size: 62px; font-weight: 800; color: var(--accent-primary); text-shadow: 0 0 15px var(--accent-glow); }
+.bpm-val { font-size: 62px; font-weight: 800; color: var(--accent-primary); }
 
 /* MODO SHOW REGRAS */
-body.performance-mode .btn-save-fixed, 
-body.performance-mode .app-header, 
-body.performance-mode .side-panel, 
-body.performance-mode .metronome-card, 
-body.performance-mode .toolbar-central { display: none !important; }
+body.performance-mode .btn-save-vitro, body.performance-mode .app-header, body.performance-mode .side-panel, body.performance-mode .metronome-card, body.performance-mode .toolbar-central { display: none !important; }
 body.performance-mode .main-layout { grid-template-columns: 1fr; padding: 120px 12% 150px; }
 body.performance-mode .chord-area { font-size: 52px; color: #fff; }
 
-/* TELEPROMPTER TOP */
+/* TELEPROMPTER & SHOW */
 .scroll-controls {
     position: fixed; top: 30px; right: 30px; z-index: 2000;
     display: none; align-items: center; gap: 15px;
@@ -116,10 +122,7 @@ body.performance-mode .scroll-controls { display: flex; }
     box-shadow: 0 10px 30px var(--accent-glow);
 }
 
-@media (max-width: 1024px) { 
-  .main-layout { grid-template-columns: 1fr; padding: 15px; } 
-  .side-panel, .btn-save-fixed { display: none; } 
-}
+@media (max-width: 1024px) { .main-layout { grid-template-columns: 1fr; } .side-panel, .btn-save-vitro { display: none; } }
 </style>
 </head>
 <body id="app-body">
@@ -127,14 +130,14 @@ body.performance-mode .scroll-controls { display: flex; }
 <header class="app-header">
   <div class="header-content">
     <h1>Map Music <span style="color:var(--accent-primary)">Pro</span></h1>
-    
     <div class="menu-container">
-      <button class="menu-btn" onclick="toggleMenu()" aria-label="Menu">
+      <button class="menu-btn" onclick="toggleMenu()">
         <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="1"/><circle cx="12" cy="5" r="1"/><circle cx="12" cy="19" r="1"/></svg>
       </button>
       <div class="dropdown-menu" id="main-menu">
-        <div class="menu-item" onclick="shareSession()">📤 Compartilhar Seção</div>
-        <div class="menu-item" onclick="alert('Configurações em breve')">⚙️ Configurações</div>
+        <div class="menu-item" onclick="exportData()">📤 Exportar Backup</div>
+        <div class="menu-item" onclick="importData()">📥 Importar Backup</div>
+        <div class="menu-item" onclick="shareSession()">🔗 Compartilhar Link</div>
       </div>
     </div>
   </div>
@@ -142,16 +145,16 @@ body.performance-mode .scroll-controls { display: flex; }
 
 <div class="main-layout">
   <aside class="side-panel">
-    <div class="panel-header">Minha Setlist <span id="song-count" style="margin-left:auto; opacity:0.5;">0</span></div>
+    <div class="panel-header">Setlist <span id="song-count" style="margin-left:auto; opacity:0.5;">0</span></div>
     <div class="song-list" id="song-list"></div>
   </aside>
 
   <main class="notes-section">
     <div class="toolbar-central">
         <div class="tool-group">
-            <span style="font-size: 10px; font-weight: 900; color: var(--accent-primary); letter-spacing: 1px;">TOM</span>
+            <span style="font-size: 10px; font-weight: 900; color: var(--accent-primary);">TOM</span>
             <button onclick="transposeAll(-1)" style="background:none; border:none; color:#fff; cursor:pointer; font-size:18px;">-</button>
-            <span id="trans-val" style="font-weight: 800; min-width: 25px; text-align: center; font-size:16px;">0</span>
+            <span id="trans-val" style="font-weight: 800; min-width: 20px; text-align: center;">0</span>
             <button onclick="transposeAll(1)" style="background:none; border:none; color:#fff; cursor:pointer; font-size:18px;">+</button>
         </div>
         <button onclick="addPart()" style="background:var(--bg-tertiary); border:1px solid var(--border-color); color:#fff; padding: 12px 24px; border-radius: 50px; cursor:pointer; font-size:11px; font-weight:800; letter-spacing:1px;">+ ADICIONAR PARTE</button>
@@ -162,7 +165,7 @@ body.performance-mode .scroll-controls { display: flex; }
   <aside>
     <div class="metronome-card">
       <div class="bpm-val" id="bpm-display">120</div>
-      <div style="font-size: 10px; font-weight: 900; opacity: 0.5; letter-spacing: 2px;">BPM</div>
+      <div style="font-size: 10px; font-weight: 900; opacity: 0.5;">BPM</div>
       <button class="btn-tap" id="tap-btn" style="border: 2px solid var(--accent-primary); background: none; color: var(--accent-primary); width: 80px; height: 80px; border-radius: 50%; font-weight: 900; margin: 20px 0; cursor: pointer;">TAP</button>
       <div style="display: flex; gap: 15px; justify-content: center; margin-bottom: 25px;">
         <button onclick="adj(-1)" style="width:40px; height:40px; border-radius:50%; border:1px solid var(--border-color); background:none; color:#fff; cursor:pointer; font-size:20px;">-</button>
@@ -173,7 +176,8 @@ body.performance-mode .scroll-controls { display: flex; }
   </aside>
 </div>
 
-<button class="btn-save-fixed" onclick="saveSong()">💾 SALVAR MÚSICA</button>
+<!-- BOTÃO SALVAR VITRO -->
+<button class="btn-save-vitro" onclick="saveSong()">Salvar Música</button>
 
 <div class="scroll-controls">
     <span>Teleprompter</span>
@@ -195,21 +199,47 @@ let tapTimes = [];
 
 const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
 const notesArr = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"];
-let songs = JSON.parse(localStorage.getItem('map_pro_final_v1')) || [];
+let songs = JSON.parse(localStorage.getItem('map_pro_master_v1')) || [];
+
+// BACKUP AUTOMÁTICO
+(function autoBackup() {
+    if (songs.length > 0) localStorage.setItem('map_pro_backup', JSON.stringify(songs));
+})();
 
 function toggleMenu() { document.getElementById('main-menu').classList.toggle('show'); }
 window.onclick = e => { if (!e.target.closest('.menu-container')) document.getElementById('main-menu').classList.remove('show'); };
 
-function shareSession() {
-    const data = { bpm, parts: Array.from(document.querySelectorAll('.song-part')).map(p => ({ title: p.querySelector('input').value, content: p.querySelector('textarea').value })) };
-    alert("Sessão pronta para exportar (JSON no console)");
-    console.log(JSON.stringify(data));
+function exportData() {
+    const dataStr = JSON.stringify(songs);
+    const blob = new Blob([dataStr], {type: "application/json"});
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = `map_music_backup_${new Date().toLocaleDateString()}.json`;
+    link.click();
 }
 
+function importData() {
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.onchange = e => {
+        const file = e.target.files[0];
+        const reader = new FileReader();
+        reader.readAsText(file,'UTF-8');
+        reader.onload = readerEvent => {
+            songs = JSON.parse(readerEvent.target.result);
+            localStorage.setItem('map_pro_master_v1', JSON.stringify(songs));
+            renderSetlist();
+        }
+    }
+    input.click();
+}
+
+// METRONOMO E CORE (IGUAL À VERSÃO ANTERIOR PARA ESTABILIDADE)
 const scrollSlider = document.getElementById('scroll-speed');
 scrollSlider.oninput = () => {
     clearInterval(scrollInterval);
-    if (scrollSlider.value > 0) scrollInterval = setInterval(() => window.scrollBy(0, 1), 160 - scrollSlider.value);
+    if (scrollSlider.value > 0) scrollInterval = setInterval(() => window.scrollBy(0, 1), 165 - scrollSlider.value);
 };
 function stopScroll() { clearInterval(scrollInterval); scrollSlider.value = 0; }
 
@@ -218,7 +248,7 @@ document.getElementById('tap-btn').onclick = () => {
     tapTimes.push(now);
     if (tapTimes.length > 4) tapTimes.shift();
     if (tapTimes.length > 1) {
-        const avg = (tapTimes[tapTimes.length-1] - tapTimes[0]) / (tapTimes.length - 1);
+        const avg = (tapTimes[tapTimes.length-1] - tapTimes) / (tapTimes.length - 1);
         bpm = Math.min(Math.max(Math.round(60000 / avg), 40), 240);
         document.getElementById('bpm-display').innerText = bpm;
     }
@@ -269,7 +299,7 @@ function saveSong() {
   if (!name) return;
   const parts = Array.from(document.querySelectorAll('.song-part')).map(p => ({ title: p.querySelector('input').value, content: p.querySelector('textarea').value }));
   songs.push({ name, bpm, parts, id: Date.now() });
-  localStorage.setItem('map_pro_final_v1', JSON.stringify(songs));
+  localStorage.setItem('map_pro_master_v1', JSON.stringify(songs));
   renderSetlist();
 }
 
@@ -288,9 +318,11 @@ function loadSong(id) {
 
 function deleteSong(id, e) {
   e.stopPropagation();
-  songs = songs.filter(s => s.id !== id);
-  localStorage.setItem('map_pro_final_v1', JSON.stringify(songs));
-  renderSetlist();
+  if(confirm("Excluir música permanentemente?")) {
+    songs = songs.filter(s => s.id !== id);
+    localStorage.setItem('map_pro_master_v1', JSON.stringify(songs));
+    renderSetlist();
+  }
 }
 
 function togglePerf() {
