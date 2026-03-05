@@ -8,124 +8,144 @@
 
 <style>
 /* ============================================
-   DESIGN SYSTEM - PROFESSIONAL EDITION
+   DESIGN SYSTEM ORIGINAL - PROFESSIONAL EDITION
    ============================================ */
 :root {
   --bg-primary: #0a0a0f;
   --bg-secondary: #12121a;
   --bg-tertiary: #1a1a25;
   --bg-elevated: #242433;
+  --bg-input: #0f0f14;
+  
   --accent-primary: #1db954;
   --accent-secondary: #1ed760;
+  --accent-hover: #1fdf64;
   --accent-glow: rgba(29, 185, 84, 0.3);
+  
   --text-primary: #ffffff;
   --text-secondary: #b3b3b3;
   --text-muted: #6a6a6a;
   --text-inverse: #000000;
+  
   --border-color: rgba(255, 255, 255, 0.1);
   --radius-md: 8px;
   --radius-xl: 16px;
   --radius-full: 9999px;
+  
   --space-md: 16px;
   --space-lg: 24px;
+  --space-xl: 32px;
+  
   --transition-base: 250ms ease;
 }
 
+/* TEMAS ADICIONAIS RESTAURADOS */
+[data-theme="red"] { --accent-primary: #e22134; --accent-glow: rgba(226, 33, 52, 0.3); }
+[data-theme="blue"] { --accent-primary: #0d84fc; --accent-glow: rgba(13, 132, 252, 0.3); }
+[data-theme="purple"] { --accent-primary: #8b5cf6; --accent-glow: rgba(139, 92, 246, 0.3); }
+
 * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
 body {
   font-family: 'Inter', sans-serif;
   background: var(--bg-primary);
   color: var(--text-primary);
   min-height: 100vh;
   user-select: none;
-  overflow-x: hidden;
 }
 
-/* HEADER RESPONSIVO */
+/* HEADER */
 .app-header {
   background: linear-gradient(180deg, rgba(18,18,26,0.95) 0%, rgba(10,10,15,0.8) 100%);
   backdrop-filter: blur(20px);
   border-bottom: 1px solid var(--border-color);
-  padding: var(--space-md) var(--space-lg);
+  padding: var(--space-lg) var(--space-xl);
   position: sticky; top: 0; z-index: 100;
 }
 
 .header-content {
-  max-width: 1200px; margin: 0 auto;
+  max-width: 1400px; margin: 0 auto;
   display: flex; align-items: center; justify-content: space-between;
 }
 
-.logo { display: flex; align-items: center; gap: 12px; }
+.logo { display: flex; align-items: center; gap: var(--space-md); }
 .logo-icon {
   width: 40px; height: 40px;
   background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
   border-radius: var(--radius-md);
   display: flex; align-items: center; justify-content: center;
-  font-weight: 800; color: var(--text-inverse);
+  font-size: 20px; font-weight: 800; color: var(--text-inverse);
+  box-shadow: 0 0 20px var(--accent-glow);
 }
 
-.logo-text { font-size: 22px; font-weight: 800; }
+.logo-text { font-size: 24px; font-weight: 800; }
 
 /* CONTAINER PRINCIPAL */
-.app-container { max-width: 1200px; margin: 0 auto; padding: var(--space-lg); }
+.app-container { max-width: 1400px; margin: 0 auto; padding: var(--space-xl); }
 
-/* PAINEL DO METRÔNOMO */
+/* METRONOMO V2.0 */
 .metronome-panel {
   background: linear-gradient(135deg, var(--bg-tertiary), var(--bg-secondary));
   border: 1px solid var(--border-color);
   border-radius: var(--radius-xl);
-  padding: var(--space-lg);
+  padding: var(--space-xl);
   text-align: center;
   position: relative;
+  overflow: hidden;
 }
 
 .metronome-display {
   display: flex; align-items: center; justify-content: center;
-  gap: 30px; margin: 40px 0; flex-wrap: wrap;
+  gap: 50px; margin: 40px 0; flex-wrap: wrap;
 }
 
 /* CIRCULO DE BPM */
 .bpm-circle-display {
-  position: relative; width: 200px; height: 200px;
+  position: relative; width: 220px; height: 220px;
   display: flex; flex-direction: column; align-items: center; justify-content: center;
 }
 
 .bpm-circle-svg { position: absolute; width: 100%; height: 100%; transform: rotate(-90deg); }
+.bpm-value { font-size: 68px; font-weight: 800; color: var(--accent-primary); text-shadow: 0 0 20px var(--accent-glow); }
 
-.bpm-value { font-size: 64px; font-weight: 800; color: var(--accent-primary); line-height: 1; }
-
-/* VISUALIZADOR DE BEATS */
+/* BEATS VISUALIZER */
 .beat-visualizer { display: flex; gap: 15px; justify-content: center; margin-bottom: 30px; }
 .beat-dot {
-  width: 16px; height: 16px; border-radius: 50%;
+  width: 18px; height: 18px; border-radius: 50%;
   background: var(--bg-elevated); border: 1px solid var(--border-color);
+  transition: all 0.1s ease;
 }
 .beat-dot.active { background: var(--accent-primary); box-shadow: 0 0 15px var(--accent-primary); transform: scale(1.2); }
 
-/* CONTROLES TOUCH (PC/MOBILE) */
-.controls-group { display: flex; justify-content: center; gap: 10px; margin-bottom: 25px; }
-.btn-adjust {
+/* TOUCH CONTROLS (MELHORADO) */
+.controls-row { display: flex; justify-content: center; gap: 12px; margin-bottom: 30px; }
+.btn-touch {
   background: var(--bg-elevated); border: 1px solid var(--border-color);
-  color: white; padding: 15px 20px; border-radius: var(--radius-md);
-  font-weight: 700; cursor: pointer; min-width: 60px;
+  color: white; padding: 18px; min-width: 70px; border-radius: var(--radius-md);
+  font-weight: 700; cursor: pointer; transition: 0.2s;
 }
-.btn-adjust:active { background: var(--accent-primary); color: black; }
+.btn-touch:active { background: var(--accent-primary); color: black; transform: translateY(2px); }
 
-.btn-play {
-  width: 100%; max-width: 350px; padding: 20px;
+.btn-main-play {
+  width: 100%; max-width: 400px; padding: 22px;
   border-radius: var(--radius-full); border: none;
   background: var(--accent-primary); color: black;
   font-weight: 800; font-size: 18px; cursor: pointer;
-  box-shadow: 0 5px 20px var(--accent-glow);
+  box-shadow: 0 10px 30px var(--accent-glow);
 }
 
-/* RESPONSIVIDADE MOBILE */
+/* RESPONSIVIDADE FULL */
 @media (max-width: 768px) {
-  .metronome-display { flex-direction: column; }
-  .bpm-circle-display { width: 180px; height: 180px; }
+  .app-container { padding: 15px; }
+  .metronome-display { flex-direction: column; gap: 20px; }
+  .logo-text { font-size: 18px; }
   .logo-subtitle { display: none; }
-  .controls-group { display: grid; grid-template-columns: repeat(4, 1fr); width: 100%; }
+  .bpm-circle-display { width: 180px; height: 180px; }
+  .bpm-value { font-size: 54px; }
+  .controls-row { display: grid; grid-template-columns: repeat(4, 1fr); width: 100%; }
+  .btn-touch { min-width: auto; padding: 15px 10px; }
 }
+
 </style>
 </head>
 <body>
@@ -134,44 +154,53 @@ body {
   <div class="header-content">
     <div class="logo">
       <div class="logo-icon">M</div>
-      <div class="logo-text">Map Music Pro</div>
+      <div>
+        <h1 class="logo-text">Map Music Pro</h1>
+      </div>
+    </div>
+    <!-- Seletor de Tema Rápido -->
+    <div style="display: flex; gap: 8px;">
+        <div onclick="document.body.removeAttribute('data-theme')" style="width: 20px; height: 20px; background: #1db954; border-radius: 50%; cursor: pointer;"></div>
+        <div onclick="document.body.setAttribute('data-theme', 'red')" style="width: 20px; height: 20px; background: #e22134; border-radius: 50%; cursor: pointer;"></div>
+        <div onclick="document.body.setAttribute('data-theme', 'blue')" style="width: 20px; height: 20px; background: #0d84fc; border-radius: 50%; cursor: pointer;"></div>
     </div>
   </div>
 </header>
 
 <main class="app-container">
-  <section class="metronome-panel">
+  <section class="metronome-panel" id="panel">
     <div class="metronome-display">
       <div class="bpm-circle-display">
         <svg class="bpm-circle-svg" viewBox="0 0 100 100">
           <circle cx="50" cy="50" r="45" fill="none" stroke="rgba(255,255,255,0.05)" stroke-width="6"/>
-          <circle id="progress" cx="50" cy="50" r="45" fill="none" stroke="var(--accent-primary)" 
-                  stroke-width="6" stroke-dasharray="283" stroke-dashoffset="283" stroke-linecap="round"/>
+          <circle id="progress-bar" cx="50" cy="50" r="45" fill="none" stroke="var(--accent-primary)" 
+                  stroke-width="6" stroke-dasharray="283" stroke-dashoffset="283" stroke-linecap="round" style="transition: stroke-dashoffset 0.3s;"/>
         </svg>
-        <div class="bpm-value" id="bpm-number">120</div>
-        <div style="font-size: 12px; color: var(--text-muted); font-weight: 600; letter-spacing: 2px;">BPM</div>
+        <div class="bpm-value" id="bpm-val">120</div>
+        <div style="font-size: 11px; color: var(--text-muted); font-weight: 700; letter-spacing: 2px;">BPM</div>
       </div>
     </div>
 
-    <div class="beat-visualizer" id="dots-container">
+    <div class="beat-visualizer">
       <div class="beat-dot"></div>
       <div class="beat-dot"></div>
       <div class="beat-dot"></div>
       <div class="beat-dot"></div>
     </div>
 
-    <div class="controls-group">
-      <button class="btn-adjust" onclick="updateBpm(-5)">-5</button>
-      <button class="btn-adjust" onclick="updateBpm(-1)">-</button>
-      <button class="btn-adjust" onclick="updateBpm(1)">+</button>
-      <button class="btn-adjust" onclick="updateBpm(5)">+5</button>
+    <div class="controls-row">
+      <button class="btn-touch" onclick="adjBpm(-5)">-5</button>
+      <button class="btn-touch" onclick="adjBpm(-1)">-</button>
+      <button class="btn-touch" onclick="adjBpm(1)">+</button>
+      <button class="btn-touch" onclick="adjBpm(5)">+5</button>
     </div>
 
-    <button class="btn-play" id="play-btn">INICIAR METRÔNOMO</button>
+    <button class="btn-main-play" id="play-btn">INICIAR SESSÃO</button>
   </section>
 </main>
 
 <script>
+// LÓGICA DE ÁUDIO WEB PROFISSIONAL (SEM LATÊNCIA)
 let bpm = 120;
 let isPlaying = false;
 let currentBeat = 0;
@@ -179,44 +208,44 @@ let nextNoteTime = 0.0;
 let timerID = null;
 
 const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-const bpmNumber = document.getElementById('bpm-number');
+const bpmDisplay = document.getElementById('bpm-val');
 const playBtn = document.getElementById('play-btn');
 const dots = document.querySelectorAll('.beat-dot');
-const progress = document.getElementById('progress');
+const progress = document.getElementById('progress-bar');
 
-function updateBpm(val) {
-    bpm = Math.min(Math.max(bpm + val, 40), 240);
-    bpmNumber.innerText = bpm;
-    const offset = 283 - ((bpm - 40) / (240 - 40)) * 283;
+function adjBpm(v) {
+    bpm = Math.min(Math.max(bpm + v, 30), 250);
+    bpmDisplay.innerText = bpm;
+    const offset = 283 - ((bpm - 30) / (250 - 30)) * 283;
     progress.style.strokeDashoffset = offset;
 }
 
-function playClick() {
+function playSound() {
     const osc = audioCtx.createOscillator();
-    const envelope = audioCtx.createGain();
+    const env = audioCtx.createGain();
 
-    osc.frequency.value = currentBeat === 0 ? 1000 : 800;
-    envelope.gain.value = 1;
-    envelope.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.1);
+    // Timbre profissional (mais agudo no tempo 1)
+    osc.frequency.value = currentBeat === 0 ? 1200 : 800;
+    env.gain.value = 1;
+    env.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.05);
 
-    osc.connect(envelope);
-    envelope.connect(audioCtx.destination);
+    osc.connect(env);
+    env.connect(audioCtx.destination);
+    
+    osc.start(audioCtx.currentTime);
+    osc.stop(audioCtx.currentTime + 0.05);
 
-    osc.start();
-    osc.stop(audioCtx.currentTime + 0.1);
-
-    // Visual
-    dots.forEach(d => d.classList.remove('active'));
-    dots[currentBeat].classList.add('active');
+    // Feedback Visual
+    dots.forEach((d, i) => d.classList.toggle('active', i === currentBeat));
     currentBeat = (currentBeat + 1) % 4;
 }
 
 function scheduler() {
     while (nextNoteTime < audioCtx.currentTime + 0.1) {
-        playClick();
+        playSound();
         nextNoteTime += 60.0 / bpm;
     }
-    timerID = setTimeout(scheduler, 25.0);
+    timerID = setTimeout(scheduler, 25);
 }
 
 playBtn.onclick = () => {
@@ -231,13 +260,14 @@ playBtn.onclick = () => {
         playBtn.style.background = "#e22134";
     } else {
         clearTimeout(timerID);
-        playBtn.innerText = "INICIAR METRÔNOMO";
+        playBtn.innerText = "INICIAR SESSÃO";
         playBtn.style.background = "var(--accent-primary)";
         dots.forEach(d => d.classList.remove('active'));
     }
 };
 
-updateBpm(0); // Init progress
+// Ajuste inicial do círculo
+adjBpm(0);
 </script>
 </body>
 </html>
