@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>Map Music Pro - Live Studio</title>
+<title>Map Music Pro - Studio Edition</title>
 <link href="https://fonts.googleapis.com" rel="stylesheet">
 
 <style>
@@ -27,7 +27,7 @@ body.performance-mode {
   --bg-primary: #050000;
   --accent-primary: #ff3e3e;
   --accent-glow: rgba(255, 62, 62, 0.4);
-  --note-color: #ffee00;
+  --note-color: #ffffff; /* Notas Brancas no Modo Show conforme solicitado */
   background: var(--bg-primary);
 }
 
@@ -38,7 +38,7 @@ body { font-family: 'Inter', sans-serif; background: var(--bg-primary); color: v
 .app-header { background: rgba(18,18,26,0.95); backdrop-filter: blur(20px); border-bottom: 1px solid var(--border-color); padding: 15px 20px; position: sticky; top: 0; z-index: 100; }
 .header-content { max-width: 1400px; margin: 0 auto; display: flex; justify-content: space-between; align-items: center; }
 
-/* LAYOUT */
+/* LAYOUT PRINCIPAL */
 .main-layout { display: grid; grid-template-columns: 280px 1fr 300px; gap: 20px; max-width: 1400px; margin: 0 auto; width: 100%; padding: 20px; flex-grow: 1; }
 
 /* SETLIST */
@@ -48,8 +48,12 @@ body { font-family: 'Inter', sans-serif; background: var(--bg-primary); color: v
 .song-item { background: var(--bg-tertiary); padding: 12px; border-radius: 8px; margin-bottom: 8px; cursor: pointer; border: 1px solid transparent; display: flex; justify-content: space-between; align-items: center; transition: 0.2s; }
 .song-item:hover { border-color: var(--accent-primary); }
 
+/* BARRA DE FERRAMENTAS CENTRAL */
+.toolbar-central { display: flex; align-items: center; gap: 20px; margin-bottom: 20px; flex-wrap: wrap; }
+.tool-group { display: flex; align-items: center; gap: 12px; background: var(--bg-secondary); padding: 8px 20px; border-radius: 50px; border: 1px solid var(--border-color); }
+
 /* NOTAS */
-.notes-section { display: flex; flex-direction: column; gap: 15px; }
+.notes-section { display: flex; flex-direction: column; }
 .section-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 15px; }
 .song-part { background: var(--bg-secondary); border-radius: var(--radius-lg); padding: 15px; border-left: 4px solid var(--accent-primary); position: relative; transition: all 0.3s; }
 .chord-area { font-family: 'Monaco', monospace; font-size: 20px; font-weight: 700; color: var(--note-color); background: none; border: none; width: 100%; resize: none; outline: none; margin-top: 10px; line-height: 1.4; transition: all 0.3s; }
@@ -61,7 +65,7 @@ body { font-family: 'Inter', sans-serif; background: var(--bg-primary); color: v
 .btn-main { background: var(--accent-primary); color: #000; border: none; padding: 14px; border-radius: var(--radius-full); font-weight: 800; cursor: pointer; width: 100%; }
 
 /* MODO SHOW AJUSTES */
-body.performance-mode .app-header, body.performance-mode .side-panel, body.performance-mode .metronome-card, body.performance-mode .btn-del { display: none !important; }
+body.performance-mode .app-header, body.performance-mode .side-panel, body.performance-mode .metronome-card, body.performance-mode .btn-del, body.performance-mode .toolbar-central { display: none !important; }
 body.performance-mode .main-layout { grid-template-columns: 1fr; padding: 100px 10% 150px; }
 body.performance-mode .chord-area { font-size: 48px; pointer-events: none; height: auto !important; }
 body.performance-mode .song-part { border-left-width: 15px; margin-bottom: 50px; background: transparent; }
@@ -103,10 +107,7 @@ body.performance-mode .mode-show-container { animation: pulseLive 2s infinite; }
 <header class="app-header">
   <div class="header-content">
     <h1>Map Music <span style="color:var(--accent-primary)">Pro</span></h1>
-    <div style="display: flex; gap: 12px;">
-        <button onclick="addPart()" style="background:none; border:1px solid var(--border-color); color:#fff; padding: 6px 18px; border-radius: 20px; cursor:pointer; font-size:11px; font-weight:700;">+ PARTE</button>
-        <button onclick="saveSong()" style="background:var(--accent-primary); border:none; padding: 6px 18px; border-radius: 20px; font-weight:800; cursor:pointer; font-size:11px; color:#000;">SALVAR</button>
-    </div>
+    <button onclick="saveSong()" style="background:var(--accent-primary); border:none; padding: 8px 20px; border-radius: 20px; font-weight:800; cursor:pointer; font-size:11px; color:#000;">SALVAR MÚSICA</button>
   </div>
 </header>
 
@@ -117,12 +118,20 @@ body.performance-mode .mode-show-container { animation: pulseLive 2s infinite; }
   </aside>
 
   <main class="notes-section">
-    <div style="display: flex; align-items: center; gap: 15px; background: var(--bg-secondary); padding: 10px 25px; border-radius: 50px; border: 1px solid var(--border-color); width: fit-content;">
-        <span style="font-size: 10px; font-weight: 900; color: var(--accent-primary);">TRANSPOSE</span>
-        <button onclick="transposeAll(-1)" style="background:none; border:none; color:#fff; cursor:pointer; font-weight:800;">-</button>
-        <span id="trans-val" style="font-weight: 800; min-width: 25px; text-align: center;">0</span>
-        <button onclick="transposeAll(1)" style="background:none; border:none; color:#fff; cursor:pointer; font-weight:800;">+</button>
+    <!-- BARRA DE FERRAMENTAS CENTRALIZADA -->
+    <div class="toolbar-central">
+        <div class="tool-group">
+            <span style="font-size: 10px; font-weight: 900; color: var(--accent-primary);">TRANSPOSE</span>
+            <button onclick="transposeAll(-1)" style="background:none; border:none; color:#fff; cursor:pointer; font-weight:800; padding:0 5px;">-</button>
+            <span id="trans-val" style="font-weight: 800; min-width: 25px; text-align: center;">0</span>
+            <button onclick="transposeAll(1)" style="background:none; border:none; color:#fff; cursor:pointer; font-weight:800; padding:0 5px;">+</button>
+        </div>
+
+        <button onclick="addPart()" style="background:var(--bg-tertiary); border:1px solid var(--border-color); color:#fff; padding: 10px 20px; border-radius: 50px; cursor:pointer; font-size:11px; font-weight:800; text-transform:uppercase; letter-spacing:1px;">
+            + Adicionar Parte
+        </button>
     </div>
+
     <div class="section-grid" id="notes-grid"></div>
   </main>
 
@@ -177,7 +186,7 @@ document.getElementById('tap-btn').addEventListener('click', () => {
     tapTimes.push(now);
     if (tapTimes.length > 4) tapTimes.shift();
     if (tapTimes.length > 1) {
-        const avg = (tapTimes[tapTimes.length-1] - tapTimes[0]) / (tapTimes.length - 1);
+        const avg = (tapTimes[tapTimes.length-1] - tapTimes) / (tapTimes.length - 1);
         bpm = Math.min(Math.max(Math.round(60000 / avg), 40), 240);
         document.getElementById('bpm-display').innerText = bpm;
     }
