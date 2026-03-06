@@ -101,6 +101,30 @@ body.performance-mode .chord-area { font-size: 48px; pointer-events: none; heigh
 body.performance-mode .scroll-controls { display: flex; }
 .mode-show-container { position: fixed; bottom: 25px; right: 20px; z-index: 2000; background: var(--accent-primary); color: #000; padding: 14px 25px; border-radius: var(--radius-full); cursor: pointer; font-weight: 900; font-size: 13px; transition: background 0.3s; }
 
+/* INDICADOR DE MUSICA NO MODO SHOW */
+.perf-song-indicator {
+  display: none;
+  position: fixed; top: 20px; left: 20px; z-index: 2000;
+  background: rgba(0,0,0,0.85); border: 1px solid rgba(255,62,62,0.4);
+  backdrop-filter: blur(10px); border-radius: var(--radius-full);
+  padding: 8px 18px; font-size: 11px; font-weight: 800;
+  letter-spacing: 1px; text-transform: uppercase; color: #ff3e3e;
+  gap: 10px; align-items: center;
+}
+body.performance-mode .perf-song-indicator { display: flex; }
+.perf-song-name { color: #fff; font-size: 13px; font-weight: 900; max-width: 180px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+/* FLASH DE SWIPE */
+.swipe-hint {
+  position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
+  background: rgba(0,0,0,0.7); border: 1px solid rgba(255,62,62,0.5);
+  color: #ff3e3e; padding: 14px 30px; border-radius: var(--radius-lg);
+  font-size: 18px; font-weight: 900; letter-spacing: 3px;
+  z-index: 3000; opacity: 0; pointer-events: none;
+  transition: opacity 0.2s;
+}
+.swipe-hint.show { opacity: 1; }
+
 /* MODAL SALA */
 .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.85); backdrop-filter: blur(8px); z-index: 5000; display: none; align-items: center; justify-content: center; }
 .modal-overlay.show { display: flex; }
@@ -247,6 +271,15 @@ body.viewer-mode input[type="text"] { pointer-events: none; }
 </div>
 
 <button class="btn-save-vitro" onclick="saveSong()">Salvar Música</button>
+
+<!-- INDICADOR DE MUSICA NO MODO SHOW -->
+<div class="perf-song-indicator" id="perf-indicator">
+  <span id="perf-song-pos">1/1</span>
+  <span class="perf-song-name" id="perf-song-name">—</span>
+</div>
+
+<!-- FLASH DE SWIPE -->
+<div class="swipe-hint" id="swipe-hint"></div>
 
 <div class="scroll-controls">
   <span>Teleprompter</span>
@@ -634,11 +667,14 @@ function renderSetlist() {
 }
 
 function loadSong(id) {
-  const s = songs.find(x => x.id === id);
-  if (!s) return;
+  const idx = songs.findIndex(x => x.id === id);
+  if (idx === -1) return;
+  currentSongIndex = idx;
+  const s = songs[idx];
   bpm = s.bpm; document.getElementById('bpm-display').innerText = bpm;
   document.getElementById('notes-grid').innerHTML = '';
   s.parts.forEach(p => addPart(p.title, p.content));
+  atualizarIndicador();
   broadcastEstado();
 }
 
@@ -648,12 +684,76 @@ function deleteSong(id, e) {
 }
 
 // ─── MODO SHOW ─────────────────────────────────────────────────────────────
+let currentSongIndex = -1; // -1 = nenhuma musica do setlist carregada
+
 function togglePerf() {
   const isPerf = document.getElementById('app-body').classList.toggle('performance-mode');
   document.getElementById('mode-text').innerText = isPerf ? "SAIR DO SHOW" : "MODO SHOW";
   if (!isPerf) { stopScroll(); window.scrollTo(0,0); }
+  else { atualizarIndicador(); }
   broadcastEstado();
 }
+
+function atualizarIndicador() {
+  if (songs.length === 0 || currentSongIndex === -1) {
+    document.getElementById('perf-song-pos').innerText = '—';
+    document.getElementById('perf-song-name').innerText = 'Nenhuma musica';
+    return;
+  }
+  const s = songs[currentSongIndex];
+  document.getElementById('perf-song-pos').innerText = (currentSongIndex + 1) + '/' + songs.length;
+  document.getElementById('perf-song-name').innerText = s ? s.name : '—';
+}
+
+function navegarSetlist(dir) {
+  if (songs.length === 0) { showToast('Setlist vazio.'); return; }
+  const novoIdx = currentSongIndex + dir;
+  if (novoIdx < 0 || novoIdx >= songs.length) {
+    flashSwipe(dir < 0 ? 'INICIO' : 'FIM');
+    return;
+  }
+  currentSongIndex = novoIdx;
+  const s = songs[currentSongIndex];
+  bpm = s.bpm;
+  document.getElementById('bpm-display').innerText = bpm;
+  document.getElementById('notes-grid').innerHTML = '';
+  s.parts.forEach(p => addPart(p.title, p.content));
+  window.scrollTo(0, 0);
+  atualizarIndicador();
+  flashSwipe(dir > 0 ? '>' : '<');
+  broadcastEstado();
+}
+
+function flashSwipe(txt) {
+  const el = document.getElementById('swipe-hint');
+  el.innerText = txt;
+  el.classList.add('show');
+  setTimeout(() => el.classList.remove('show'), 500);
+}
+
+// SWIPE touch
+let touchStartX = 0;
+let touchStartY = 0;
+document.addEventListener('touchstart', e => {
+  touchStartX = e.touches[0].clientX;
+  touchStartY = e.touches[0].clientY;
+}, { passive: true });
+
+document.addEventListener('touchend', e => {
+  if (!document.getElementById('app-body').classList.contains('performance-mode')) return;
+  const dx = e.changedTouches[0].clientX - touchStartX;
+  const dy = e.changedTouches[0].clientY - touchStartY;
+  if (Math.abs(dx) < 60 || Math.abs(dx) < Math.abs(dy) * 1.5) return; // ignora swipe vertical
+  navegarSetlist(dx < 0 ? 1 : -1);
+}, { passive: true });
+
+// TECLADO: setas esquerda/direita no modo show
+document.addEventListener('keydown', e => {
+  if (!document.getElementById('app-body').classList.contains('performance-mode')) return;
+  if (e.key === 'ArrowRight') navegarSetlist(1);
+  if (e.key === 'ArrowLeft') navegarSetlist(-1);
+  if (e.key === 'Escape') togglePerf();
+});
 
 // ─── TELEPROMPTER ──────────────────────────────────────────────────────────
 const scrollSlider = document.getElementById('scroll-speed');
