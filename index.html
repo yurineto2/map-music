@@ -109,7 +109,7 @@ body.performance-mode .scroll-controls { display: flex; }
     <h1>Map Music <span style="color:var(--accent-primary)">Pro</span></h1>
     <div class="menu-container">
         <button onclick="toggleMenu(event)" class="menu-btn"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="1"/><circle cx="12" cy="5" r="1"/><circle cx="12" cy="19" r="1"/></svg></button>
-        <div id="m-drop" class="dropdown-menu">
+        <div id="m-drop" class="dropdown-menu">            
             <div class="menu-item danger" onclick="resetSection()">Limpar Secao</div>
         </div>
     </div>
@@ -179,7 +179,7 @@ window.onclick = () => document.getElementById('m-drop').classList.remove('show'
 function resetSection() {
     if(confirm("Limpar a secao atual?")) {
         document.getElementById('notes-grid').innerHTML = "";
-        ["INTRO", "VERSO", "REFRÃO"].forEach(p => addPart(p));
+        ["INTRO", "VERSO", "REFRÃO", "PONTE", "FINAL"].forEach(p => addPart(p));
     }
 }
 
@@ -190,7 +190,7 @@ document.getElementById('tap-btn').addEventListener('click', () => {
     if (tapTimes.length > 1) {
         let sum = 0;
         for (let i = 1; i < tapTimes.length; i++) sum += (tapTimes[i] - tapTimes[i-1]);
-        bpm = Math.min(Math.max(Math.round(60000 / (sum / (tapTimes.length - 1))), 40), 860);
+        bpm = Math.min(Math.max(Math.round(60000 / (sum / (tapTimes.length - 1))), 40), 240);
         document.getElementById('bpm-display').innerText = bpm;
     }
 });
@@ -218,7 +218,7 @@ function togglePlay() {
     else { clearTimeout(timerID); btn.innerText = "INICIAR"; btn.style.background = "var(--accent-primary)"; }
 }
 
-function adj(v) { bpm = Math.min(Math.max(bpm + v, 40), 860); document.getElementById('bpm-display').innerText = bpm; }
+function adj(v) { bpm = Math.min(Math.max(bpm + v, 40), 240); document.getElementById('bpm-display').innerText = bpm; }
 
 function addPart(title = "PARTE", content = "") {
   const div = document.createElement('div');
@@ -325,7 +325,7 @@ function importData() {
 }
 
 renderSetlist();
-["INTRO", "VERSO", "REFRÃO", "PONTE", "FINAL"].forEach(p => addPart(p));
+["INTRO", "VERSO", "REFRÃO"].forEach(p => addPart(p));
 </script>
 </body>
 </html>
