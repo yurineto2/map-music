@@ -1,110 +1,132 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
+
 <head>
+
 <meta charset="UTF-8">
 <title>Map Music</title>
 
 <style>
 
 body{
-    margin:0;
-    background:#000;
-    color:white;
-    font-family:Arial;
+margin:0;
+font-family:Arial;
+background:#0a0a0a;
+color:white;
 }
 
 header{
-    background:#111;
-    padding:15px;
-    text-align:center;
-    font-size:22px;
-    border-bottom:2px solid red;
+background:#111;
+padding:18px;
+font-size:22px;
+text-align:center;
+border-bottom:3px solid #ff0000;
 }
 
 .container{
-    padding:20px;
+padding:20px;
+max-width:900px;
+margin:auto;
 }
 
-button{
-    background:red;
-    border:none;
-    color:white;
-    padding:10px 18px;
-    margin:5px;
-    cursor:pointer;
-    border-radius:5px;
-    font-size:15px;
-}
-
-button:hover{
-    background:#cc0000;
+h3{
+margin-top:30px;
 }
 
 input, textarea{
-    width:100%;
-    padding:10px;
-    margin-top:10px;
-    margin-bottom:10px;
-    border:none;
-    border-radius:5px;
-    font-size:15px;
+width:100%;
+padding:12px;
+margin-top:8px;
+margin-bottom:10px;
+background:#111;
+border:1px solid #333;
+color:white;
+border-radius:6px;
+font-size:15px;
 }
 
-.music-list{
-    margin-top:20px;
+button{
+background:#ff0000;
+border:none;
+padding:12px 18px;
+color:white;
+border-radius:6px;
+cursor:pointer;
+font-size:15px;
+margin-top:5px;
 }
 
-.music-item{
-    background:#111;
-    padding:10px;
-    margin-bottom:8px;
-    border-left:4px solid red;
-    cursor:pointer;
+button:hover{
+background:#c40000;
 }
 
-.music-item:hover{
-    background:#1a1a1a;
+.lista{
+margin-top:20px;
+}
+
+.musica{
+background:#111;
+padding:12px;
+border-left:4px solid red;
+margin-bottom:8px;
+cursor:pointer;
+}
+
+.musica:hover{
+background:#1c1c1c;
+}
+
+#tituloSelecionado{
+font-size:22px;
+margin-top:15px;
 }
 
 #acordes{
-    white-space:pre-line;
-    margin-top:20px;
-    font-size:18px;
+white-space:pre-line;
+margin-top:15px;
+font-size:18px;
+line-height:1.6;
 }
 
 /* MODO PALCO */
 
-#stageMode{
-    display:none;
-    position:fixed;
-    top:0;
-    left:0;
-    width:100%;
-    height:100%;
-    background:black;
-    color:white;
-    padding:40px;
-    overflow:auto;
+#palco{
+
+display:none;
+position:fixed;
+top:0;
+left:0;
+width:100%;
+height:100%;
+background:black;
+color:white;
+padding:60px;
+overflow:auto;
+z-index:999;
+
 }
 
-#stageTitle{
-    font-size:35px;
-    margin-bottom:30px;
+#palcoTitulo{
+font-size:40px;
+margin-bottom:30px;
 }
 
-#stageChords{
-    font-size:32px;
-    line-height:1.6;
-    white-space:pre-line;
+#palcoAcordes{
+font-size:36px;
+white-space:pre-line;
+line-height:1.7;
 }
 
-.stageControls{
-    position:fixed;
-    bottom:20px;
-    right:20px;
+#fecharPalco{
+
+position:fixed;
+top:20px;
+right:20px;
+
 }
 
 </style>
+
 </head>
 
 <body>
@@ -117,21 +139,17 @@ input, textarea{
 
 <input id="titulo" placeholder="Nome da música">
 
-<textarea id="acordeInput" rows="6" placeholder="Digite os acordes ou cifra"></textarea>
+<textarea id="acorde" rows="6" placeholder="Digite a cifra ou acordes"></textarea>
 
-<button onclick="salvarMusica()">Salvar Música</button>
+<button onclick="salvar()">Salvar</button>
 
-<hr>
+<h3>Músicas</h3>
 
-<h3>Minhas Músicas</h3>
-
-<div class="music-list" id="lista"></div>
-
-<hr>
+<div id="lista" class="lista"></div>
 
 <h3>Música Selecionada</h3>
 
-<div id="tituloMusica"></div>
+<div id="tituloSelecionado"></div>
 
 <div id="acordes"></div>
 
@@ -141,63 +159,58 @@ input, textarea{
 
 </div>
 
-<!-- MODO PALCO -->
+<div id="palco">
 
-<div id="stageMode">
+<button id="fecharPalco" onclick="fecharPalco()">Sair</button>
 
-<div id="stageTitle"></div>
+<div id="palcoTitulo"></div>
 
-<div id="stageChords"></div>
-
-<div class="stageControls">
-<button onclick="fecharPalco()">Sair</button>
-</div>
+<div id="palcoAcordes"></div>
 
 </div>
 
 <script>
 
-let musicas = []
-let musicaAtual = null
+let musicas = JSON.parse(localStorage.getItem("mapMusic")) || []
 
-function salvarMusica(){
+let atual = null
+
+function salvar(){
 
 let titulo = document.getElementById("titulo").value
-let acorde = document.getElementById("acordeInput").value
+let acorde = document.getElementById("acorde").value
 
-if(titulo == "" || acorde == ""){
-alert("Preencha todos os campos")
+if(titulo=="" || acorde==""){
+alert("Preencha os campos")
 return
 }
 
-let musica = {
-titulo:titulo,
-acorde:acorde
-}
+musicas.push({titulo,acorde})
 
-musicas.push(musica)
+localStorage.setItem("mapMusic",JSON.stringify(musicas))
 
 document.getElementById("titulo").value=""
-document.getElementById("acordeInput").value=""
+document.getElementById("acorde").value=""
 
-renderLista()
+render()
 
 }
 
-function renderLista(){
+function render(){
 
 let lista = document.getElementById("lista")
+
 lista.innerHTML=""
 
 musicas.forEach((m,i)=>{
 
 let div = document.createElement("div")
-div.className="music-item"
-div.innerText = m.titulo
 
-div.onclick = ()=>{
-mostrarMusica(i)
-}
+div.className="musica"
+
+div.innerText=m.titulo
+
+div.onclick=()=>selecionar(i)
 
 lista.appendChild(div)
 
@@ -205,36 +218,41 @@ lista.appendChild(div)
 
 }
 
-function mostrarMusica(index){
+function selecionar(i){
 
-musicaAtual = musicas[index]
+atual = musicas[i]
 
-document.getElementById("tituloMusica").innerText = musicaAtual.titulo
-document.getElementById("acordes").innerText = musicaAtual.acorde
+document.getElementById("tituloSelecionado").innerText=atual.titulo
+
+document.getElementById("acordes").innerText=atual.acorde
 
 }
 
 function abrirPalco(){
 
-if(!musicaAtual){
+if(!atual){
 alert("Selecione uma música")
 return
 }
 
-document.getElementById("stageMode").style.display="block"
+document.getElementById("palco").style.display="block"
 
-document.getElementById("stageTitle").innerText = musicaAtual.titulo
-document.getElementById("stageChords").innerText = musicaAtual.acorde
+document.getElementById("palcoTitulo").innerText=atual.titulo
+
+document.getElementById("palcoAcordes").innerText=atual.acorde
 
 }
 
 function fecharPalco(){
 
-document.getElementById("stageMode").style.display="none"
+document.getElementById("palco").style.display="none"
 
 }
+
+render()
 
 </script>
 
 </body>
+
 </html>
