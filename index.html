@@ -33,16 +33,6 @@ body.performance-mode {
 
 * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
 body { font-family: 'Inter', sans-serif; background: var(--bg-primary); color: var(--text-primary); min-height: 100vh; transition: 0.4s ease; overflow-x: hidden; }
-
-  .show-active{
-animation: showBlink 1s infinite;
-}
-
-@keyframes showBlink{
-0%{opacity:1;}
-50%{opacity:0.4;}
-100%{opacity:1;}
-}
   
 /* HEADER */
 .app-header { background: rgba(18,18,26,0.95); backdrop-filter: blur(20px); border-bottom: 1px solid var(--border-color); padding: 15px 20px; position: sticky; top: 0; z-index: 1000; }
@@ -202,7 +192,7 @@ document.getElementById('tap-btn').addEventListener('click', () => {
     if (tapTimes.length > 1) {
         let sum = 0;
         for (let i = 1; i < tapTimes.length; i++) sum += (tapTimes[i] - tapTimes[i-1]);
-        bpm = Math.min(Math.max(Math.round(60000 / (sum / (tapTimes.length - 1))), 40), 240);
+        bpm = Math.min(Math.max(Math.round(60000 / (sum / (tapTimes.length - 1))), 40), 500);
         document.getElementById('bpm-display').innerText = bpm;
     }
 });
