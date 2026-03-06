@@ -302,14 +302,6 @@ scrollSlider.oninput = () => {
     clearInterval(scrollInterval);
     if (scrollSlider.value > 0) scrollInterval = setInterval(() => window.scrollBy(0, 1), 175 - scrollSlider.value);
 };
-  }
-}
-
-const scrollSlider = document.getElementById('scroll-speed');
-scrollSlider.oninput = () => {
-    clearInterval(scrollInterval);
-    if (scrollSlider.value > 0) scrollInterval = setInterval(() => window.scrollBy(0, 1), 175 - scrollSlider.value);
-};
 function stopScroll() { clearInterval(scrollInterval); scrollSlider.value = 0; }
 
 function exportData() {
