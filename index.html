@@ -179,7 +179,8 @@ window.onclick = () => document.getElementById('m-drop').classList.remove('show'
 function resetSection() {
     if(confirm("Limpar a secao atual?")) {
         document.getElementById('notes-grid').innerHTML = "";
-        ["INTRO", "VERSO", "REFRÃO"].forEach(p => addPart(p));
+        ["INTRO", "VERSO", "REFRÃO", "PONTE", "FINAL"].forEach(p => addPart(p));
+      [let bpm = 120;]
     }
 }
 
