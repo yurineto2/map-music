@@ -191,7 +191,7 @@ document.getElementById('tap-btn').addEventListener('click', () => {
     if (tapTimes.length > 1) {
         let sum = 0;
         for (let i = 1; i < tapTimes.length; i++) sum += (tapTimes[i] - tapTimes[i-1]);
-        bpm = Math.min(Math.max(Math.round(60000 / (sum / (tapTimes.length - 1))), 40), 240);
+        bpm = Math.min(Math.max(Math.round(60000 / (sum / (tapTimes.length - 1))), 40), 860);
         document.getElementById('bpm-display').innerText = bpm;
     }
 });
@@ -219,7 +219,7 @@ function togglePlay() {
     else { clearTimeout(timerID); btn.innerText = "INICIAR"; btn.style.background = "var(--accent-primary)"; }
 }
 
-function adj(v) { bpm = Math.min(Math.max(bpm + v, 40), 240); document.getElementById('bpm-display').innerText = bpm; }
+function adj(v) { bpm = Math.min(Math.max(bpm + v, 40), 860); document.getElementById('bpm-display').innerText = bpm; }
 
 function addPart(title = "PARTE", content = "") {
   const div = document.createElement('div');
