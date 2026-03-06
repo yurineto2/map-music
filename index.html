@@ -109,7 +109,8 @@ body.performance-mode .scroll-controls { display: flex; }
     <h1>Map Music <span style="color:var(--accent-primary)">Pro</span></h1>
     <div class="menu-container">
         <button onclick="toggleMenu(event)" class="menu-btn"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="1"/><circle cx="12" cy="5" r="1"/><circle cx="12" cy="19" r="1"/></svg></button>
-        <div id="m-drop" class="dropdown-menu">            
+        <div id="m-drop" class="dropdown-menu">   
+          <div class="menu-item" onclick="compartilharSetlist()">Compartilhar Setlist</div>
             <div class="menu-item danger" onclick="resetSection()">Limpar Secao</div>
         </div>
     </div>
