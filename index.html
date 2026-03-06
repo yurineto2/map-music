@@ -180,6 +180,8 @@ function resetSection() {
     if(confirm("Limpar a secao atual?")) {
         document.getElementById('notes-grid').innerHTML = "";
         ["INTRO", "VERSO", "REFRÃO", "PONTE", "FINAL"].forEach(p => addPart(p));
+       const bpmPadrao = 120;
+        localStorage.setItem('map_music_bpm', bpmPadrao);
     }
 }
 
