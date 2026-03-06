@@ -303,25 +303,7 @@ scrollSlider.oninput = () => {
 };
 function stopScroll() { clearInterval(scrollInterval); scrollSlider.value = 0; }
 
-function exportData() {
-    const blob = new Blob([JSON.stringify(songs)], {type: "application/json"});
-    const link = document.createElement("a");
-    link.href = URL.createObjectURL(blob);
-    link.download = `backup_map.json`;
-    link.click();
-}
-
-function importData() {
-    const input = document.createElement('input');
-    input.type = 'file';
-    input.onchange = e => {
-        const reader = new FileReader();
-        reader.readAsText(e.target.files[0]);
-        reader.onload = re => {
-            songs = JSON.parse(re.target.result);
-            updateStorage();
-        }
-    }
+      }
     input.click();
 }
 
