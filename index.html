@@ -23,6 +23,15 @@
   --radius-full: 9999px;
   --note-color: #ffffff;
 }
+  .show-active{
+animation: showBlink 1s infinite;
+}
+
+@keyframes showBlink{
+0%{opacity:1;}
+50%{opacity:0.4;}
+100%{opacity:1;}
+}
 
 body.performance-mode {
   --bg-primary: #050000;
