@@ -33,7 +33,7 @@ body.performance-mode {
 
 * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
 body { font-family: 'Inter', sans-serif; background: var(--bg-primary); color: var(--text-primary); min-height: 100vh; transition: 0.4s ease; overflow-x: hidden; }
-  
+
 /* HEADER */
 .app-header { background: rgba(18,18,26,0.95); backdrop-filter: blur(20px); border-bottom: 1px solid var(--border-color); padding: 15px 20px; position: sticky; top: 0; z-index: 1000; }
 .header-content { max-width: 1400px; margin: 0 auto; display: flex; justify-content: space-between; align-items: center; position: relative; }
@@ -192,7 +192,7 @@ document.getElementById('tap-btn').addEventListener('click', () => {
     if (tapTimes.length > 1) {
         let sum = 0;
         for (let i = 1; i < tapTimes.length; i++) sum += (tapTimes[i] - tapTimes[i-1]);
-        bpm = Math.min(Math.max(Math.round(60000 / (sum / (tapTimes.length - 1))), 40), 500);
+        bpm = Math.min(Math.max(Math.round(60000 / (sum / (tapTimes.length - 1))), 40), 240);
         document.getElementById('bpm-display').innerText = bpm;
     }
 });
@@ -291,35 +291,16 @@ function deleteSong(id, e) {
   }
 }
 
-function togglePerf(){
-
-const body = document.getElementById("app-body");
-const btn = document.querySelector(".mode-show-container");
-const text = document.getElementById("mode-text");
-
-if (navigator.vibrate){
-navigator.vibrate(80);
+function togglePerf() {
+    const isPerf = document.getElementById('app-body').classList.toggle('performance-mode');
+    document.getElementById('mode-text').innerText = isPerf ? "SAIR DO SHOW" : "MODO SHOW";
+    if (!isPerf) { stopScroll(); window.scrollTo(0,0); }
 }
 
-const ativo = body.classList.toggle("performance-mode");
-
-if(ativo){
-
-btn.classList.add("show-active");
-text.innerText = "SAIR DO SHOW";
-
-}else{
-
-btn.classList.remove("show-active");
-text.innerText = "MODO SHOW";
-
-stopScroll();
-window.scrollTo(0,0);
-
-}
-
-}
-  
+const scrollSlider = document.getElementById('scroll-speed');
+scrollSlider.oninput = () => {
+    clearInterval(scrollInterval);
+    if (scrollSlider.value > 0) scrollInterval = setInterval(() => window.scrollBy(0, 1), 175 - scrollSlider.value);
 };
 function stopScroll() { clearInterval(scrollInterval); scrollSlider.value = 0; }
 
