@@ -353,88 +353,132 @@ body.performance-mode .perf-song-indicator { display: flex; }
 .toast { position: fixed; bottom: 80px; left: 50%; transform: translateX(-50%); background: var(--accent-primary); color: #000; padding: 10px 20px; border-radius: var(--radius-full); font-weight: 700; font-size: 12px; z-index: 9999; opacity: 0; transition: opacity 0.3s; pointer-events: none; white-space: nowrap; }
 .toast.show { opacity: 1; }
 
-/* MODAL PADS */
+/* MODAL PADS AMBIENT */
 .pads-overlay {
-  position: fixed; inset: 0; background: rgba(0,0,0,0.96);
-  backdrop-filter: blur(20px); z-index: 5000;
+  position: fixed; inset: 0;
+  background: #050508;
+  z-index: 5000;
   display: none; flex-direction: column;
-  align-items: center; justify-content: center; gap: 20px;
-  padding: 20px;
+  align-items: center; justify-content: center; gap: 24px;
+  padding: 24px;
+  overflow: hidden;
 }
 .pads-overlay.show { display: flex; }
 
+/* Fundo animado ambient */
+.pads-overlay::before {
+  content: ''; position: absolute; inset: -50%;
+  background: radial-gradient(ellipse at 30% 40%, rgba(29,185,84,0.06) 0%, transparent 60%),
+              radial-gradient(ellipse at 70% 70%, rgba(29,100,84,0.04) 0%, transparent 50%);
+  animation: ambientBg 8s ease-in-out infinite alternate;
+  pointer-events: none;
+}
+@keyframes ambientBg {
+  0%   { transform: scale(1) rotate(0deg); }
+  100% { transform: scale(1.1) rotate(3deg); }
+}
+
 .pads-header {
   display: flex; align-items: center; justify-content: space-between;
-  width: 100%; max-width: 520px;
+  width: 100%; max-width: 560px; position: relative; z-index: 1;
 }
 .pads-title {
-  font-size: 11px; font-weight: 900; letter-spacing: 3px;
-  text-transform: uppercase; color: var(--accent-primary);
+  font-size: 10px; font-weight: 900; letter-spacing: 4px;
+  text-transform: uppercase; color: rgba(255,255,255,0.3);
 }
 .pads-close {
-  background: none; border: 1px solid var(--border-color);
-  color: rgba(255,255,255,0.5); padding: 6px 14px;
+  background: none; border: 1px solid rgba(255,255,255,0.1);
+  color: rgba(255,255,255,0.4); padding: 6px 16px;
   border-radius: var(--radius-full); font-size: 10px;
   font-weight: 700; letter-spacing: 1px; cursor: pointer;
   text-transform: uppercase; transition: 0.2s;
 }
-.pads-close:hover { color: #fff; border-color: #fff; }
+.pads-close:hover { color: #fff; border-color: rgba(255,255,255,0.3); }
 
-/* Seletor de oitava e escala */
+/* Controles */
 .pads-controls {
-  display: flex; gap: 10px; align-items: center;
-  width: 100%; max-width: 520px; flex-wrap: wrap;
+  display: flex; gap: 8px; align-items: center;
+  width: 100%; max-width: 560px; flex-wrap: wrap;
+  position: relative; z-index: 1;
 }
 .pads-select {
-  background: var(--bg-secondary); border: 1px solid var(--border-color);
-  color: #fff; padding: 7px 12px; border-radius: 30px;
+  background: rgba(255,255,255,0.04);
+  border: 1px solid rgba(255,255,255,0.08);
+  color: rgba(255,255,255,0.7); padding: 7px 14px; border-radius: 30px;
   font-size: 10px; font-weight: 700; outline: none; cursor: pointer;
-  letter-spacing: 1px; text-transform: uppercase;
+  letter-spacing: 1px; text-transform: uppercase; transition: 0.2s;
 }
-.pads-oct {
+.pads-select:focus { border-color: rgba(29,185,84,0.4); }
+.pads-vol {
   display: flex; align-items: center; gap: 8px;
-  background: var(--bg-secondary); border: 1px solid var(--border-color);
-  padding: 4px 10px; border-radius: 30px;
+  background: rgba(255,255,255,0.04);
+  border: 1px solid rgba(255,255,255,0.08);
+  padding: 5px 14px; border-radius: 30px; margin-left: auto;
 }
-.pads-oct span { font-size: 10px; font-weight: 700; color: rgba(255,255,255,0.5); letter-spacing: 1px; }
-.pads-oct-val { font-size: 13px; font-weight: 900; color: var(--accent-primary); min-width: 16px; text-align: center; }
-.pads-oct button { background: none; border: none; color: #fff; cursor: pointer; font-size: 16px; line-height: 1; padding: 2px 4px; }
+.pads-vol span { font-size: 9px; font-weight: 700; color: rgba(255,255,255,0.3); letter-spacing: 1px; text-transform: uppercase; }
+.pads-vol input {
+  -webkit-appearance: none; appearance: none;
+  width: 70px; height: 3px; border-radius: 2px; outline: none;
+  background: rgba(255,255,255,0.1); cursor: pointer;
+}
+.pads-vol input::-webkit-slider-thumb {
+  -webkit-appearance: none; width: 12px; height: 12px;
+  border-radius: 50%; background: var(--accent-primary); cursor: pointer;
+}
 
-/* Grade de pads */
+/* Grade de pads ambient */
 .pads-grid {
   display: grid; grid-template-columns: repeat(4, 1fr);
-  gap: 10px; width: 100%; max-width: 520px;
+  gap: 12px; width: 100%; max-width: 560px;
+  position: relative; z-index: 1;
 }
 .pad {
-  aspect-ratio: 1;
-  border-radius: 12px;
-  border: 1px solid rgba(255,255,255,0.08);
-  background: var(--bg-secondary);
+  aspect-ratio: 1; border-radius: 16px;
+  border: 1px solid rgba(255,255,255,0.06);
+  background: rgba(255,255,255,0.03);
   display: flex; flex-direction: column;
   align-items: center; justify-content: center;
-  cursor: pointer; user-select: none;
-  transition: transform 0.06s, background 0.06s, box-shadow 0.06s;
+  cursor: pointer; user-select: none; -webkit-user-select: none;
+  transition: border-color 0.3s, background 0.3s;
   position: relative; overflow: hidden;
 }
-.pad:active, .pad.active {
-  transform: scale(0.93);
-  background: rgba(29,185,84,0.2);
-  border-color: var(--accent-primary);
-  box-shadow: 0 0 18px rgba(29,185,84,0.35);
+
+/* Glow pulsante quando ativo */
+.pad::after {
+  content: ''; position: absolute; inset: 0; border-radius: 16px;
+  background: radial-gradient(circle at center, var(--pad-color, rgba(29,185,84,0.3)), transparent 70%);
+  opacity: 0; transition: opacity 0.15s;
 }
-.pad::before {
-  content: ''; position: absolute; inset: 0;
-  background: radial-gradient(circle at center, rgba(29,185,84,0.15), transparent 70%);
-  opacity: 0; transition: opacity 0.1s;
+.pad.playing { border-color: var(--pad-color, rgba(29,185,84,0.6)); background: rgba(29,185,84,0.06); }
+.pad.playing::after { opacity: 1; animation: padPulse 2s ease-in-out infinite; }
+@keyframes padPulse {
+  0%, 100% { opacity: 0.6; transform: scale(1); }
+  50%       { opacity: 1;   transform: scale(1.04); }
 }
-.pad.active::before { opacity: 1; }
-.pad-note {
-  font-size: 18px; font-weight: 900; color: #fff; line-height: 1;
-}
-.pad-label {
-  font-size: 9px; font-weight: 700; color: rgba(255,255,255,0.3);
-  letter-spacing: 1px; text-transform: uppercase; margin-top: 4px;
-}
+
+.pad-chord  { font-size: 20px; font-weight: 900; color: #fff; line-height: 1; position: relative; z-index: 1; }
+.pad-type   { font-size: 9px; font-weight: 700; color: rgba(255,255,255,0.3); letter-spacing: 1px; margin-top: 5px; text-transform: uppercase; position: relative; z-index: 1; }
+
+/* Cores por grau */
+.pad[data-degree="I"]    { --pad-color: rgba(29,185,84,0.5); }
+.pad[data-degree="ii"]   { --pad-color: rgba(100,160,255,0.5); }
+.pad[data-degree="iii"]  { --pad-color: rgba(180,100,255,0.5); }
+.pad[data-degree="IV"]   { --pad-color: rgba(255,180,50,0.5); }
+.pad[data-degree="V"]    { --pad-color: rgba(255,100,80,0.5); }
+.pad[data-degree="vi"]   { --pad-color: rgba(80,220,200,0.5); }
+.pad[data-degree="vii°"] { --pad-color: rgba(200,200,80,0.5); }
+.pad[data-degree="i"]    { --pad-color: rgba(29,185,84,0.5); }
+.pad[data-degree="ii°"]  { --pad-color: rgba(100,160,255,0.5); }
+.pad[data-degree="III"]  { --pad-color: rgba(180,100,255,0.5); }
+.pad[data-degree="iv"]   { --pad-color: rgba(255,180,50,0.5); }
+.pad[data-degree="v"]    { --pad-color: rgba(255,100,80,0.5); }
+.pad[data-degree="VI"]   { --pad-color: rgba(80,220,200,0.5); }
+.pad[data-degree="VII"]  { --pad-color: rgba(200,200,80,0.5); }
+
+/* Notas naturais vs sustenidos/bemois */
+.pad-white { background: rgba(255,255,255,0.04); border-color: rgba(255,255,255,0.08); }
+.pad-black { background: rgba(0,0,0,0.4); border-color: rgba(255,255,255,0.04); }
+.pad-black .pad-chord { color: rgba(255,255,255,0.7); }
 
 /* MODAL IMPORTAR CIFRA */
 .cifra-textarea {
@@ -587,30 +631,16 @@ Am    F    C
   </div>
 </div>
 
-<!-- PADS -->
+<!-- PADS AMBIENT -->
 <div class="pads-overlay" id="pads-overlay">
   <div class="pads-header">
-    <span class="pads-title">Pads</span>
+    <span class="pads-title">Ambient Pads</span>
     <button class="pads-close" onclick="fecharPads()">Fechar</button>
   </div>
   <div class="pads-controls">
-    <select class="pads-select" id="pads-scale" onchange="renderPads()">
-      <option value="major">Maior</option>
-      <option value="minor">Menor</option>
-      <option value="pentatonic">Pentatonica Maior</option>
-      <option value="minor_pentatonic">Pentatonica Menor</option>
-      <option value="chromatic">Cromatica</option>
-    </select>
-    <select class="pads-select" id="pads-root" onchange="renderPads()">
-      <option>C</option><option>C#</option><option>D</option><option>D#</option>
-      <option>E</option><option>F</option><option>F#</option><option>G</option>
-      <option>G#</option><option>A</option><option>A#</option><option>B</option>
-    </select>
-    <div class="pads-oct">
-      <span>OCT</span>
-      <button onclick="mudaOitava(-1)">-</button>
-      <span class="pads-oct-val" id="pads-oct-val">4</span>
-      <button onclick="mudaOitava(1)">+</button>
+    <div class="pads-vol">
+      <span>Vol</span>
+      <input type="range" id="pads-vol" min="0" max="100" value="70" style="width:260px;">
     </div>
   </div>
   <div class="pads-grid" id="pads-grid"></div>
@@ -1449,97 +1479,156 @@ function importData() {
   input.click();
 }
 
-// ─── PADS ─────────────────────────────────────────────────────────────────
+// ─── PADS AMBIENT ─────────────────────────────────────────────────────────
 
-let padsOitava = 4;
+// Cada pad toca um acorde do campo harmônico de forma contínua (pad ambient)
+// Segura para soar, solta para fade out
 
-const SCALES = {
-  major:            [0, 2, 4, 5, 7, 9, 11, 12, 14, 16, 17, 19, 21, 23, 24, 26],
-  minor:            [0, 2, 3, 5, 7, 8, 10, 12, 14, 15, 17, 19, 20, 22, 24, 26],
-  pentatonic:       [0, 2, 4, 7, 9, 12, 14, 16, 19, 21, 24, 26, 28, 31, 33, 36],
-  minor_pentatonic: [0, 3, 5, 7, 10, 12, 15, 17, 19, 22, 24, 27, 29, 31, 34, 36],
-  chromatic:        [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15],
-};
+const padNodes = {}; // armazena nós ativos por pad index
 
-const NOTE_NAMES = ['C','C#','D','D#','E','F','F#','G','G#','A','A#','B'];
-const SOLFEJO    = ['Do','Re','Mi','Fa','Sol','La','Si'];
-const SOLFEJO_MAP = { 'C':'Do', 'C#':'Do#', 'D':'Re', 'D#':'Re#', 'E':'Mi', 'F':'Fa', 'F#':'Fa#', 'G':'Sol', 'G#':'Sol#', 'A':'La', 'A#':'La#', 'B':'Si' };
+// Frequência base a partir do MIDI
+function midiToFreq(midi) { return 440 * Math.pow(2, (midi - 69) / 12); }
+
+// Vozes de um acorde (raiz + terça + quinta + oitava)
+function acordeParaMidi(rootMidi, qualidade) {
+  if (qualidade === 'm') return [rootMidi, rootMidi+3, rootMidi+7, rootMidi+12];
+  return [rootMidi, rootMidi+4, rootMidi+7, rootMidi+12];
+}
 
 function abrirPads() {
   document.getElementById('pads-overlay').classList.add('show');
+  if (audioCtx.state === 'suspended') audioCtx.resume();
   renderPads();
 }
+
 function fecharPads() {
+  // Para todos os pads ao fechar
+  Object.keys(padNodes).forEach(i => pararPad(i));
   document.getElementById('pads-overlay').classList.remove('show');
-}
-function mudaOitava(d) {
-  padsOitava = Math.min(Math.max(padsOitava + d, 1), 7);
-  document.getElementById('pads-oct-val').innerText = padsOitava;
-  renderPads();
 }
 
 function renderPads() {
-  const scale  = document.getElementById('pads-scale').value;
-  const root   = document.getElementById('pads-root').value;
-  const rootIdx = NOTE_NAMES.indexOf(root);
-  const steps  = SCALES[scale];
-  const grid   = document.getElementById('pads-grid');
+  const grid = document.getElementById('pads-grid');
+  Object.keys(padNodes).forEach(i => pararPad(i));
 
-  grid.innerHTML = steps.map((semitones, i) => {
-    const midiNote = 12 * padsOitava + rootIdx + semitones;
-    const noteName = NOTE_NAMES[midiNote % 12];
-    const oitavaNota = Math.floor(midiNote / 12) - 1;
-    const solfejo = SOLFEJO_MAP[noteName] || noteName;
+  const NOTA_DISPLAY = ['C','C#','D','D#','E','F','F#','G','G#','A','A#','B'];
+  const NOTA_BEMOL   = ['C','Db','D','Eb','E','F','Gb','G','Ab','A','Bb','B'];
+  const isBlack      = [false,true,false,true,false,false,true,false,true,false,true,false];
+
+  grid.innerHTML = Array.from({length: 16}, (_, i) => {
+    const notaIdx = i % 12;
+    const oitava  = i < 12 ? 3 : 4;
+    const midi    = 48 + notaIdx + (i >= 12 ? 12 : 0);
+    const sharp   = NOTA_DISPLAY[notaIdx];
+    const flat    = NOTA_BEMOL[notaIdx];
+    const black   = isBlack[notaIdx];
+
     return `
-      <div class="pad" data-midi="${midiNote}"
-        onmousedown="tocarPad(this,${midiNote})"
-        ontouchstart="tocarPad(this,${midiNote}); event.preventDefault()">
-        <span class="pad-note">${noteName}</span>
-        <span class="pad-label">${solfejo} ${oitavaNota}</span>
+      <div class="pad ${black ? 'pad-black' : 'pad-white'}"
+        data-midi="${midi}" data-qual="" data-idx="${i}"
+        onmousedown="iniciarPad(this)" onmouseup="pararPad(${i})" onmouseleave="pararPad(${i})"
+        ontouchstart="iniciarPad(this); event.preventDefault()" ontouchend="pararPad(${i}); event.preventDefault()">
+        <span class="pad-chord">${sharp}</span>
       </div>`;
   }).join('');
 }
 
-function tocarPad(el, midi) {
-  // Feedback visual
-  el.classList.add('active');
-  setTimeout(() => el.classList.remove('active'), 180);
+function iniciarPad(el) {
+  if (audioCtx.state === 'suspended') audioCtx.resume();
+  const idx   = parseInt(el.dataset.idx);
+  const midi  = parseInt(el.dataset.midi);
+  const qual  = el.dataset.qual;
+  const vol   = parseInt(document.getElementById('pads-vol').value) / 100;
 
-  // Gera nota com Web Audio API (síntese de piano simples)
+  // Para se já estiver tocando
+  if (padNodes[idx]) pararPad(idx);
+
+  el.classList.add('playing');
+
   const ctx = audioCtx;
-  if (ctx.state === 'suspended') ctx.resume();
-
-  const freq = 440 * Math.pow(2, (midi - 69) / 12);
-
-  // Oscilador principal
-  const osc1 = ctx.createOscillator();
-  const osc2 = ctx.createOscillator();
-  const gain = ctx.createGain();
-  const filter = ctx.createBiquadFilter();
-
-  osc1.type = 'triangle';
-  osc2.type = 'sine';
-  osc1.frequency.value = freq;
-  osc2.frequency.value = freq * 2.005; // leve desafinação para riqueza
-
-  filter.type = 'lowpass';
-  filter.frequency.value = freq * 6;
-  filter.Q.value = 0.8;
-
-  // Envelope tipo piano: ataque rápido, decaimento longo
   const now = ctx.currentTime;
-  gain.gain.setValueAtTime(0, now);
-  gain.gain.linearRampToValueAtTime(0.4, now + 0.01);
-  gain.gain.exponentialRampToValueAtTime(0.15, now + 0.3);
-  gain.gain.exponentialRampToValueAtTime(0.001, now + 1.8);
+  const notas = acordeParaMidi(midi, qual);
 
-  osc1.connect(filter);
-  osc2.connect(filter);
-  filter.connect(gain);
-  gain.connect(ctx.destination);
+  // Masterbus do pad
+  const masterGain = ctx.createGain();
+  masterGain.gain.setValueAtTime(0, now);
+  masterGain.gain.linearRampToValueAtTime(vol * 0.35, now + 1.2); // attack lento = ambient
 
-  osc1.start(now); osc1.stop(now + 1.8);
-  osc2.start(now); osc2.stop(now + 1.8);
+  // Reverb simples via convolver simulado com delay
+  const delay1 = ctx.createDelay(2);
+  const delay2 = ctx.createDelay(2);
+  delay1.delayTime.value = 0.22;
+  delay2.delayTime.value = 0.45;
+  const fbGain1 = ctx.createGain(); fbGain1.gain.value = 0.35;
+  const fbGain2 = ctx.createGain(); fbGain2.gain.value = 0.25;
+  delay1.connect(fbGain1); fbGain1.connect(delay1);
+  delay2.connect(fbGain2); fbGain2.connect(delay2);
+
+  const wetGain = ctx.createGain(); wetGain.gain.value = 0.5;
+  masterGain.connect(delay1); masterGain.connect(delay2);
+  delay1.connect(wetGain); delay2.connect(wetGain);
+  masterGain.connect(ctx.destination);
+  wetGain.connect(ctx.destination);
+
+  const oscs = notas.map((n, vi) => {
+    const freq = midiToFreq(n);
+
+    // Camada 1: sawtooth filtrado (corpo do pad)
+    const osc1 = ctx.createOscillator();
+    osc1.type = 'sawtooth';
+    osc1.frequency.value = freq;
+    // Leve detuning por voz para riqueza
+    osc1.detune.value = [-8, -3, 3, 8][vi] || 0;
+
+    // Camada 2: sine (suavidade)
+    const osc2 = ctx.createOscillator();
+    osc2.type = 'sine';
+    osc2.frequency.value = freq * 2;
+    osc2.detune.value = 5;
+
+    // Filtro lowpass para suavizar (som de pad)
+    const filter = ctx.createBiquadFilter();
+    filter.type = 'lowpass';
+    filter.frequency.value = 800 + freq * 1.5;
+    filter.Q.value = 0.6;
+
+    // Chorus leve: segundo osc ligeiramente desafinado
+    const chorus = ctx.createOscillator();
+    chorus.type = 'sine';
+    chorus.frequency.value = freq;
+    chorus.detune.value = 12;
+    const chorusGain = ctx.createGain(); chorusGain.gain.value = 0.08;
+
+    const voiceGain = ctx.createGain();
+    voiceGain.gain.value = 0.25;
+
+    osc1.connect(filter); osc2.connect(filter);
+    filter.connect(voiceGain);
+    chorus.connect(chorusGain); chorusGain.connect(masterGain);
+    voiceGain.connect(masterGain);
+
+    osc1.start(now); osc2.start(now); chorus.start(now);
+    return [osc1, osc2, chorus];
+  });
+
+  padNodes[idx] = { oscs: oscs.flat(), masterGain, delay1, delay2, el };
+}
+
+function pararPad(idx) {
+  const node = padNodes[idx];
+  if (!node) return;
+  const ctx = audioCtx;
+  const now = ctx.currentTime;
+
+  // Fade out lento = ambient
+  node.masterGain.gain.cancelScheduledValues(now);
+  node.masterGain.gain.setValueAtTime(node.masterGain.gain.value, now);
+  node.masterGain.gain.linearRampToValueAtTime(0, now + 1.5);
+
+  // Para osciladores após fade
+  node.oscs.forEach(o => { try { o.stop(now + 1.6); } catch(e){} });
+  node.el.classList.remove('playing');
+  delete padNodes[idx];
 }
 
 // ─── IMPORTAR CIFRA ───────────────────────────────────────────────────────
