@@ -1,242 +1,196 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Map Music Pro - Hybrid Layout</title>
-    <link href="https://fonts.googleapis.com" rel="stylesheet">
-    <style>
-        :root {
-            --bg-primary: #0a0a0f;
-            --bg-secondary: #12121a;
-            --accent-primary: #1db954;
-            --text-primary: #ffffff;
-            --border-color: rgba(255, 255, 255, 0.1);
-            --glass-bg: rgba(255, 255, 255, 0.03);
-            --glass-border: rgba(255, 255, 255, 0.08);
-            --radius-lg: 12px;
-            --radius-xl: 16px;
-            --radius-full: 9999px;
-        }
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Map Music Pro - Full Hybrid Edition</title>
+<link href="https://fonts.googleapis.com" rel="stylesheet">
 
-        /* ESTILO PERFORMANCE (VERMELHO) */
-        body.performance-mode {
-            --bg-primary: #050000;
-            --accent-primary: #ff3e3e;
-        }
+<style>
+:root {
+  --bg-primary: #0a0a0f;
+  --bg-secondary: #12121a;
+  --bg-tertiary: #1a1a25;
+  --accent-primary: #1db954;
+  --text-primary: #ffffff;
+  --border-color: rgba(255, 255, 255, 0.1);
+  --glass-bg: rgba(255, 255, 255, 0.03);
+  --glass-border: rgba(255, 255, 255, 0.08);
+  --radius-lg: 12px;
+  --radius-xl: 16px;
+  --radius-full: 9999px;
+}
 
-        * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
-        body { font-family: 'Inter', sans-serif; background: var(--bg-primary); color: var(--text-primary); transition: 0.4s ease; overflow-x: hidden; }
+body.performance-mode {
+  --bg-primary: #050000;
+  --accent-primary: #ff3e3e;
+}
 
-        /* HEADER VITRO */
-        .app-header { background: rgba(18,18,26,0.95); backdrop-filter: blur(20px); border-bottom: 1px solid var(--border-color); padding: 15px 20px; position: sticky; top: 0; z-index: 1000; }
-        .header-content { max-width: 1400px; margin: 0 auto; display: flex; justify-content: space-between; align-items: center; }
+* { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+body { font-family: 'Inter', sans-serif; background: var(--bg-primary); color: var(--text-primary); transition: 0.4s; overflow-x: hidden; }
 
-        /* LAYOUT HÍBRIDO (GRID DINÂMICO) */
-        .main-layout { 
-            display: grid; 
-            grid-template-columns: 280px 1fr 300px; 
-            gap: 20px; 
-            max-width: 1400px; 
-            margin: 0 auto; 
-            padding: 20px; 
-            min-height: calc(100vh - 70px);
-        }
+/* HEADER VITRO */
+.app-header { background: rgba(18,18,26,0.95); backdrop-filter: blur(20px); border-bottom: 1px solid var(--border-color); padding: 15px 20px; position: sticky; top: 0; z-index: 1000; }
+.header-content { max-width: 1400px; margin: 0 auto; display: flex; justify-content: space-between; align-items: center; }
 
-        /* ADAPTAÇÃO PARA TELAS MENORES (HÍBRIDO) */
-        @media (max-width: 1150px) {
-            .main-layout { grid-template-columns: 280px 1fr; }
-            .metronome-card { grid-column: span 2; position: relative !important; top: 0 !important; }
-        }
+/* DROPDOWN VITRO */
+.menu-container { position: relative; }
+.dropdown-menu { 
+  position: absolute; top: 45px; right: 0; 
+  background: rgba(20, 20, 30, 0.8); backdrop-filter: blur(15px);
+  border: 1px solid var(--glass-border); border-radius: var(--radius-lg); 
+  width: 200px; display: none; flex-direction: column; z-index: 2000;
+}
+.dropdown-menu.show { display: flex; }
+.menu-item { padding: 14px 18px; color: #fff; font-size: 11px; font-weight: 700; text-transform: uppercase; cursor: pointer; border-bottom: 1px solid var(--glass-border); }
 
-        @media (max-width: 850px) {
-            .main-layout { grid-template-columns: 1fr; }
-            .side-panel, .metronome-card { grid-column: span 1; }
-            .side-panel { order: 2; height: 400px; }
-            .editor-area { order: 1; }
-            .metronome-card { order: 3; }
-        }
+/* LAYOUT HÍBRIDO 3 COLUNAS */
+.main-layout { display: grid; grid-template-columns: 260px 1fr 280px; gap: 20px; max-width: 1400px; margin: 0 auto; padding: 20px; }
 
-        /* PAINÉIS */
-        .side-panel, .metronome-card { 
-            background: var(--bg-secondary); 
-            border-radius: var(--radius-xl); 
-            border: 1px solid var(--border-color); 
-            height: fit-content;
-            position: sticky;
-            top: 90px;
-        }
+@media (max-width: 1100px) {
+    .main-layout { grid-template-columns: 1fr; }
+    .side-panel { order: 2; height: 300px; }
+    .metronome-card { order: 3; }
+}
 
-        .panel-header { padding: 15px; border-bottom: 1px solid var(--border-color); font-weight: 800; font-size: 11px; text-transform: uppercase; color: var(--accent-primary); letter-spacing: 1px; }
+/* COMPONENTES LATERAIS */
+.side-panel, .metronome-card { background: var(--bg-secondary); border-radius: var(--radius-xl); border: 1px solid var(--border-color); height: fit-content; }
+.panel-header { padding: 12px 15px; border-bottom: 1px solid var(--border-color); font-weight: 800; font-size: 11px; color: var(--accent-primary); text-transform: uppercase; }
 
-        /* SETLIST */
-        .song-list { max-height: 60vh; overflow-y: auto; padding: 10px; }
-        .song-item { 
-            background: rgba(255,255,255,0.03); padding: 12px; border-radius: 10px; margin-bottom: 8px; 
-            display: flex; justify-content: space-between; align-items: center; cursor: pointer; border: 1px solid transparent;
-        }
-        .song-item.active { border-color: var(--accent-primary); background: rgba(29, 185, 84, 0.05); }
-        .song-item.fav { border-left: 3px solid #ffd700; }
+/* TOOLBAR CENTRAL (VOLTOU!) */
+.toolbar-central { 
+    display: flex; gap: 10px; margin-bottom: 20px; background: var(--bg-secondary); 
+    padding: 10px; border-radius: 50px; border: 1px solid var(--border-color); 
+    width: fit-content; align-items: center;
+}
+.tool-btn { background: none; border: 1px solid var(--glass-border); color: #fff; padding: 5px 12px; border-radius: 20px; font-size: 10px; font-weight: 800; cursor: pointer; }
+.tool-btn:hover { border-color: var(--accent-primary); color: var(--accent-primary); }
 
-        /* EDITOR */
-        .chord-area { 
-            width: 100%; min-height: 600px; background: var(--bg-secondary); border: 1px solid var(--border-color); 
-            border-radius: var(--radius-xl); padding: 25px; color: #fff; font-family: 'Monaco', 'Consolas', monospace; 
-            font-size: 18px; line-height: 1.5; outline: none; resize: none;
-        }
+/* SEÇÕES DE MÚSICA (VOLTOU!) */
+.section-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 15px; }
+.song-part { background: var(--bg-secondary); border-radius: var(--radius-lg); padding: 15px; border-left: 4px solid var(--accent-primary); }
+.chord-area { 
+    font-family: 'Monaco', monospace; font-size: 18px; font-weight: 700; color: #fff; 
+    background: none; border: none; width: 100%; resize: none; outline: none; margin-top: 10px;
+}
 
-        /* BOTÃO SALVAR VITRO */
-        .btn-save-vitro {
-            position: fixed; bottom: 30px; left: 20px; z-index: 900;
-            background: var(--glass-bg); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
-            border: 1px solid var(--glass-border); color: rgba(255, 255, 255, 0.5);
-            padding: 12px 25px; border-radius: var(--radius-full); cursor: pointer;
-            font-size: 10px; font-weight: 800; letter-spacing: 1.5px; text-transform: uppercase; transition: 0.3s;
-        }
-        .btn-save-vitro:hover { color: var(--accent-primary); border-color: var(--accent-primary); }
+/* BOTÃO SALVAR VITRO */
+.btn-save-vitro {
+    position: fixed; bottom: 30px; left: 20px; z-index: 900;
+    background: var(--glass-bg); backdrop-filter: blur(10px);
+    border: 1px solid var(--glass-border); color: rgba(255,255,255,0.4);
+    padding: 12px 20px; border-radius: var(--radius-full); cursor: pointer; font-size: 10px; font-weight: 800;
+}
 
-        /* MODO PERFORMANCE (SHOW) */
-        body.performance-mode .app-header, 
-        body.performance-mode .side-panel, 
-        body.performance-mode .metronome-card,
-        body.performance-mode .btn-save-vitro { display: none !important; }
+/* MODO PERFORMANCE */
+body.performance-mode .app-header, body.performance-mode .side-panel, 
+body.performance-mode .metronome-card, body.performance-mode .toolbar-central { display: none !important; }
+body.performance-mode .main-layout { grid-template-columns: 1fr; padding: 10% 15%; }
+body.performance-mode .chord-area { font-size: 45px; text-align: center; }
 
-        body.performance-mode .main-layout { grid-template-columns: 1fr; padding: 40px 10%; }
-        body.performance-mode .chord-area { 
-            font-size: 42px; border: none; background: transparent; 
-            text-align: center; font-weight: 700; pointer-events: none;
-        }
-
-        .btn-mode-toggle {
-            position: fixed; bottom: 30px; right: 20px; z-index: 1001;
-            background: var(--accent-primary); color: #000; padding: 15px 30px;
-            border-radius: var(--radius-full); font-weight: 900; border: none; cursor: pointer;
-            box-shadow: 0 10px 20px rgba(0,0,0,0.3);
-        }
-
-        /* MENU DROPDOWN */
-        .dropdown-menu { 
-            position: absolute; top: 50px; right: 0; background: rgba(15,15,25,0.9); 
-            backdrop-filter: blur(15px); border: 1px solid var(--glass-border); 
-            border-radius: var(--radius-lg); width: 180px; display: none; flex-direction: column;
-        }
-        .dropdown-menu.show { display: flex; }
-        .menu-item { padding: 12px 15px; font-size: 10px; font-weight: 800; text-transform: uppercase; cursor: pointer; border-bottom: 1px solid var(--glass-border); }
-        .menu-item:hover { color: var(--accent-primary); background: rgba(255,255,255,0.05); }
-    </style>
+.btn-show { position: fixed; bottom: 30px; right: 20px; background: var(--accent-primary); color: #000; padding: 15px 30px; border-radius: 50px; font-weight: 900; border: none; cursor: pointer; z-index: 1001; }
+</style>
 </head>
-<body id="app-body">
+<body>
 
 <header class="app-header">
-    <div class="header-content">
-        <h1 style="font-size: 18px; letter-spacing: -1px;">MAP MUSIC <span style="color:var(--accent-primary)">PRO</span></h1>
-        <div style="position: relative;">
-            <button onclick="toggleMenu()" style="background:none; border:none; color:#fff; cursor:pointer;">
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="1"/><circle cx="12" cy="5" r="1"/><circle cx="12" cy="19" r="1"/></svg>
-            </button>
-            <div id="m-drop" class="dropdown-menu">
-                <div class="menu-item" onclick="exportBackup()">Exportar</div>
-                <div class="menu-item" onclick="importBackup()">Importar</div>
-                <div class="menu-item danger" style="color:#ff4d4d" onclick="resetApp()">Limpar Tudo</div>
-            </div>
+  <div class="header-content">
+    <h1>MAP MUSIC <span style="color:var(--accent-primary)">PRO</span></h1>
+    <div class="menu-container">
+        <button onclick="toggleMenu()" style="background:none; border:none; color:#fff; cursor:pointer;"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="1"/><circle cx="12" cy="5" r="1"/><circle cx="12" cy="19" r="1"/></svg></button>
+        <div id="m-drop" class="dropdown-menu">
+            <div class="menu-item" onclick="exportData()">Exportar Backup</div>
+            <div class="menu-item" onclick="importData()">Importar Backup</div>
+            <div class="menu-item danger" style="color:#ff4d4d" onclick="clearAll()">Limpar Seção</div>
         </div>
     </div>
+  </div>
 </header>
 
 <div class="main-layout">
-    <!-- LADO ESQUERDO: SETLIST -->
-    <aside class="side-panel">
-        <div class="panel-header">SETLIST <span id="song-count" style="float:right; opacity:0.5">0</span></div>
-        <div class="song-list" id="song-list"></div>
-        <button onclick="addSong()" style="width:100%; padding:15px; background:none; border:none; color:var(--accent-primary); font-weight:900; cursor:pointer; font-size:10px;">+ ADICIONAR MÚSICA</button>
-    </aside>
+  <!-- SETLIST -->
+  <aside class="side-panel">
+    <div class="panel-header">SETLIST <span id="count" style="float:right">0</span></div>
+    <div id="song-list" style="padding:10px; overflow-y:auto; max-height:60vh;"></div>
+    <button onclick="addSong()" style="width:100%; padding:15px; background:none; border:none; color:var(--accent-primary); font-weight:900; cursor:pointer; font-size:10px;">+ NOVA MÚSICA</button>
+  </aside>
 
-    <!-- CENTRO: EDITOR HÍBRIDO -->
-    <main class="editor-area">
-        <input type="text" id="active-title" placeholder="Título da Canção" style="background:none; border:none; color:#fff; font-size: 28px; font-weight: 900; margin-bottom: 15px; width:100%; outline:none;">
-        <textarea id="main-editor" class="chord-area" placeholder="Digite as notas ou cole a cifra..."></textarea>
-    </main>
+  <!-- EDITOR PRINCIPAL -->
+  <main>
+    <div class="toolbar-central">
+        <span style="font-size:9px; font-weight:900; margin-right:5px; color:var(--accent-primary)">TOM</span>
+        <button class="tool-btn" onclick="transpose(-1)">-</button>
+        <button class="tool-btn" onclick="transpose(1)">+</button>
+        <div style="width:1px; height:15px; background:var(--border-color); margin:0 10px;"></div>
+        <span style="font-size:9px; font-weight:900; margin-right:5px; color:var(--accent-primary)">FONTE</span>
+        <button class="tool-btn" onclick="resizeFont(-2)">A-</button>
+        <button class="tool-btn" onclick="resizeFont(2)">A+</button>
+    </div>
 
-    <!-- LADO DIREITO: METRÔNOMO -->
-    <aside class="metronome-card">
-        <div class="panel-header">METRÔNOMO</div>
-        <div style="padding: 30px; text-align: center;">
-            <div style="font-size: 52px; font-weight: 900; color: var(--accent-primary); line-height:1">120</div>
-            <div style="font-size: 10px; font-weight: 800; opacity: 0.4; margin-top: 5px; letter-spacing: 2px;">BPM</div>
+    <input type="text" id="song-title" placeholder="Título" style="background:none; border:none; color:#fff; font-size:32px; font-weight:900; margin-bottom:20px; outline:none; width:100%;">
+
+    <div class="section-grid" id="sections-container">
+        <!-- As partes da música (Intro, Verso) entram aqui -->
+        <div class="song-part">
+            <input type="text" value="INTRO" style="background:none; border:none; color:var(--accent-primary); font-weight:900; font-size:11px; outline:none;">
+            <textarea class="chord-area" rows="3" placeholder="C G Am F"></textarea>
         </div>
-    </aside>
+    </div>
+    <button onclick="addSection()" style="margin-top:20px; background:none; border:1px dashed var(--border-color); color:var(--text-secondary); padding:15px; width:100%; border-radius:10px; cursor:pointer; font-size:10px; font-weight:800;">+ ADICIONAR SEÇÃO (VERSO/PONTE)</button>
+  </main>
+
+  <!-- METRONOMO -->
+  <aside class="metronome-card">
+    <div class="panel-header">METRÔNOMO</div>
+    <div style="padding:40px 20px; text-align:center;">
+        <div style="font-size:48px; font-weight:900; color:var(--accent-primary);">120</div>
+        <p style="font-size:9px; opacity:0.4; letter-spacing:2px;">BPM</p>
+    </div>
+  </aside>
 </div>
 
-<button class="btn-save-vitro" onclick="saveCurrent()">Salvar Cifra</button>
-<button class="btn-mode-toggle" onclick="togglePerformance()">MODO SHOW</button>
+<button class="btn-save-vitro" onclick="save()">Salvar Alterações</button>
+<button class="btn-show" onclick="toggleShow()">MODO SHOW</button>
 
 <script>
-    let songs = JSON.parse(localStorage.getItem('mapMusicData')) || [];
-    let currentIndex = null;
-
     function toggleMenu() { document.getElementById('m-drop').classList.toggle('show'); }
-
-    function addSong() {
-        const name = prompt("Nome da música:");
-        if(name) {
-            songs.push({ title: name, content: '', fav: false });
-            renderSetlist();
-            saveCurrent();
-        }
+    
+    function addSection() {
+        const container = document.getElementById('sections-container');
+        const div = document.createElement('div');
+        div.className = 'song-part';
+        div.innerHTML = `
+            <input type="text" value="NOVA SEÇÃO" style="background:none; border:none; color:var(--accent-primary); font-weight:900; font-size:11px; outline:none;">
+            <textarea class="chord-area" rows="3" placeholder="..."></textarea>
+        `;
+        container.appendChild(div);
     }
 
-    function renderSetlist() {
-        const container = document.getElementById('song-list');
-        container.innerHTML = '';
-        
-        // Lógica de favoritos: fixa no topo
-        const displayList = [...songs].map((s, i) => ({...s, originalIndex: i}))
-                            .sort((a, b) => b.fav - a.fav);
-
-        displayList.forEach(song => {
-            const div = document.createElement('div');
-            div.className = `song-item ${song.fav ? 'fav' : ''} ${currentIndex === song.originalIndex ? 'active' : ''}`;
-            div.innerHTML = `
-                <span style="flex-grow:1" onclick="loadSong(${song.originalIndex})">${song.title}</span>
-                <span onclick="toggleFav(${song.originalIndex})" style="color:${song.fav ? '#ffd700' : '#333'}">★</span>
-            `;
-            container.appendChild(div);
-        });
-        document.getElementById('song-count').innerText = songs.length;
-    }
-
-    function loadSong(index) {
-        currentIndex = index;
-        document.getElementById('active-title').value = songs[index].title;
-        document.getElementById('main-editor').value = songs[index].content;
-        renderSetlist();
-    }
-
-    function toggleFav(index) {
-        songs[index].fav = !songs[index].fav;
-        renderSetlist();
-        saveCurrent();
-    }
-
-    function saveCurrent() {
-        if(currentIndex !== null) {
-            songs[currentIndex].title = document.getElementById('active-title').value;
-            songs[currentIndex].content = document.getElementById('main-editor').value;
-        }
-        localStorage.setItem('mapMusicData', JSON.stringify(songs));
-        renderSetlist();
-    }
-
-    function togglePerformance() {
+    function toggleShow() {
         document.body.classList.toggle('performance-mode');
         const isPerf = document.body.classList.contains('performance-mode');
-        document.querySelector('.btn-mode-toggle').innerText = isPerf ? "SAIR DO MODO SHOW" : "MODO SHOW";
+        document.querySelector('.btn-show').innerText = isPerf ? "SAIR DO SHOW" : "MODO SHOW";
     }
 
-    // Fechar menu ao clicar fora
-    window.onclick = e => { if(!e.target.closest('.header-content')) document.getElementById('m-drop').classList.remove('show'); }
+    function resizeFont(val) {
+        document.querySelectorAll('.chord-area').forEach(el => {
+            let current = parseInt(window.getComputedStyle(el).fontSize);
+            el.style.fontSize = (current + val) + 'px';
+        });
+    }
 
-    renderSetlist();
+    // Lógica de Setlist e Save simplificada para o exemplo
+    let count = 0;
+    function addSong() {
+        count++;
+        document.getElementById('count').innerText = count;
+        const list = document.getElementById('song-list');
+        const item = document.createElement('div');
+        item.style.cssText = "background:var(--bg-tertiary); padding:10px; border-radius:8px; margin-bottom:5px; font-size:12px; cursor:pointer;";
+        item.innerText = "Música " + count;
+        list.appendChild(item);
+    }
 </script>
+
 </body>
 </html>
