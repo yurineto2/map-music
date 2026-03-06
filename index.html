@@ -7,6 +7,17 @@
 <link href="https://fonts.googleapis.com" rel="stylesheet">
 
 <style>
+  button{
+  transition: transform 0.08s ease, box-shadow 0.08s ease;
+}
+
+button:active{
+  transform: scale(0.94);
+}
+
+button:hover{
+  filter: brightness(1.1);
+}
 :root {
   --bg-primary: #0a0a0f;
   --bg-secondary: #12121a;
@@ -328,17 +339,6 @@ function importData() {
 
 renderSetlist();
 ["INTRO", "VERSO", "REFRÃO"].forEach(p => addPart(p));
-button{
-  transition: transform 0.08s ease, box-shadow 0.08s ease;
-}
-
-button:active{
-  transform: scale(0.94);
-}
-
-button:hover{
-  filter: brightness(1.1);
-}
 </script>
 </body>
 </html>
