@@ -113,6 +113,7 @@ body.performance-mode .scroll-controls { display: flex; }
             <div class="menu-item" onclick="exportData()">Exportar Backup</div>
             <div class="menu-item" onclick="importData()">Importar Backup</div>
             <div class="menu-item danger" onclick="resetSection()">Limpar Secao</div>
+          <div class="menu-item" onclick="compartilharSetlist()">Compartilhar Setlist</div>
         </div>
     </div>
   </div>
@@ -323,11 +324,64 @@ function importData() {
             updateStorage();
         }
     }
+
+  
+  function compartilharSetlist() {
+    // 1. Pegamos as músicas que estão salvas no seu navegador
+    const minhasMusicas = localStorage.getItem('minha_setlist_key'); 
+
+    if (!minhasMusicas) {
+        alert("Sua lista está vazia! Adicione músicas antes de compartilhar.");
+        return;
+    }
+
+    // 2. Transformamos a lista em um código que a internet entende (Base64)
+    const codigoSecreto = btoa(encodeURIComponent(minhasMusicas));
+
+    // 3. Criamos o link do seu site com esse código no final
+    const linkFinal = window.location.origin + window.location.pathname + "?v=" + codigoSecreto;
+
+    // 4. Abre a janelinha do celular para enviar por WhatsApp, E-mail, etc.
+    if (navigator.share) {
+        navigator.share({
+            title: 'Minha Setlist - Map Music Pro',
+            url: linkFinal
+        });
+    } else {
+        // Se for no computador, ele apenas copia o link para você colar onde quiser
+        navigator.clipboard.writeText(linkFinal);
+        alert("Link copiado! Agora é só colar no WhatsApp do seu colega.");
+    }
+}
+
     input.click();
 }
 
 renderSetlist();
 ["INTRO", "VERSO", "REFRÃO", "PONTE", "FINAL"].forEach(p => addPart(p));
+  
+</script>
+  // Assim que o site abre, ele executa isso:
+window.onload = function() {
+    const parametros = new URLSearchParams(window.location.search);
+    const dadosRecebidos = parametros.get('v'); // Procura o código "v" na URL
+
+    if (dadosRecebidos) {
+        const confirmar = confirm("Você recebeu uma setlist compartilhada! Deseja carregar ela agora?");
+        
+        if (confirmar) {
+            // Traduz o código de volta para texto de música
+            const listaTraduzida = decodeURIComponent(atob(dadosRecebidos));
+            
+            // Salva na memória do navegador do seu amigo
+            localStorage.setItem('minha_setlist_key', listaTraduzida);
+            
+            // Recarrega a página limpa para mostrar as músicas novas
+            window.location.href = window.location.pathname;
+        }
+    }
+}
+
 </script>
 </body>
 </html>
