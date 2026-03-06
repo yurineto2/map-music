@@ -97,8 +97,66 @@ body.performance-mode .toolbar-central { display: none !important; }
 body.performance-mode .main-layout { grid-template-columns: 1fr; padding: 100px 10% 150px; }
 body.performance-mode .chord-area { font-size: 48px; pointer-events: none; height: auto !important; }
 
-.scroll-controls { position: fixed; top: 20px; right: 20px; z-index: 2000; display: none; align-items: center; gap: 10px; background: rgba(0,0,0,0.9); border: 1px solid #ff3e3e; padding: 8px 15px; border-radius: var(--radius-full); backdrop-filter: blur(10px); }
+/* TELEPROMPTER — canto inferior esquerdo */
+.scroll-controls {
+  position: fixed; bottom: 28px; left: 20px; z-index: 2000; display: none;
+  flex-direction: column; gap: 0;
+  background: rgba(8, 8, 12, 0.92);
+  border: 1px solid rgba(255,62,62,0.25);
+  border-radius: 14px;
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  box-shadow: 0 8px 32px rgba(0,0,0,0.6), 0 0 0 1px rgba(255,255,255,0.04) inset;
+  overflow: hidden;
+  min-width: 200px;
+}
 body.performance-mode .scroll-controls { display: flex; }
+
+.scroll-header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 10px 14px 6px;
+  border-bottom: 1px solid rgba(255,255,255,0.06);
+}
+.scroll-label {
+  font-size: 9px; font-weight: 800; letter-spacing: 2px;
+  text-transform: uppercase; color: rgba(255,62,62,0.7);
+}
+.scroll-stop-btn {
+  background: none; border: none; color: rgba(255,255,255,0.35);
+  cursor: pointer; font-size: 9px; font-weight: 700; letter-spacing: 1px;
+  text-transform: uppercase; padding: 2px 6px; border-radius: 4px;
+  transition: 0.2s;
+}
+.scroll-stop-btn:hover { color: #ff3e3e; }
+
+.scroll-body {
+  display: flex; align-items: center; gap: 10px;
+  padding: 8px 14px 12px;
+}
+.scroll-icon { font-size: 11px; color: rgba(255,255,255,0.25); flex-shrink: 0; }
+
+/* Slider customizado */
+.scroll-slider {
+  -webkit-appearance: none; appearance: none;
+  flex: 1; height: 3px; border-radius: 2px; outline: none; cursor: pointer;
+  background: rgba(255,255,255,0.1);
+}
+.scroll-slider::-webkit-slider-thumb {
+  -webkit-appearance: none; appearance: none;
+  width: 14px; height: 14px; border-radius: 50%;
+  background: #ff3e3e;
+  box-shadow: 0 0 8px rgba(255,62,62,0.6);
+  cursor: pointer; transition: transform 0.15s;
+}
+.scroll-slider::-webkit-slider-thumb:hover { transform: scale(1.2); }
+.scroll-slider::-moz-range-thumb {
+  width: 14px; height: 14px; border-radius: 50%; border: none;
+  background: #ff3e3e; cursor: pointer;
+}
+.scroll-speed-val {
+  font-size: 10px; font-weight: 800; color: rgba(255,255,255,0.4);
+  min-width: 20px; text-align: right;
+}
 .mode-show-container { position: fixed; bottom: 25px; right: 20px; z-index: 2000; background: var(--accent-primary); color: #000; padding: 14px 25px; border-radius: var(--radius-full); cursor: pointer; font-weight: 900; font-size: 13px; transition: background 0.3s; }
 
 /* INDICADOR DE MUSICA NO MODO SHOW */
@@ -281,10 +339,16 @@ body.viewer-mode input[type="text"] { pointer-events: none; }
 <!-- FLASH DE SWIPE -->
 <div class="swipe-hint" id="swipe-hint"></div>
 
-<div class="scroll-controls">
-  <span>Teleprompter</span>
-  <input type="range" id="scroll-speed" min="0" max="100" value="0">
-  <button onclick="stopScroll()" style="background:none; border:none; color:#ff3e3e; font-weight:900; cursor:pointer; font-size:11px;">STOP</button>
+<div class="scroll-controls" id="scroll-controls">
+  <div class="scroll-header">
+    <span class="scroll-label">Teleprompter</span>
+    <button class="scroll-stop-btn" onclick="stopScroll()">Parar</button>
+  </div>
+  <div class="scroll-body">
+    <span class="scroll-icon">&#9650;</span>
+    <input type="range" class="scroll-slider" id="scroll-speed" min="0" max="100" value="0">
+    <span class="scroll-speed-val" id="scroll-speed-val">0</span>
+  </div>
 </div>
 
 <div class="mode-show-container" onclick="togglePerf()">
@@ -758,10 +822,15 @@ document.addEventListener('keydown', e => {
 // ─── TELEPROMPTER ──────────────────────────────────────────────────────────
 const scrollSlider = document.getElementById('scroll-speed');
 scrollSlider.oninput = () => {
+  document.getElementById('scroll-speed-val').innerText = scrollSlider.value;
   clearInterval(scrollInterval);
   if (scrollSlider.value > 0) scrollInterval = setInterval(() => window.scrollBy(0,1), 175 - scrollSlider.value);
 };
-function stopScroll() { clearInterval(scrollInterval); scrollSlider.value = 0; }
+function stopScroll() {
+  clearInterval(scrollInterval);
+  scrollSlider.value = 0;
+  document.getElementById('scroll-speed-val').innerText = '0';
+}
 
 // ─── EXPORT / IMPORT ───────────────────────────────────────────────────────
 function exportData() {
