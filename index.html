@@ -1537,75 +1537,100 @@ function iniciarPad(el) {
   if (audioCtx.state === 'suspended') audioCtx.resume();
   const idx = parseInt(el.dataset.idx);
 
-  // Toggle: se já está tocando, para
   if (padNodes[idx]) { pararPad(idx); return; }
 
   el.classList.add('playing');
 
-  const midi  = parseInt(el.dataset.midi);
-  const vol   = parseInt(document.getElementById('pads-vol').value) / 100;
-  const ctx   = audioCtx;
-  const now   = ctx.currentTime;
-  const freq  = midiToFreq(midi);
+  const midi = parseInt(el.dataset.midi);
+  const vol  = parseInt(document.getElementById('pads-vol').value) / 100;
+  const ctx  = audioCtx;
+  const now  = ctx.currentTime;
+  const freq = midiToFreq(midi);
 
-  // Master gain com attack lento
-  const masterGain = ctx.createGain();
-  masterGain.gain.setValueAtTime(0, now);
-  masterGain.gain.linearRampToValueAtTime(vol * 0.28, now + 2.5);
-  masterGain.connect(ctx.destination);
+  // Master
+  const master = ctx.createGain();
+  master.gain.setValueAtTime(0, now);
+  master.gain.linearRampToValueAtTime(vol * 0.4, now + 1.8); // bow attack lento
+  master.connect(ctx.destination);
 
-  // Reverb com delay
-  const delayA = ctx.createDelay(3); delayA.delayTime.value = 0.3;
-  const delayB = ctx.createDelay(3); delayB.delayTime.value = 0.55;
-  const fbA = ctx.createGain(); fbA.gain.value = 0.3;
-  const fbB = ctx.createGain(); fbB.gain.value = 0.22;
-  delayA.connect(fbA); fbA.connect(delayA);
-  delayB.connect(fbB); fbB.connect(delayB);
-  const wet = ctx.createGain(); wet.gain.value = 0.45;
-  masterGain.connect(delayA); masterGain.connect(delayB);
-  delayA.connect(wet); delayB.connect(wet);
+  // Reverb com dois delays cruzados
+  const dA = ctx.createDelay(3); dA.delayTime.value = 0.25;
+  const dB = ctx.createDelay(3); dB.delayTime.value = 0.52;
+  const fbA = ctx.createGain(); fbA.gain.value = 0.28;
+  const fbB = ctx.createGain(); fbB.gain.value = 0.2;
+  dA.connect(fbA); fbA.connect(dA);
+  dB.connect(fbB); fbB.connect(dB);
+  const wet = ctx.createGain(); wet.gain.value = 0.55;
+  master.connect(dA); master.connect(dB);
+  dA.connect(wet); dB.connect(wet);
   wet.connect(ctx.destination);
 
-  // Camadas de sine suaves — fundamental + harmônicos leves
-  const layers = [
-    { mult: 1,    detune: 0,   gain: 0.5,  type: 'sine'     },
-    { mult: 1,    detune: 7,   gain: 0.18, type: 'sine'     },  // chorus leve
-    { mult: 1,    detune: -6,  gain: 0.18, type: 'sine'     },  // chorus leve
-    { mult: 2,    detune: 0,   gain: 0.12, type: 'sine'     },  // oitava acima suave
-    { mult: 0.5,  detune: 0,   gain: 0.15, type: 'sine'     },  // sub leve
-    { mult: 3,    detune: 0,   gain: 0.04, type: 'triangle' },  // brilho mínimo
+  // Vibrato LFO (típico de strings: ~5Hz, depth cresce com tempo)
+  const vibratoLFO  = ctx.createOscillator();
+  const vibratoGain = ctx.createGain();
+  vibratoLFO.frequency.value = 5.2;
+  vibratoGain.gain.setValueAtTime(0, now);
+  vibratoGain.gain.linearRampToValueAtTime(18, now + 2.5); // vibrato entra gradual
+  vibratoLFO.connect(vibratoGain);
+  vibratoLFO.start(now);
+
+  // Strings = sawtooth + square suave + harmônicos, tudo fortemente filtrado
+  // Múltiplas vozes ligeiramente desafinadas = ensemble de cordas
+  const voices = [
+    { detune: -14, gain: 0.35 },
+    { detune:  -5, gain: 0.4  },
+    { detune:   0, gain: 0.45 },
+    { detune:   6, gain: 0.4  },
+    { detune:  13, gain: 0.35 },
   ];
 
-  const oscs = layers.map(l => {
-    const osc = ctx.createOscillator();
-    osc.type = l.type;
-    osc.frequency.value = freq * l.mult;
-    osc.detune.value = l.detune;
+  const oscs = voices.flatMap(v => {
+    // Sawtooth = timbre base de cordas friccionadas
+    const saw = ctx.createOscillator();
+    saw.type = 'sawtooth';
+    saw.frequency.value = freq;
+    saw.detune.value = v.detune;
+    vibratoGain.connect(saw.detune); // vibrato no detune
 
-    // Filtro lowpass suave em cada camada
-    const f = ctx.createBiquadFilter();
-    f.type = 'lowpass';
-    f.frequency.value = 1200;
-    f.Q.value = 0.4;
+    // Filtro passa-baixo + passa-alto para corpo de strings
+    const lpf = ctx.createBiquadFilter();
+    lpf.type = 'lowpass';
+    lpf.frequency.value = 2200;
+    lpf.Q.value = 0.5;
+
+    const hpf = ctx.createBiquadFilter();
+    hpf.type = 'highpass';
+    hpf.frequency.value = 80;
+    hpf.Q.value = 0.3;
 
     const g = ctx.createGain();
-    g.gain.value = l.gain;
+    g.gain.value = v.gain * 0.18;
 
-    osc.connect(f); f.connect(g); g.connect(masterGain);
-    osc.start(now);
-    return osc;
+    saw.connect(hpf); hpf.connect(lpf); lpf.connect(g); g.connect(master);
+    saw.start(now);
+
+    // Segunda camada: square muito atenuado para brilho de arco
+    const sq = ctx.createOscillator();
+    sq.type = 'square';
+    sq.frequency.value = freq * 2;
+    sq.detune.value = v.detune + 3;
+    vibratoGain.connect(sq.detune);
+
+    const sqF = ctx.createBiquadFilter();
+    sqF.type = 'lowpass';
+    sqF.frequency.value = 900;
+    sqF.Q.value = 0.3;
+
+    const sqG = ctx.createGain();
+    sqG.gain.value = 0.018;
+
+    sq.connect(sqF); sqF.connect(sqG); sqG.connect(master);
+    sq.start(now);
+
+    return [saw, sq];
   });
 
-  // LFO de tremolo muito lento para respiração ambient
-  const lfo = ctx.createOscillator();
-  const lfoGain = ctx.createGain();
-  lfo.frequency.value = 0.18;
-  lfoGain.gain.value = 0.04;
-  lfo.connect(lfoGain);
-  lfoGain.connect(masterGain.gain);
-  lfo.start(now);
-
-  padNodes[idx] = { oscs: [...oscs, lfo], masterGain, delayA, delayB, el };
+  padNodes[idx] = { oscs: [...oscs, vibratoLFO], masterGain: master, dA, dB, el };
 }
 
 function pararPad(idx) {
@@ -1614,13 +1639,11 @@ function pararPad(idx) {
   const ctx = audioCtx;
   const now = ctx.currentTime;
 
-  // Fade out lento = ambient
   node.masterGain.gain.cancelScheduledValues(now);
   node.masterGain.gain.setValueAtTime(node.masterGain.gain.value, now);
-  node.masterGain.gain.linearRampToValueAtTime(0, now + 1.5);
+  node.masterGain.gain.linearRampToValueAtTime(0, now + 2.0);
 
-  // Para osciladores após fade
-  node.oscs.forEach(o => { try { o.stop(now + 1.6); } catch(e){} });
+  node.oscs.forEach(o => { try { o.stop(now + 2.1); } catch(e){} });
   node.el.classList.remove('playing');
   delete padNodes[idx];
 }
