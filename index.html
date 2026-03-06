@@ -353,6 +353,118 @@ body.performance-mode .perf-song-indicator { display: flex; }
 .toast { position: fixed; bottom: 80px; left: 50%; transform: translateX(-50%); background: var(--accent-primary); color: #000; padding: 10px 20px; border-radius: var(--radius-full); font-weight: 700; font-size: 12px; z-index: 9999; opacity: 0; transition: opacity 0.3s; pointer-events: none; white-space: nowrap; }
 .toast.show { opacity: 1; }
 
+/* MODAL PADS */
+.pads-overlay {
+  position: fixed; inset: 0; background: rgba(0,0,0,0.96);
+  backdrop-filter: blur(20px); z-index: 5000;
+  display: none; flex-direction: column;
+  align-items: center; justify-content: center; gap: 20px;
+  padding: 20px;
+}
+.pads-overlay.show { display: flex; }
+
+.pads-header {
+  display: flex; align-items: center; justify-content: space-between;
+  width: 100%; max-width: 520px;
+}
+.pads-title {
+  font-size: 11px; font-weight: 900; letter-spacing: 3px;
+  text-transform: uppercase; color: var(--accent-primary);
+}
+.pads-close {
+  background: none; border: 1px solid var(--border-color);
+  color: rgba(255,255,255,0.5); padding: 6px 14px;
+  border-radius: var(--radius-full); font-size: 10px;
+  font-weight: 700; letter-spacing: 1px; cursor: pointer;
+  text-transform: uppercase; transition: 0.2s;
+}
+.pads-close:hover { color: #fff; border-color: #fff; }
+
+/* Seletor de oitava e escala */
+.pads-controls {
+  display: flex; gap: 10px; align-items: center;
+  width: 100%; max-width: 520px; flex-wrap: wrap;
+}
+.pads-select {
+  background: var(--bg-secondary); border: 1px solid var(--border-color);
+  color: #fff; padding: 7px 12px; border-radius: 30px;
+  font-size: 10px; font-weight: 700; outline: none; cursor: pointer;
+  letter-spacing: 1px; text-transform: uppercase;
+}
+.pads-oct {
+  display: flex; align-items: center; gap: 8px;
+  background: var(--bg-secondary); border: 1px solid var(--border-color);
+  padding: 4px 10px; border-radius: 30px;
+}
+.pads-oct span { font-size: 10px; font-weight: 700; color: rgba(255,255,255,0.5); letter-spacing: 1px; }
+.pads-oct-val { font-size: 13px; font-weight: 900; color: var(--accent-primary); min-width: 16px; text-align: center; }
+.pads-oct button { background: none; border: none; color: #fff; cursor: pointer; font-size: 16px; line-height: 1; padding: 2px 4px; }
+
+/* Grade de pads */
+.pads-grid {
+  display: grid; grid-template-columns: repeat(4, 1fr);
+  gap: 10px; width: 100%; max-width: 520px;
+}
+.pad {
+  aspect-ratio: 1;
+  border-radius: 12px;
+  border: 1px solid rgba(255,255,255,0.08);
+  background: var(--bg-secondary);
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  cursor: pointer; user-select: none;
+  transition: transform 0.06s, background 0.06s, box-shadow 0.06s;
+  position: relative; overflow: hidden;
+}
+.pad:active, .pad.active {
+  transform: scale(0.93);
+  background: rgba(29,185,84,0.2);
+  border-color: var(--accent-primary);
+  box-shadow: 0 0 18px rgba(29,185,84,0.35);
+}
+.pad::before {
+  content: ''; position: absolute; inset: 0;
+  background: radial-gradient(circle at center, rgba(29,185,84,0.15), transparent 70%);
+  opacity: 0; transition: opacity 0.1s;
+}
+.pad.active::before { opacity: 1; }
+.pad-note {
+  font-size: 18px; font-weight: 900; color: #fff; line-height: 1;
+}
+.pad-label {
+  font-size: 9px; font-weight: 700; color: rgba(255,255,255,0.3);
+  letter-spacing: 1px; text-transform: uppercase; margin-top: 4px;
+}
+
+/* MODAL IMPORTAR CIFRA */
+.cifra-textarea {
+  width: 100%; min-height: 180px; max-height: 280px;
+  background: var(--bg-tertiary); border: 1px solid var(--border-color);
+  border-radius: 10px; color: #fff; font-family: 'Monaco', monospace;
+  font-size: 12px; line-height: 1.6; padding: 12px; outline: none;
+  resize: vertical; transition: border-color 0.2s;
+}
+.cifra-textarea:focus { border-color: var(--accent-primary); }
+.cifra-textarea::placeholder { color: rgba(255,255,255,0.2); font-family: 'Inter', sans-serif; font-size: 11px; }
+.cifra-preview {
+  display: none; flex-direction: column; gap: 6px;
+  max-height: 220px; overflow-y: auto; margin-top: 4px;
+}
+.cifra-preview.show { display: flex; }
+.preview-section {
+  background: var(--bg-tertiary); border-left: 3px solid var(--accent-primary);
+  border-radius: 6px; padding: 8px 12px;
+}
+.preview-section-title {
+  font-size: 9px; font-weight: 900; color: var(--accent-primary);
+  letter-spacing: 1.5px; text-transform: uppercase; margin-bottom: 4px;
+}
+.preview-section-content {
+  font-size: 11px; font-family: 'Monaco', monospace;
+  color: rgba(255,255,255,0.7); line-height: 1.5;
+  white-space: pre-wrap; word-break: break-word;
+}
+
 /* VIEWER MODE: bloqueia edição */
 body.viewer-mode .chord-area { pointer-events: none; }
 body.viewer-mode .btn-save-vitro { display: none; }
@@ -393,9 +505,8 @@ body.viewer-mode input[type="text"] { pointer-events: none; }
           <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="1"/><circle cx="12" cy="5" r="1"/><circle cx="12" cy="19" r="1"/></svg>
         </button>
         <div id="m-drop" class="dropdown-menu">
-          <div class="menu-item" onclick="compartilharSetlist()">Compartilhar Setlist</div>
-          <div class="menu-item" onclick="exportData()">Exportar Backup</div>
-          <div class="menu-item" onclick="importData()">Importar Backup</div>
+          <div class="menu-item" onclick="abrirModalCifra()">Importar Cifra</div>
+          <div class="menu-item" onclick="abrirPads()">Pads</div>
           <div class="menu-item danger" onclick="resetSection()">Limpar Seção</div>
         </div>
       </div>
@@ -437,6 +548,72 @@ body.viewer-mode input[type="text"] { pointer-events: none; }
       <button class="modal-btn secondary" onclick="fecharModal()">Cancelar</button>
     </div>
   </div>
+</div>
+
+<!-- MODAL IMPORTAR CIFRA -->
+<div class="modal-overlay" id="modal-cifra">
+  <div class="modal-box" style="max-width:520px;">
+    <h2>Importar Cifra</h2>
+    <p>Cola o texto da cifra (do Cifra Club, Ultimate Guitar, etc).<br>A app detecta e divide as secoes automaticamente.</p>
+
+    <div id="cifra-step-1">
+      <textarea class="cifra-textarea" id="cifra-input"
+        placeholder="Cole aqui a cifra completa...
+        
+Exemplo:
+[Intro] C G Am F
+
+[Verso]
+C        G
+Algum dia eu vou...
+
+[Refrão]
+Am    F    C
+..."></textarea>
+      <div style="display:flex; gap:8px; margin-top:12px;">
+        <button class="modal-btn primary" onclick="analisarCifra()">Analisar</button>
+        <button class="modal-btn secondary" style="margin-top:0;" onclick="fecharModalCifra()">Cancelar</button>
+      </div>
+    </div>
+
+    <div id="cifra-step-2" style="display:none;">
+      <p style="font-size:11px; color:var(--accent-primary); margin-bottom:10px;" id="cifra-preview-label"></p>
+      <div class="cifra-preview show" id="cifra-preview"></div>
+      <div style="display:flex; gap:8px; margin-top:14px;">
+        <button class="modal-btn primary" onclick="aplicarCifra()">Carregar nas Secoes</button>
+        <button class="modal-btn secondary" style="margin-top:0;" onclick="voltarCifra()">Voltar</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- PADS -->
+<div class="pads-overlay" id="pads-overlay">
+  <div class="pads-header">
+    <span class="pads-title">Pads</span>
+    <button class="pads-close" onclick="fecharPads()">Fechar</button>
+  </div>
+  <div class="pads-controls">
+    <select class="pads-select" id="pads-scale" onchange="renderPads()">
+      <option value="major">Maior</option>
+      <option value="minor">Menor</option>
+      <option value="pentatonic">Pentatonica Maior</option>
+      <option value="minor_pentatonic">Pentatonica Menor</option>
+      <option value="chromatic">Cromatica</option>
+    </select>
+    <select class="pads-select" id="pads-root" onchange="renderPads()">
+      <option>C</option><option>C#</option><option>D</option><option>D#</option>
+      <option>E</option><option>F</option><option>F#</option><option>G</option>
+      <option>G#</option><option>A</option><option>A#</option><option>B</option>
+    </select>
+    <div class="pads-oct">
+      <span>OCT</span>
+      <button onclick="mudaOitava(-1)">-</button>
+      <span class="pads-oct-val" id="pads-oct-val">4</span>
+      <button onclick="mudaOitava(1)">+</button>
+    </div>
+  </div>
+  <div class="pads-grid" id="pads-grid"></div>
 </div>
 
 <div class="main-layout">
@@ -1272,7 +1449,215 @@ function importData() {
   input.click();
 }
 
-// ─── INIT ──────────────────────────────────────────────────────────────────
+// ─── PADS ─────────────────────────────────────────────────────────────────
+
+let padsOitava = 4;
+
+const SCALES = {
+  major:            [0, 2, 4, 5, 7, 9, 11, 12, 14, 16, 17, 19, 21, 23, 24, 26],
+  minor:            [0, 2, 3, 5, 7, 8, 10, 12, 14, 15, 17, 19, 20, 22, 24, 26],
+  pentatonic:       [0, 2, 4, 7, 9, 12, 14, 16, 19, 21, 24, 26, 28, 31, 33, 36],
+  minor_pentatonic: [0, 3, 5, 7, 10, 12, 15, 17, 19, 22, 24, 27, 29, 31, 34, 36],
+  chromatic:        [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15],
+};
+
+const NOTE_NAMES = ['C','C#','D','D#','E','F','F#','G','G#','A','A#','B'];
+const SOLFEJO    = ['Do','Re','Mi','Fa','Sol','La','Si'];
+const SOLFEJO_MAP = { 'C':'Do', 'C#':'Do#', 'D':'Re', 'D#':'Re#', 'E':'Mi', 'F':'Fa', 'F#':'Fa#', 'G':'Sol', 'G#':'Sol#', 'A':'La', 'A#':'La#', 'B':'Si' };
+
+function abrirPads() {
+  document.getElementById('pads-overlay').classList.add('show');
+  renderPads();
+}
+function fecharPads() {
+  document.getElementById('pads-overlay').classList.remove('show');
+}
+function mudaOitava(d) {
+  padsOitava = Math.min(Math.max(padsOitava + d, 1), 7);
+  document.getElementById('pads-oct-val').innerText = padsOitava;
+  renderPads();
+}
+
+function renderPads() {
+  const scale  = document.getElementById('pads-scale').value;
+  const root   = document.getElementById('pads-root').value;
+  const rootIdx = NOTE_NAMES.indexOf(root);
+  const steps  = SCALES[scale];
+  const grid   = document.getElementById('pads-grid');
+
+  grid.innerHTML = steps.map((semitones, i) => {
+    const midiNote = 12 * padsOitava + rootIdx + semitones;
+    const noteName = NOTE_NAMES[midiNote % 12];
+    const oitavaNota = Math.floor(midiNote / 12) - 1;
+    const solfejo = SOLFEJO_MAP[noteName] || noteName;
+    return `
+      <div class="pad" data-midi="${midiNote}"
+        onmousedown="tocarPad(this,${midiNote})"
+        ontouchstart="tocarPad(this,${midiNote}); event.preventDefault()">
+        <span class="pad-note">${noteName}</span>
+        <span class="pad-label">${solfejo} ${oitavaNota}</span>
+      </div>`;
+  }).join('');
+}
+
+function tocarPad(el, midi) {
+  // Feedback visual
+  el.classList.add('active');
+  setTimeout(() => el.classList.remove('active'), 180);
+
+  // Gera nota com Web Audio API (síntese de piano simples)
+  const ctx = audioCtx;
+  if (ctx.state === 'suspended') ctx.resume();
+
+  const freq = 440 * Math.pow(2, (midi - 69) / 12);
+
+  // Oscilador principal
+  const osc1 = ctx.createOscillator();
+  const osc2 = ctx.createOscillator();
+  const gain = ctx.createGain();
+  const filter = ctx.createBiquadFilter();
+
+  osc1.type = 'triangle';
+  osc2.type = 'sine';
+  osc1.frequency.value = freq;
+  osc2.frequency.value = freq * 2.005; // leve desafinação para riqueza
+
+  filter.type = 'lowpass';
+  filter.frequency.value = freq * 6;
+  filter.Q.value = 0.8;
+
+  // Envelope tipo piano: ataque rápido, decaimento longo
+  const now = ctx.currentTime;
+  gain.gain.setValueAtTime(0, now);
+  gain.gain.linearRampToValueAtTime(0.4, now + 0.01);
+  gain.gain.exponentialRampToValueAtTime(0.15, now + 0.3);
+  gain.gain.exponentialRampToValueAtTime(0.001, now + 1.8);
+
+  osc1.connect(filter);
+  osc2.connect(filter);
+  filter.connect(gain);
+  gain.connect(ctx.destination);
+
+  osc1.start(now); osc1.stop(now + 1.8);
+  osc2.start(now); osc2.stop(now + 1.8);
+}
+
+// ─── IMPORTAR CIFRA ───────────────────────────────────────────────────────
+
+let cifraSecoes = []; // secoes detectadas para preview
+
+// Marcadores de secao reconhecidos (case-insensitive)
+const SECAO_REGEX = /^\[(.+?)\]|^(intro|vers[oa]|refr[aã]o|ponte|bridge|solo|final|pre.?refr[aã]o|coda|outro|chorus|verse|pre.?chorus)[\s:.]*/i;
+
+function abrirModalCifra() {
+  document.getElementById('modal-cifra').classList.add('show');
+  document.getElementById('cifra-step-1').style.display = 'block';
+  document.getElementById('cifra-step-2').style.display = 'none';
+  document.getElementById('cifra-input').value = '';
+  cifraSecoes = [];
+}
+function fecharModalCifra() {
+  document.getElementById('modal-cifra').classList.remove('show');
+}
+function voltarCifra() {
+  document.getElementById('cifra-step-1').style.display = 'block';
+  document.getElementById('cifra-step-2').style.display = 'none';
+}
+
+function analisarCifra() {
+  const texto = document.getElementById('cifra-input').value.trim();
+  if (!texto) { showToast('Cola uma cifra primeiro.'); return; }
+
+  cifraSecoes = parsearCifra(texto);
+
+  if (cifraSecoes.length === 0) {
+    // Nenhuma secao detectada — trata tudo como uma unica parte
+    cifraSecoes = [{ titulo: 'CIFRA', conteudo: texto }];
+  }
+
+  // Mostra preview
+  const preview = document.getElementById('cifra-preview');
+  document.getElementById('cifra-preview-label').innerText =
+    cifraSecoes.length + ' secao(oes) detectada(s)';
+
+  preview.innerHTML = cifraSecoes.map(s => `
+    <div class="preview-section">
+      <div class="preview-section-title">${s.titulo}</div>
+      <div class="preview-section-content">${escapeHtml(s.conteudo.trim())}</div>
+    </div>`).join('');
+
+  document.getElementById('cifra-step-1').style.display = 'none';
+  document.getElementById('cifra-step-2').style.display = 'block';
+}
+
+function parsearCifra(texto) {
+  const linhas = texto.split('\n');
+  const secoes = [];
+  let secaoAtual = null;
+  let conteudoAtual = [];
+
+  // Mapa de nomes padronizados
+  const NOMES = {
+    'intro': 'INTRO', 'verse': 'VERSO', 'verso': 'VERSO', 'versa': 'VERSO',
+    'chorus': 'REFRÃO', 'refrao': 'REFRÃO', 'refrão': 'REFRÃO', 'refrão': 'REFRÃO',
+    'bridge': 'PONTE', 'ponte': 'PONTE',
+    'solo': 'SOLO', 'final': 'FINAL', 'coda': 'FINAL', 'outro': 'FINAL',
+    'pre-refrão': 'PRE-REFRÃO', 'pre-refrao': 'PRE-REFRÃO',
+    'pre chorus': 'PRE-REFRÃO', 'prechorus': 'PRE-REFRÃO',
+  };
+
+  function normalizarTitulo(raw) {
+    const limpo = raw.replace(/[\[\]]/g, '').trim();
+    const chave = limpo.toLowerCase().replace(/[áàãâ]/g,'a').replace(/[éê]/g,'e').replace(/[ó]/g,'o').replace(/[\s-]+/g,' ');
+    return NOMES[chave] || limpo.toUpperCase();
+  }
+
+  function salvarSecao() {
+    if (secaoAtual !== null) {
+      const conteudo = conteudoAtual.join('\n').trim();
+      if (conteudo) secoes.push({ titulo: secaoAtual, conteudo });
+    }
+  }
+
+  for (const linha of linhas) {
+    const trimmed = linha.trim();
+
+    // Detecta marcador de secao
+    const match = trimmed.match(/^\[(.+?)\]/) ||
+                  trimmed.match(/^(intro|vers[oa]|refr[aã]o|ponte|bridge|solo|final|pre.?refr[aã]o|coda|outro|chorus|verse|pre.?chorus)[\s:.]*$/i);
+
+    if (match) {
+      salvarSecao();
+      secaoAtual = normalizarTitulo(match[0]);
+      conteudoAtual = [];
+    } else {
+      if (secaoAtual === null) {
+        // Texto antes de qualquer secao — cria secao generica
+        if (trimmed) {
+          if (!secaoAtual) { secaoAtual = 'INTRO'; conteudoAtual = []; }
+          conteudoAtual.push(linha);
+        }
+      } else {
+        conteudoAtual.push(linha);
+      }
+    }
+  }
+  salvarSecao();
+  return secoes;
+}
+
+function aplicarCifra() {
+  if (!cifraSecoes.length) return;
+  document.getElementById('notes-grid').innerHTML = '';
+  cifraSecoes.forEach(s => addPart(s.titulo, s.conteudo.trim()));
+  fecharModalCifra();
+  broadcastEstado();
+  showToast(cifraSecoes.length + ' secoes carregadas!');
+}
+
+function escapeHtml(str) {
+  return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
 renderSetlist();
 ["INTRO","VERSO","REFRÃO","PONTE","FINAL"].forEach(p => addPart(p));
 </script>
