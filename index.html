@@ -220,7 +220,7 @@ function togglePlay() {
     else { clearTimeout(timerID); btn.innerText = "INICIAR"; btn.style.background = "var(--accent-primary)"; }
 }
 
-function adj(v) { bpm = Math.min(Math.max(bpm + v, 40), 240); document.getElementById('bpm-display').innerText = bpm; }
+function adj(v) { bpm = Math.min(Math.max(bpm + v, 40), 860); document.getElementById('bpm-display').innerText = bpm; }
 
 function addPart(title = "PARTE", content = "") {
   const div = document.createElement('div');
