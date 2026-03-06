@@ -37,7 +37,38 @@ body { font-family: 'Inter', sans-serif; background: var(--bg-primary); color: v
 .app-header { background: rgba(18,18,26,0.95); backdrop-filter: blur(20px); border-bottom: 1px solid var(--border-color); padding: 15px 20px; position: sticky; top: 0; z-index: 1000; }
 .header-content { max-width: 1400px; margin: 0 auto; display: flex; justify-content: space-between; align-items: center; }
 
-/* MENU */
+/* LOGO */
+.app-logo {
+  display: flex; align-items: center; gap: 10px; text-decoration: none;
+}
+.logo-icon {
+  width: 36px; height: 36px; border-radius: 9px;
+  background: linear-gradient(145deg, #0a2016 0%, #000 60%, #0d1a10 100%);
+  border: 1px solid rgba(29,185,84,0.25);
+  box-shadow: 0 2px 8px rgba(0,0,0,0.6), inset 0 1px 0 rgba(29,185,84,0.1);
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+}
+.logo-icon span {
+  font-family: 'Georgia', serif;
+  font-size: 19px; font-weight: 900;
+  color: #fff;
+  letter-spacing: -1px;
+  line-height: 1;
+  text-shadow: 0 1px 3px rgba(0,0,0,0.8);
+}
+.logo-text {
+  display: flex; flex-direction: column; line-height: 1;
+}
+.logo-name {
+  font-size: 15px; font-weight: 900; letter-spacing: 0.5px;
+  color: #fff; text-transform: uppercase;
+}
+.logo-name span { color: var(--accent-primary); }
+.logo-tag {
+  font-size: 8px; font-weight: 700; letter-spacing: 3px;
+  color: rgba(255,255,255,0.3); text-transform: uppercase; margin-top: 2px;
+}
 .menu-container { position: relative; }
 .menu-btn { background: none; border: none; color: #fff; cursor: pointer; padding: 8px; border-radius: 50%; display: flex; align-items: center; }
 .dropdown-menu { position: absolute; top: 45px; right: 0; background: rgba(20,20,30,0.92); backdrop-filter: blur(15px); border: 1px solid var(--glass-border); border-radius: var(--radius-lg); width: 210px; display: none; flex-direction: column; z-index: 2000; box-shadow: 0 15px 35px rgba(0,0,0,0.8); overflow: hidden; }
@@ -97,45 +128,96 @@ body.performance-mode .toolbar-central { display: none !important; }
 body.performance-mode .main-layout { grid-template-columns: 1fr; padding: 100px 10% 150px; }
 body.performance-mode .chord-area { font-size: 48px; pointer-events: none; height: auto !important; }
 
-/* TELEPROMPTER — canto inferior esquerdo */
-.scroll-controls {
-  position: fixed; bottom: 28px; left: 20px; z-index: 2000; display: none;
-  flex-direction: column; gap: 0;
-  background: rgba(8, 8, 12, 0.92);
-  border: 1px solid rgba(255,62,62,0.25);
-  border-radius: 14px;
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
-  box-shadow: 0 8px 32px rgba(0,0,0,0.6), 0 0 0 1px rgba(255,255,255,0.04) inset;
-  overflow: hidden;
-  min-width: 200px;
-}
-body.performance-mode .scroll-controls { display: flex; }
+/* TELEPROMPTER — canto inferior esquerdo (modo normal oculto) */
+.scroll-controls { display: none; }
+body.performance-mode .scroll-controls { display: none; } /* movido para painel unificado */
 
-.scroll-header {
+/* PAINEL INFERIOR DIREITO — modo show */
+.perf-bottom-panel {
+  position: fixed; bottom: 24px; right: 20px; z-index: 2000;
+  display: flex; flex-direction: column; gap: 10px;
+  align-items: flex-end;
+}
+
+/* Botão modo show — vidro verde piscando */
+.mode-show-container {
+  background: rgba(29, 185, 84, 0.08);
+  border: 1px solid rgba(29, 185, 84, 0.4);
+  color: var(--accent-primary);
+  padding: 11px 22px;
+  border-radius: var(--radius-full); cursor: pointer;
+  font-weight: 900; font-size: 11px; letter-spacing: 2px;
+  text-transform: uppercase;
+  backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px);
+  transition: all 0.2s;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.4);
+  animation: pulseGreen 1.8s ease-in-out infinite;
+}
+.mode-show-container:hover {
+  background: rgba(29,185,84,0.18);
+  border-color: var(--accent-primary);
+}
+
+@keyframes pulseGreen {
+  0%, 100% {
+    border-color: rgba(29,185,84,0.3);
+    box-shadow: 0 4px 20px rgba(0,0,0,0.4), 0 0 0 0 rgba(29,185,84,0);
+  }
+  50% {
+    border-color: rgba(29,185,84,0.9);
+    box-shadow: 0 4px 28px rgba(0,0,0,0.4), 0 0 18px rgba(29,185,84,0.2);
+  }
+}
+
+/* No modo show — troca para vermelho piscando */
+@keyframes pulseBorder {
+  0%, 100% { border-color: rgba(255,62,62,0.35); box-shadow: 0 4px 20px rgba(0,0,0,0.5), 0 0 0 0 rgba(255,62,62,0); }
+  50% { border-color: rgba(255,62,62,0.9); box-shadow: 0 4px 24px rgba(0,0,0,0.5), 0 0 18px rgba(255,62,62,0.2); }
+}
+body.performance-mode .mode-show-container {
+  background: rgba(255,62,62,0.08);
+  border-color: rgba(255,62,62,0.4);
+  color: #ff3e3e;
+  animation: pulseBorder 1.6s ease-in-out infinite;
+}
+body.performance-mode .mode-show-container:hover {
+  background: rgba(255,62,62,0.15);
+  border-color: #ff3e3e;
+}
+
+/* Teleprompter integrado no painel */
+.teleprompter-panel {
+  display: none;
+  background: rgba(8,8,12,0.92);
+  border: 1px solid rgba(255,62,62,0.2);
+  border-radius: 14px;
+  backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px);
+  box-shadow: 0 8px 32px rgba(0,0,0,0.6), 0 0 0 1px rgba(255,255,255,0.03) inset;
+  overflow: hidden; width: 280px;
+}
+body.performance-mode .teleprompter-panel { display: block; }
+
+.tp-header {
   display: flex; align-items: center; justify-content: space-between;
-  padding: 10px 14px 6px;
-  border-bottom: 1px solid rgba(255,255,255,0.06);
+  padding: 9px 14px 7px;
+  border-bottom: 1px solid rgba(255,255,255,0.05);
 }
-.scroll-label {
+.tp-label {
   font-size: 9px; font-weight: 800; letter-spacing: 2px;
-  text-transform: uppercase; color: rgba(255,62,62,0.7);
+  text-transform: uppercase; color: rgba(255,62,62,0.6);
 }
-.scroll-stop-btn {
-  background: none; border: none; color: rgba(255,255,255,0.35);
+.tp-stop {
+  background: none; border: none; color: rgba(255,255,255,0.3);
   cursor: pointer; font-size: 9px; font-weight: 700; letter-spacing: 1px;
   text-transform: uppercase; padding: 2px 6px; border-radius: 4px;
   transition: 0.2s;
 }
-.scroll-stop-btn:hover { color: #ff3e3e; }
-
-.scroll-body {
+.tp-stop:hover { color: #ff3e3e; }
+.tp-body {
   display: flex; align-items: center; gap: 10px;
   padding: 8px 14px 12px;
 }
-.scroll-icon { font-size: 11px; color: rgba(255,255,255,0.25); flex-shrink: 0; }
-
-/* Slider customizado */
+.tp-icon { font-size: 10px; color: rgba(255,255,255,0.2); flex-shrink: 0; line-height: 1; }
 .scroll-slider {
   -webkit-appearance: none; appearance: none;
   flex: 1; height: 3px; border-radius: 2px; outline: none; cursor: pointer;
@@ -145,7 +227,7 @@ body.performance-mode .scroll-controls { display: flex; }
   -webkit-appearance: none; appearance: none;
   width: 14px; height: 14px; border-radius: 50%;
   background: #ff3e3e;
-  box-shadow: 0 0 8px rgba(255,62,62,0.6);
+  box-shadow: 0 0 8px rgba(255,62,62,0.5);
   cursor: pointer; transition: transform 0.15s;
 }
 .scroll-slider::-webkit-slider-thumb:hover { transform: scale(1.2); }
@@ -154,10 +236,9 @@ body.performance-mode .scroll-controls { display: flex; }
   background: #ff3e3e; cursor: pointer;
 }
 .scroll-speed-val {
-  font-size: 10px; font-weight: 800; color: rgba(255,255,255,0.4);
-  min-width: 20px; text-align: right;
+  font-size: 10px; font-weight: 800; color: rgba(255,255,255,0.35);
+  min-width: 22px; text-align: right;
 }
-.mode-show-container { position: fixed; bottom: 25px; right: 20px; z-index: 2000; background: var(--accent-primary); color: #000; padding: 14px 25px; border-radius: var(--radius-full); cursor: pointer; font-weight: 900; font-size: 13px; transition: background 0.3s; }
 
 /* INDICADOR DE MUSICA NO MODO SHOW */
 .perf-song-indicator {
@@ -213,7 +294,62 @@ body.performance-mode .perf-song-indicator { display: flex; }
 .connect-status.error { color: #ff4d4d; }
 .connect-status.success { color: var(--accent-primary); }
 
-/* TOAST */
+/* CAMPO HARMONICO — POPUP */
+.harmonic-popup {
+  position: fixed; z-index: 4000;
+  background: rgba(10,10,18,0.97);
+  border: 1px solid rgba(29,185,84,0.25);
+  border-radius: 14px;
+  backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+  box-shadow: 0 16px 48px rgba(0,0,0,0.7), 0 0 0 1px rgba(255,255,255,0.03) inset;
+  padding: 14px 16px 16px;
+  width: 280px;
+  display: none;
+  flex-direction: column;
+  gap: 10px;
+  pointer-events: auto;
+}
+.harmonic-popup.visible { display: flex; }
+
+.hp-header {
+  display: flex; align-items: center; justify-content: space-between;
+}
+.hp-key {
+  font-size: 11px; font-weight: 900; letter-spacing: 1.5px;
+  text-transform: uppercase; color: var(--accent-primary);
+}
+.hp-close {
+  background: none; border: none; color: rgba(255,255,255,0.3);
+  cursor: pointer; font-size: 13px; line-height: 1; padding: 2px 5px;
+  transition: 0.2s; border-radius: 4px;
+}
+.hp-close:hover { color: #fff; }
+
+.hp-grid {
+  display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px;
+}
+.hp-chord {
+  background: rgba(255,255,255,0.04);
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 8px; padding: 7px 4px;
+  text-align: center; cursor: pointer;
+  transition: all 0.15s;
+}
+.hp-chord:hover {
+  background: rgba(29,185,84,0.15);
+  border-color: rgba(29,185,84,0.5);
+}
+.hp-chord.diatonic {
+  border-color: rgba(29,185,84,0.2);
+}
+.hp-chord-name {
+  font-size: 13px; font-weight: 900; color: #fff; display: block;
+}
+.hp-chord-degree {
+  font-size: 9px; font-weight: 700; color: rgba(255,255,255,0.3);
+  letter-spacing: 0.5px; margin-top: 2px; display: block;
+  text-transform: uppercase;
+}
 .toast { position: fixed; bottom: 80px; left: 50%; transform: translateX(-50%); background: var(--accent-primary); color: #000; padding: 10px 20px; border-radius: var(--radius-full); font-weight: 700; font-size: 12px; z-index: 9999; opacity: 0; transition: opacity 0.3s; pointer-events: none; white-space: nowrap; }
 .toast.show { opacity: 1; }
 
@@ -238,7 +374,15 @@ body.viewer-mode input[type="text"] { pointer-events: none; }
 
 <header class="app-header">
   <div class="header-content">
-    <h1>Map Music <span style="color:var(--accent-primary)">Pro</span></h1>
+    <div class="app-logo">
+      <div class="logo-icon">
+        <span>M</span>
+      </div>
+      <div class="logo-text">
+        <span class="logo-name">Map Music <span>Pro</span></span>
+        <span class="logo-tag">Cifras & Performance</span>
+      </div>
+    </div>
     <div style="display:flex; align-items:center; gap:12px;">
       <!-- Botão rápido de sala -->
       <button onclick="abrirModalSala()" id="btn-sala" style="background:rgba(29,185,84,0.12); border:1px solid rgba(29,185,84,0.3); color:var(--accent-primary); padding:8px 16px; border-radius:var(--radius-full); font-size:10px; font-weight:800; cursor:pointer; letter-spacing:1px; text-transform:uppercase; transition:0.2s;">
@@ -339,20 +483,30 @@ body.viewer-mode input[type="text"] { pointer-events: none; }
 <!-- FLASH DE SWIPE -->
 <div class="swipe-hint" id="swipe-hint"></div>
 
-<div class="scroll-controls" id="scroll-controls">
-  <div class="scroll-header">
-    <span class="scroll-label">Teleprompter</span>
-    <button class="scroll-stop-btn" onclick="stopScroll()">Parar</button>
+<div class="perf-bottom-panel">
+  <div class="teleprompter-panel">
+    <div class="tp-header">
+      <span class="tp-label">Teleprompter</span>
+      <button class="tp-stop" onclick="stopScroll()">Parar</button>
+    </div>
+    <div class="tp-body">
+      <span class="tp-icon">&#9650;</span>
+      <input type="range" class="scroll-slider" id="scroll-speed" min="0" max="100" value="0">
+      <span class="scroll-speed-val" id="scroll-speed-val">0</span>
+    </div>
   </div>
-  <div class="scroll-body">
-    <span class="scroll-icon">&#9650;</span>
-    <input type="range" class="scroll-slider" id="scroll-speed" min="0" max="100" value="0">
-    <span class="scroll-speed-val" id="scroll-speed-val">0</span>
+  <div class="mode-show-container" onclick="togglePerf()">
+    <span id="mode-text">MODO SHOW</span>
   </div>
 </div>
 
-<div class="mode-show-container" onclick="togglePerf()">
-  <span id="mode-text">MODO SHOW</span>
+<!-- CAMPO HARMONICO POPUP -->
+<div class="harmonic-popup" id="harmonic-popup">
+  <div class="hp-header">
+    <span class="hp-key" id="hp-key-label">Campo Harmonico</span>
+    <button class="hp-close" onclick="fecharHarmonic()">✕</button>
+  </div>
+  <div class="hp-grid" id="hp-grid"></div>
 </div>
 
 <script>
@@ -491,7 +645,13 @@ function capturarEstado() {
     bpm,
     transVal: parseInt(document.getElementById('trans-val').innerText),
     parts,
-    perfMode: document.getElementById('app-body').classList.contains('performance-mode')
+    perfMode: document.getElementById('app-body').classList.contains('performance-mode'),
+    // nome e posição da música atual
+    currentSongIndex,
+    currentSongName: currentSongIndex >= 0 && songs[currentSongIndex] ? songs[currentSongIndex].name : null,
+    songTotal: songs.length,
+    // velocidade do teleprompter
+    scrollSpeed: parseInt(document.getElementById('scroll-speed').value)
   };
 }
 
@@ -502,9 +662,11 @@ function aplicarEstado(estado) {
   document.getElementById('bpm-display').innerText = bpm;
   document.getElementById('trans-val').innerText = estado.transVal;
 
+  // Partes / acordes
   document.getElementById('notes-grid').innerHTML = '';
   estado.parts.forEach(p => addPart(p.title, p.content));
 
+  // Modo show
   const body = document.getElementById('app-body');
   if (estado.perfMode && !body.classList.contains('performance-mode')) {
     body.classList.add('performance-mode');
@@ -512,7 +674,32 @@ function aplicarEstado(estado) {
   } else if (!estado.perfMode && body.classList.contains('performance-mode')) {
     body.classList.remove('performance-mode');
     document.getElementById('mode-text').innerText = 'MODO SHOW';
+    stopScroll();
   }
+
+  // Nome e posição da música no indicador
+  if (estado.currentSongName) {
+    currentSongIndex = estado.currentSongIndex;
+    document.getElementById('perf-song-name').innerText = estado.currentSongName;
+    document.getElementById('perf-song-pos').innerText =
+      (estado.currentSongIndex + 1) + '/' + estado.songTotal;
+  } else {
+    document.getElementById('perf-song-name').innerText = 'Nenhuma musica';
+    document.getElementById('perf-song-pos').innerText = '—';
+  }
+
+  // Teleprompter — sincroniza velocidade
+  const slider = document.getElementById('scroll-speed');
+  const speed = estado.scrollSpeed || 0;
+  if (parseInt(slider.value) !== speed) {
+    slider.value = speed;
+    document.getElementById('scroll-speed-val').innerText = speed;
+    clearInterval(scrollInterval);
+    if (speed > 0) {
+      scrollInterval = setInterval(() => window.scrollBy(0, 1), 175 - speed);
+    }
+  }
+
   syncPaused = false;
 }
 
@@ -603,12 +790,33 @@ function showToast(msg) {
 }
 
 function toggleMenu(e) { e.stopPropagation(); document.getElementById('m-drop').classList.toggle('show'); }
-window.onclick = () => document.getElementById('m-drop').classList.remove('show');
+
+function fecharMenu(e) {
+  const menu = document.getElementById('m-drop');
+  const container = document.querySelector('.menu-container');
+  if (!container.contains(e.target)) menu.classList.remove('show');
+}
+window.addEventListener('click', fecharMenu);
+window.addEventListener('touchend', fecharMenu, { passive: true });
 
 function resetSection() {
   if(confirm("Limpar a seção atual?")) {
+    // Reset partes
     document.getElementById('notes-grid').innerHTML = "";
     ["INTRO","VERSO","REFRÃO","PONTE","FINAL"].forEach(p => addPart(p));
+    // Reset metrônomo
+    bpm = 120;
+    document.getElementById('bpm-display').innerText = 120;
+    if (isPlaying) togglePlay();
+    // Reset tom
+    document.getElementById('trans-val').innerText = 0;
+    // Reset teleprompter
+    stopScroll();
+    // Reset índice de música
+    currentSongIndex = -1;
+    atualizarIndicador();
+    broadcastEstado();
+    showToast('Seção reiniciada.');
   }
 }
 
@@ -665,17 +873,215 @@ function adj(v) {
   broadcastEstado();
 }
 
+// ─── CAMPO HARMONICO ──────────────────────────────────────────────────────
+
+// Escalas maiores: I  ii  iii IV  V   vi  vii°
+const MAJOR_SCALE_STEPS = [0, 2, 4, 5, 7, 9, 11];
+const MAJOR_QUALITIES   = ['', 'm', 'm', '', '', 'm', ''];  // vii° não leva 'm'
+const DEGREES           = ['I', 'ii', 'iii', 'IV', 'V', 'vi', 'vii°'];
+
+// Escalas menores naturais: i  ii°  III  iv  v  VI  VII
+const MINOR_SCALE_STEPS = [0, 2, 3, 5, 7, 8, 10];
+const MINOR_QUALITIES   = ['m', '', '', 'm', 'm', '', ''];  // ii° não leva 'm', III/VI/VII maiores
+const MINOR_DEGREES     = ['i', 'ii°', 'III', 'iv', 'v', 'VI', 'VII'];
+
+// Nomes preferidos para exibição (bemóis em contextos menores, sustenidos nos maiores)
+const SHARP_TO_FLAT = { 'C#':'Db', 'D#':'Eb', 'F#':'Gb', 'G#':'Ab', 'A#':'Bb' };
+
+let harmonicDebounce = null;
+let activeTextarea = null;
+
+// Normaliza qualquer acorde para a forma com sustenido para comparação interna
+function normalizarAcorde(acorde) {
+  return acorde
+    .replace(/Db/g,'C#').replace(/Eb/g,'D#').replace(/Gb/g,'F#')
+    .replace(/Ab/g,'G#').replace(/Bb/g,'A#');
+}
+
+// Extrai apenas acordes reais — evita apanhar letras dentro de palavras
+// Formato aceite: C, Cm, C#, C#m, Db, Dbm
+function extrairAcordes(text) {
+  // Usa lookahead para garantir que não é seguido por letra minúscula (ex: "maj", "sus", nomes)
+  const regex = /(?<![A-Za-z])([A-G][#b]?m?)(?![a-z])/g;
+  const matches = [];
+  let m;
+  while ((m = regex.exec(text)) !== null) {
+    matches.push(normalizarAcorde(m[1]));
+  }
+  return matches;
+}
+
+// Detecta a tonalidade mais provável pelos acordes encontrados
+function detectarTonalidade(acordes) {
+  if (!acordes.length) return null;
+
+  // Remove duplicatas
+  const unicos = [...new Set(acordes)];
+
+  let melhorPontuacao = -1;
+  let melhorTom = null;
+  let melhorMenor = false;
+
+  for (let i = 0; i < 12; i++) {
+    const tonica = notesArr[i];
+
+    // Testa maior
+    const diatMaj = MAJOR_SCALE_STEPS.map((s, idx) =>
+      notesArr[(i + s) % 12] + MAJOR_QUALITIES[idx]
+    );
+    let pontos = 0;
+    unicos.forEach(a => { if (diatMaj.includes(a)) pontos++; });
+    // Bônus se a tônica maior aparecer
+    if (unicos.includes(tonica)) pontos += 0.5;
+    if (pontos > melhorPontuacao) {
+      melhorPontuacao = pontos; melhorTom = tonica; melhorMenor = false;
+    }
+
+    // Testa menor
+    const diatMin = MINOR_SCALE_STEPS.map((s, idx) =>
+      notesArr[(i + s) % 12] + MINOR_QUALITIES[idx]
+    );
+    pontos = 0;
+    unicos.forEach(a => { if (diatMin.includes(a)) pontos++; });
+    // Bônus se a tônica menor aparecer
+    if (unicos.includes(tonica + 'm')) pontos += 0.5;
+    if (pontos > melhorPontuacao) {
+      melhorPontuacao = pontos; melhorTom = tonica; melhorMenor = true;
+    }
+  }
+
+  return melhorPontuacao > 0 ? { tonica: melhorTom, menor: melhorMenor } : null;
+}
+
+// Converte nota interna (C#) para exibição amigável
+// Tonalidades menores e com bemóis usam bemóis; demais usam sustenidos
+function notaParaExibicao(nota, usarBemol) {
+  if (usarBemol && SHARP_TO_FLAT[nota]) return SHARP_TO_FLAT[nota];
+  return nota;
+}
+
+// Tonalidades que preferem bemóis na exibição
+const TONALIDADES_BEMOL = ['F','Bb','Eb','Ab','Db','Gb','Dm','Gm','Cm','Fm','Bbm','Ebm'];
+
+// Gera os 7 acordes do campo harmônico
+function gerarCampoHarmonico(tonica, menor) {
+  const steps   = menor ? MINOR_SCALE_STEPS : MAJOR_SCALE_STEPS;
+  const quals   = menor ? MINOR_QUALITIES   : MAJOR_QUALITIES;
+  const degrees = menor ? MINOR_DEGREES     : DEGREES;
+  const idxTon  = notesArr.indexOf(tonica);
+  const tonicaLabel = tonica + (menor ? 'm' : '');
+  const usarBemol = TONALIDADES_BEMOL.includes(tonicaLabel);
+
+  return steps.map((s, i) => {
+    const notaBase = notesArr[(idxTon + s) % 12];
+    const notaExib = notaParaExibicao(notaBase, usarBemol);
+    return {
+      nome:  notaExib + quals[i],
+      grau:  degrees[i]
+    };
+  });
+}
+
+// Mostra o popup junto ao textarea ativo
+function mostrarHarmonic(textarea, acordes) {
+  const tonalidade = detectarTonalidade(acordes);
+  if (!tonalidade) { fecharHarmonic(); return; }
+
+  const campo = gerarCampoHarmonico(tonalidade.tonica, tonalidade.menor);
+  const popup = document.getElementById('harmonic-popup');
+  const grid  = document.getElementById('hp-grid');
+  const label = document.getElementById('hp-key-label');
+
+  label.innerText = 'Tom: ' + tonalidade.tonica + (tonalidade.menor ? 'm' : '');
+  grid.innerHTML = campo.map(c => `
+    <div class="hp-chord diatonic" onclick="inserirAcorde('${c.nome}', event)">
+      <span class="hp-chord-name">${c.nome}</span>
+      <span class="hp-chord-degree">${c.grau}</span>
+    </div>`).join('');
+
+  // Posiciona o popup acima do textarea
+  const rect = textarea.getBoundingClientRect();
+  const popupH = 160;
+  let top  = rect.top + window.scrollY - popupH - 10;
+  let left = rect.left + window.scrollX;
+  if (top < 10) top = rect.bottom + window.scrollY + 10;
+  if (left + 280 > window.innerWidth - 10) left = window.innerWidth - 290;
+
+  popup.style.top  = top + 'px';
+  popup.style.left = left + 'px';
+  popup.classList.add('visible');
+  activeTextarea = textarea;
+}
+
+function fecharHarmonic() {
+  document.getElementById('harmonic-popup').classList.remove('visible');
+  activeTextarea = null;
+}
+
+// Insere o acorde clicado no final da linha atual do textarea
+function inserirAcorde(acorde, e) {
+  e.stopPropagation();
+  if (!activeTextarea) return;
+  const ta = activeTextarea;
+  const pos = ta.selectionStart;
+  const val = ta.value;
+  const before = val.substring(0, pos);
+  const after  = val.substring(pos);
+  const sep = before.length && !before.endsWith(' ') && !before.endsWith('\n') ? ' ' : '';
+  ta.value = before + sep + acorde + ' ' + after;
+  ta.style.height = ''; ta.style.height = ta.scrollHeight + 'px';
+  ta.focus();
+  const newPos = before.length + sep.length + acorde.length + 1;
+  ta.setSelectionRange(newPos, newPos);
+  broadcastEstado();
+}
+
+// Fecha popup ao clicar fora
+document.addEventListener('click', e => {
+  const popup = document.getElementById('harmonic-popup');
+  if (!popup.contains(e.target) && !e.target.classList.contains('chord-area')) {
+    fecharHarmonic();
+  }
+});
+
+// Fecha ao deslizar o dedo (touchmove) ou scroll
+document.addEventListener('touchmove', () => fecharHarmonic(), { passive: true });
+document.addEventListener('scroll', () => fecharHarmonic(), { passive: true });
+
+// Fecha ao mudar de seção (foco em outro campo)
+document.addEventListener('focusin', e => {
+  if (!e.target.classList.contains('chord-area')) fecharHarmonic();
+});
+
 // ─── PARTES ───────────────────────────────────────────────────────────────
 function addPart(title = "PARTE", content = "") {
   const div = document.createElement('div');
   div.className = 'song-part';
   div.innerHTML = `
     <input type="text" value="${title}" style="background:none;border:none;color:var(--accent-primary);font-weight:900;font-size:11px;width:calc(100% - 30px);outline:none;text-transform:uppercase;" oninput="broadcastEstado()">
-    <textarea class="chord-area" oninput="this.style.height='';this.style.height=this.scrollHeight+'px'; broadcastEstado()" placeholder="C G Am F">${content}</textarea>
+    <textarea class="chord-area" oninput="onChordInput(this)" placeholder="C G Am F">${content}</textarea>
     <button onclick="this.parentElement.remove(); broadcastEstado();" style="position:absolute;top:12px;right:12px;background:none;border:none;color:#ff4d4d;cursor:pointer;">✕</button>`;
   document.getElementById('notes-grid').appendChild(div);
   const ta = div.querySelector('textarea');
   ta.style.height = ta.scrollHeight + 'px';
+}
+
+function onChordInput(ta) {
+  ta.style.height = ''; ta.style.height = ta.scrollHeight + 'px';
+  broadcastEstado();
+
+  // Detecção com debounce de 600ms
+  clearTimeout(harmonicDebounce);
+  harmonicDebounce = setTimeout(() => {
+    // Reúne todos os acordes de todos os campos
+    const todosAcordes = Array.from(document.querySelectorAll('.chord-area'))
+      .flatMap(a => extrairAcordes(a.value));
+    if (todosAcordes.length >= 2) {
+      mostrarHarmonic(ta, todosAcordes);
+    } else {
+      fecharHarmonic();
+    }
+  }, 600);
 }
 
 // ─── TRANSPOSIÇÃO ─────────────────────────────────────────────────────────
@@ -754,7 +1160,15 @@ function togglePerf() {
   const isPerf = document.getElementById('app-body').classList.toggle('performance-mode');
   document.getElementById('mode-text').innerText = isPerf ? "SAIR DO SHOW" : "MODO SHOW";
   if (!isPerf) { stopScroll(); window.scrollTo(0,0); }
-  else { atualizarIndicador(); }
+  else {
+    atualizarIndicador();
+    // Inicia teleprompter automaticamente no 9
+    const slider = document.getElementById('scroll-speed');
+    slider.value = 9;
+    document.getElementById('scroll-speed-val').innerText = '9';
+    clearInterval(scrollInterval);
+    scrollInterval = setInterval(() => window.scrollBy(0, 1), 175 - 9);
+  }
   broadcastEstado();
 }
 
@@ -825,6 +1239,7 @@ scrollSlider.oninput = () => {
   document.getElementById('scroll-speed-val').innerText = scrollSlider.value;
   clearInterval(scrollInterval);
   if (scrollSlider.value > 0) scrollInterval = setInterval(() => window.scrollBy(0,1), 175 - scrollSlider.value);
+  broadcastEstado();
 };
 function stopScroll() {
   clearInterval(scrollInterval);
