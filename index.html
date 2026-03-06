@@ -1526,8 +1526,8 @@ function renderPads() {
     return `
       <div class="pad ${black ? 'pad-black' : 'pad-white'}"
         data-midi="${midi}" data-qual="" data-idx="${i}"
-        onmousedown="iniciarPad(this)" onmouseup="pararPad(${i})" onmouseleave="pararPad(${i})"
-        ontouchstart="iniciarPad(this); event.preventDefault()" ontouchend="pararPad(${i}); event.preventDefault()">
+        onmousedown="iniciarPad(this)"
+        ontouchstart="iniciarPad(this); event.preventDefault()">
         <span class="pad-chord">${sharp}</span>
       </div>`;
   }).join('');
@@ -1535,18 +1535,18 @@ function renderPads() {
 
 function iniciarPad(el) {
   if (audioCtx.state === 'suspended') audioCtx.resume();
-  const idx   = parseInt(el.dataset.idx);
-  const midi  = parseInt(el.dataset.midi);
-  const qual  = el.dataset.qual;
-  const vol   = parseInt(document.getElementById('pads-vol').value) / 100;
+  const idx = parseInt(el.dataset.idx);
 
-  // Para se já estiver tocando
-  if (padNodes[idx]) pararPad(idx);
+  // Toggle: se já está tocando, para
+  if (padNodes[idx]) { pararPad(idx); return; }
 
   el.classList.add('playing');
 
-  const ctx = audioCtx;
-  const now = ctx.currentTime;
+  const midi  = parseInt(el.dataset.midi);
+  const qual  = el.dataset.qual;
+  const vol   = parseInt(document.getElementById('pads-vol').value) / 100;
+  const ctx   = audioCtx;
+  const now   = ctx.currentTime;
   const notas = acordeParaMidi(midi, qual);
 
   // Masterbus do pad
