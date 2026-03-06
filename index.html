@@ -7,6 +7,15 @@
 <link href="https://fonts.googleapis.com" rel="stylesheet">
 
 <style>
+  .show-active{
+animation: showBlink 1s infinite;
+}
+
+@keyframes showBlink{
+0%{opacity:1;}
+50%{opacity:0.4;}
+100%{opacity:1;}
+}
   button{
   transition: transform 0.08s ease, box-shadow 0.08s ease;
 }
