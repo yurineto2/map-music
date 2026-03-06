@@ -291,16 +291,35 @@ function deleteSong(id, e) {
   }
 }
 
-function togglePerf() {
-    const isPerf = document.getElementById('app-body').classList.toggle('performance-mode');
-    document.getElementById('mode-text').innerText = isPerf ? "SAIR DO SHOW" : "MODO SHOW";
-    if (!isPerf) { stopScroll(); window.scrollTo(0,0); }
+function togglePerf(){
+
+const body = document.getElementById("app-body");
+const btn = document.querySelector(".mode-show-container");
+const text = document.getElementById("mode-text");
+
+if (navigator.vibrate){
+navigator.vibrate(80);
 }
 
-const scrollSlider = document.getElementById('scroll-speed');
-scrollSlider.oninput = () => {
-    clearInterval(scrollInterval);
-    if (scrollSlider.value > 0) scrollInterval = setInterval(() => window.scrollBy(0, 1), 175 - scrollSlider.value);
+const ativo = body.classList.toggle("performance-mode");
+
+if(ativo){
+
+btn.classList.add("show-active");
+text.innerText = "SAIR DO SHOW";
+
+}else{
+
+btn.classList.remove("show-active");
+text.innerText = "MODO SHOW";
+
+stopScroll();
+window.scrollTo(0,0);
+
+}
+
+}
+  
 };
 function stopScroll() { clearInterval(scrollInterval); scrollSlider.value = 0; }
 
