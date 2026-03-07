@@ -490,6 +490,12 @@ body.performance-mode .perf-song-indicator { display: flex; }
 }
 .cifra-textarea:focus { border-color: var(--accent-primary); }
 .cifra-textarea::placeholder { color: rgba(255,255,255,0.2); font-family: 'Inter', sans-serif; font-size: 11px; }
+
+@keyframes loadBar {
+  0%   { width: 0%; margin-left: 0; }
+  50%  { width: 60%; margin-left: 20%; }
+  100% { width: 0%; margin-left: 100%; }
+}
 .cifra-preview {
   display: none; flex-direction: column; gap: 6px;
   max-height: 220px; overflow-y: auto; margin-top: 4px;
@@ -596,27 +602,25 @@ body.viewer-mode input[type="text"] { pointer-events: none; }
 
 <!-- MODAL IMPORTAR CIFRA -->
 <div class="modal-overlay" id="modal-cifra">
-  <div class="modal-box" style="max-width:520px;">
+  <div class="modal-box" style="max-width:540px;">
     <h2>Importar Cifra</h2>
-    <p>Cola o texto da cifra (do Cifra Club, Ultimate Guitar, etc).<br>A app detecta e divide as secoes automaticamente.</p>
 
     <div id="cifra-step-1">
-      <textarea class="cifra-textarea" id="cifra-input"
-        placeholder="Cole aqui a cifra completa...
-        
-Exemplo:
-[Intro] C G Am F
-
-[Verso]
-C        G
-Algum dia eu vou...
-
-[Refrão]
-Am    F    C
-..."></textarea>
+      <p style="font-size:11px; color:var(--text-secondary); margin-bottom:12px;">
+        Cola qualquer cifra — com letra, acordes, marcadores ou sem. A IA analisa e separa tudo.
+      </p>
+      <textarea class="cifra-textarea" id="cifra-input" placeholder="Cole aqui a cifra completa..."></textarea>
       <div style="display:flex; gap:8px; margin-top:12px;">
-        <button class="modal-btn primary" onclick="analisarCifra()">Analisar</button>
+        <button class="modal-btn primary" id="btn-analisar" onclick="analisarCifra()">Analisar com IA</button>
         <button class="modal-btn secondary" style="margin-top:0;" onclick="fecharModalCifra()">Cancelar</button>
+      </div>
+    </div>
+
+    <!-- Loading -->
+    <div id="cifra-loading" style="display:none; text-align:center; padding:32px 0;">
+      <div style="font-size:11px; font-weight:700; letter-spacing:2px; color:var(--accent-primary); text-transform:uppercase; margin-bottom:16px;">Analisando cifra...</div>
+      <div style="width:100%; height:2px; background:var(--bg-tertiary); border-radius:2px; overflow:hidden;">
+        <div style="height:100%; background:var(--accent-primary); border-radius:2px; animation:loadBar 1.8s ease-in-out infinite;"></div>
       </div>
     </div>
 
@@ -624,7 +628,7 @@ Am    F    C
       <p style="font-size:11px; color:var(--accent-primary); margin-bottom:10px;" id="cifra-preview-label"></p>
       <div class="cifra-preview show" id="cifra-preview"></div>
       <div style="display:flex; gap:8px; margin-top:14px;">
-        <button class="modal-btn primary" onclick="aplicarCifra()">Carregar nas Secoes</button>
+        <button class="modal-btn primary" onclick="aplicarCifra()">Carregar nas Seções</button>
         <button class="modal-btn secondary" style="margin-top:0;" onclick="voltarCifra()">Voltar</button>
       </div>
     </div>
@@ -1674,40 +1678,53 @@ function analisarCifra() {
   const texto = document.getElementById('cifra-input').value.trim();
   if (!texto) { showToast('Cola uma cifra primeiro.'); return; }
 
-  // Mostra loading
-  const btn = document.querySelector('#cifra-step-1 .modal-btn.primary');
-  btn.innerText = 'Analisando...';
-  btn.disabled = true;
+  document.getElementById('cifra-step-1').style.display = 'none';
+  document.getElementById('cifra-loading').style.display = 'block';
 
   fetch('https://api.anthropic.com/v1/messages', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
       model: 'claude-sonnet-4-20250514',
-      max_tokens: 1000,
-      system: `Você é um parser de cifras musicais. Analise o texto e retorne SOMENTE um JSON válido no formato:
-{"secoes":[{"titulo":"NOME","conteudo":"linhas da seção"}]}
-Regras:
-- Detecte seções por marcadores como [Intro], [Verso], Verse, Chorus, etc.
-- Normalize títulos: Intro→INTRO, Verso/Verse→VERSO, Refrão/Chorus→REFRÃO, Ponte/Bridge→PONTE, Solo→SOLO, Final/Outro→FINAL, Pre-refrão→PRE-REFRÃO
-- Se não houver marcadores, divida por blocos separados por linha em branco, nomeando PARTE 1, PARTE 2, etc.
-- Preserve acordes e letras exatamente como estão
-- Não inclua o marcador de seção no conteúdo
-- Retorne APENAS o JSON, sem texto antes ou depois`,
-      messages: [{ role: 'user', content: texto }]
+      max_tokens: 2000,
+      system: `Você é um analisador especialista em cifras musicais brasileiras e internacionais.
+
+Sua tarefa: receber uma cifra (pode vir do Cifra Club, Ultimate Guitar, copiada de qualquer lugar) e retornar um JSON estruturado com as seções da música.
+
+REGRAS IMPORTANTES:
+1. Identifique seções como Intro, Verso, Pré-Refrão, Refrão, Ponte, Solo, Final, Interlúdio, etc.
+2. Se não houver marcadores explícitos, analise o padrão da letra e dos acordes para inferir as seções (refrões geralmente repetem a mesma letra e acordes).
+3. Para cada seção, o "conteudo" deve conter APENAS os acordes relevantes — NÃO inclua a letra, apenas os acordes na ordem em que aparecem.
+4. Mantenha os acordes exatamente como estão (C, Am, F#m, Bb, etc).
+5. Agrupe acordes repetidos de forma limpa, uma linha por passagem.
+6. Normalize títulos: Verse→VERSO, Chorus→REFRÃO, Bridge→PONTE, Pre-chorus→PRÉ-REFRÃO, Outro→FINAL, Interlude→INTERLÚDIO.
+7. Se a cifra tiver apenas acordes sem letra, organize-os por seção normalmente.
+
+FORMATO DE SAÍDA — retorne SOMENTE este JSON, sem nenhum texto antes ou depois:
+{
+  "titulo": "Nome da música se identificável, senão null",
+  "tom": "Tom da música se identificável, senão null",
+  "secoes": [
+    { "titulo": "INTRO", "conteudo": "C G Am F" },
+    { "titulo": "VERSO", "conteudo": "C G\\nAm F" },
+    { "titulo": "REFRÃO", "conteudo": "F C G Am" }
+  ]
+}`,
+      messages: [{ role: 'user', content: `Analisa esta cifra:\n\n${texto}` }]
     })
   })
   .then(r => r.json())
   .then(data => {
-    btn.innerText = 'Analisar';
-    btn.disabled = false;
+    document.getElementById('cifra-loading').style.display = 'none';
+
     const raw = data.content?.[0]?.text || '';
     let parsed;
     try {
       const clean = raw.replace(/```json|```/g, '').trim();
       parsed = JSON.parse(clean);
     } catch(e) {
-      showToast('Erro ao analisar. Tente novamente.');
+      showToast('Erro ao interpretar resposta. Tente novamente.');
+      document.getElementById('cifra-step-1').style.display = 'block';
       return;
     }
 
@@ -1717,8 +1734,10 @@ Regras:
     }
 
     const preview = document.getElementById('cifra-preview');
-    document.getElementById('cifra-preview-label').innerText =
-      cifraSecoes.length + ' seção(ões) detectada(s)';
+    let label = cifraSecoes.length + ' seção(ões) detectada(s)';
+    if (parsed.titulo) label += ` · ${parsed.titulo}`;
+    if (parsed.tom)    label += ` · Tom: ${parsed.tom}`;
+    document.getElementById('cifra-preview-label').innerText = label;
 
     preview.innerHTML = cifraSecoes.map(s => `
       <div class="preview-section">
@@ -1726,26 +1745,12 @@ Regras:
         <div class="preview-section-content">${escapeHtml(s.conteudo.trim())}</div>
       </div>`).join('');
 
-    document.getElementById('cifra-step-1').style.display = 'none';
     document.getElementById('cifra-step-2').style.display = 'block';
   })
   .catch(() => {
-    btn.innerText = 'Analisar';
-    btn.disabled = false;
-    // Fallback: parser local
-    cifraSecoes = parsearCifraLocal(texto);
-    if (!cifraSecoes.length) cifraSecoes = [{ titulo: 'CIFRA', conteudo: texto }];
-
-    const preview = document.getElementById('cifra-preview');
-    document.getElementById('cifra-preview-label').innerText =
-      cifraSecoes.length + ' seção(ões) detectada(s)';
-    preview.innerHTML = cifraSecoes.map(s => `
-      <div class="preview-section">
-        <div class="preview-section-title">${s.titulo}</div>
-        <div class="preview-section-content">${escapeHtml(s.conteudo.trim())}</div>
-      </div>`).join('');
-    document.getElementById('cifra-step-1').style.display = 'none';
-    document.getElementById('cifra-step-2').style.display = 'block';
+    document.getElementById('cifra-loading').style.display = 'none';
+    document.getElementById('cifra-step-1').style.display = 'block';
+    showToast('Erro de conexão. Verifique sua internet.');
   });
 }
 
