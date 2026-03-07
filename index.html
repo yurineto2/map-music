@@ -606,12 +606,32 @@ body.viewer-mode input[type="text"] { pointer-events: none; }
     <h2>Importar Cifra</h2>
 
     <div id="cifra-step-1">
-      <p style="font-size:11px; color:var(--text-secondary); margin-bottom:12px;">
-        Cola qualquer cifra — com letra, acordes, marcadores ou sem. A IA analisa e separa tudo.
+      <p style="font-size:11px; color:var(--text-secondary); margin-bottom:14px;">
+        Cola o texto ou busca um ficheiro .txt — a app extrai os acordes e divide por seções automaticamente.
       </p>
-      <textarea class="cifra-textarea" id="cifra-input" placeholder="Cole aqui a cifra completa..."></textarea>
+
+      <!-- Botão buscar arquivo -->
+      <div id="cifra-file-area" style="border:1px dashed rgba(29,185,84,0.3); border-radius:10px; padding:14px 16px; margin-bottom:12px; display:flex; align-items:center; gap:12px; cursor:pointer; background:rgba(29,185,84,0.04); transition:0.2s;" onclick="document.getElementById('cifra-file-input').click()">
+        <div style="width:36px; height:36px; border-radius:8px; background:rgba(29,185,84,0.12); display:flex; align-items:center; justify-content:center; flex-shrink:0;">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#1db954" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+        </div>
+        <div>
+          <div id="cifra-file-name" style="font-size:11px; font-weight:700; color:#fff;">Buscar arquivo .txt</div>
+          <div style="font-size:10px; color:rgba(255,255,255,0.3); margin-top:2px;">Toca para selecionar do dispositivo</div>
+        </div>
+      </div>
+      <input type="file" id="cifra-file-input" accept=".txt,.pro,.chopro,.cho" style="display:none;" onchange="lerArquivoCifra(this)">
+
+      <div style="display:flex; align-items:center; gap:10px; margin-bottom:12px;">
+        <div style="flex:1; height:1px; background:rgba(255,255,255,0.07);"></div>
+        <span style="font-size:10px; color:rgba(255,255,255,0.25); font-weight:700; letter-spacing:1px;">OU COLE ABAIXO</span>
+        <div style="flex:1; height:1px; background:rgba(255,255,255,0.07);"></div>
+      </div>
+
+      <textarea class="cifra-textarea" id="cifra-input" placeholder="Cole aqui a cifra completa...&#10;&#10;Exemplo:&#10;[Intro] C G Am F&#10;&#10;[Verso]&#10;C        G&#10;Algum dia eu vou...&#10;&#10;[Refrão]&#10;Am  F  C  G"></textarea>
+
       <div style="display:flex; gap:8px; margin-top:12px;">
-        <button class="modal-btn primary" id="btn-analisar" onclick="analisarCifra()">Analisar com IA</button>
+        <button class="modal-btn primary" id="btn-analisar" onclick="analisarCifra()">Analisar</button>
         <button class="modal-btn secondary" style="margin-top:0;" onclick="fecharModalCifra()">Cancelar</button>
       </div>
     </div>
@@ -1654,201 +1674,166 @@ function pararPad(idx) {
 
 // ─── IMPORTAR CIFRA ───────────────────────────────────────────────────────
 
-let cifraSecoes = []; // secoes detectadas para preview
-
-// Marcadores de secao reconhecidos (case-insensitive)
-const SECAO_REGEX = /^\[(.+?)\]|^(intro|vers[oa]|refr[aã]o|ponte|bridge|solo|final|pre.?refr[aã]o|coda|outro|chorus|verse|pre.?chorus)[\s:.]*/i;
+let cifraSecoes = [];
 
 function abrirModalCifra() {
   document.getElementById('modal-cifra').classList.add('show');
   document.getElementById('cifra-step-1').style.display = 'block';
   document.getElementById('cifra-step-2').style.display = 'none';
+  document.getElementById('cifra-loading').style.display = 'none';
   document.getElementById('cifra-input').value = '';
+  document.getElementById('cifra-file-name').innerText = 'Buscar arquivo .txt';
+  document.getElementById('cifra-file-input').value = '';
   cifraSecoes = [];
 }
-function fecharModalCifra() {
-  document.getElementById('modal-cifra').classList.remove('show');
-}
+function fecharModalCifra() { document.getElementById('modal-cifra').classList.remove('show'); }
 function voltarCifra() {
-  document.getElementById('cifra-step-1').style.display = 'block';
   document.getElementById('cifra-step-2').style.display = 'none';
+  document.getElementById('cifra-step-1').style.display = 'block';
+}
+
+function lerArquivoCifra(input) {
+  const file = input.files[0];
+  if (!file) return;
+  document.getElementById('cifra-file-name').innerText = file.name;
+  const reader = new FileReader();
+  reader.onload = e => { document.getElementById('cifra-input').value = e.target.result; };
+  reader.readAsText(file, 'UTF-8');
 }
 
 function analisarCifra() {
   const texto = document.getElementById('cifra-input').value.trim();
-  if (!texto) { showToast('Cola uma cifra primeiro.'); return; }
+  if (!texto) { showToast('Cola uma cifra ou abre um ficheiro.'); return; }
 
   document.getElementById('cifra-step-1').style.display = 'none';
   document.getElementById('cifra-loading').style.display = 'block';
 
   setTimeout(() => {
-    cifraSecoes = parsearCifraInteligente(texto);
-    if (!cifraSecoes.length) cifraSecoes = [{ titulo: 'CIFRA', conteudo: extrairAcordesDoTexto(texto) }];
-
+    cifraSecoes = parsearCifra(texto);
     document.getElementById('cifra-loading').style.display = 'none';
 
-    const preview = document.getElementById('cifra-preview');
-    document.getElementById('cifra-preview-label').innerText = cifraSecoes.length + ' seção(ões) detectada(s)';
-    preview.innerHTML = cifraSecoes.map(s => `
+    if (!cifraSecoes.length) {
+      showToast('Nenhum acorde encontrado.');
+      document.getElementById('cifra-step-1').style.display = 'block';
+      return;
+    }
+
+    document.getElementById('cifra-preview-label').innerText =
+      cifraSecoes.length + ' seção(ões) detectada(s)';
+    document.getElementById('cifra-preview').innerHTML = cifraSecoes.map(s => `
       <div class="preview-section">
         <div class="preview-section-title">${s.titulo}</div>
-        <div class="preview-section-content">${escapeHtml(s.conteudo.trim())}</div>
+        <div class="preview-section-content">${escapeHtml(s.conteudo)}</div>
       </div>`).join('');
-
     document.getElementById('cifra-step-2').style.display = 'block';
-  }, 300);
+  }, 350);
 }
 
-// Regex que reconhece acordes musicais válidos
-const ACORDE_RE = /\b[A-G][#b]?(m(?:aj)?|min|sus[24]?|dim|aug|add\d{1,2}|M)?(\d+)?(\/[A-G][#b]?)?\b/g;
+// ── Dicionário de seções ──────────────────────────────────────────────────
+const SECAO_MAP = {
+  'intro':'INTRO','introduction':'INTRO','abertura':'INTRO',
+  'verse':'VERSO','verso':'VERSO','versa':'VERSO','estrofe':'VERSO',
+  'chorus':'REFRÃO','refrao':'REFRÃO','refrão':'REFRÃO','refrain':'REFRÃO',
+  'pre chorus':'PRÉ-REFRÃO','pre-chorus':'PRÉ-REFRÃO',
+  'pre refrao':'PRÉ-REFRÃO','pre-refrao':'PRÉ-REFRÃO',
+  'pre refrão':'PRÉ-REFRÃO','pre-refrão':'PRÉ-REFRÃO','pré-refrão':'PRÉ-REFRÃO',
+  'bridge':'PONTE','ponte':'PONTE',
+  'solo':'SOLO','guitar solo':'SOLO',
+  'interlude':'INTERLÚDIO','interludio':'INTERLÚDIO','interlúdio':'INTERLÚDIO',
+  'instrumental':'INSTRUMENTAL',
+  'outro':'FINAL','final':'FINAL','coda':'FINAL','ending':'FINAL','fim':'FINAL',
+};
 
-// Verifica se uma linha tem pelo menos 1 acorde e é predominantemente acordes (não letra)
-function ehLinhaDeAcorde(linha) {
+function normStr(s) {
+  return s.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/\s+/g,' ').trim();
+}
+
+function identificarSecao(linha) {
+  const t = linha.trim();
+  if (!t || t.length > 40) return null;
+
+  // [Intro], [Verse 1], [Refrão]
+  const colchete = t.match(/^\[(.+?)\]/);
+  if (colchete) {
+    const chave = normStr(colchete[1].replace(/\d+/g,'').trim());
+    for (const [k,v] of Object.entries(SECAO_MAP)) {
+      if (normStr(k) === chave || chave.startsWith(normStr(k))) return v;
+    }
+    return colchete[1].replace(/\d+/g,'').trim().toUpperCase();
+  }
+
+  // Linha curta sem acordes que termina em ":" ou é palavra-chave solta
+  const semPont = t.replace(/[\s:.#\-–—0-9]+$/g,'').trim();
+  if (semPont.length >= 2 && semPont.length <= 25) {
+    const chave = normStr(semPont);
+    for (const [k,v] of Object.entries(SECAO_MAP)) {
+      if (normStr(k) === chave || chave.startsWith(normStr(k))) return v;
+    }
+    // Se a linha termina com ":" é provavelmente um marcador desconhecido
+    if (t.endsWith(':') && !ehLinhaDeAcordes(linha)) {
+      return semPont.toUpperCase();
+    }
+  }
+  return null;
+}
+
+function ehAcorde(tk) {
+  return /^[A-G][#b]?(m(?:aj)?7?|min7?|sus[24]?|dim7?|aug|add\d{1,2}|M7?|\d+)?(\/[A-G][#b]?)?$/.test(tk.trim());
+}
+
+function ehLinhaDeAcordes(linha) {
   const t = linha.trim();
   if (!t) return false;
   const tokens = t.split(/\s+/);
-  const nAcordes = tokens.filter(tk => /^[A-G][#b]?(m(?:aj)?|min|sus[24]?|dim|aug|add\d{1,2}|M)?(\d+)?(\/[A-G][#b]?)?$/.test(tk)).length;
-  // Linha de acorde = maioria dos tokens são acordes E não tem muitas palavras longas (letra)
-  const temPalavraLonga = tokens.some(tk => tk.length > 5 && !/[A-G]/.test(tk[0]));
-  return nAcordes >= 1 && !temPalavraLonga && (nAcordes / tokens.length) >= 0.4;
+  const nAcordes = tokens.filter(ehAcorde).length;
+  if (nAcordes === 0) return false;
+  const temLetra = tokens.some(tk => !ehAcorde(tk) && tk.length > 5 && /[aeiouáéíóú]{2,}/i.test(tk));
+  return !temLetra && (nAcordes / tokens.length) >= 0.45;
 }
 
-// Extrai todos os acordes de um bloco de texto como string limpa
-function extrairAcordesDoTexto(texto) {
-  const linhas = texto.split('\n');
-  const resultado = [];
-  for (const linha of linhas) {
-    if (ehLinhaDeAcorde(linha)) {
-      const acs = (linha.match(ACORDE_RE) || []).join(' ').trim();
-      if (acs) resultado.push(acs);
-    }
-  }
-  return resultado.join('\n');
-}
-
-function parsearCifraInteligente(texto) {
+function parsearCifra(texto) {
   const linhas = texto.split('\n');
   const secoes = [];
   let tituloAtual = null;
   let acordesAtual = [];
 
-  const MARCADOR_RE = /^\[(.+?)\]$|^(intro|vers[oa]|refrão|refrao|pré-refrão|pre.?refr[aã]o|ponte|bridge|solo|final|coda|outro|chorus|verse|pre.?chorus|interlude|instrumental)[\s:.#0-9]*$/i;
-
-  const NOMES = {
-    'intro':'INTRO','verse':'VERSO','verso':'VERSO','versa':'VERSO',
-    'chorus':'REFRÃO','refrao':'REFRÃO','refrão':'REFRÃO',
-    'pre-refrão':'PRÉ-REFRÃO','pre refrão':'PRÉ-REFRÃO','pre-refrao':'PRÉ-REFRÃO',
-    'pre chorus':'PRÉ-REFRÃO','prechorus':'PRÉ-REFRÃO',
-    'bridge':'PONTE','ponte':'PONTE','solo':'SOLO',
-    'interlude':'INTERLÚDIO','instrumental':'INSTRUMENTAL',
-    'final':'FINAL','coda':'FINAL','outro':'FINAL',
-  };
-
-  function normTitulo(raw) {
-    const limpo = raw.replace(/[\[\]#0-9\s:.]+$/g,'').replace(/^\[|\]$/g,'').trim();
-    const chave = limpo.toLowerCase()
-      .normalize('NFD').replace(/[\u0300-\u036f]/g,'')
-      .replace(/[^a-z\s-]/g,'').trim();
-    return NOMES[chave] || limpo.toUpperCase();
-  }
-
   function salvar() {
-    if (tituloAtual !== null && acordesAtual.length) {
-      const conteudo = acordesAtual.join('\n').trim();
-      if (conteudo) secoes.push({ titulo: tituloAtual, conteudo });
+    if (tituloAtual && acordesAtual.length) {
+      const dedup = acordesAtual.filter((l,i,a) => l !== a[i-1]);
+      secoes.push({ titulo: tituloAtual, conteudo: dedup.join('\n') });
     }
+    acordesAtual = [];
   }
 
   for (const linha of linhas) {
     const t = linha.trim();
-    const match = t.match(MARCADOR_RE);
+    if (!t) continue;
 
-    if (match) {
+    const secao = identificarSecao(linha);
+    if (secao) {
       salvar();
-      tituloAtual = normTitulo(match[0]);
-      acordesAtual = [];
-    } else if (ehLinhaDeAcorde(linha)) {
-      // Se ainda não há seção, cria INTRO automaticamente
-      if (tituloAtual === null) { tituloAtual = 'INTRO'; acordesAtual = []; }
-      const acs = (linha.match(ACORDE_RE) || []).join(' ').trim();
+      tituloAtual = secao;
+      continue;
+    }
+
+    if (ehLinhaDeAcordes(linha)) {
+      if (!tituloAtual) tituloAtual = 'INTRO';
+      const acs = t.split(/\s+/).filter(ehAcorde).join('  ');
       if (acs) acordesAtual.push(acs);
     }
-    // Linhas de letra são simplesmente ignoradas
   }
   salvar();
-  return secoes.filter(s => s.conteudo.trim());
-}
 
-function parsearCifraLocal(texto) {
-  // Parser local de fallback — divide por blocos vazios se não houver marcadores
-  const linhas = texto.split('\n');
-  const secoes = [];
-  let secaoAtual = null;
-  let conteudoAtual = [];
-
-  const NOMES = {
-    'intro': 'INTRO', 'verse': 'VERSO', 'verso': 'VERSO', 'versa': 'VERSO',
-    'chorus': 'REFRÃO', 'refrao': 'REFRÃO', 'refrão': 'REFRÃO',
-    'bridge': 'PONTE', 'ponte': 'PONTE', 'solo': 'SOLO',
-    'final': 'FINAL', 'coda': 'FINAL', 'outro': 'FINAL',
-    'pre-refrão': 'PRE-REFRÃO', 'pre chorus': 'PRE-REFRÃO',
-  };
-
-  function normalizarTitulo(raw) {
-    const limpo = raw.replace(/[\[\]]/g, '').trim();
-    const chave = limpo.toLowerCase()
-      .replace(/[áàãâ]/g,'a').replace(/[éê]/g,'e').replace(/[ó]/g,'o')
-      .replace(/[\s-]+/g,' ');
-    return NOMES[chave] || limpo.toUpperCase();
-  }
-
-  function salvar() {
-    if (secaoAtual !== null) {
-      const c = conteudoAtual.join('\n').trim();
-      if (c) secoes.push({ titulo: secaoAtual, conteudo: c });
-    }
-  }
-
-  let blocoIdx = 0;
-  let emBloco = false;
-
-  for (const linha of linhas) {
-    const t = linha.trim();
-    const match = t.match(/^\[(.+?)\]/) ||
-      t.match(/^(intro|vers[oa]|refr[aã]o|ponte|bridge|solo|final|pre.?refr[aã]o|coda|outro|chorus|verse|pre.?chorus)[\s:.]*$/i);
-
-    if (match) {
-      salvar();
-      secaoAtual = normalizarTitulo(match[0]);
-      conteudoAtual = [];
-      emBloco = false;
-    } else if (!t && secaoAtual === null) {
-      // linha vazia sem marcador — separa blocos
-      if (emBloco) {
-        salvar();
-        secaoAtual = null;
-        conteudoAtual = [];
-        emBloco = false;
-        blocoIdx++;
-      }
-    } else if (t) {
-      if (secaoAtual === null) {
-        blocoIdx++;
-        secaoAtual = blocoIdx === 1 ? 'INTRO' : 'PARTE ' + blocoIdx;
-        conteudoAtual = [];
-        emBloco = true;
-      }
-      conteudoAtual.push(linha);
+  return secoes.reduce((acc, s) => {
+    const prev = acc[acc.length - 1];
+    if (prev && prev.titulo === s.titulo) {
+      prev.conteudo += '\n' + s.conteudo;
     } else {
-      conteudoAtual.push(linha);
+      acc.push({ ...s });
     }
-  }
-  salvar();
-  return secoes;
+    return acc;
+  }, []);
 }
-
-function parsearCifra(texto) { return parsearCifraLocal(texto); }
-
 
 function aplicarCifra() {
   if (!cifraSecoes.length) return;
@@ -1856,7 +1841,7 @@ function aplicarCifra() {
   cifraSecoes.forEach(s => addPart(s.titulo, s.conteudo.trim()));
   fecharModalCifra();
   broadcastEstado();
-  showToast(cifraSecoes.length + ' secoes carregadas!');
+  showToast(cifraSecoes.length + ' seções carregadas!');
 }
 
 function escapeHtml(str) {
