@@ -790,7 +790,7 @@ body.viewer-mode input[type="text"] { pointer-events: none; }
       </div>
       <div class="logo-text">
         <span class="logo-name">Map Music <span>Pro</span></span>
-        <span class="logo-tag">Elite Edition · v29</span>
+        <span class="logo-tag">Elite Edition · v31</span>
       </div>
     </div>
     <div style="display:flex; align-items:center; gap:12px;">
@@ -837,10 +837,10 @@ body.viewer-mode input[type="text"] { pointer-events: none; }
     <div class="tab-panel" id="tab-entrar">
       <p style="font-size:11px; color:var(--text-secondary); margin-bottom:16px;">Insere o código de 4 dígitos:</p>
       <div class="code-inputs">
-        <input class="code-input" maxlength="1" id="d0" oninput="nextDigit(this,1)" onkeydown="prevDigit(event,0)">
-        <input class="code-input" maxlength="1" id="d1" oninput="nextDigit(this,2)" onkeydown="prevDigit(event,1)">
-        <input class="code-input" maxlength="1" id="d2" oninput="nextDigit(this,3)" onkeydown="prevDigit(event,2)">
-        <input class="code-input" maxlength="1" id="d3" oninput="nextDigit(this,-1)" onkeydown="prevDigit(event,3)">
+        <input class="code-input" maxlength="1" id="d0" inputmode="numeric" pattern="[0-9]*" type="tel" oninput="nextDigit(this,1)" onkeydown="prevDigit(event,0)">
+        <input class="code-input" maxlength="1" id="d1" inputmode="numeric" pattern="[0-9]*" type="tel" oninput="nextDigit(this,2)" onkeydown="prevDigit(event,1)">
+        <input class="code-input" maxlength="1" id="d2" inputmode="numeric" pattern="[0-9]*" type="tel" oninput="nextDigit(this,3)" onkeydown="prevDigit(event,2)">
+        <input class="code-input" maxlength="1" id="d3" inputmode="numeric" pattern="[0-9]*" type="tel" oninput="nextDigit(this,-1)" onkeydown="prevDigit(event,3)">
       </div>
       <div class="connect-status" id="connect-status"></div>
       <button class="modal-btn primary" id="btn-entrar" onclick="entrarNaSala()">Entrar na Sala</button>
@@ -1220,6 +1220,7 @@ function aplicarEstado(estado) {
   syncPaused = true;
   bpm = estado.bpm;
   document.getElementById('bpm-display').innerText = bpm;
+  document.getElementById('dc-bpm').textContent = bpm;
   document.getElementById('trans-val').innerText = estado.transVal;
 
   // Partes / acordes
