@@ -485,6 +485,26 @@ body.performance-mode .perf-song-indicator { display: flex; }
   border-radius: 50%; background: var(--accent-primary); cursor: pointer;
 }
 
+/* Botões de tipo de pad */
+.pad-type-btns {
+  display: flex; gap: 8px; width: 100%; max-width: 560px;
+  position: relative; z-index: 1; flex-wrap: wrap;
+}
+.pad-type-btn {
+  flex: 1; padding: 9px 0; border-radius: 30px;
+  border: 1px solid rgba(255,255,255,0.1);
+  background: rgba(255,255,255,0.04);
+  color: rgba(255,255,255,0.45); font-size: 10px;
+  font-weight: 800; letter-spacing: 1.5px; text-transform: uppercase;
+  cursor: pointer; transition: 0.2s; white-space: nowrap;
+}
+.pad-type-btn:hover { border-color: rgba(255,255,255,0.25); color: rgba(255,255,255,0.8); }
+.pad-type-btn.active {
+  background: rgba(29,185,84,0.15);
+  border-color: var(--accent-primary);
+  color: var(--accent-primary);
+}
+
 /* Grade de pads ambient */
 .pads-grid {
   display: grid; grid-template-columns: repeat(4, 1fr);
@@ -601,7 +621,7 @@ body.viewer-mode input[type="text"] { pointer-events: none; }
       </div>
       <div class="logo-text">
         <span class="logo-name">Map Music <span>Pro</span></span>
-        <span class="logo-tag">Elite Edition · v14</span>
+        <span class="logo-tag">Elite Edition · v15</span>
       </div>
     </div>
     <div style="display:flex; align-items:center; gap:12px;">
@@ -719,6 +739,12 @@ body.viewer-mode input[type="text"] { pointer-events: none; }
   <div class="pads-header">
     <span class="pads-title">Ambient Pads</span>
     <button class="pads-close" onclick="fecharPads()">Fechar</button>
+  </div>
+  <div class="pad-type-btns" id="pad-type-btns">
+    <button class="pad-type-btn active" onclick="setPadType('ambient')">Ambient</button>
+    <button class="pad-type-btn" onclick="setPadType('synth')">Synth</button>
+    <button class="pad-type-btn" onclick="setPadType('keys')">Keys</button>
+    <button class="pad-type-btn" onclick="setPadType('drone')">Drone</button>
   </div>
   <div class="pads-controls">
     <div class="pads-vol">
@@ -1600,6 +1626,16 @@ function importData() {
 // Segura para soar, solta para fade out
 
 const padNodes = {}; // armazena nós ativos por pad index
+let padTipoAtual = 'ambient';
+
+function setPadType(tipo) {
+  // Para todos os pads ao trocar tipo
+  Object.keys(padNodes).forEach(i => pararPad(i));
+  padTipoAtual = tipo;
+  document.querySelectorAll('.pad-type-btn').forEach(b => {
+    b.classList.toggle('active', b.textContent.toLowerCase() === tipo);
+  });
+}
 
 // Frequência base a partir do MIDI
 function midiToFreq(midi) { return 440 * Math.pow(2, (midi - 69) / 12); }
@@ -1651,9 +1687,7 @@ function renderPads() {
 function iniciarPad(el) {
   if (audioCtx.state === 'suspended') audioCtx.resume();
   const idx = parseInt(el.dataset.idx);
-
   if (padNodes[idx]) { pararPad(idx); return; }
-
   el.classList.add('playing');
 
   const midi = parseInt(el.dataset.midi);
@@ -1662,90 +1696,126 @@ function iniciarPad(el) {
   const now  = ctx.currentTime;
   const freq = midiToFreq(midi);
 
-  // Master
+  // Master gain
   const master = ctx.createGain();
   master.gain.setValueAtTime(0, now);
-  master.gain.linearRampToValueAtTime(vol * 0.4, now + 1.8); // bow attack lento
   master.connect(ctx.destination);
 
-  // Reverb com dois delays cruzados
+  // Reverb compartilhado (dois delays cruzados)
   const dA = ctx.createDelay(3); dA.delayTime.value = 0.25;
   const dB = ctx.createDelay(3); dB.delayTime.value = 0.52;
   const fbA = ctx.createGain(); fbA.gain.value = 0.28;
   const fbB = ctx.createGain(); fbB.gain.value = 0.2;
   dA.connect(fbA); fbA.connect(dA);
   dB.connect(fbB); fbB.connect(dB);
-  const wet = ctx.createGain(); wet.gain.value = 0.55;
+  const wet = ctx.createGain();
   master.connect(dA); master.connect(dB);
   dA.connect(wet); dB.connect(wet);
   wet.connect(ctx.destination);
 
-  // Vibrato LFO (típico de strings: ~5Hz, depth cresce com tempo)
-  const vibratoLFO  = ctx.createOscillator();
-  const vibratoGain = ctx.createGain();
-  vibratoLFO.frequency.value = 5.2;
-  vibratoGain.gain.setValueAtTime(0, now);
-  vibratoGain.gain.linearRampToValueAtTime(18, now + 2.5); // vibrato entra gradual
-  vibratoLFO.connect(vibratoGain);
-  vibratoLFO.start(now);
+  let oscs = [];
 
-  // Strings = sawtooth + square suave + harmônicos, tudo fortemente filtrado
-  // Múltiplas vozes ligeiramente desafinadas = ensemble de cordas
-  const voices = [
-    { detune: -14, gain: 0.35 },
-    { detune:  -5, gain: 0.4  },
-    { detune:   0, gain: 0.45 },
-    { detune:   6, gain: 0.4  },
-    { detune:  13, gain: 0.35 },
-  ];
+  if (padTipoAtual === 'ambient') {
+    // ── AMBIENT: ensemble de cordas com vibrato e bow attack lento ──
+    master.gain.linearRampToValueAtTime(vol * 0.4, now + 1.8);
+    wet.gain.value = 0.55;
+    const vibratoLFO = ctx.createOscillator();
+    const vibratoGain = ctx.createGain();
+    vibratoLFO.frequency.value = 5.2;
+    vibratoGain.gain.setValueAtTime(0, now);
+    vibratoGain.gain.linearRampToValueAtTime(18, now + 2.5);
+    vibratoLFO.connect(vibratoGain);
+    vibratoLFO.start(now);
+    [{ detune:-14,gain:0.35},{ detune:-5,gain:0.4},{ detune:0,gain:0.45},{ detune:6,gain:0.4},{ detune:13,gain:0.35}].forEach(v => {
+      const saw = ctx.createOscillator(); saw.type='sawtooth'; saw.frequency.value=freq; saw.detune.value=v.detune;
+      vibratoGain.connect(saw.detune);
+      const lpf = ctx.createBiquadFilter(); lpf.type='lowpass'; lpf.frequency.value=2200; lpf.Q.value=0.5;
+      const hpf = ctx.createBiquadFilter(); hpf.type='highpass'; hpf.frequency.value=80; hpf.Q.value=0.3;
+      const g = ctx.createGain(); g.gain.value=v.gain*0.18;
+      saw.connect(hpf); hpf.connect(lpf); lpf.connect(g); g.connect(master); saw.start(now);
+      const sq = ctx.createOscillator(); sq.type='square'; sq.frequency.value=freq*2; sq.detune.value=v.detune+3;
+      vibratoGain.connect(sq.detune);
+      const sqF = ctx.createBiquadFilter(); sqF.type='lowpass'; sqF.frequency.value=900;
+      const sqG = ctx.createGain(); sqG.gain.value=0.018;
+      sq.connect(sqF); sqF.connect(sqG); sqG.connect(master); sq.start(now);
+      oscs.push(saw, sq);
+    });
+    oscs.push(vibratoLFO);
 
-  const oscs = voices.flatMap(v => {
-    // Sawtooth = timbre base de cordas friccionadas
-    const saw = ctx.createOscillator();
-    saw.type = 'sawtooth';
-    saw.frequency.value = freq;
-    saw.detune.value = v.detune;
-    vibratoGain.connect(saw.detune); // vibrato no detune
+  } else if (padTipoAtual === 'synth') {
+    // ── SYNTH: supersaw analógico com filtro resonante e LFO de filtro ──
+    master.gain.linearRampToValueAtTime(vol * 0.35, now + 0.08);
+    wet.gain.value = 0.4;
+    const filter = ctx.createBiquadFilter();
+    filter.type = 'lowpass'; filter.frequency.value = 300; filter.Q.value = 6;
+    filter.frequency.linearRampToValueAtTime(3500, now + 1.2); // filter sweep
+    filter.connect(master);
+    // LFO no filtro para movimento
+    const lfo = ctx.createOscillator(); lfo.frequency.value = 0.4;
+    const lfoGain = ctx.createGain(); lfoGain.gain.value = 400;
+    lfo.connect(lfoGain); lfoGain.connect(filter.frequency); lfo.start(now);
+    // 7 vozes supersaw desafinadas
+    [-30,-18,-8,-1,0,8,18,30].forEach((det, i) => {
+      const osc = ctx.createOscillator(); osc.type='sawtooth';
+      osc.frequency.value = freq * (i < 4 ? 1 : i === 4 ? 1 : 0.5);
+      osc.detune.value = det;
+      const g = ctx.createGain(); g.gain.value = 0.12;
+      osc.connect(g); g.connect(filter); osc.start(now); oscs.push(osc);
+    });
+    oscs.push(lfo);
 
-    // Filtro passa-baixo + passa-alto para corpo de strings
-    const lpf = ctx.createBiquadFilter();
-    lpf.type = 'lowpass';
-    lpf.frequency.value = 2200;
-    lpf.Q.value = 0.5;
+  } else if (padTipoAtual === 'keys') {
+    // ── KEYS: piano/Rhodes elétrico com attack percussivo e decay natural ──
+    master.gain.linearRampToValueAtTime(vol * 0.5, now + 0.01); // attack rápido
+    master.gain.linearRampToValueAtTime(vol * 0.25, now + 0.8); // decay
+    wet.gain.value = 0.3;
+    // Fundamental + harmônicos típicos de piano elétrico
+    [{ mult:1, gain:0.5, type:'sine' },
+     { mult:2, gain:0.15, type:'sine' },
+     { mult:3, gain:0.06, type:'sine' },
+     { mult:4, gain:0.03, type:'sine' },
+     { mult:0.5, gain:0.08, type:'triangle' }].forEach(h => {
+      const osc = ctx.createOscillator(); osc.type=h.type;
+      osc.frequency.value = freq * h.mult;
+      // Tremolo suave (Rhodes característico)
+      const trem = ctx.createOscillator(); trem.frequency.value = 5.5;
+      const tremG = ctx.createGain(); tremG.gain.value = 0.04;
+      trem.connect(tremG); trem.start(now);
+      const g = ctx.createGain(); g.gain.value = h.gain * 0.6;
+      tremG.connect(g.gain);
+      osc.connect(g); g.connect(master); osc.start(now); oscs.push(osc, trem);
+    });
 
-    const hpf = ctx.createBiquadFilter();
-    hpf.type = 'highpass';
-    hpf.frequency.value = 80;
-    hpf.Q.value = 0.3;
+  } else if (padTipoAtual === 'drone') {
+    // ── DRONE: nota fundamental sustentada com sub-bass e overtones orgânicos ──
+    master.gain.linearRampToValueAtTime(vol * 0.45, now + 3.5); // attack muito lento
+    wet.gain.value = 0.7;
+    // Sub-bass (oitava abaixo)
+    const sub = ctx.createOscillator(); sub.type='sine'; sub.frequency.value=freq*0.5;
+    const subG = ctx.createGain(); subG.gain.value=0.5;
+    sub.connect(subG); subG.connect(master); sub.start(now); oscs.push(sub);
+    // Fundamental com ondas sobrepostas
+    ['sine','triangle'].forEach((type, ti) => {
+      const osc = ctx.createOscillator(); osc.type=type; osc.frequency.value=freq;
+      osc.detune.value = ti * 7; // detuning mínimo para batimento lento
+      const lpf = ctx.createBiquadFilter(); lpf.type='lowpass'; lpf.frequency.value=800;
+      const g = ctx.createGain(); g.gain.value=0.3;
+      osc.connect(lpf); lpf.connect(g); g.connect(master); osc.start(now); oscs.push(osc);
+    });
+    // Overtones harmônicos altos e filtrados
+    [2,3,4].forEach(mult => {
+      const osc = ctx.createOscillator(); osc.type='sine'; osc.frequency.value=freq*mult;
+      const lpf = ctx.createBiquadFilter(); lpf.type='lowpass'; lpf.frequency.value=600/(mult*0.8);
+      const g = ctx.createGain(); g.gain.value=0.08/(mult);
+      osc.connect(lpf); lpf.connect(g); g.connect(master); osc.start(now); oscs.push(osc);
+    });
+    // Modulação AM lenta para textura viva
+    const am = ctx.createOscillator(); am.frequency.value=0.15;
+    const amG = ctx.createGain(); amG.gain.value=0.08;
+    am.connect(amG); amG.connect(master.gain); am.start(now); oscs.push(am);
+  }
 
-    const g = ctx.createGain();
-    g.gain.value = v.gain * 0.18;
-
-    saw.connect(hpf); hpf.connect(lpf); lpf.connect(g); g.connect(master);
-    saw.start(now);
-
-    // Segunda camada: square muito atenuado para brilho de arco
-    const sq = ctx.createOscillator();
-    sq.type = 'square';
-    sq.frequency.value = freq * 2;
-    sq.detune.value = v.detune + 3;
-    vibratoGain.connect(sq.detune);
-
-    const sqF = ctx.createBiquadFilter();
-    sqF.type = 'lowpass';
-    sqF.frequency.value = 900;
-    sqF.Q.value = 0.3;
-
-    const sqG = ctx.createGain();
-    sqG.gain.value = 0.018;
-
-    sq.connect(sqF); sqF.connect(sqG); sqG.connect(master);
-    sq.start(now);
-
-    return [saw, sq];
-  });
-
-  padNodes[idx] = { oscs: [...oscs, vibratoLFO], masterGain: master, dA, dB, el };
+  padNodes[idx] = { oscs, masterGain: master, dA, dB, el };
 }
 
 function pararPad(idx) {
@@ -1834,7 +1904,11 @@ function lerArquivoCifra(input) {
           const content = await page.getTextContent({ includeMarkedContent: false });
 
           // Verifica se o PDF tem spans coloridos (modo Cifra Club)
+          // DEBUG: loga formato da cor do primeiro item
+          const primeiroComCor = content.items.find(it => it.color !== undefined && it.color !== null);
+          if (primeiroComCor) console.log('DEBUG color format:', JSON.stringify(primeiroComCor.color), 'type:', typeof primeiroComCor.color, 'isArray:', Array.isArray(primeiroComCor.color));
           const temCores = content.items.some(it => isChordColor(it.color));
+          console.log('DEBUG temCores:', temCores, 'total items:', content.items.length);
 
           if (temCores) {
             // Modo Cifra Club: agrupa por Y±2px, insere linha vazia em gap Y > 25px
