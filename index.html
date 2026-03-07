@@ -1866,7 +1866,24 @@ function lerArquivoCifra(input) {
                 items.sort((a,b) => a.x - b.x).map(it => it.str).join(' ').trim()
               )
               .filter(l => l.length > 0);
-            textoTotal += linhasOrdenadas.join('\n') + '\n\n';
+
+            // Fallback: separa linhas mistas (acorde + letra juntos) por regex
+            const linhasFinal = [];
+            for (const linha of linhasOrdenadas) {
+              // Detecta se a linha tem mix: começa com acorde mas tem texto com vogal
+              const tokens = linha.split(/\s+/).filter(Boolean);
+              const ehAcordeTk = tk => /^[A-G][#b]?(m(?:aj)?7?|min7?|sus[24]?|dim7?|aug|add\d{1,2}|M7?|\d+)?(\/[A-G][#b]?)?$/.test(tk) && tk.length <= 6;
+              const acordes = tokens.filter(ehAcordeTk);
+              const naoAcordes = tokens.filter(t => !ehAcordeTk(t) && t.length > 2 && /[aeiouáéíóú]/i.test(t));
+              if (acordes.length > 0 && naoAcordes.length > 0) {
+                // Linha mista — separa
+                linhasFinal.push(acordes.join('  '));
+                linhasFinal.push(naoAcordes.join(' '));
+              } else {
+                linhasFinal.push(linha);
+              }
+            }
+            textoTotal += linhasFinal.join('\n') + '\n\n';
           }
         }
 
