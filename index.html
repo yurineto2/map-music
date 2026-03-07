@@ -1681,64 +1681,14 @@ function analisarCifra() {
   document.getElementById('cifra-step-1').style.display = 'none';
   document.getElementById('cifra-loading').style.display = 'block';
 
-  fetch('https://api.anthropic.com/v1/messages', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      model: 'claude-sonnet-4-20250514',
-      max_tokens: 2000,
-      system: `Você é um analisador especialista em cifras musicais brasileiras e internacionais.
+  setTimeout(() => {
+    cifraSecoes = parsearCifraInteligente(texto);
+    if (!cifraSecoes.length) cifraSecoes = [{ titulo: 'CIFRA', conteudo: extrairAcordesDoTexto(texto) }];
 
-Sua tarefa: receber uma cifra (pode vir do Cifra Club, Ultimate Guitar, copiada de qualquer lugar) e retornar um JSON estruturado com as seções da música.
-
-REGRAS IMPORTANTES:
-1. Identifique seções como Intro, Verso, Pré-Refrão, Refrão, Ponte, Solo, Final, Interlúdio, etc.
-2. Se não houver marcadores explícitos, analise o padrão da letra e dos acordes para inferir as seções (refrões geralmente repetem a mesma letra e acordes).
-3. Para cada seção, o "conteudo" deve conter APENAS os acordes relevantes — NÃO inclua a letra, apenas os acordes na ordem em que aparecem.
-4. Mantenha os acordes exatamente como estão (C, Am, F#m, Bb, etc).
-5. Agrupe acordes repetidos de forma limpa, uma linha por passagem.
-6. Normalize títulos: Verse→VERSO, Chorus→REFRÃO, Bridge→PONTE, Pre-chorus→PRÉ-REFRÃO, Outro→FINAL, Interlude→INTERLÚDIO.
-7. Se a cifra tiver apenas acordes sem letra, organize-os por seção normalmente.
-
-FORMATO DE SAÍDA — retorne SOMENTE este JSON, sem nenhum texto antes ou depois:
-{
-  "titulo": "Nome da música se identificável, senão null",
-  "tom": "Tom da música se identificável, senão null",
-  "secoes": [
-    { "titulo": "INTRO", "conteudo": "C G Am F" },
-    { "titulo": "VERSO", "conteudo": "C G\\nAm F" },
-    { "titulo": "REFRÃO", "conteudo": "F C G Am" }
-  ]
-}`,
-      messages: [{ role: 'user', content: `Analisa esta cifra:\n\n${texto}` }]
-    })
-  })
-  .then(r => r.json())
-  .then(data => {
     document.getElementById('cifra-loading').style.display = 'none';
 
-    const raw = data.content?.[0]?.text || '';
-    let parsed;
-    try {
-      const clean = raw.replace(/```json|```/g, '').trim();
-      parsed = JSON.parse(clean);
-    } catch(e) {
-      showToast('Erro ao interpretar resposta. Tente novamente.');
-      document.getElementById('cifra-step-1').style.display = 'block';
-      return;
-    }
-
-    cifraSecoes = parsed.secoes || [];
-    if (!cifraSecoes.length) {
-      cifraSecoes = [{ titulo: 'CIFRA', conteudo: texto }];
-    }
-
     const preview = document.getElementById('cifra-preview');
-    let label = cifraSecoes.length + ' seção(ões) detectada(s)';
-    if (parsed.titulo) label += ` · ${parsed.titulo}`;
-    if (parsed.tom)    label += ` · Tom: ${parsed.tom}`;
-    document.getElementById('cifra-preview-label').innerText = label;
-
+    document.getElementById('cifra-preview-label').innerText = cifraSecoes.length + ' seção(ões) detectada(s)';
     preview.innerHTML = cifraSecoes.map(s => `
       <div class="preview-section">
         <div class="preview-section-title">${s.titulo}</div>
@@ -1746,12 +1696,87 @@ FORMATO DE SAÍDA — retorne SOMENTE este JSON, sem nenhum texto antes ou depoi
       </div>`).join('');
 
     document.getElementById('cifra-step-2').style.display = 'block';
-  })
-  .catch(() => {
-    document.getElementById('cifra-loading').style.display = 'none';
-    document.getElementById('cifra-step-1').style.display = 'block';
-    showToast('Erro de conexão. Verifique sua internet.');
-  });
+  }, 300);
+}
+
+// Regex que reconhece acordes musicais válidos
+const ACORDE_RE = /\b[A-G][#b]?(m(?:aj)?|min|sus[24]?|dim|aug|add\d{1,2}|M)?(\d+)?(\/[A-G][#b]?)?\b/g;
+
+// Verifica se uma linha tem pelo menos 1 acorde e é predominantemente acordes (não letra)
+function ehLinhaDeAcorde(linha) {
+  const t = linha.trim();
+  if (!t) return false;
+  const tokens = t.split(/\s+/);
+  const nAcordes = tokens.filter(tk => /^[A-G][#b]?(m(?:aj)?|min|sus[24]?|dim|aug|add\d{1,2}|M)?(\d+)?(\/[A-G][#b]?)?$/.test(tk)).length;
+  // Linha de acorde = maioria dos tokens são acordes E não tem muitas palavras longas (letra)
+  const temPalavraLonga = tokens.some(tk => tk.length > 5 && !/[A-G]/.test(tk[0]));
+  return nAcordes >= 1 && !temPalavraLonga && (nAcordes / tokens.length) >= 0.4;
+}
+
+// Extrai todos os acordes de um bloco de texto como string limpa
+function extrairAcordesDoTexto(texto) {
+  const linhas = texto.split('\n');
+  const resultado = [];
+  for (const linha of linhas) {
+    if (ehLinhaDeAcorde(linha)) {
+      const acs = (linha.match(ACORDE_RE) || []).join(' ').trim();
+      if (acs) resultado.push(acs);
+    }
+  }
+  return resultado.join('\n');
+}
+
+function parsearCifraInteligente(texto) {
+  const linhas = texto.split('\n');
+  const secoes = [];
+  let tituloAtual = null;
+  let acordesAtual = [];
+
+  const MARCADOR_RE = /^\[(.+?)\]$|^(intro|vers[oa]|refrão|refrao|pré-refrão|pre.?refr[aã]o|ponte|bridge|solo|final|coda|outro|chorus|verse|pre.?chorus|interlude|instrumental)[\s:.#0-9]*$/i;
+
+  const NOMES = {
+    'intro':'INTRO','verse':'VERSO','verso':'VERSO','versa':'VERSO',
+    'chorus':'REFRÃO','refrao':'REFRÃO','refrão':'REFRÃO',
+    'pre-refrão':'PRÉ-REFRÃO','pre refrão':'PRÉ-REFRÃO','pre-refrao':'PRÉ-REFRÃO',
+    'pre chorus':'PRÉ-REFRÃO','prechorus':'PRÉ-REFRÃO',
+    'bridge':'PONTE','ponte':'PONTE','solo':'SOLO',
+    'interlude':'INTERLÚDIO','instrumental':'INSTRUMENTAL',
+    'final':'FINAL','coda':'FINAL','outro':'FINAL',
+  };
+
+  function normTitulo(raw) {
+    const limpo = raw.replace(/[\[\]#0-9\s:.]+$/g,'').replace(/^\[|\]$/g,'').trim();
+    const chave = limpo.toLowerCase()
+      .normalize('NFD').replace(/[\u0300-\u036f]/g,'')
+      .replace(/[^a-z\s-]/g,'').trim();
+    return NOMES[chave] || limpo.toUpperCase();
+  }
+
+  function salvar() {
+    if (tituloAtual !== null && acordesAtual.length) {
+      const conteudo = acordesAtual.join('\n').trim();
+      if (conteudo) secoes.push({ titulo: tituloAtual, conteudo });
+    }
+  }
+
+  for (const linha of linhas) {
+    const t = linha.trim();
+    const match = t.match(MARCADOR_RE);
+
+    if (match) {
+      salvar();
+      tituloAtual = normTitulo(match[0]);
+      acordesAtual = [];
+    } else if (ehLinhaDeAcorde(linha)) {
+      // Se ainda não há seção, cria INTRO automaticamente
+      if (tituloAtual === null) { tituloAtual = 'INTRO'; acordesAtual = []; }
+      const acs = (linha.match(ACORDE_RE) || []).join(' ').trim();
+      if (acs) acordesAtual.push(acs);
+    }
+    // Linhas de letra são simplesmente ignoradas
+  }
+  salvar();
+  return secoes.filter(s => s.conteudo.trim());
 }
 
 function parsearCifraLocal(texto) {
