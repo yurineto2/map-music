@@ -1910,63 +1910,76 @@ function encontrarPadrao(acordes) {
 }
 
 function parsearCifra(texto) {
-  // Remove seção de acordes no final
+  // Remove secao de tablaturas/acordes no final
   const limpo = texto.replace(/[-=*]{3,}\s*[Aa]cordes\s*[-=*]{3,}[\s\S]*/i, '').trim();
   const linhas = limpo.split('\n');
 
-  // Agrupa por blocos separados por linha vazia
-  // Cada bloco pode ter acordes e letra intercalados — acumula só os acordes
-  const blocos = [];
-  let secaoBloco = null;
-  let acordesBloco = [];
+  // ── Passo 1: coleta blocos separados por linha vazia ──────────────────
+  const blocos = []; // { secao: string|null, acordes: string[] }
+  let secaoAtual = null;
+  let acordesAtual = [];
 
-  function flushBloco() {
-    if (!acordesBloco.length) return;
-    const padrao = encontrarPadrao(acordesBloco);
-    if (padrao.length) {
-      // Chave baseada no conjunto de acordes únicos (identifica seção pelo harmônico)
-      const chave = [...new Set(padrao)].sort().join(',');
-      blocos.push({ secao: secaoBloco, padrao, chave });
-    }
-    acordesBloco = [];
-    secaoBloco = null;
+  function flush() {
+    if (!acordesAtual.length) return;
+    blocos.push({ secao: secaoAtual, acordes: [...acordesAtual] });
+    acordesAtual = [];
+    secaoAtual = null;
   }
 
   for (const linha of linhas) {
     const t = linha.trim();
+
+    // Tenta identificar marcador de seção
     const sec = identificarSecao(linha);
-    if (sec) { flushBloco(); secaoBloco = sec; continue; }
-    if (!t) { flushBloco(); continue; }
+    if (sec) { flush(); secaoAtual = sec; continue; }
+
+    // Linha vazia = fim de bloco
+    if (!t) { flush(); continue; }
+
+    // Linha de acordes → acumula tokens
     if (ehLinhaDeAcordes(linha)) {
-      // Acumula todos os acordes da linha (intercalados com letra ou não)
-      t.split(/\s+/).filter(ehAcorde).forEach(a => acordesBloco.push(a));
+      t.split(/\s+/).filter(ehAcorde).forEach(a => acordesAtual.push(a));
     }
-    // Linhas de letra são ignoradas mas não quebram o bloco
+    // Linha de letra → ignora mas NÃO quebra o bloco
   }
-  flushBloco();
+  flush();
 
-  // Nomeia seções automaticamente por padrão harmônico único
-  const padroesVistos = new Map();
+  // ── Passo 2: extrai padrão único de cada bloco ────────────────────────
+  const blocsComPadrao = blocos.map(b => {
+    const padrao = encontrarPadrao(b.acordes);
+    // Chave = sequência do padrão (não sorted, para preservar diferença entre seções)
+    const chave = padrao.join(',');
+    return { secao: b.secao, padrao, chave };
+  }).filter(b => b.padrao.length > 0);
+
+  // ── Passo 3: atribui nomes automáticos por padrão harmônico ──────────
+  const padroesVistos = new Map(); // chave → nome
   let autoIdx = 0;
-
   const resultado = [];
-  for (const bloco of blocos) {
+
+  for (const bloco of blocsComPadrao) {
     let nome = bloco.secao;
+
     if (!nome) {
+      // Sem marcador explícito — reutiliza nome se mesmo padrão já foi visto
       if (padroesVistos.has(bloco.chave)) {
         nome = padroesVistos.get(bloco.chave);
       } else {
+        // Novo padrão → próximo nome automático
         nome = NOMES_AUTO[autoIdx] || ('PARTE ' + (autoIdx + 1));
         autoIdx++;
         padroesVistos.set(bloco.chave, nome);
       }
     } else {
-      padroesVistos.set(bloco.chave, nome);
+      // Marcador explícito → regista o padrão com esse nome
+      if (!padroesVistos.has(bloco.chave)) {
+        padroesVistos.set(bloco.chave, nome);
+      }
     }
 
     const conteudo = bloco.padrao.join('  ');
-    const prev = resultado[resultado.length - 1];
-    if (prev && prev.titulo === nome && prev.conteudo === conteudo) continue;
+    // Não adiciona seção que já existe (mesmo nome, qualquer posição)
+    if (resultado.some(s => s.titulo === nome)) continue;
     resultado.push({ titulo: nome, conteudo });
   }
 
