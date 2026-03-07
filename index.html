@@ -601,7 +601,7 @@ body.viewer-mode input[type="text"] { pointer-events: none; }
       </div>
       <div class="logo-text">
         <span class="logo-name">Map Music <span>Pro</span></span>
-        <span class="logo-tag">Elite Edition · v3</span>
+        <span class="logo-tag">Elite Edition · v4</span>
       </div>
     </div>
     <div style="display:flex; align-items:center; gap:12px;">
@@ -1805,28 +1805,69 @@ function lerArquivoCifra(input) {
         const pdf = await pdfjsLib.getDocument({ data: e.target.result }).promise;
         let textoTotal = '';
 
+        // Detecta cor de acorde (Cifra Club usa laranja para acordes)
+        function isChordColor(color) {
+          if (color === undefined || color === null) return false;
+          const r = (color >> 16) & 0xFF;
+          const g = (color >> 8)  & 0xFF;
+          const b =  color        & 0xFF;
+          return r > 180 && g > 50 && g < 180 && b < 60;
+        }
+
         for (let i = 1; i <= pdf.numPages; i++) {
           const page = await pdf.getPage(i);
-          const content = await page.getTextContent();
+          const content = await page.getTextContent({ includeMarkedContent: false });
 
-          // Agrupa itens por linha usando posição Y
-          const linhasMap = new Map();
-          for (const item of content.items) {
-            if (!item.str.trim()) continue;
-            const y = Math.round(item.transform[5]); // posição Y arredondada
-            if (!linhasMap.has(y)) linhasMap.set(y, []);
-            linhasMap.get(y).push({ x: item.transform[4], str: item.str });
+          // Verifica se o PDF tem spans coloridos (modo Cifra Club)
+          const temCores = content.items.some(it => isChordColor(it.color));
+
+          if (temCores) {
+            // Agrupa por Y mantendo flag isChord
+            const linhasMap = new Map();
+            for (const item of content.items) {
+              if (!item.str.trim()) continue;
+              const y = Math.round(item.transform[5]);
+              if (!linhasMap.has(y)) linhasMap.set(y, []);
+              linhasMap.get(y).push({
+                x: item.transform[4],
+                str: item.str,
+                isChord: isChordColor(item.color)
+              });
+            }
+
+            const linhasOrdenadas = [...linhasMap.entries()].sort((a, b) => b[0] - a[0]);
+
+            for (const [, spans] of linhasOrdenadas) {
+              spans.sort((a, b) => a.x - b.x);
+              const acordesSpans = spans.filter(s => s.isChord);
+              const letraSpans   = spans.filter(s => !s.isChord);
+              const acordesStr   = acordesSpans.map(s => s.str.trim()).join('  ').trim();
+              const letraStr     = letraSpans.map(s => s.str).join('').trim();
+              // Filtra ruído: diagramas, afinação, números de casa
+              const isRuido = /^[EADGBx×●○•\s\d\-ª]+$/.test(letraStr) && letraStr.length < 25;
+              if (acordesStr && !isRuido) textoTotal += acordesStr + '\n';
+              if (letraStr   && !isRuido) textoTotal += letraStr   + '\n';
+              if (!acordesStr && !letraStr) textoTotal += '\n';
+            }
+            textoTotal += '\n';
+
+          } else {
+            // Modo genérico: agrupa por Y e junta por X
+            const linhasMap = new Map();
+            for (const item of content.items) {
+              if (!item.str.trim()) continue;
+              const y = Math.round(item.transform[5]);
+              if (!linhasMap.has(y)) linhasMap.set(y, []);
+              linhasMap.get(y).push({ x: item.transform[4], str: item.str });
+            }
+            const linhasOrdenadas = [...linhasMap.entries()]
+              .sort((a, b) => b[0] - a[0])
+              .map(([, items]) =>
+                items.sort((a,b) => a.x - b.x).map(it => it.str).join(' ').trim()
+              )
+              .filter(l => l.length > 0);
+            textoTotal += linhasOrdenadas.join('\n') + '\n\n';
           }
-
-          // Ordena linhas de cima para baixo (Y maior = mais acima no PDF)
-          const linhasOrdenadas = [...linhasMap.entries()]
-            .sort((a, b) => b[0] - a[0])
-            .map(([, items]) =>
-              items.sort((a,b) => a.x - b.x).map(it => it.str).join(' ').trim()
-            )
-            .filter(l => l.length > 0);
-
-          textoTotal += linhasOrdenadas.join('\n') + '\n\n';
         }
 
         document.getElementById('cifra-input').value = limparTexto(textoTotal);
