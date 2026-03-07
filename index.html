@@ -90,6 +90,27 @@ body { font-family: 'Inter', sans-serif; background: var(--bg-primary); color: v
 .sync-code { background: rgba(255,255,255,0.08); padding: 3px 10px; border-radius: 20px; font-size: 15px; letter-spacing: 4px; font-weight: 900; }
 
 /* SAVE BTN */
+/* BOTÃO FLUTUANTE PAD — só aparece quando pad está tocando */
+.btn-pad-flutuante {
+  position: fixed; bottom: 90px; left: 50%; transform: translateX(-50%);
+  z-index: 910; display: none;
+  padding: 10px 24px; border-radius: 30px;
+  background: rgba(180,20,20,0.25); backdrop-filter: blur(12px);
+  border: 1.5px solid rgba(255,60,60,0.75);
+  color: #ff6666; font-size: 9px; font-weight: 900;
+  letter-spacing: 2px; text-transform: uppercase;
+  cursor: pointer; align-items: center; gap: 8px;
+  box-shadow: 0 4px 24px rgba(0,0,0,0.5);
+  animation: padPulse 1.2s ease-in-out infinite;
+  white-space: nowrap;
+}
+.btn-pad-flutuante:hover { background: rgba(220,30,30,0.4); }
+@keyframes padPulse {
+  0%,100% { box-shadow: 0 0 0 0 rgba(255,50,50,0.5), 0 4px 24px rgba(0,0,0,0.5); }
+  50%      { box-shadow: 0 0 0 12px rgba(255,50,50,0), 0 4px 24px rgba(0,0,0,0.5); }
+}
+.btn-pad-flutuante.pad-ativo { display: flex; }
+
 .btn-save-vitro { position: fixed; bottom: 30px; left: 20px; z-index: 900; background: var(--glass-bg); backdrop-filter: blur(10px); border: 1px solid var(--glass-border); color: rgba(255,255,255,0.4); padding: 10px 20px; border-radius: var(--radius-full); cursor: pointer; font-weight: 500; font-size: 10px; letter-spacing: 1.5px; text-transform: uppercase; transition: 0.4s; }
 .btn-save-vitro:hover { color: var(--accent-primary); border-color: var(--accent-primary); background: rgba(255,255,255,0.05); }
 
@@ -485,24 +506,45 @@ body.performance-mode .perf-song-indicator { display: flex; }
   border-radius: 50%; background: var(--accent-primary); cursor: pointer;
 }
 
-/* Botões de tipo de pad */
-.pad-type-btns {
-  display: flex; gap: 8px; width: 100%; max-width: 560px;
-  position: relative; z-index: 1; flex-wrap: wrap;
+/* Seletor de tipo de pad */
+.pad-type-selector {
+  position: relative; width: 100%; max-width: 560px; z-index: 10;
 }
-.pad-type-btn {
-  flex: 1; padding: 9px 0; border-radius: 30px;
-  border: 1px solid rgba(255,255,255,0.1);
-  background: rgba(255,255,255,0.04);
-  color: rgba(255,255,255,0.45); font-size: 10px;
-  font-weight: 800; letter-spacing: 1.5px; text-transform: uppercase;
-  cursor: pointer; transition: 0.2s; white-space: nowrap;
+.pad-type-trigger {
+  width: 100%; padding: 11px 20px; border-radius: 30px;
+  border: 1px solid rgba(255,255,255,0.15);
+  background: rgba(255,255,255,0.05);
+  color: #fff; font-size: 11px; font-weight: 800;
+  letter-spacing: 1.5px; text-transform: uppercase;
+  cursor: pointer; display: flex; align-items: center;
+  justify-content: space-between; gap: 10px; transition: 0.2s;
+  box-sizing: border-box;
 }
-.pad-type-btn:hover { border-color: rgba(255,255,255,0.25); color: rgba(255,255,255,0.8); }
-.pad-type-btn.active {
-  background: rgba(29,185,84,0.15);
-  border-color: var(--accent-primary);
-  color: var(--accent-primary);
+.pad-type-trigger:hover { border-color: rgba(29,185,84,0.5); }
+.pad-type-trigger.open { border-color: var(--accent-primary); }
+.pad-type-trigger span { opacity: 0.4; font-size: 10px; }
+.pad-type-dropdown {
+  position: absolute; top: calc(100% + 8px); left: 0; right: 0;
+  background: #131318; border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 16px; overflow: hidden;
+  display: none; flex-direction: column;
+  box-shadow: 0 12px 40px rgba(0,0,0,0.6);
+  z-index: 100;
+}
+.pad-type-dropdown.open { display: flex; }
+.pad-type-option {
+  padding: 12px 20px; font-size: 10px; font-weight: 800;
+  letter-spacing: 1.5px; text-transform: uppercase;
+  color: rgba(255,255,255,0.55); cursor: pointer;
+  border-bottom: 1px solid rgba(255,255,255,0.05);
+  display: flex; align-items: center; gap: 12px; transition: 0.15s;
+}
+.pad-type-option:last-child { border-bottom: none; }
+.pad-type-option:hover { background: rgba(255,255,255,0.05); color: #fff; }
+.pad-type-option.active { color: var(--accent-primary); background: rgba(29,185,84,0.08); }
+.pad-type-option .opt-desc {
+  font-size: 9px; font-weight: 600; letter-spacing: 0.5px;
+  opacity: 0.4; text-transform: none; font-style: italic;
 }
 
 /* Grade de pads ambient */
@@ -529,8 +571,8 @@ body.performance-mode .perf-song-indicator { display: flex; }
   opacity: 0; transition: opacity 0.15s;
 }
 .pad.playing { border-color: var(--pad-color, rgba(29,185,84,0.6)); background: rgba(29,185,84,0.06); }
-.pad.playing::after { opacity: 1; animation: padPulse 2s ease-in-out infinite; }
-@keyframes padPulse {
+.pad.playing::after { opacity: 1; animation: padGlow 2s ease-in-out infinite; }
+@keyframes padGlow {
   0%, 100% { opacity: 0.6; transform: scale(1); }
   50%       { opacity: 1;   transform: scale(1.04); }
 }
@@ -621,7 +663,7 @@ body.viewer-mode input[type="text"] { pointer-events: none; }
       </div>
       <div class="logo-text">
         <span class="logo-name">Map Music <span>Pro</span></span>
-        <span class="logo-tag">Elite Edition · v15</span>
+        <span class="logo-tag">Elite Edition · v20</span>
       </div>
     </div>
     <div style="display:flex; align-items:center; gap:12px;">
@@ -740,16 +782,55 @@ body.viewer-mode input[type="text"] { pointer-events: none; }
     <span class="pads-title">Ambient Pads</span>
     <button class="pads-close" onclick="fecharPads()">Fechar</button>
   </div>
-  <div class="pad-type-btns" id="pad-type-btns">
-    <button class="pad-type-btn active" onclick="setPadType('ambient')">Ambient</button>
-    <button class="pad-type-btn" onclick="setPadType('synth')">Synth</button>
-    <button class="pad-type-btn" onclick="setPadType('keys')">Keys</button>
-    <button class="pad-type-btn" onclick="setPadType('drone')">Drone</button>
+  <div class="pad-type-selector" id="pad-type-selector">
+    <button class="pad-type-trigger" id="pad-type-trigger" onclick="togglePadDropdown()">
+      <span id="pad-type-label">Ambient</span>
+      <span>▼</span>
+    </button>
+    <div class="pad-type-dropdown" id="pad-type-dropdown">
+      <div class="pad-type-option active" onclick="setPadType('ambient',this)">
+        Ambient <span class="opt-desc">Cordas com vibrato e bow attack</span>
+      </div>
+      <div class="pad-type-option" onclick="setPadType('synth',this)">
+        Synth <span class="opt-desc">Supersaw analógico com filter sweep</span>
+      </div>
+      <div class="pad-type-option" onclick="setPadType('keys',this)">
+        Keys <span class="opt-desc">Rhodes elétrico com tremolo</span>
+      </div>
+      <div class="pad-type-option" onclick="setPadType('drone',this)">
+        Drone <span class="opt-desc">Sub-bass e overtones sustentados</span>
+      </div>
+      <div class="pad-type-option" onclick="setPadType('organ',this)">
+        Organ <span class="opt-desc">Hammond B3 com rotary speaker</span>
+      </div>
+      <div class="pad-type-option" onclick="setPadType('choir',this)">
+        Choir <span class="opt-desc">Vozes humanas sobrepostas</span>
+      </div>
+      <div class="pad-type-option" onclick="setPadType('brass',this)">
+        Brass <span class="opt-desc">Metais com ataque e vibrato</span>
+      </div>
+      <div class="pad-type-option" onclick="setPadType('bell',this)">
+        Bell Pad <span class="opt-desc">Nord Soft Bell — shimmer continuo</span>
+      </div>
+      <div class="pad-type-option" onclick="setPadType('glass',this)">
+        Glass Voices <span class="opt-desc">Nord Glass — etereo sustentado</span>
+      </div>
+      <div class="pad-type-option" onclick="setPadType('tape',this)">
+        Mellotron <span class="opt-desc">Nord Mellotron Strings vintage</span>
+      </div>
+      <div class="pad-type-option" onclick="setPadType('pluck',this)">
+        Warm Pad <span class="opt-desc">Nord Warm Pad com filter sweep</span>
+      </div>
+      <div class="pad-type-option" onclick="setPadType('sub',this)">
+        Str Ensemble <span class="opt-desc">Nord String Ensemble orquestral</span>
+      </div>
+    </div>
   </div>
   <div class="pads-controls">
     <div class="pads-vol">
       <span>Vol</span>
-      <input type="range" id="pads-vol" min="0" max="100" value="70" style="width:260px;">
+      <input type="range" id="pads-vol" min="0" max="100" value="70"
+        oninput="atualizarVolumePads(this.value)" style="width:260px;">
     </div>
   </div>
   <div class="pads-grid" id="pads-grid"></div>
@@ -793,6 +874,9 @@ body.viewer-mode input[type="text"] { pointer-events: none; }
 </div>
 
 <button class="btn-save-vitro" onclick="saveSong()">Salvar Música</button>
+
+<!-- BOTÃO PAD FLUTUANTE -->
+<button class="btn-pad-flutuante" id="btn-pad-flutuante" onclick="togglePadFlutuante()">PAD TOCANDO — PARAR</button>
 
 <!-- INDICADOR DE MUSICA NO MODO SHOW -->
 <div class="perf-song-indicator" id="perf-indicator">
@@ -1628,14 +1712,45 @@ function importData() {
 const padNodes = {}; // armazena nós ativos por pad index
 let padTipoAtual = 'ambient';
 
-function setPadType(tipo) {
-  // Para todos os pads ao trocar tipo
+function togglePadDropdown() {
+  const dd = document.getElementById('pad-type-dropdown');
+  const tr = document.getElementById('pad-type-trigger');
+  dd.classList.toggle('open');
+  tr.classList.toggle('open');
+}
+
+function setPadType(tipo, el) {
   Object.keys(padNodes).forEach(i => pararPad(i));
   padTipoAtual = tipo;
-  document.querySelectorAll('.pad-type-btn').forEach(b => {
-    b.classList.toggle('active', b.textContent.toLowerCase() === tipo);
+  document.getElementById('pad-type-label').textContent = el ? el.childNodes[0].textContent.trim() : tipo;
+  document.getElementById('pad-type-dropdown').classList.remove('open');
+  document.getElementById('pad-type-trigger').classList.remove('open');
+  document.querySelectorAll('.pad-type-option').forEach(o => o.classList.remove('active'));
+  if (el) el.classList.add('active');
+}
+
+function atualizarVolumePads(val) {
+  const vol = parseInt(val) / 100;
+  // Rampa suave de 1.2s para subir, 0.8s para baixar — evita saltos bruscos
+  Object.values(padNodes).forEach(node => {
+    const ctx = audioCtx;
+    const now = ctx.currentTime;
+    const alvo = vol * node.volScale;
+    const atual = node.masterGain.gain.value;
+    const tempoRampa = alvo > atual ? 1.2 : 0.8;
+    node.masterGain.gain.cancelScheduledValues(now);
+    node.masterGain.gain.setValueAtTime(atual, now);
+    node.masterGain.gain.linearRampToValueAtTime(alvo, now + tempoRampa);
   });
 }
+
+// Fecha dropdown ao clicar fora
+document.addEventListener('click', e => {
+  if (!e.target.closest('#pad-type-selector')) {
+    document.getElementById('pad-type-dropdown')?.classList.remove('open');
+    document.getElementById('pad-type-trigger')?.classList.remove('open');
+  }
+});
 
 // Frequência base a partir do MIDI
 function midiToFreq(midi) { return 440 * Math.pow(2, (midi - 69) / 12); }
@@ -1653,9 +1768,28 @@ function abrirPads() {
 }
 
 function fecharPads() {
-  // Para todos os pads ao fechar
   Object.keys(padNodes).forEach(i => pararPad(i));
   document.getElementById('pads-overlay').classList.remove('show');
+  atualizarBtnPad();
+}
+
+function togglePadFlutuante() {
+  const temAtivos = Object.keys(padNodes).length > 0;
+  if (temAtivos) {
+    // Para todos os pads e some o estado ativo
+    Object.keys(padNodes).forEach(i => pararPad(i));
+    atualizarBtnPad();
+  } else {
+    // Abre o painel de pads
+    abrirPads();
+  }
+}
+
+function atualizarBtnPad() {
+  const btn = document.getElementById('btn-pad-flutuante');
+  if (!btn) return;
+  const temAtivos = Object.keys(padNodes).length > 0;
+  btn.classList.toggle('pad-ativo', temAtivos);
 }
 
 function renderPads() {
@@ -1696,126 +1830,254 @@ function iniciarPad(el) {
   const now  = ctx.currentTime;
   const freq = midiToFreq(midi);
 
-  // Master gain
   const master = ctx.createGain();
   master.gain.setValueAtTime(0, now);
   master.connect(ctx.destination);
 
-  // Reverb compartilhado (dois delays cruzados)
+  // Reverb
   const dA = ctx.createDelay(3); dA.delayTime.value = 0.25;
   const dB = ctx.createDelay(3); dB.delayTime.value = 0.52;
   const fbA = ctx.createGain(); fbA.gain.value = 0.28;
   const fbB = ctx.createGain(); fbB.gain.value = 0.2;
-  dA.connect(fbA); fbA.connect(dA);
-  dB.connect(fbB); fbB.connect(dB);
+  dA.connect(fbA); fbA.connect(dA); dB.connect(fbB); fbB.connect(dB);
   const wet = ctx.createGain();
   master.connect(dA); master.connect(dB);
-  dA.connect(wet); dB.connect(wet);
-  wet.connect(ctx.destination);
+  dA.connect(wet); dB.connect(wet); wet.connect(ctx.destination);
 
   let oscs = [];
+  let volScale = 0.4; // usado pelo slider de volume em tempo real
 
   if (padTipoAtual === 'ambient') {
-    // ── AMBIENT: ensemble de cordas com vibrato e bow attack lento ──
-    master.gain.linearRampToValueAtTime(vol * 0.4, now + 1.8);
+    volScale = 0.42;
+    master.gain.linearRampToValueAtTime(vol * volScale, now + 1.8);
     wet.gain.value = 0.55;
-    const vibratoLFO = ctx.createOscillator();
-    const vibratoGain = ctx.createGain();
-    vibratoLFO.frequency.value = 5.2;
-    vibratoGain.gain.setValueAtTime(0, now);
-    vibratoGain.gain.linearRampToValueAtTime(18, now + 2.5);
-    vibratoLFO.connect(vibratoGain);
-    vibratoLFO.start(now);
-    [{ detune:-14,gain:0.35},{ detune:-5,gain:0.4},{ detune:0,gain:0.45},{ detune:6,gain:0.4},{ detune:13,gain:0.35}].forEach(v => {
-      const saw = ctx.createOscillator(); saw.type='sawtooth'; saw.frequency.value=freq; saw.detune.value=v.detune;
-      vibratoGain.connect(saw.detune);
-      const lpf = ctx.createBiquadFilter(); lpf.type='lowpass'; lpf.frequency.value=2200; lpf.Q.value=0.5;
-      const hpf = ctx.createBiquadFilter(); hpf.type='highpass'; hpf.frequency.value=80; hpf.Q.value=0.3;
-      const g = ctx.createGain(); g.gain.value=v.gain*0.18;
+    const vLFO = ctx.createOscillator(); const vG = ctx.createGain();
+    vLFO.frequency.value = 5.2; vG.gain.setValueAtTime(0,now); vG.gain.linearRampToValueAtTime(18,now+2.5);
+    vLFO.connect(vG); vLFO.start(now);
+    [{d:-14,g:0.35},{d:-5,g:0.4},{d:0,g:0.45},{d:6,g:0.4},{d:13,g:0.35}].forEach(v => {
+      const saw = ctx.createOscillator(); saw.type='sawtooth'; saw.frequency.value=freq; saw.detune.value=v.d;
+      vG.connect(saw.detune);
+      const lpf = ctx.createBiquadFilter(); lpf.type='lowpass'; lpf.frequency.value=2200;
+      const hpf = ctx.createBiquadFilter(); hpf.type='highpass'; hpf.frequency.value=80;
+      const g = ctx.createGain(); g.gain.value=v.g*0.18;
       saw.connect(hpf); hpf.connect(lpf); lpf.connect(g); g.connect(master); saw.start(now);
-      const sq = ctx.createOscillator(); sq.type='square'; sq.frequency.value=freq*2; sq.detune.value=v.detune+3;
-      vibratoGain.connect(sq.detune);
+      const sq = ctx.createOscillator(); sq.type='square'; sq.frequency.value=freq*2; sq.detune.value=v.d+3;
+      vG.connect(sq.detune);
       const sqF = ctx.createBiquadFilter(); sqF.type='lowpass'; sqF.frequency.value=900;
       const sqG = ctx.createGain(); sqG.gain.value=0.018;
       sq.connect(sqF); sqF.connect(sqG); sqG.connect(master); sq.start(now);
       oscs.push(saw, sq);
     });
-    oscs.push(vibratoLFO);
+    oscs.push(vLFO);
 
   } else if (padTipoAtual === 'synth') {
-    // ── SYNTH: supersaw analógico com filtro resonante e LFO de filtro ──
-    master.gain.linearRampToValueAtTime(vol * 0.35, now + 0.08);
+    volScale = 0.58;
+    master.gain.linearRampToValueAtTime(vol * volScale, now + 0.08);
     wet.gain.value = 0.4;
-    const filter = ctx.createBiquadFilter();
-    filter.type = 'lowpass'; filter.frequency.value = 300; filter.Q.value = 6;
-    filter.frequency.linearRampToValueAtTime(3500, now + 1.2); // filter sweep
-    filter.connect(master);
-    // LFO no filtro para movimento
-    const lfo = ctx.createOscillator(); lfo.frequency.value = 0.4;
-    const lfoGain = ctx.createGain(); lfoGain.gain.value = 400;
-    lfo.connect(lfoGain); lfoGain.connect(filter.frequency); lfo.start(now);
-    // 7 vozes supersaw desafinadas
-    [-30,-18,-8,-1,0,8,18,30].forEach((det, i) => {
-      const osc = ctx.createOscillator(); osc.type='sawtooth';
-      osc.frequency.value = freq * (i < 4 ? 1 : i === 4 ? 1 : 0.5);
-      osc.detune.value = det;
-      const g = ctx.createGain(); g.gain.value = 0.12;
-      osc.connect(g); g.connect(filter); osc.start(now); oscs.push(osc);
+    const filt = ctx.createBiquadFilter(); filt.type='lowpass'; filt.frequency.value=300; filt.Q.value=6;
+    filt.frequency.linearRampToValueAtTime(3500, now+1.2); filt.connect(master);
+    const lfo = ctx.createOscillator(); lfo.frequency.value=0.4;
+    const lfoG = ctx.createGain(); lfoG.gain.value=400;
+    lfo.connect(lfoG); lfoG.connect(filt.frequency); lfo.start(now); oscs.push(lfo);
+    [-30,-18,-8,-1,0,8,18,30].forEach((det,i) => {
+      const o = ctx.createOscillator(); o.type='sawtooth';
+      o.frequency.value = i < 4 ? freq : freq * 0.5; o.detune.value=det;
+      const g = ctx.createGain(); g.gain.value=0.12;
+      o.connect(g); g.connect(filt); o.start(now); oscs.push(o);
     });
-    oscs.push(lfo);
 
   } else if (padTipoAtual === 'keys') {
-    // ── KEYS: piano/Rhodes elétrico com attack percussivo e decay natural ──
-    master.gain.linearRampToValueAtTime(vol * 0.5, now + 0.01); // attack rápido
-    master.gain.linearRampToValueAtTime(vol * 0.25, now + 0.8); // decay
+    volScale = 0.28;
+    master.gain.linearRampToValueAtTime(vol * volScale, now + 0.01);
+    master.gain.linearRampToValueAtTime(vol * volScale * 0.5, now + 0.8);
     wet.gain.value = 0.3;
-    // Fundamental + harmônicos típicos de piano elétrico
-    [{ mult:1, gain:0.5, type:'sine' },
-     { mult:2, gain:0.15, type:'sine' },
-     { mult:3, gain:0.06, type:'sine' },
-     { mult:4, gain:0.03, type:'sine' },
-     { mult:0.5, gain:0.08, type:'triangle' }].forEach(h => {
-      const osc = ctx.createOscillator(); osc.type=h.type;
-      osc.frequency.value = freq * h.mult;
-      // Tremolo suave (Rhodes característico)
-      const trem = ctx.createOscillator(); trem.frequency.value = 5.5;
-      const tremG = ctx.createGain(); tremG.gain.value = 0.04;
-      trem.connect(tremG); trem.start(now);
-      const g = ctx.createGain(); g.gain.value = h.gain * 0.6;
-      tremG.connect(g.gain);
-      osc.connect(g); g.connect(master); osc.start(now); oscs.push(osc, trem);
+    [{m:1,g:0.5,t:'sine'},{m:2,g:0.15,t:'sine'},{m:3,g:0.06,t:'sine'},{m:4,g:0.03,t:'sine'},{m:0.5,g:0.08,t:'triangle'}].forEach(h => {
+      const o = ctx.createOscillator(); o.type=h.t; o.frequency.value=freq*h.m;
+      const trem = ctx.createOscillator(); trem.frequency.value=5.5;
+      const tG = ctx.createGain(); tG.gain.value=0.04;
+      trem.connect(tG); trem.start(now);
+      const g = ctx.createGain(); g.gain.value=h.g*0.6;
+      tG.connect(g.gain); o.connect(g); g.connect(master); o.start(now); oscs.push(o,trem);
     });
 
   } else if (padTipoAtual === 'drone') {
-    // ── DRONE: nota fundamental sustentada com sub-bass e overtones orgânicos ──
-    master.gain.linearRampToValueAtTime(vol * 0.45, now + 3.5); // attack muito lento
+    volScale = 0.38;
+    master.gain.linearRampToValueAtTime(vol * volScale, now + 3.5);
     wet.gain.value = 0.7;
-    // Sub-bass (oitava abaixo)
     const sub = ctx.createOscillator(); sub.type='sine'; sub.frequency.value=freq*0.5;
     const subG = ctx.createGain(); subG.gain.value=0.5;
     sub.connect(subG); subG.connect(master); sub.start(now); oscs.push(sub);
-    // Fundamental com ondas sobrepostas
-    ['sine','triangle'].forEach((type, ti) => {
-      const osc = ctx.createOscillator(); osc.type=type; osc.frequency.value=freq;
-      osc.detune.value = ti * 7; // detuning mínimo para batimento lento
+    ['sine','triangle'].forEach((t,ti) => {
+      const o = ctx.createOscillator(); o.type=t; o.frequency.value=freq; o.detune.value=ti*7;
       const lpf = ctx.createBiquadFilter(); lpf.type='lowpass'; lpf.frequency.value=800;
       const g = ctx.createGain(); g.gain.value=0.3;
-      osc.connect(lpf); lpf.connect(g); g.connect(master); osc.start(now); oscs.push(osc);
+      o.connect(lpf); lpf.connect(g); g.connect(master); o.start(now); oscs.push(o);
     });
-    // Overtones harmônicos altos e filtrados
-    [2,3,4].forEach(mult => {
-      const osc = ctx.createOscillator(); osc.type='sine'; osc.frequency.value=freq*mult;
-      const lpf = ctx.createBiquadFilter(); lpf.type='lowpass'; lpf.frequency.value=600/(mult*0.8);
-      const g = ctx.createGain(); g.gain.value=0.08/(mult);
-      osc.connect(lpf); lpf.connect(g); g.connect(master); osc.start(now); oscs.push(osc);
+    [2,3,4].forEach(m => {
+      const o = ctx.createOscillator(); o.type='sine'; o.frequency.value=freq*m;
+      const lpf = ctx.createBiquadFilter(); lpf.type='lowpass'; lpf.frequency.value=600/(m*0.8);
+      const g = ctx.createGain(); g.gain.value=0.08/m;
+      o.connect(lpf); lpf.connect(g); g.connect(master); o.start(now); oscs.push(o);
     });
-    // Modulação AM lenta para textura viva
     const am = ctx.createOscillator(); am.frequency.value=0.15;
     const amG = ctx.createGain(); amG.gain.value=0.08;
     am.connect(amG); amG.connect(master.gain); am.start(now); oscs.push(am);
+
+  } else if (padTipoAtual === 'organ') {
+    // Hammond B3: drawbars como harmônicos aditivos + rotary speaker (tremolo)
+    volScale = 0.50;
+    master.gain.linearRampToValueAtTime(vol * volScale, now + 0.02);
+    wet.gain.value = 0.25;
+    // Drawbars: 16',8',5.33',4',2.67',2',1.6',1.33',1' com ganhos típicos B3
+    const drawbars = [{m:0.5,g:0.8},{m:1,g:1.0},{m:1.5,g:0.8},{m:2,g:0.9},{m:3,g:0.6},{m:4,g:0.5},{m:5,g:0.3},{m:6,g:0.2},{m:8,g:0.1}];
+    // Rotary speaker: dois LFOs (fast/slow) no gain para efeito Leslie
+    const rotaryLFO = ctx.createOscillator(); rotaryLFO.frequency.value = 6.7;
+    const rotaryG = ctx.createGain(); rotaryG.gain.value = 0.12;
+    rotaryLFO.connect(rotaryG); rotaryLFO.start(now); oscs.push(rotaryLFO);
+    drawbars.forEach(d => {
+      const o = ctx.createOscillator(); o.type='sine'; o.frequency.value=freq*d.m;
+      const g = ctx.createGain(); g.gain.value=d.g*0.08;
+      rotaryG.connect(g.gain); // Leslie modula ganho
+      o.connect(g); g.connect(master); o.start(now); oscs.push(o);
+    });
+
+  } else if (padTipoAtual === 'choir') {
+    // Vozes humanas: formantes vocálicos com vibrato humano
+    volScale = 0.32;
+    master.gain.linearRampToValueAtTime(vol * volScale, now + 1.2);
+    wet.gain.value = 0.65;
+    const vLFO = ctx.createOscillator(); vLFO.frequency.value=5.0;
+    const vG = ctx.createGain(); vG.gain.setValueAtTime(0,now); vG.gain.linearRampToValueAtTime(12,now+1.5);
+    vLFO.connect(vG); vLFO.start(now); oscs.push(vLFO);
+    // Pico de formante vocal "aah" (~800Hz) e "ooh" (~300Hz)
+    [{d:-8,formant:800},{d:0,formant:300},{d:5,formant:1200},{d:-12,formant:500},{d:11,formant:900}].forEach(v => {
+      const o = ctx.createOscillator(); o.type='sawtooth'; o.frequency.value=freq; o.detune.value=v.d;
+      vG.connect(o.detune);
+      const bpf = ctx.createBiquadFilter(); bpf.type='bandpass'; bpf.frequency.value=v.formant; bpf.Q.value=8;
+      const lpf = ctx.createBiquadFilter(); lpf.type='lowpass'; lpf.frequency.value=4000;
+      const g = ctx.createGain(); g.gain.value=0.25;
+      o.connect(bpf); bpf.connect(lpf); lpf.connect(g); g.connect(master); o.start(now); oscs.push(o);
+    });
+
+  } else if (padTipoAtual === 'brass') {
+    // Metais: sawtooth com ataque brilhante e vibrato tardio
+    volScale = 0.26;
+    master.gain.linearRampToValueAtTime(vol * volScale, now + 0.06);
+    wet.gain.value = 0.3;
+    const filt = ctx.createBiquadFilter(); filt.type='lowpass'; filt.frequency.value=800;
+    filt.frequency.linearRampToValueAtTime(4500, now+0.1); // brass "blat"
+    filt.frequency.linearRampToValueAtTime(2800, now+0.5); filt.connect(master);
+    const vLFO = ctx.createOscillator(); vLFO.frequency.value=5.5;
+    const vG = ctx.createGain(); vG.gain.setValueAtTime(0,now); vG.gain.linearRampToValueAtTime(15,now+0.8);
+    vLFO.connect(vG); vLFO.start(now); oscs.push(vLFO);
+    [{d:-6,g:0.4},{d:0,g:0.5},{d:7,g:0.4}].forEach(v => {
+      const o = ctx.createOscillator(); o.type='sawtooth'; o.frequency.value=freq; o.detune.value=v.d;
+      vG.connect(o.detune);
+      const g = ctx.createGain(); g.gain.value=v.g*0.22;
+      o.connect(g); g.connect(filt); o.start(now); oscs.push(o);
+    });
+
+  } else if (padTipoAtual === 'bell') {
+    // Nord "Soft Bell Pad" — sine com shimmer continuo, sustentado infinito
+    volScale = 0.24;
+    master.gain.linearRampToValueAtTime(vol * volScale, now + 0.8);
+    wet.gain.value = 0.75;
+    const shimLFO = ctx.createOscillator(); shimLFO.frequency.value = 0.25;
+    const shimG = ctx.createGain(); shimG.gain.value = 0.06;
+    shimLFO.connect(shimG); shimG.connect(master.gain); shimLFO.start(now); oscs.push(shimLFO);
+    [{m:1,d:0,g:0.7},{m:2,d:4,g:0.25},{m:3,d:-3,g:0.08},{m:0.5,d:2,g:0.18}].forEach(p => {
+      const o = ctx.createOscillator(); o.type='sine'; o.frequency.value=freq*p.m; o.detune.value=p.d;
+      const cLFO = ctx.createOscillator(); cLFO.frequency.value = 0.18 + p.m*0.07;
+      const cG = ctx.createGain(); cG.gain.value = 3.5;
+      cLFO.connect(cG); cG.connect(o.detune); cLFO.start(now); oscs.push(cLFO);
+      const g = ctx.createGain(); g.gain.value = p.g * 0.38;
+      o.connect(g); g.connect(master); o.start(now); oscs.push(o);
+    });
+
+  } else if (padTipoAtual === 'glass') {
+    // Nord "Glass Voices" — sine+triangle continuo, attack lento etereo
+    volScale = 0.38;
+    master.gain.linearRampToValueAtTime(vol * volScale, now + 2.2);
+    wet.gain.value = 0.85;
+    const filt = ctx.createBiquadFilter(); filt.type='bandpass'; filt.frequency.value=freq*2; filt.Q.value=1.5;
+    filt.connect(master);
+    const fLFO = ctx.createOscillator(); fLFO.frequency.value=0.12;
+    const fLG = ctx.createGain(); fLG.gain.value=freq*0.8;
+    fLFO.connect(fLG); fLG.connect(filt.frequency); fLFO.start(now); oscs.push(fLFO);
+    [{m:1,d:0,t:'sine',g:0.6},{m:2,d:5,t:'sine',g:0.22},{m:3,d:-4,t:'triangle',g:0.1},{m:0.5,d:2,t:'sine',g:0.2}].forEach(p => {
+      const o = ctx.createOscillator(); o.type=p.t; o.frequency.value=freq*p.m; o.detune.value=p.d;
+      const g = ctx.createGain(); g.gain.value=p.g*0.3;
+      o.connect(g); g.connect(filt); o.start(now); oscs.push(o);
+    });
+
+  } else if (padTipoAtual === 'tape') {
+    // Nord "Mellotron Strings" — ensemble vintage continuo, inspirado M400
+    volScale = 0.42;
+    master.gain.linearRampToValueAtTime(vol * volScale, now + 1.0);
+    wet.gain.value = 0.5;
+    const flutter = ctx.createOscillator(); flutter.frequency.value=0.6;
+    const flutterG = ctx.createGain(); flutterG.gain.value=5;
+    flutter.connect(flutterG); flutter.start(now); oscs.push(flutter);
+    const ws = ctx.createWaveShaper();
+    const curve = new Float32Array(256);
+    for(let i=0;i<256;i++){const x=i*2/256-1; curve[i]=Math.tanh(x*1.8)*0.85;}
+    ws.curve=curve; ws.connect(master);
+    [{d:-10,g:0.45},{d:-3,g:0.5},{d:0,g:0.55},{d:4,g:0.5},{d:11,g:0.45}].forEach(v => {
+      const o = ctx.createOscillator(); o.type='sawtooth'; o.frequency.value=freq; o.detune.value=v.d;
+      flutterG.connect(o.detune);
+      const lpf = ctx.createBiquadFilter(); lpf.type='lowpass'; lpf.frequency.value=1600;
+      const hpf = ctx.createBiquadFilter(); hpf.type='highpass'; hpf.frequency.value=120;
+      const g = ctx.createGain(); g.gain.value=v.g*0.16;
+      o.connect(hpf); hpf.connect(lpf); lpf.connect(g); g.connect(ws); o.start(now); oscs.push(o);
+    });
+
+  } else if (padTipoAtual === 'pluck') {
+    // Nord "Warm Pad" — pad suave e continuo tipo Nord Lead, filter sweep
+    volScale = 0.50;
+    master.gain.linearRampToValueAtTime(vol * volScale, now + 1.4);
+    wet.gain.value = 0.6;
+    const filt = ctx.createBiquadFilter(); filt.type='lowpass'; filt.Q.value=2.5;
+    filt.frequency.setValueAtTime(400, now);
+    filt.frequency.linearRampToValueAtTime(1800, now + 2.0);
+    filt.frequency.linearRampToValueAtTime(1200, now + 4.0);
+    filt.connect(master);
+    const vLFO = ctx.createOscillator(); vLFO.frequency.value=4.8;
+    const vG = ctx.createGain(); vG.gain.setValueAtTime(0,now); vG.gain.linearRampToValueAtTime(10,now+2.0);
+    vLFO.connect(vG); vLFO.start(now); oscs.push(vLFO);
+    [{d:-12,g:0.4,t:'sawtooth'},{d:-4,g:0.45,t:'sawtooth'},{d:0,g:0.5,t:'triangle'},{d:5,g:0.45,t:'sawtooth'},{d:13,g:0.4,t:'sawtooth'}].forEach(v => {
+      const o = ctx.createOscillator(); o.type=v.t; o.frequency.value=freq; o.detune.value=v.d;
+      vG.connect(o.detune);
+      const g = ctx.createGain(); g.gain.value=v.g*0.17;
+      o.connect(g); g.connect(filt); o.start(now); oscs.push(o);
+    });
+
+  } else if (padTipoAtual === 'sub') {
+    // Nord "String Ensemble" — violinos + cellos orquestrais sustentados
+    volScale = 0.36;
+    master.gain.linearRampToValueAtTime(vol * volScale, now + 1.6);
+    wet.gain.value = 0.55;
+    const vLFO = ctx.createOscillator(); vLFO.frequency.value=5.4;
+    const vG = ctx.createGain(); vG.gain.setValueAtTime(0,now); vG.gain.linearRampToValueAtTime(14,now+2.2);
+    vLFO.connect(vG); vLFO.start(now); oscs.push(vLFO);
+    [{d:-8,g:0.3},{d:0,g:0.35},{d:9,g:0.3}].forEach(v => {
+      const o = ctx.createOscillator(); o.type='sawtooth'; o.frequency.value=freq*2; o.detune.value=v.d;
+      vG.connect(o.detune);
+      const lpf = ctx.createBiquadFilter(); lpf.type='lowpass'; lpf.frequency.value=3500;
+      const g = ctx.createGain(); g.gain.value=v.g*0.14;
+      o.connect(lpf); lpf.connect(g); g.connect(master); o.start(now); oscs.push(o);
+    });
+    [{d:-6,g:0.4},{d:0,g:0.45},{d:7,g:0.4}].forEach(v => {
+      const o = ctx.createOscillator(); o.type='sawtooth'; o.frequency.value=freq; o.detune.value=v.d;
+      vG.connect(o.detune);
+      const lpf = ctx.createBiquadFilter(); lpf.type='lowpass'; lpf.frequency.value=1800;
+      const hpf = ctx.createBiquadFilter(); hpf.type='highpass'; hpf.frequency.value=80;
+      const g = ctx.createGain(); g.gain.value=v.g*0.18;
+      o.connect(hpf); hpf.connect(lpf); lpf.connect(g); g.connect(master); o.start(now); oscs.push(o);
+    });
   }
 
-  padNodes[idx] = { oscs, masterGain: master, dA, dB, el };
+  padNodes[idx] = { oscs, masterGain: master, dA, dB, el, volScale };
+  atualizarBtnPad();
 }
 
 function pararPad(idx) {
@@ -1831,6 +2093,7 @@ function pararPad(idx) {
   node.oscs.forEach(o => { try { o.stop(now + 2.1); } catch(e){} });
   node.el.classList.remove('playing');
   delete padNodes[idx];
+  atualizarBtnPad();
 }
 
 // ─── IMPORTAR CIFRA ───────────────────────────────────────────────────────
