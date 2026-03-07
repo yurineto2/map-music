@@ -1996,119 +1996,99 @@ function encontrarPadrao(acordes) {
 }
 
 function parsearCifra(texto) {
-  // Remove secao de tablaturas/acordes no final
-  const limpo = texto.replace(/[-=*]{3,}\s*[Aa]cordes\s*[-=*]{3,}[\s\S]*/i, '').trim();
-  const linhas = limpo.replace(/\r\n/g, '\n').replace(/\r/g, '\n').split('\n');
+  const limpo = texto
+    .replace(/[-=*]{3,}\s*[Aa]cordes\s*[-=*]{3,}[\s\S]*/i, '')
+    .replace(/\r\n/g,'\n').replace(/\r/g,'\n').trim();
 
-  // ── Passo 1: coleta blocos separados por linha vazia ──────────────────
-  const blocos = []; // { secao: string|null, acordes: string[] }
-  let secaoAtual = null;
-  let acordesAtual = [];
+  const linhas = limpo.split('\n');
+  const blocos = [];
 
-  function flush() {
-    if (!acordesAtual.length) return;
-    blocos.push({ secao: secaoAtual, acordes: [...acordesAtual] });
-    acordesAtual = [];
-    secaoAtual = null;
-  }
+  // Passo 1 — sem função interna, sem closure
+  let bSecao  = null;
+  let bAcordes = [];
 
-  for (const linha of linhas) {
+  for (let li = 0; li <= linhas.length; li++) {
+    // Sentinel: última iteração faz flush final
+    const linha = li < linhas.length ? linhas[li] : '';
     const t = linha.trim();
 
-    // Tenta identificar marcador de seção
     const sec = identificarSecao(linha);
-    if (sec) { flush(); secaoAtual = sec; continue; }
 
-    // Linha vazia = fim de bloco
-    if (!t) { flush(); continue; }
-
-    // Linha de acordes → acumula tokens
-    if (ehLinhaDeAcordes(linha)) {
-      linha.replace(/\t/g,' ').trim().split(/\s+/).filter(Boolean).filter(ehAcorde).forEach(a => acordesAtual.push(a));
+    // Flush quando: linha vazia, marcador de seção, ou fim do array
+    if (!t || sec !== null || li === linhas.length) {
+      if (bAcordes.length > 0) {
+        blocos.push({ secao: bSecao, acordes: bAcordes.slice() });
+      }
+      bAcordes = [];
+      bSecao   = sec !== null ? sec : null;
+      continue;
     }
-    // Linha de letra → ignora mas NÃO quebra o bloco
+
+    if (ehLinhaDeAcordes(linha)) {
+      const tokens = t.replace(/\t/g,' ').split(/\s+/).filter(Boolean).filter(ehAcorde);
+      for (const a of tokens) bAcordes.push(a);
+    }
   }
-  flush();
 
-  // ── Passo 2: extrai padrão único de cada bloco ────────────────────────
-  const blocsComPadrao = blocos.map(b => {
+  // Passo 2 — extrai padrão de cada bloco
+  const blocsComPadrao = [];
+  for (const b of blocos) {
     const padrao = encontrarPadrao(b.acordes);
-    // Chave = sequência do padrão (não sorted, para preservar diferença entre seções)
-    const chave = padrao.join(',');
-    return { secao: b.secao, padrao, chave };
-  }).filter(b => b.padrao.length > 0);
+    if (padrao.length > 0) {
+      blocsComPadrao.push({ secao: b.secao, padrao, chave: padrao.join(',') });
+    }
+  }
 
-  // ── Passo 3: nomeia por frequência ────────────────────────────────────
+  // Passo 3 — nomeia por frequência
+  const contagem = new Map();
+  for (const b of blocsComPadrao) {
+    contagem.set(b.chave, (contagem.get(b.chave) || 0) + 1);
+  }
 
-  // Conta ocorrências de cada padrão
-  const contagemPadrao = new Map();
-  blocsComPadrao.forEach(b =>
-    contagemPadrao.set(b.chave, (contagemPadrao.get(b.chave) || 0) + 1)
-  );
-
-  // Ordena chaves: primeiro por frequência decrescente,
-  // desempate pela primeira aparição na música (índice menor = aparece antes)
   const primeiraAparicao = new Map();
-  blocsComPadrao.forEach((b, i) => {
-    if (!primeiraAparicao.has(b.chave)) primeiraAparicao.set(b.chave, i);
-  });
+  for (let i = 0; i < blocsComPadrao.length; i++) {
+    if (!primeiraAparicao.has(blocsComPadrao[i].chave)) {
+      primeiraAparicao.set(blocsComPadrao[i].chave, i);
+    }
+  }
 
-  const porFreq = [...contagemPadrao.entries()]
-    .sort((a, b) => {
-      if (b[1] !== a[1]) return b[1] - a[1]; // mais frequente primeiro
-      return primeiraAparicao.get(a[0]) - primeiraAparicao.get(b[0]); // empate: aparece antes
-    })
+  const porFreq = [...contagem.entries()]
+    .sort((a, b) => b[1] !== a[1]
+      ? b[1] - a[1]
+      : primeiraAparicao.get(a[0]) - primeiraAparicao.get(b[0]))
     .map(([chave]) => chave);
 
-  // Nomes por rank de frequência (rank 0 = mais frequente):
-  // rank 0 = PONTE, rank 1 = REFRÃO, rank 2 = PRÉ-REFRÃO, rank 3+ = VERSO
-  // VERSO 2/3 só existem se o padrão for harmonicamente diferente do VERSO 1
-  const NOMES_RANK = ['PONTE', 'REFRÃO', 'PRÉ-REFRÃO', 'VERSO', 'VERSO 2', 'VERSO 3'];
-  // Ajuste para músicas com poucos padrões
   const MAPA_N = {
     1: ['VERSO'],
-    2: ['REFRÃO', 'VERSO'],
-    3: ['PONTE', 'REFRÃO', 'VERSO'],
+    2: ['REFRÃO','VERSO'],
+    3: ['PONTE','REFRÃO','VERSO'],
   };
+  const NOMES_RANK = ['PONTE','REFRÃO','PRÉ-REFRÃO','VERSO','VERSO 2','VERSO 3'];
   const nomesBase = MAPA_N[porFreq.length] || NOMES_RANK;
 
   const nomesPorChave = new Map();
-  let versoCount = 0;
-  porFreq.forEach((chave, rank) => {
-    let nome = nomesBase[rank] || ('PARTE ' + (rank + 1));
-    // VERSO 2/3: só se o padrão for realmente diferente dos outros versos
-    // (já garantido pois cada chave é única — padrões iguais nunca chegam aqui como chaves separadas)
-    // Não cria VERSO 2 automaticamente — só se vier marcador explícito na cifra
+  for (let r = 0; r < porFreq.length; r++) {
+    let nome = nomesBase[r] || ('PARTE ' + (r + 1));
     if (nome === 'VERSO 2' || nome === 'VERSO 3') nome = 'VERSO';
-    nomesPorChave.set(chave, nome);
-  });
+    nomesPorChave.set(porFreq[r], nome);
+  }
 
-  // Aplica nomes — marcadores explícitos da cifra têm prioridade
-  // Coleta todos os nomes únicos em ordem de primeira aparição
+  // Passo 4 — monta resultado sem repetir nomes
   const nomeVistos = new Set();
-  const resultado = [];
-
-  blocsComPadrao.forEach(bloco => {
-    let nome = bloco.secao || nomesPorChave.get(bloco.chave) || 'PARTE';
+  const resultado  = [];
+  for (const bloco of blocsComPadrao) {
+    const nome = bloco.secao || nomesPorChave.get(bloco.chave) || 'PARTE';
     if (bloco.secao) nomesPorChave.set(bloco.chave, bloco.secao);
-    if (nomeVistos.has(nome)) return; // cada seção aparece só 1x no resultado
+    if (nomeVistos.has(nome)) continue;
     nomeVistos.add(nome);
     resultado.push({ titulo: nome, conteudo: bloco.padrao.join('  ') });
-  });
+  }
 
-  // ── Passo 4: reordena pelo padrão musical correto ─────────────────────
-  // Estrutura: INTRO → VERSO → VERSO 2 (só se marcador explícito) → PRÉ-REFRÃO → REFRÃO → INSTRUMENTAL → PONTE → FINAL
-  const ORDEM_MUSICAL = [
-    'INTRO', 'VERSO', 'VERSO 2', 'VERSO 3',
-    'PRÉ-REFRÃO', 'REFRÃO',
-    'INSTRUMENTAL', 'SOLO',
-    'PONTE', 'FINAL'
-  ];
-
+  // Passo 5 — ordena pela estrutura musical
+  const ORDEM = ['INTRO','VERSO','VERSO 2','VERSO 3','PRÉ-REFRÃO','REFRÃO','INSTRUMENTAL','SOLO','PONTE','FINAL'];
   resultado.sort((a, b) => {
-    const ia = ORDEM_MUSICAL.indexOf(a.titulo);
-    const ib = ORDEM_MUSICAL.indexOf(b.titulo);
-    // Seções não mapeadas ficam no final na ordem original
+    const ia = ORDEM.indexOf(a.titulo);
+    const ib = ORDEM.indexOf(b.titulo);
     if (ia === -1 && ib === -1) return 0;
     if (ia === -1) return 1;
     if (ib === -1) return -1;
