@@ -790,7 +790,7 @@ body.viewer-mode input[type="text"] { pointer-events: none; }
       </div>
       <div class="logo-text">
         <span class="logo-name">Map Music <span>Pro</span></span>
-        <span class="logo-tag">Elite Edition · v28</span>
+        <span class="logo-tag">Elite Edition · v29</span>
       </div>
     </div>
     <div style="display:flex; align-items:center; gap:12px;">
@@ -1243,10 +1243,14 @@ function aplicarEstado(estado) {
     document.getElementById('perf-song-name').innerText = estado.currentSongName;
     document.getElementById('perf-song-pos').innerText =
       (estado.currentSongIndex + 1) + '/' + estado.songTotal;
+    document.getElementById('dc-song-name').textContent = estado.currentSongName;
   } else {
     document.getElementById('perf-song-name').innerText = 'Nenhuma musica';
     document.getElementById('perf-song-pos').innerText = '—';
+    document.getElementById('dc-song-name').textContent = '—';
   }
+  // Atualiza visibilidade do letreiro no Drum Cam
+  atualizarLetreiroDrumCam();
 
   // Teleprompter — sincroniza velocidade
   const slider = document.getElementById('scroll-speed');
@@ -1739,7 +1743,8 @@ function loadSong(id) {
   const idx = songs.findIndex(x => x.id === id);
   if (idx === -1) return;
   currentSongIndex = idx;
-  if (document.getElementById('drumcam-overlay')?.classList.contains('show')) atualizarDrumCamInfo();
+  document.getElementById('dc-song-name').textContent = songs[idx] ? songs[idx].name : '—';
+  atualizarLetreiroDrumCam();
   const s = songs[idx];
   bpm = s.bpm; document.getElementById('bpm-display').innerText = bpm;
   document.getElementById('notes-grid').innerHTML = '';
@@ -1757,6 +1762,7 @@ function deleteSong(id, e) {
 let currentSongIndex = -1; // -1 = nenhuma musica do setlist carregada
 
 function togglePerf() {
+  setTimeout(atualizarLetreiroDrumCam, 50);
   const isPerf = document.getElementById('app-body').classList.toggle('performance-mode');
   document.getElementById('mode-text').innerText = isPerf ? "SAIR DO SHOW" : "MODO SHOW";
   if (!isPerf) { stopScroll(); window.scrollTo(0,0); }
@@ -2295,9 +2301,12 @@ function atualizarDrumCamInfo() {
 }
 
 function atualizarLetreiroDrumCam() {
-  // Letreiro aparece apenas quando o Modo Sala estiver ativo (host ou viewer)
   const modoSala = isHost || isViewer;
-  document.getElementById('dc-song-name').style.display = modoSala ? 'block' : 'none';
+  const modoShow = document.getElementById('app-body').classList.contains('performance-mode');
+  const el = document.getElementById('dc-song-name');
+  if (!el) return;
+  // Só aparece quando sala E modo show estão ativos simultaneamente
+  el.style.display = (modoSala && modoShow) ? 'block' : 'none';
 }
 
 function renderDrumCamPads() {
