@@ -90,6 +90,100 @@ body { font-family: 'Inter', sans-serif; background: var(--bg-primary); color: v
 .sync-code { background: rgba(255,255,255,0.08); padding: 3px 10px; border-radius: 20px; font-size: 15px; letter-spacing: 4px; font-weight: 900; }
 
 /* SAVE BTN */
+/* ── DRUM CAM ── */
+.drumcam-overlay {
+  position: fixed; inset: 0; z-index: 6000;
+  background: #03030a;
+  display: none; flex-direction: column;
+  align-items: center; justify-content: center;
+  gap: 0;
+}
+.drumcam-overlay.show { display: flex; }
+
+.drumcam-header {
+  position: absolute; top: 0; left: 0; right: 0;
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 18px 24px;
+  background: linear-gradient(to bottom, rgba(3,3,10,0.95), transparent);
+  z-index: 2;
+}
+.drumcam-title {
+  font-size: 9px; font-weight: 900; letter-spacing: 4px;
+  text-transform: uppercase; color: rgba(255,255,255,0.25);
+}
+.drumcam-close {
+  background: none; border: 1px solid rgba(255,255,255,0.1);
+  color: rgba(255,255,255,0.4); padding: 6px 16px;
+  border-radius: 30px; font-size: 10px; font-weight: 700;
+  letter-spacing: 1px; cursor: pointer; text-transform: uppercase;
+  transition: 0.2s;
+}
+.drumcam-close:hover { color: #fff; border-color: rgba(255,255,255,0.3); }
+
+/* Bloco central: nome + BPM */
+.drumcam-song-info {
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  gap: 8px; margin-bottom: 32px; text-align: center;
+}
+.drumcam-song-name {
+  font-size: clamp(22px, 5vw, 48px); font-weight: 900;
+  color: #fff; letter-spacing: 2px; text-transform: uppercase;
+  line-height: 1.1; max-width: 90vw;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  /* Oculto por padrão — só aparece no modo show */
+  display: none;
+}
+body.performance-mode .drumcam-song-name { display: block; }
+.drumcam-bpm {
+  font-size: clamp(72px, 18vw, 160px); font-weight: 900;
+  color: var(--accent-primary); letter-spacing: -4px;
+  line-height: 1;
+}
+.drumcam-bpm-label {
+  font-size: 11px; font-weight: 700; letter-spacing: 4px;
+  color: rgba(255,255,255,0.25); text-transform: uppercase;
+}
+
+/* Beat flash */
+.drumcam-beat {
+  position: absolute; inset: 0; pointer-events: none;
+  background: rgba(29,185,84,0.07);
+  opacity: 0; z-index: 1;
+  transition: opacity 0.05s;
+}
+.drumcam-beat.flash { opacity: 1; }
+
+/* Grid de pads */
+.drumcam-pads {
+  display: flex; flex-direction: row; flex-wrap: wrap;
+  gap: 6px; width: min(95vw, 520px);
+  justify-content: center;
+  position: relative; z-index: 2;
+}
+.drumcam-pad {
+  width: 52px; height: 36px; border-radius: 8px;
+  border: 1px solid rgba(255,255,255,0.07);
+  background: rgba(255,255,255,0.04);
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer; user-select: none;
+  transition: border-color 0.25s, background 0.25s, color 0.25s;
+  font-size: 10px; font-weight: 800;
+  color: rgba(255,255,255,0.35); letter-spacing: 0.5px;
+  position: relative; overflow: hidden;
+}
+.drumcam-pad::after {
+  content: ''; position: absolute; inset: 0; border-radius: 8px;
+  background: radial-gradient(circle at center, rgba(29,185,84,0.4), transparent 70%);
+  opacity: 0; transition: opacity 0.15s;
+}
+.drumcam-pad.playing {
+  border-color: rgba(29,185,84,0.7);
+  background: rgba(29,185,84,0.12);
+  color: var(--accent-primary);
+}
+.drumcam-pad.playing::after { opacity: 1; animation: padGlow 2s ease-in-out infinite; }
+
 /* BOTÃO FLUTUANTE PAD — só aparece quando pad está tocando */
 .btn-pad-flutuante {
   position: fixed; bottom: 90px; left: 50%; transform: translateX(-50%);
@@ -663,7 +757,7 @@ body.viewer-mode input[type="text"] { pointer-events: none; }
       </div>
       <div class="logo-text">
         <span class="logo-name">Map Music <span>Pro</span></span>
-        <span class="logo-tag">Elite Edition · v21</span>
+        <span class="logo-tag">Elite Edition · v24</span>
       </div>
     </div>
     <div style="display:flex; align-items:center; gap:12px;">
@@ -678,6 +772,7 @@ body.viewer-mode input[type="text"] { pointer-events: none; }
         <div id="m-drop" class="dropdown-menu">
           <div class="menu-item" onclick="abrirModalCifra()">Importar Cifra</div>
           <div class="menu-item" onclick="abrirPads()">Pads</div>
+          <div class="menu-item" onclick="abrirDrumCam()">Drum Cam</div>
           <div class="menu-item danger" onclick="resetSection()">Limpar Seção</div>
         </div>
       </div>
@@ -874,6 +969,21 @@ body.viewer-mode input[type="text"] { pointer-events: none; }
 </div>
 
 <button class="btn-save-vitro" onclick="saveSong()">Salvar Música</button>
+
+<!-- DRUM CAM -->
+<div class="drumcam-overlay" id="drumcam-overlay">
+  <div class="drumcam-beat" id="drumcam-beat"></div>
+  <div class="drumcam-header">
+    <span class="drumcam-title">Drum Cam</span>
+    <button class="drumcam-close" onclick="fecharDrumCam()">Fechar</button>
+  </div>
+  <div class="drumcam-song-info">
+    <div class="drumcam-song-name" id="dc-song-name">—</div>
+    <div class="drumcam-bpm" id="dc-bpm">120</div>
+    <div class="drumcam-bpm-label">BPM</div>
+  </div>
+  <div class="drumcam-pads" id="drumcam-pads"></div>
+</div>
 
 <!-- BOTÃO PAD FLUTUANTE -->
 <button class="btn-pad-flutuante" id="btn-pad-flutuante" onclick="togglePadFlutuante()">PAD TOCANDO — PARAR</button>
@@ -1196,9 +1306,10 @@ function showToast(msg) {
 function toggleMenu(e) { e.stopPropagation(); document.getElementById('m-drop').classList.toggle('show'); }
 
 function fecharMenu(e) {
+  if (!e || !e.target) return;
   const menu = document.getElementById('m-drop');
   const container = document.querySelector('.menu-container');
-  if (!container.contains(e.target)) menu.classList.remove('show');
+  if (container && !container.contains(e.target)) menu.classList.remove('show');
 }
 window.addEventListener('click', fecharMenu);
 window.addEventListener('touchend', fecharMenu, { passive: true });
@@ -1255,6 +1366,15 @@ document.getElementById('tap-btn').addEventListener('click', () => {
 
 // ─── METRÔNOMO ───────────────────────────────────────────────────────────
 function playClick() {
+  try {
+    const dc = document.getElementById('drumcam-overlay');
+    if (dc && dc.classList.contains('show')) {
+      drumCamBeatFlash();
+      document.getElementById('dc-bpm').textContent = bpm;
+      const s = currentSongIndex >= 0 && songs[currentSongIndex] ? songs[currentSongIndex] : null;
+      document.getElementById('dc-song-name').textContent = s ? s.name : '—';
+    }
+  } catch(err) {}
   const osc = audioCtx.createOscillator();
   const env = audioCtx.createGain();
   osc.frequency.value = 1000;
@@ -1572,6 +1692,7 @@ function loadSong(id) {
   const idx = songs.findIndex(x => x.id === id);
   if (idx === -1) return;
   currentSongIndex = idx;
+  if (document.getElementById('drumcam-overlay')?.classList.contains('show')) atualizarDrumCamInfo();
   const s = songs[idx];
   bpm = s.bpm; document.getElementById('bpm-display').innerText = bpm;
   document.getElementById('notes-grid').innerHTML = '';
@@ -1746,6 +1867,7 @@ function atualizarVolumePads(val) {
 
 // Fecha dropdown ao clicar fora
 document.addEventListener('click', e => {
+  if (!e || !e.target) return;
   if (!e.target.closest('#pad-type-selector')) {
     document.getElementById('pad-type-dropdown')?.classList.remove('open');
     document.getElementById('pad-type-trigger')?.classList.remove('open');
@@ -1789,6 +1911,10 @@ function atualizarBtnPad() {
   if (!btn) return;
   const temAtivos = Object.keys(padNodes).length > 0;
   btn.classList.toggle('pad-ativo', temAtivos);
+  // Sincroniza estado visual dos pads no Drum Cam
+  document.querySelectorAll('.drumcam-pad').forEach(el => {
+    el.classList.toggle('playing', !!padNodes[parseInt(el.dataset.idx)]);
+  });
 }
 
 function renderPads() {
@@ -2094,6 +2220,68 @@ function pararPad(idx) {
   node.el.classList.remove('playing');
   delete padNodes[idx];
   atualizarBtnPad();
+}
+
+// ─── DRUM CAM ──────────────────────────────────────────────────────────────
+
+const NOTA_DISPLAY_DC = ['C','C#','D','D#','E','F','F#','G','G#','A','A#','B'];
+const isBlack_DC = [false,true,false,true,false,false,true,false,true,false,true,false];
+
+function abrirDrumCam() {
+  fecharMenu();
+  document.getElementById('drumcam-overlay').classList.add('show');
+  if (audioCtx.state === 'suspended') audioCtx.resume();
+  atualizarDrumCamInfo();
+  renderDrumCamPads();
+}
+
+function fecharDrumCam() {
+  document.getElementById('drumcam-overlay').classList.remove('show');
+}
+
+function atualizarDrumCamInfo() {
+  // Nome da música
+  const s = currentSongIndex >= 0 && songs[currentSongIndex] ? songs[currentSongIndex] : null;
+  document.getElementById('dc-song-name').textContent = s ? s.name : '—';
+  document.getElementById('dc-bpm').textContent = bpm;
+}
+
+function renderDrumCamPads() {
+  const grid = document.getElementById('drumcam-pads');
+  grid.innerHTML = Array.from({length: 16}, (_, i) => {
+    const notaIdx = i % 12;
+    const midi = 48 + notaIdx + (i >= 12 ? 12 : 0);
+    const nome = NOTA_DISPLAY_DC[notaIdx];
+    const playing = padNodes[i] ? 'playing' : '';
+    return `<div class="drumcam-pad ${playing}" data-idx="${i}" data-midi="${midi}"
+      onmousedown="toggleDrumCamPad(this)"
+      ontouchstart="toggleDrumCamPad(this); event.preventDefault()">
+      ${nome}
+    </div>`;
+  }).join('');
+}
+
+function toggleDrumCamPad(el) {
+  if (audioCtx.state === 'suspended') audioCtx.resume();
+  const idx = parseInt(el.dataset.idx);
+  if (padNodes[idx]) {
+    pararPad(idx);
+    el.classList.remove('playing');
+  } else {
+    // Usa a função iniciarPad existente passando elemento compatível
+    el.dataset.qual = '';
+    iniciarPad(el);
+    el.classList.add('playing');
+  }
+  atualizarBtnPad();
+}
+
+// Flash de beat no Drum Cam sincronizado com o metrônomo
+function drumCamBeatFlash() {
+  const beat = document.getElementById('drumcam-beat');
+  if (!beat) return;
+  beat.classList.add('flash');
+  setTimeout(() => beat.classList.remove('flash'), 80);
 }
 
 // ─── IMPORTAR CIFRA ───────────────────────────────────────────────────────
