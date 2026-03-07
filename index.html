@@ -95,10 +95,62 @@ body { font-family: 'Inter', sans-serif; background: var(--bg-primary); color: v
 
 /* LAYOUT */
 .main-layout { display: grid; grid-template-columns: 280px 1fr 300px; gap: 20px; max-width: 1400px; margin: 0 auto; width: 100%; padding: 20px; }
+
+/* ── TABLET (até 1100px) ── */
 @media (max-width: 1100px) {
-  .main-layout { grid-template-columns: 1fr; }
-  .side-panel { order: 2; max-height: 350px !important; margin-bottom: 50px; }
+  .main-layout { grid-template-columns: 1fr; padding: 16px; }
+  .side-panel { order: 2; max-height: 300px !important; margin-bottom: 50px; }
   .metronome-card { order: 1; position: relative !important; top: 0 !important; }
+  .section-grid { grid-template-columns: 1fr 1fr; }
+}
+
+/* ── MOBILE (até 640px) ── */
+@media (max-width: 640px) {
+  /* Header */
+  .app-header { padding: 0 12px; height: 56px; }
+  .app-logo { width: 30px; height: 30px; }
+  .app-logo span { font-size: 15px; }
+  .logo-name { font-size: 15px; }
+  .logo-tag { display: none; }
+  #btn-sala { padding: 6px 12px; font-size: 9px; }
+
+  /* Layout */
+  .main-layout { padding: 10px; gap: 14px; }
+  .section-grid { grid-template-columns: 1fr; }
+
+  /* Toolbar */
+  .toolbar-central { gap: 8px; margin-bottom: 14px; }
+  .tool-group { padding: 6px 14px; gap: 10px; font-size: 11px; }
+
+  /* Partes / acordes */
+  .song-part { padding: 12px; border-left-width: 4px; }
+  .chord-area { font-size: 17px; }
+  .part-title-input { font-size: 11px; }
+
+  /* Metrônomo */
+  .metronome-card { padding: 16px; }
+  .bpm-val { font-size: 48px; }
+
+  /* Modal */
+  .modal-box { padding: 24px 18px; width: 95%; }
+  .modal-box h2 { font-size: 16px; }
+  .code-inputs { gap: 8px; }
+  .code-input { width: 44px; height: 54px; font-size: 22px; }
+
+  /* Pads */
+  .pads-grid { gap: 8px; }
+  .pad-chord { font-size: 15px; }
+
+  /* Sync bar */
+  .sync-bar { font-size: 9px; padding: 6px 12px; gap: 8px; }
+
+  /* Botões do fundo */
+  .btn-save-vitro { font-size: 9px; padding: 10px 16px; }
+  .perf-bottom-panel { bottom: 12px; right: 12px; }
+
+  /* Preview cifra */
+  .preview-section { padding: 8px 10px; }
+  .cifra-textarea { font-size: 11px; min-height: 140px; }
 }
 
 /* SETLIST */
@@ -128,6 +180,10 @@ body.performance-mode .side-panel,
 body.performance-mode .metronome-card,
 body.performance-mode .toolbar-central { display: none !important; }
 body.performance-mode .main-layout { grid-template-columns: 1fr; padding: 100px 10% 150px; }
+@media (max-width: 640px) {
+  body.performance-mode .main-layout { padding: 80px 4% 120px; }
+  body.performance-mode .chord-area { font-size: 36px !important; }
+}
 body.performance-mode .chord-area { font-size: 48px; pointer-events: none; height: auto !important; }
 
 /* TELEPROMPTER — canto inferior esquerdo (modo normal oculto) */
