@@ -1858,17 +1858,21 @@ function parsearCifra(texto) {
   const limpo = texto.replace(/[-=*]{3,}\s*[Aa]cordes\s*[-=*]{3,}[\s\S]*/i, '').trim();
   const linhas = limpo.split('\n');
 
-  // Agrupa por blocos (separados por linha vazia ou marcador de seção)
+  // Agrupa por blocos separados por linha vazia
+  // Cada bloco pode ter acordes e letra intercalados — acumula só os acordes
   const blocos = [];
   let secaoBloco = null;
-  let linhasAcorde = [];
+  let acordesBloco = [];
 
   function flushBloco() {
-    if (!linhasAcorde.length) return;
-    const todos = linhasAcorde.flatMap(l => l.trim().split(/\s+/).filter(ehAcorde));
-    const padrao = encontrarPadrao(todos);
-    if (padrao.length) blocos.push({ secao: secaoBloco, padrao, chave: padrao.join(',') });
-    linhasAcorde = [];
+    if (!acordesBloco.length) return;
+    const padrao = encontrarPadrao(acordesBloco);
+    if (padrao.length) {
+      // Chave baseada no conjunto de acordes únicos (identifica seção pelo harmônico)
+      const chave = [...new Set(padrao)].sort().join(',');
+      blocos.push({ secao: secaoBloco, padrao, chave });
+    }
+    acordesBloco = [];
     secaoBloco = null;
   }
 
@@ -1878,14 +1882,15 @@ function parsearCifra(texto) {
     if (sec) { flushBloco(); secaoBloco = sec; continue; }
     if (!t) { flushBloco(); continue; }
     if (ehLinhaDeAcordes(linha)) {
-      if (secaoBloco === null && !linhasAcorde.length) secaoBloco = null; // será auto-nomeado
-      linhasAcorde.push(linha);
+      // Acumula todos os acordes da linha (intercalados com letra ou não)
+      t.split(/\s+/).filter(ehAcorde).forEach(a => acordesBloco.push(a));
     }
+    // Linhas de letra são ignoradas mas não quebram o bloco
   }
   flushBloco();
 
   // Nomeia seções automaticamente por padrão harmônico único
-  const padroesVistos = new Map(); // chave -> nome
+  const padroesVistos = new Map();
   let autoIdx = 0;
 
   const resultado = [];
@@ -1900,12 +1905,11 @@ function parsearCifra(texto) {
         padroesVistos.set(bloco.chave, nome);
       }
     } else {
-      if (!padroesVistos.has(bloco.chave)) padroesVistos.set(bloco.chave, nome);
+      padroesVistos.set(bloco.chave, nome);
     }
 
     const conteudo = bloco.padrao.join('  ');
     const prev = resultado[resultado.length - 1];
-    // Não duplica seção consecutiva com mesmo título e conteúdo
     if (prev && prev.titulo === nome && prev.conteudo === conteudo) continue;
     resultado.push({ titulo: nome, conteudo });
   }
