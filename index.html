@@ -1785,10 +1785,12 @@ const SECAO_MAP = {
   'pre refrão':'PRÉ-REFRÃO','pre-refrão':'PRÉ-REFRÃO','pré-refrão':'PRÉ-REFRÃO',
   'bridge':'PONTE','ponte':'PONTE',
   'solo':'SOLO','guitar solo':'SOLO',
-  'interlude':'INTERLÚDIO','interludio':'INTERLÚDIO','interlúdio':'INTERLÚDIO',
+  'interlude':'INTERLÚDIO','interludio':'INTERLÚDIO',
   'instrumental':'INSTRUMENTAL',
   'outro':'FINAL','final':'FINAL','coda':'FINAL','ending':'FINAL','fim':'FINAL',
 };
+
+const NOMES_AUTO = ['INTRO','VERSO','REFRÃO','PONTE','FINAL','PARTE 5','PARTE 6','PARTE 7','PARTE 8'];
 
 function normStr(s) {
   return s.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/\s+/g,' ').trim();
@@ -1796,9 +1798,7 @@ function normStr(s) {
 
 function identificarSecao(linha) {
   const t = linha.trim();
-  if (!t || t.length > 40) return null;
-
-  // [Intro], [Verse 1], [Refrão]
+  if (!t || t.length > 50) return null;
   const colchete = t.match(/^\[(.+?)\]/);
   if (colchete) {
     const chave = normStr(colchete[1].replace(/\d+/g,'').trim());
@@ -1807,18 +1807,16 @@ function identificarSecao(linha) {
     }
     return colchete[1].replace(/\d+/g,'').trim().toUpperCase();
   }
-
-  // Linha curta sem acordes que termina em ":" ou é palavra-chave solta
+  // ( G#m D#m F# C# ) — bloco instrumental entre parênteses
+  if (t.match(/^\(\s*[A-G].+\)$/)) return 'INSTRUMENTAL';
+  // Linha curta terminada em ":"
   const semPont = t.replace(/[\s:.#\-–—0-9]+$/g,'').trim();
   if (semPont.length >= 2 && semPont.length <= 25) {
     const chave = normStr(semPont);
     for (const [k,v] of Object.entries(SECAO_MAP)) {
       if (normStr(k) === chave || chave.startsWith(normStr(k))) return v;
     }
-    // Se a linha termina com ":" é provavelmente um marcador desconhecido
-    if (t.endsWith(':') && !ehLinhaDeAcordes(linha)) {
-      return semPont.toUpperCase();
-    }
+    if (t.endsWith(':') && !ehLinhaDeAcordes(linha)) return semPont.toUpperCase();
   }
   return null;
 }
@@ -1831,54 +1829,81 @@ function ehLinhaDeAcordes(linha) {
   const t = linha.trim();
   if (!t) return false;
   const tokens = t.split(/\s+/);
-  const nAcordes = tokens.filter(ehAcorde).length;
-  if (nAcordes === 0) return false;
+  const n = tokens.filter(ehAcorde).length;
+  if (n === 0) return false;
   const temLetra = tokens.some(tk => !ehAcorde(tk) && tk.length > 5 && /[aeiouáéíóú]{2,}/i.test(tk));
-  return !temLetra && (nAcordes / tokens.length) >= 0.45;
+  return !temLetra && (n / tokens.length) >= 0.45;
+}
+
+// Encontra o menor padrão que se repete no array
+function encontrarPadrao(acordes) {
+  if (!acordes.length) return [];
+  for (let l = 1; l <= Math.floor(acordes.length / 2); l++) {
+    const cand = acordes.slice(0, l);
+    if (acordes.every((a, i) => a === cand[i % l])) return cand;
+  }
+  // Sem padrão exato — remove duplicados mantendo ordem
+  return [...new Map(acordes.map(a => [a, a])).values()];
 }
 
 function parsearCifra(texto) {
-  const linhas = texto.split('\n');
-  const secoes = [];
-  let tituloAtual = null;
-  let acordesAtual = [];
+  // Remove seção de acordes no final
+  const limpo = texto.replace(/[-=*]{3,}\s*[Aa]cordes\s*[-=*]{3,}[\s\S]*/i, '').trim();
+  const linhas = limpo.split('\n');
 
-  function salvar() {
-    if (tituloAtual && acordesAtual.length) {
-      const dedup = acordesAtual.filter((l,i,a) => l !== a[i-1]);
-      secoes.push({ titulo: tituloAtual, conteudo: dedup.join('\n') });
-    }
-    acordesAtual = [];
+  // Agrupa por blocos (separados por linha vazia ou marcador de seção)
+  const blocos = [];
+  let secaoBloco = null;
+  let linhasAcorde = [];
+
+  function flushBloco() {
+    if (!linhasAcorde.length) return;
+    const todos = linhasAcorde.flatMap(l => l.trim().split(/\s+/).filter(ehAcorde));
+    const padrao = encontrarPadrao(todos);
+    if (padrao.length) blocos.push({ secao: secaoBloco, padrao, chave: padrao.join(',') });
+    linhasAcorde = [];
+    secaoBloco = null;
   }
 
   for (const linha of linhas) {
     const t = linha.trim();
-    if (!t) continue;
-
-    const secao = identificarSecao(linha);
-    if (secao) {
-      salvar();
-      tituloAtual = secao;
-      continue;
-    }
-
+    const sec = identificarSecao(linha);
+    if (sec) { flushBloco(); secaoBloco = sec; continue; }
+    if (!t) { flushBloco(); continue; }
     if (ehLinhaDeAcordes(linha)) {
-      if (!tituloAtual) tituloAtual = 'INTRO';
-      const acs = t.split(/\s+/).filter(ehAcorde).join('  ');
-      if (acs) acordesAtual.push(acs);
+      if (secaoBloco === null && !linhasAcorde.length) secaoBloco = null; // será auto-nomeado
+      linhasAcorde.push(linha);
     }
   }
-  salvar();
+  flushBloco();
 
-  return secoes.reduce((acc, s) => {
-    const prev = acc[acc.length - 1];
-    if (prev && prev.titulo === s.titulo) {
-      prev.conteudo += '\n' + s.conteudo;
+  // Nomeia seções automaticamente por padrão harmônico único
+  const padroesVistos = new Map(); // chave -> nome
+  let autoIdx = 0;
+
+  const resultado = [];
+  for (const bloco of blocos) {
+    let nome = bloco.secao;
+    if (!nome) {
+      if (padroesVistos.has(bloco.chave)) {
+        nome = padroesVistos.get(bloco.chave);
+      } else {
+        nome = NOMES_AUTO[autoIdx] || ('PARTE ' + (autoIdx + 1));
+        autoIdx++;
+        padroesVistos.set(bloco.chave, nome);
+      }
     } else {
-      acc.push({ ...s });
+      if (!padroesVistos.has(bloco.chave)) padroesVistos.set(bloco.chave, nome);
     }
-    return acc;
-  }, []);
+
+    const conteudo = bloco.padrao.join('  ');
+    const prev = resultado[resultado.length - 1];
+    // Não duplica seção consecutiva com mesmo título e conteúdo
+    if (prev && prev.titulo === nome && prev.conteudo === conteudo) continue;
+    resultado.push({ titulo: nome, conteudo });
+  }
+
+  return resultado;
 }
 
 function aplicarCifra() {
