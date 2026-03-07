@@ -663,7 +663,7 @@ body.viewer-mode input[type="text"] { pointer-events: none; }
       </div>
       <div class="logo-text">
         <span class="logo-name">Map Music <span>Pro</span></span>
-        <span class="logo-tag">Elite Edition · v20</span>
+        <span class="logo-tag">Elite Edition · v21</span>
       </div>
     </div>
     <div style="display:flex; align-items:center; gap:12px;">
@@ -1720,7 +1720,7 @@ function togglePadDropdown() {
 }
 
 function setPadType(tipo, el) {
-  Object.keys(padNodes).forEach(i => pararPad(i));
+  // Não para pads ativos ao trocar tipo — afeta apenas o próximo toque
   padTipoAtual = tipo;
   document.getElementById('pad-type-label').textContent = el ? el.childNodes[0].textContent.trim() : tipo;
   document.getElementById('pad-type-dropdown').classList.remove('open');
@@ -1768,9 +1768,8 @@ function abrirPads() {
 }
 
 function fecharPads() {
-  Object.keys(padNodes).forEach(i => pararPad(i));
+  // Não para os pads — continuam tocando em background
   document.getElementById('pads-overlay').classList.remove('show');
-  atualizarBtnPad();
 }
 
 function togglePadFlutuante() {
@@ -1794,7 +1793,7 @@ function atualizarBtnPad() {
 
 function renderPads() {
   const grid = document.getElementById('pads-grid');
-  Object.keys(padNodes).forEach(i => pararPad(i));
+  // Não para os pads ao re-renderizar
 
   const NOTA_DISPLAY = ['C','C#','D','D#','E','F','F#','G','G#','A','A#','B'];
   const NOTA_BEMOL   = ['C','Db','D','Eb','E','F','Gb','G','Ab','A','Bb','B'];
@@ -1807,9 +1806,10 @@ function renderPads() {
     const sharp   = NOTA_DISPLAY[notaIdx];
     const flat    = NOTA_BEMOL[notaIdx];
     const black   = isBlack[notaIdx];
-
+    // Marca pads que já estão tocando
+    const playing = padNodes[i] ? 'playing' : '';
     return `
-      <div class="pad ${black ? 'pad-black' : 'pad-white'}"
+      <div class="pad ${black ? 'pad-black' : 'pad-white'} ${playing}"
         data-midi="${midi}" data-qual="" data-idx="${i}"
         onmousedown="iniciarPad(this)"
         ontouchstart="iniciarPad(this); event.preventDefault()">
