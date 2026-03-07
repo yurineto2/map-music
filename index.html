@@ -108,10 +108,11 @@ body { font-family: 'Inter', sans-serif; background: var(--bg-primary); color: v
 @media (max-width: 640px) {
   /* Header */
   .app-header { padding: 0 12px; height: 56px; }
-  .app-logo { width: 30px; height: 30px; }
-  .app-logo span { font-size: 15px; }
-  .logo-name { font-size: 15px; }
+  .logo-icon { width: 30px; height: 30px; border-radius: 7px; }
+  .logo-icon span { font-size: 15px; }
+  .logo-name { font-size: 13px; }
   .logo-tag { display: none; }
+  .app-logo { gap: 7px; }
   #btn-sala { padding: 6px 12px; font-size: 9px; }
 
   /* Layout */
@@ -1903,18 +1904,39 @@ function identificarSecao(linha) {
 }
 
 function ehAcorde(tk) {
-  return /^[A-G][#b]?(m(?:aj)?7?|min7?|sus[24]?|dim7?|aug|add\d{1,2}|M7?|\d+)?(\/[A-G][#b]?)?$/.test(tk.trim());
+  const t = tk.trim();
+  if (!t || t.length > 6) return false;
+  return /^[A-G][#b]?(m(?:aj)?7?|min7?|sus[24]?|dim7?|aug|add\d{1,2}|M7?|\d+)?(\/[A-G][#b]?)?$/.test(t);
 }
 
+const CORDAS_GUITARRA = new Set(['E','A','D','G','B']);
+
 function ehLinhaDeAcordes(linha) {
-  // Normaliza tabs e espaços múltiplos
   const t = linha.replace(/\t/g, ' ').trim();
   if (!t) return false;
   const tokens = t.split(/\s+/).filter(Boolean);
-  const n = tokens.filter(ehAcorde).length;
+  if (!tokens.length) return false;
+
+  const acordes = tokens.filter(ehAcorde);
+  const n = acordes.length;
   if (n === 0) return false;
-  const temLetra = tokens.some(tk => !ehAcorde(tk) && tk.length > 5 && /[aeiouáéíóú]{2,}/i.test(tk));
-  return !temLetra && (n / tokens.length) >= 0.45;
+
+  // Rejeita se tiver palavras longas com vogais (letra de música)
+  const temLetra = tokens.some(tk =>
+    !ehAcorde(tk) && tk.length > 4 && /[aeiouáéíóú]{2,}/i.test(tk)
+  );
+  if (temLetra) return false;
+
+  // Rejeita acorde único de letra simples sozinho na linha
+  if (n === 1 && tokens.length === 1 && acordes[0].length === 1) return false;
+
+  // Rejeita linhas com 4+ notas que são cordas soltas do violão/guitarra
+  // (ruído de PDF que extrai afinação ou tablatura como texto)
+  const letrasSimples = acordes.filter(a => /^[A-G]$/.test(a));
+  const cordasPresentes = letrasSimples.filter(a => CORDAS_GUITARRA.has(a));
+  if (cordasPresentes.length >= 4) return false;
+
+  return (n / tokens.length) >= 0.45;
 }
 
 // Comprime consecutivos iguais: [A,A,A,B,B] → [A,B]
