@@ -6,6 +6,8 @@
 <title>Map Music Pro - Elite Edition</title>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/peerjs/1.5.4/peerjs.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js"></script>
 
 <style>
 :root {
@@ -617,10 +619,10 @@ body.viewer-mode input[type="text"] { pointer-events: none; }
         </div>
         <div>
           <div id="cifra-file-name" style="font-size:11px; font-weight:700; color:#fff;">Buscar arquivo .txt</div>
-          <div style="font-size:10px; color:rgba(255,255,255,0.3); margin-top:2px;">Toca para selecionar do dispositivo</div>
+          <div style="font-size:10px; color:rgba(255,255,255,0.3); margin-top:2px;">TXT · PDF · DOC · DOCX</div>
         </div>
       </div>
-      <input type="file" id="cifra-file-input" accept=".txt,.pro,.chopro,.cho" style="display:none;" onchange="lerArquivoCifra(this)">
+      <input type="file" id="cifra-file-input" accept=".txt,.pro,.chopro,.cho,.pdf,.doc,.docx" style="display:none;" onchange="lerArquivoCifra(this)">
 
       <div style="display:flex; align-items:center; gap:10px; margin-bottom:12px;">
         <div style="flex:1; height:1px; background:rgba(255,255,255,0.07);"></div>
@@ -1696,9 +1698,53 @@ function lerArquivoCifra(input) {
   const file = input.files[0];
   if (!file) return;
   document.getElementById('cifra-file-name').innerText = file.name;
-  const reader = new FileReader();
-  reader.onload = e => { document.getElementById('cifra-input').value = e.target.result; };
-  reader.readAsText(file, 'UTF-8');
+  const ext = file.name.split('.').pop().toLowerCase();
+
+  if (ext === 'pdf') {
+    // Lê PDF via PDF.js
+    const reader = new FileReader();
+    reader.onload = async e => {
+      try {
+        pdfjsLib.GlobalWorkerOptions.workerSrc =
+          'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+        const pdf = await pdfjsLib.getDocument({ data: e.target.result }).promise;
+        let texto = '';
+        for (let i = 1; i <= pdf.numPages; i++) {
+          const page = await pdf.getPage(i);
+          const content = await page.getTextContent();
+          texto += content.items.map(it => it.str).join(' ') + '\n';
+        }
+        document.getElementById('cifra-input').value = texto.trim();
+        showToast('PDF carregado!');
+      } catch(err) {
+        showToast('Erro ao ler PDF.');
+      }
+    };
+    reader.readAsArrayBuffer(file);
+
+  } else if (ext === 'docx' || ext === 'doc') {
+    // Lê Word via mammoth.js
+    const reader = new FileReader();
+    reader.onload = async e => {
+      try {
+        const result = await mammoth.extractRawText({ arrayBuffer: e.target.result });
+        document.getElementById('cifra-input').value = result.value.trim();
+        showToast('Documento carregado!');
+      } catch(err) {
+        showToast('Erro ao ler documento Word.');
+      }
+    };
+    reader.readAsArrayBuffer(file);
+
+  } else {
+    // TXT e outros — leitura simples
+    const reader = new FileReader();
+    reader.onload = e => {
+      document.getElementById('cifra-input').value = e.target.result;
+      showToast('Arquivo carregado!');
+    };
+    reader.readAsText(file, 'UTF-8');
+  }
 }
 
 function analisarCifra() {
