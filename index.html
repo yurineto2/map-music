@@ -1770,7 +1770,7 @@ function lerArquivoCifra(input) {
           const content = await page.getTextContent();
           texto += content.items.map(it => it.str).join(' ') + '\n';
         }
-        document.getElementById('cifra-input').value = texto.trim();
+        document.getElementById('cifra-input').value = texto.replace(/\r\n/g,'\n').replace(/\r/g,'\n').trim();
         showToast('PDF carregado!');
       } catch(err) {
         showToast('Erro ao ler PDF.');
@@ -1784,7 +1784,7 @@ function lerArquivoCifra(input) {
     reader.onload = async e => {
       try {
         const result = await mammoth.extractRawText({ arrayBuffer: e.target.result });
-        document.getElementById('cifra-input').value = result.value.trim();
+        document.getElementById('cifra-input').value = result.value.replace(/\r\n/g,'\n').replace(/\r/g,'\n').trim();
         showToast('Documento carregado!');
       } catch(err) {
         showToast('Erro ao ler documento Word.');
@@ -1796,7 +1796,7 @@ function lerArquivoCifra(input) {
     // TXT e outros — leitura simples
     const reader = new FileReader();
     reader.onload = e => {
-      document.getElementById('cifra-input').value = e.target.result;
+      document.getElementById('cifra-input').value = e.target.result.replace(/\r\n/g,'\n').replace(/\r/g,'\n');
       showToast('Arquivo carregado!');
     };
     reader.readAsText(file, 'UTF-8');
@@ -1804,7 +1804,7 @@ function lerArquivoCifra(input) {
 }
 
 function analisarCifra() {
-  const texto = document.getElementById('cifra-input').value.trim();
+  const texto = document.getElementById('cifra-input').value.replace(/\r\n/g,'\n').replace(/\r/g,'\n').trim();
   if (!texto) { showToast('Cola uma cifra ou abre um ficheiro.'); return; }
 
   document.getElementById('cifra-step-1').style.display = 'none';
@@ -1882,9 +1882,10 @@ function ehAcorde(tk) {
 }
 
 function ehLinhaDeAcordes(linha) {
-  const t = linha.trim();
+  // Normaliza tabs e espaços múltiplos
+  const t = linha.replace(/\t/g, ' ').trim();
   if (!t) return false;
-  const tokens = t.split(/\s+/);
+  const tokens = t.split(/\s+/).filter(Boolean);
   const n = tokens.filter(ehAcorde).length;
   if (n === 0) return false;
   const temLetra = tokens.some(tk => !ehAcorde(tk) && tk.length > 5 && /[aeiouáéíóú]{2,}/i.test(tk));
@@ -1912,7 +1913,7 @@ function encontrarPadrao(acordes) {
 function parsearCifra(texto) {
   // Remove secao de tablaturas/acordes no final
   const limpo = texto.replace(/[-=*]{3,}\s*[Aa]cordes\s*[-=*]{3,}[\s\S]*/i, '').trim();
-  const linhas = limpo.split('\n');
+  const linhas = limpo.replace(/\r\n/g, '\n').replace(/\r/g, '\n').split('\n');
 
   // ── Passo 1: coleta blocos separados por linha vazia ──────────────────
   const blocos = []; // { secao: string|null, acordes: string[] }
@@ -1938,7 +1939,7 @@ function parsearCifra(texto) {
 
     // Linha de acordes → acumula tokens
     if (ehLinhaDeAcordes(linha)) {
-      t.split(/\s+/).filter(ehAcorde).forEach(a => acordesAtual.push(a));
+      linha.replace(/\t/g,' ').trim().split(/\s+/).filter(Boolean).filter(ehAcorde).forEach(a => acordesAtual.push(a));
     }
     // Linha de letra → ignora mas NÃO quebra o bloco
   }
