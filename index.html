@@ -1674,83 +1674,151 @@ function analisarCifra() {
   const texto = document.getElementById('cifra-input').value.trim();
   if (!texto) { showToast('Cola uma cifra primeiro.'); return; }
 
-  cifraSecoes = parsearCifra(texto);
+  // Mostra loading
+  const btn = document.querySelector('#cifra-step-1 .modal-btn.primary');
+  btn.innerText = 'Analisando...';
+  btn.disabled = true;
 
-  if (cifraSecoes.length === 0) {
-    // Nenhuma secao detectada — trata tudo como uma unica parte
-    cifraSecoes = [{ titulo: 'CIFRA', conteudo: texto }];
-  }
+  fetch('https://api.anthropic.com/v1/messages', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      model: 'claude-sonnet-4-20250514',
+      max_tokens: 1000,
+      system: `Você é um parser de cifras musicais. Analise o texto e retorne SOMENTE um JSON válido no formato:
+{"secoes":[{"titulo":"NOME","conteudo":"linhas da seção"}]}
+Regras:
+- Detecte seções por marcadores como [Intro], [Verso], Verse, Chorus, etc.
+- Normalize títulos: Intro→INTRO, Verso/Verse→VERSO, Refrão/Chorus→REFRÃO, Ponte/Bridge→PONTE, Solo→SOLO, Final/Outro→FINAL, Pre-refrão→PRE-REFRÃO
+- Se não houver marcadores, divida por blocos separados por linha em branco, nomeando PARTE 1, PARTE 2, etc.
+- Preserve acordes e letras exatamente como estão
+- Não inclua o marcador de seção no conteúdo
+- Retorne APENAS o JSON, sem texto antes ou depois`,
+      messages: [{ role: 'user', content: texto }]
+    })
+  })
+  .then(r => r.json())
+  .then(data => {
+    btn.innerText = 'Analisar';
+    btn.disabled = false;
+    const raw = data.content?.[0]?.text || '';
+    let parsed;
+    try {
+      const clean = raw.replace(/```json|```/g, '').trim();
+      parsed = JSON.parse(clean);
+    } catch(e) {
+      showToast('Erro ao analisar. Tente novamente.');
+      return;
+    }
 
-  // Mostra preview
-  const preview = document.getElementById('cifra-preview');
-  document.getElementById('cifra-preview-label').innerText =
-    cifraSecoes.length + ' secao(oes) detectada(s)';
+    cifraSecoes = parsed.secoes || [];
+    if (!cifraSecoes.length) {
+      cifraSecoes = [{ titulo: 'CIFRA', conteudo: texto }];
+    }
 
-  preview.innerHTML = cifraSecoes.map(s => `
-    <div class="preview-section">
-      <div class="preview-section-title">${s.titulo}</div>
-      <div class="preview-section-content">${escapeHtml(s.conteudo.trim())}</div>
-    </div>`).join('');
+    const preview = document.getElementById('cifra-preview');
+    document.getElementById('cifra-preview-label').innerText =
+      cifraSecoes.length + ' seção(ões) detectada(s)';
 
-  document.getElementById('cifra-step-1').style.display = 'none';
-  document.getElementById('cifra-step-2').style.display = 'block';
+    preview.innerHTML = cifraSecoes.map(s => `
+      <div class="preview-section">
+        <div class="preview-section-title">${s.titulo}</div>
+        <div class="preview-section-content">${escapeHtml(s.conteudo.trim())}</div>
+      </div>`).join('');
+
+    document.getElementById('cifra-step-1').style.display = 'none';
+    document.getElementById('cifra-step-2').style.display = 'block';
+  })
+  .catch(() => {
+    btn.innerText = 'Analisar';
+    btn.disabled = false;
+    // Fallback: parser local
+    cifraSecoes = parsearCifraLocal(texto);
+    if (!cifraSecoes.length) cifraSecoes = [{ titulo: 'CIFRA', conteudo: texto }];
+
+    const preview = document.getElementById('cifra-preview');
+    document.getElementById('cifra-preview-label').innerText =
+      cifraSecoes.length + ' seção(ões) detectada(s)';
+    preview.innerHTML = cifraSecoes.map(s => `
+      <div class="preview-section">
+        <div class="preview-section-title">${s.titulo}</div>
+        <div class="preview-section-content">${escapeHtml(s.conteudo.trim())}</div>
+      </div>`).join('');
+    document.getElementById('cifra-step-1').style.display = 'none';
+    document.getElementById('cifra-step-2').style.display = 'block';
+  });
 }
 
-function parsearCifra(texto) {
+function parsearCifraLocal(texto) {
+  // Parser local de fallback — divide por blocos vazios se não houver marcadores
   const linhas = texto.split('\n');
   const secoes = [];
   let secaoAtual = null;
   let conteudoAtual = [];
 
-  // Mapa de nomes padronizados
   const NOMES = {
     'intro': 'INTRO', 'verse': 'VERSO', 'verso': 'VERSO', 'versa': 'VERSO',
-    'chorus': 'REFRÃO', 'refrao': 'REFRÃO', 'refrão': 'REFRÃO', 'refrão': 'REFRÃO',
-    'bridge': 'PONTE', 'ponte': 'PONTE',
-    'solo': 'SOLO', 'final': 'FINAL', 'coda': 'FINAL', 'outro': 'FINAL',
-    'pre-refrão': 'PRE-REFRÃO', 'pre-refrao': 'PRE-REFRÃO',
-    'pre chorus': 'PRE-REFRÃO', 'prechorus': 'PRE-REFRÃO',
+    'chorus': 'REFRÃO', 'refrao': 'REFRÃO', 'refrão': 'REFRÃO',
+    'bridge': 'PONTE', 'ponte': 'PONTE', 'solo': 'SOLO',
+    'final': 'FINAL', 'coda': 'FINAL', 'outro': 'FINAL',
+    'pre-refrão': 'PRE-REFRÃO', 'pre chorus': 'PRE-REFRÃO',
   };
 
   function normalizarTitulo(raw) {
     const limpo = raw.replace(/[\[\]]/g, '').trim();
-    const chave = limpo.toLowerCase().replace(/[áàãâ]/g,'a').replace(/[éê]/g,'e').replace(/[ó]/g,'o').replace(/[\s-]+/g,' ');
+    const chave = limpo.toLowerCase()
+      .replace(/[áàãâ]/g,'a').replace(/[éê]/g,'e').replace(/[ó]/g,'o')
+      .replace(/[\s-]+/g,' ');
     return NOMES[chave] || limpo.toUpperCase();
   }
 
-  function salvarSecao() {
+  function salvar() {
     if (secaoAtual !== null) {
-      const conteudo = conteudoAtual.join('\n').trim();
-      if (conteudo) secoes.push({ titulo: secaoAtual, conteudo });
+      const c = conteudoAtual.join('\n').trim();
+      if (c) secoes.push({ titulo: secaoAtual, conteudo: c });
     }
   }
+
+  let blocoIdx = 0;
+  let emBloco = false;
 
   for (const linha of linhas) {
-    const trimmed = linha.trim();
-
-    // Detecta marcador de secao
-    const match = trimmed.match(/^\[(.+?)\]/) ||
-                  trimmed.match(/^(intro|vers[oa]|refr[aã]o|ponte|bridge|solo|final|pre.?refr[aã]o|coda|outro|chorus|verse|pre.?chorus)[\s:.]*$/i);
+    const t = linha.trim();
+    const match = t.match(/^\[(.+?)\]/) ||
+      t.match(/^(intro|vers[oa]|refr[aã]o|ponte|bridge|solo|final|pre.?refr[aã]o|coda|outro|chorus|verse|pre.?chorus)[\s:.]*$/i);
 
     if (match) {
-      salvarSecao();
+      salvar();
       secaoAtual = normalizarTitulo(match[0]);
       conteudoAtual = [];
-    } else {
-      if (secaoAtual === null) {
-        // Texto antes de qualquer secao — cria secao generica
-        if (trimmed) {
-          if (!secaoAtual) { secaoAtual = 'INTRO'; conteudoAtual = []; }
-          conteudoAtual.push(linha);
-        }
-      } else {
-        conteudoAtual.push(linha);
+      emBloco = false;
+    } else if (!t && secaoAtual === null) {
+      // linha vazia sem marcador — separa blocos
+      if (emBloco) {
+        salvar();
+        secaoAtual = null;
+        conteudoAtual = [];
+        emBloco = false;
+        blocoIdx++;
       }
+    } else if (t) {
+      if (secaoAtual === null) {
+        blocoIdx++;
+        secaoAtual = blocoIdx === 1 ? 'INTRO' : 'PARTE ' + blocoIdx;
+        conteudoAtual = [];
+        emBloco = true;
+      }
+      conteudoAtual.push(linha);
+    } else {
+      conteudoAtual.push(linha);
     }
   }
-  salvarSecao();
+  salvar();
   return secoes;
 }
+
+function parsearCifra(texto) { return parsearCifraLocal(texto); }
+
 
 function aplicarCifra() {
   if (!cifraSecoes.length) return;
