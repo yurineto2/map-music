@@ -1835,15 +1835,22 @@ function ehLinhaDeAcordes(linha) {
   return !temLetra && (n / tokens.length) >= 0.45;
 }
 
+// Comprime consecutivos iguais: [A,A,A,B,B] → [A,B]
+function comprimir(acordes) {
+  return acordes.filter((a, i) => i === 0 || a !== acordes[i-1]);
+}
+
 // Encontra o menor padrão que se repete no array
 function encontrarPadrao(acordes) {
   if (!acordes.length) return [];
-  for (let l = 1; l <= Math.floor(acordes.length / 2); l++) {
-    const cand = acordes.slice(0, l);
-    if (acordes.every((a, i) => a === cand[i % l])) return cand;
+  // Comprime antes para detectar padrão mesmo com acordes repetidos por sílaba
+  const ac = comprimir(acordes);
+  for (let l = 1; l <= Math.floor(ac.length / 2); l++) {
+    const cand = ac.slice(0, l);
+    if (ac.every((a, i) => a === cand[i % l])) return cand;
   }
-  // Sem padrão exato — remove duplicados mantendo ordem
-  return [...new Map(acordes.map(a => [a, a])).values()];
+  // Sem padrão exato — retorna únicos mantendo ordem
+  return [...new Map(ac.map(a => [a, a])).values()];
 }
 
 function parsearCifra(texto) {
