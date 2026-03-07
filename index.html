@@ -601,7 +601,7 @@ body.viewer-mode input[type="text"] { pointer-events: none; }
       </div>
       <div class="logo-text">
         <span class="logo-name">Map Music <span>Pro</span></span>
-        <span class="logo-tag">Elite Edition · v4</span>
+        <span class="logo-tag">Elite Edition · v14</span>
       </div>
     </div>
     <div style="display:flex; align-items:center; gap:12px;">
@@ -1808,10 +1808,25 @@ function lerArquivoCifra(input) {
         // Detecta cor de acorde (Cifra Club usa laranja para acordes)
         function isChordColor(color) {
           if (color === undefined || color === null) return false;
-          const r = (color >> 16) & 0xFF;
-          const g = (color >> 8)  & 0xFF;
-          const b =  color        & 0xFF;
+          // PDF.js item.color é array [r,g,b] 0-255 OU inteiro packed 0xRRGGBB
+          let r, g, b;
+          if (Array.isArray(color)) {
+            [r, g, b] = color;
+          } else {
+            r = (color >> 16) & 0xFF;
+            g = (color >> 8)  & 0xFF;
+            b =  color        & 0xFF;
+          }
           return r > 180 && g > 50 && g < 180 && b < 60;
+        }
+
+        // Verifica se uma string é linha de acordes por regex
+        function ehLinhaDeAcordesPDF(str) {
+          const tokens = str.trim().split(/\s+/).filter(Boolean);
+          if (!tokens.length) return false;
+          const ehAcTk = tk => /^[A-G][#b]?(m(?:aj)?7?|min7?|sus[24]?|dim7?|aug|add\d{1,2}|M7?|\d+)?(\/[A-G][#b]?)?$/.test(tk) && tk.length <= 6;
+          const nAcorde = tokens.filter(ehAcTk).length;
+          return nAcorde >= 1 && (nAcorde / tokens.length) >= 0.45;
         }
 
         for (let i = 1; i <= pdf.numPages; i++) {
@@ -1822,61 +1837,92 @@ function lerArquivoCifra(input) {
           const temCores = content.items.some(it => isChordColor(it.color));
 
           if (temCores) {
-            // Agrupa por Y mantendo flag isChord
-            const linhasMap = new Map();
+            // Modo Cifra Club: agrupa por Y±2px, insere linha vazia em gap Y > 25px
+            const spans = [];
             for (const item of content.items) {
               if (!item.str.trim()) continue;
-              const y = Math.round(item.transform[5]);
-              if (!linhasMap.has(y)) linhasMap.set(y, []);
-              linhasMap.get(y).push({
-                x: item.transform[4],
-                str: item.str,
-                isChord: isChordColor(item.color)
-              });
+              spans.push({ x: item.transform[4], y: item.transform[5], str: item.str.trim(), isOrange: isChordColor(item.color) });
+            }
+            spans.sort((a, b) => b.y - a.y || a.x - b.x);
+
+            const linhas = [];
+            for (const sp of spans) {
+              const ult = linhas[linhas.length - 1];
+              if (ult && Math.abs(ult.y - sp.y) <= 2) {
+                ult.tokens.push(sp);
+              } else {
+                linhas.push({ y: sp.y, tokens: [sp] });
+              }
             }
 
-            const linhasOrdenadas = [...linhasMap.entries()].sort((a, b) => b[0] - a[0]);
+            let prevY = null;
+            for (const linha of linhas) {
+              linha.tokens.sort((a, b) => a.x - b.x);
+              const textoLinha = linha.tokens.map(s => s.str).join(' ').trim();
 
-            for (const [, spans] of linhasOrdenadas) {
-              spans.sort((a, b) => a.x - b.x);
-              const acordesSpans = spans.filter(s => s.isChord);
-              const letraSpans   = spans.filter(s => !s.isChord);
-              const acordesStr   = acordesSpans.map(s => s.str.trim()).join('  ').trim();
-              const letraStr     = letraSpans.map(s => s.str).join('').trim();
-              // Filtra ruído: diagramas, afinação, números de casa
-              const isRuido = /^[EADGBx×●○•\s\d\-ª]+$/.test(letraStr) && letraStr.length < 25;
-              if (acordesStr && !isRuido) textoTotal += acordesStr + '\n';
-              if (letraStr   && !isRuido) textoTotal += letraStr   + '\n';
-              if (!acordesStr && !letraStr) textoTotal += '\n';
+              // Filtra metadados e afinação
+              if (/^(Afina[çc]|Tunin|Capot|Capo|Tom[: ]|Compos)/i.test(textoLinha)) { prevY = linha.y; continue; }
+              if (/^[EADGB]( [EADGB]){4,}$/.test(textoLinha)) { prevY = linha.y; continue; }
+
+              // Gap Y > 25px = parágrafo novo → linha vazia
+              if (prevY !== null && (prevY - linha.y) > 25) {
+                textoTotal += '\n';
+              }
+
+              const temLaranja = linha.tokens.some(s => s.isOrange);
+              if (temLaranja) {
+                const acordesStr = linha.tokens.filter(s => s.isOrange).map(s => s.str).join(' ').trim();
+                const letraStr   = linha.tokens.filter(s => !s.isOrange).map(s => s.str).join(' ').trim();
+                if (acordesStr) textoTotal += acordesStr + '\n';
+                if (letraStr)   textoTotal += letraStr   + '\n';
+              } else {
+                textoTotal += textoLinha + '\n';
+              }
+              prevY = linha.y;
             }
             textoTotal += '\n';
 
           } else {
-            // Modo genérico: agrupa por Y e junta por X
-            const linhasMap = new Map();
+            // Modo genérico: agrupa por Y com tolerância ±3px e ordena X crescente
+            const spans = [];
             for (const item of content.items) {
               if (!item.str.trim()) continue;
-              const y = Math.round(item.transform[5]);
-              if (!linhasMap.has(y)) linhasMap.set(y, []);
-              linhasMap.get(y).push({ x: item.transform[4], str: item.str });
+              spans.push({ x: item.transform[4], y: item.transform[5], str: item.str });
             }
-            const linhasOrdenadas = [...linhasMap.entries()]
-              .sort((a, b) => b[0] - a[0])
-              .map(([, items]) =>
-                items.sort((a,b) => a.x - b.x).map(it => it.str).join(' ').trim()
-              )
+            // Ordena por Y decrescente (topo da página primeiro), depois X crescente
+            spans.sort((a, b) => b.y - a.y || a.x - b.x);
+
+            // Agrupa spans na mesma linha (tolerância ±3px em Y)
+            const linhasAgrupadas = [];
+            for (const sp of spans) {
+              const ultima = linhasAgrupadas[linhasAgrupadas.length - 1];
+              if (ultima && Math.abs(ultima.y - sp.y) <= 3) {
+                ultima.tokens.push(sp);
+              } else {
+                linhasAgrupadas.push({ y: sp.y, tokens: [sp] });
+              }
+            }
+            const linhasOrdenadas = linhasAgrupadas
+              .map(l => l.tokens.sort((a,b) => a.x - b.x).map(t => t.str).join(' ').trim())
               .filter(l => l.length > 0);
 
-            // Fallback: separa linhas mistas (acorde + letra juntos) por regex
+            // Fallback: separa linhas mistas e filtra ruído de diagramas/afinação
+            const NOTAS_AFINACAO = new Set(['E','A','D','G','B']);
             const linhasFinal = [];
             for (const linha of linhasOrdenadas) {
-              // Detecta se a linha tem mix: começa com acorde mas tem texto com vogal
               const tokens = linha.split(/\s+/).filter(Boolean);
               const ehAcordeTk = tk => /^[A-G][#b]?(m(?:aj)?7?|min7?|sus[24]?|dim7?|aug|add\d{1,2}|M7?|\d+)?(\/[A-G][#b]?)?$/.test(tk) && tk.length <= 6;
+
+              // Filtra linha de afinação: só letras EADGB e símbolos de tablatura
+              const soAfinacao = tokens.every(tk => NOTAS_AFINACAO.has(tk) || /^[x×●○•\dXoª\-]+$/.test(tk));
+              if (soAfinacao && tokens.length <= 8) continue;
+
+              // Filtra metadados do PDF
+              if (/^(Afina[çc]|Tunin|Capot|Capo|Tom:|Compos)/i.test(linha)) continue;
+
               const acordes = tokens.filter(ehAcordeTk);
               const naoAcordes = tokens.filter(t => !ehAcordeTk(t) && t.length > 2 && /[aeiouáéíóú]/i.test(t));
               if (acordes.length > 0 && naoAcordes.length > 0) {
-                // Linha mista — separa
                 linhasFinal.push(acordes.join('  '));
                 linhasFinal.push(naoAcordes.join(' '));
               } else {
@@ -2017,8 +2063,8 @@ function ehLinhaDeAcordes(linha) {
   );
   if (temLetra) return false;
 
-  // Rejeita acorde único de 1 caractere sozinho
-  if (n === 1 && tokens.length === 1 && acordes[0].length === 1) return false;
+  // Rejeita A e E sozinhos (são palavras em português), mas B/C/D/F/G sozinhos são acordes válidos
+  if (n === 1 && tokens.length === 1 && acordes[0].length === 1 && /^[AE]$/.test(acordes[0])) return false;
 
   // Rejeita linhas com 4+ cordas soltas de guitarra (ruído de PDF)
   const letrasSimples = acordes.filter(a => /^[A-G]$/.test(a));
@@ -2061,24 +2107,21 @@ function parsearCifra(texto) {
   const linhas = limpo.split('\n');
   const blocos = [];
 
-  // Passo 1 — sem função interna, sem closure
+  // Passo 1 — flush só em linha vazia, marcador de seção, ou fim
   let bSecao  = null;
   let bAcordes = [];
 
   for (let li = 0; li <= linhas.length; li++) {
-    // Sentinel: última iteração faz flush final
     const linha = li < linhas.length ? linhas[li] : '';
     const t = linha.trim();
-
     const sec = identificarSecao(linha);
 
-    // Flush quando: linha vazia, marcador de seção, ou fim do array
     if (!t || sec !== null || li === linhas.length) {
       if (bAcordes.length > 0) {
         blocos.push({ secao: bSecao, acordes: bAcordes.slice() });
       }
       bAcordes = [];
-      bSecao   = sec !== null ? sec : null;
+      bSecao = sec !== null ? sec : null;
       continue;
     }
 
