@@ -744,6 +744,10 @@ body.viewer-mode input[type="text"] { pointer-events: none; }
         <button onclick="transposeAll(1)" style="background:none; border:none; color:#fff; cursor:pointer; font-size:18px;">+</button>
       </div>
       <button onclick="addPart()" style="background:var(--bg-tertiary); border:1px solid var(--border-color); color:#fff; padding:10px 20px; border-radius:50px; cursor:pointer; font-size:11px; font-weight:800;">+ PARTE</button>
+      <div id="tom-original-badge" style="display:none; margin-left:auto; background:var(--bg-tertiary); border:1px solid rgba(29,185,84,0.25); border-radius:50px; padding:7px 16px; flex-direction:column; align-items:center; gap:1px;">
+        <span style="font-size:8px; font-weight:700; letter-spacing:2px; color:rgba(255,255,255,0.35); text-transform:uppercase;">Tom original</span>
+        <span id="tom-original-val" style="font-size:14px; font-weight:900; color:var(--accent-primary); line-height:1;">—</span>
+      </div>
     </div>
     <div class="section-grid" id="notes-grid"></div>
   </main>
@@ -1100,6 +1104,9 @@ function resetSection() {
     if (isPlaying) togglePlay();
     // Reset tom
     document.getElementById('trans-val').innerText = 0;
+    // Esconde badge de tom original
+    document.getElementById('tom-original-badge').style.display = 'none';
+    document.getElementById('tom-original-val').innerText = '—';
     // Reset teleprompter
     stopScroll();
     // Reset índice de música
@@ -1166,81 +1173,106 @@ function adj(v) {
 // ─── CAMPO HARMONICO ──────────────────────────────────────────────────────
 
 // Escalas maiores: I  ii  iii IV  V   vi  vii°
-const MAJOR_SCALE_STEPS = [0, 2, 4, 5, 7, 9, 11];
-const MAJOR_QUALITIES   = ['', 'm', 'm', '', '', 'm', ''];  // vii° não leva 'm'
-const DEGREES           = ['I', 'ii', 'iii', 'IV', 'V', 'vi', 'vii°'];
+// ── Teoria musical: escalas e qualidades ──────────────────────────────────
+// Maior:        I    ii   iii   IV    V    vi   vii°
+const MAJOR_SCALE_STEPS = [0,   2,   4,   5,   7,   9,   11];
+const MAJOR_QUALITIES   = ['',  'm', 'm', '',  '',  'm', 'dim'];
+const DEGREES           = ['I', 'ii','iii','IV','V', 'vi','vii°'];
 
-// Escalas menores naturais: i  ii°  III  iv  v  VI  VII
-const MINOR_SCALE_STEPS = [0, 2, 3, 5, 7, 8, 10];
-const MINOR_QUALITIES   = ['m', '', '', 'm', 'm', '', ''];  // ii° não leva 'm', III/VI/VII maiores
-const MINOR_DEGREES     = ['i', 'ii°', 'III', 'iv', 'v', 'VI', 'VII'];
+// Menor natural: i    ii°   III   iv    v    VI   VII
+const MINOR_SCALE_STEPS = [0,   2,   3,   5,   7,   8,   10];
+const MINOR_QUALITIES   = ['m','dim','',  'm', 'm', '',  ''];
+const MINOR_DEGREES     = ['i','ii°','III','iv','v', 'VI','VII'];
 
-// Nomes preferidos para exibição (bemóis em contextos menores, sustenidos nos maiores)
-const SHARP_TO_FLAT = { 'C#':'Db', 'D#':'Eb', 'F#':'Gb', 'G#':'Ab', 'A#':'Bb' };
+const SHARP_TO_FLAT = { 'C#':'Db','D#':'Eb','F#':'Gb','G#':'Ab','A#':'Bb' };
+
+// Pré-calcula os 24 campos (12 maior + 12 menor) para lookup O(1)
+const CAMPOS_SET = {};
+for (let i = 0; i < 12; i++) {
+  const t = notesArr[i];
+  CAMPOS_SET[t]       = new Set(MAJOR_SCALE_STEPS.map((s,j) => notesArr[(i+s)%12] + MAJOR_QUALITIES[j]));
+  CAMPOS_SET[t + 'm'] = new Set(MINOR_SCALE_STEPS.map((s,j) => notesArr[(i+s)%12] + MINOR_QUALITIES[j]));
+}
 
 let harmonicDebounce = null;
 let activeTextarea = null;
 
-// Normaliza qualquer acorde para a forma com sustenido para comparação interna
 function normalizarAcorde(acorde) {
   return acorde
     .replace(/Db/g,'C#').replace(/Eb/g,'D#').replace(/Gb/g,'F#')
     .replace(/Ab/g,'G#').replace(/Bb/g,'A#');
 }
 
-// Extrai apenas acordes reais — evita apanhar letras dentro de palavras
-// Formato aceite: C, Cm, C#, C#m, Db, Dbm
 function extrairAcordes(text) {
-  // Usa lookahead para garantir que não é seguido por letra minúscula (ex: "maj", "sus", nomes)
-  const regex = /(?<![A-Za-z])([A-G][#b]?m?)(?![a-z])/g;
+  const regex = /(?<![A-Za-z])([A-G][#b]?(?:m(?:aj)?7?|dim7?|aug|sus[24]?|add\d{1,2}|M7?|\d+)?)(?![a-z])/g;
   const matches = [];
   let m;
   while ((m = regex.exec(text)) !== null) {
-    matches.push(normalizarAcorde(m[1]));
+    // Normaliza para comparação interna (usa sustenidos)
+    // Mas guarda só a raiz+qualidade básica (m ou nada) para o campo harmônico
+    const raw = m[1];
+    const raiz = normalizarAcorde(raw.match(/^[A-G][#b]?/)[0]);
+    const ehMenor = /m/.test(raw.replace(/^[A-G][#b]?/,'').split('')[0] || '');
+    matches.push(raiz + (ehMenor ? 'm' : ''));
   }
   return matches;
 }
 
-// Detecta a tonalidade mais provável pelos acordes encontrados
+// ── Detecção de tonalidade — algoritmo clínico ─────────────────────────────
 function detectarTonalidade(acordes) {
   if (!acordes.length) return null;
 
-  // Remove duplicatas
-  const unicos = [...new Set(acordes)];
+  // Conta frequência de cada acorde (acordes que aparecem mais pesam mais)
+  const freq = {};
+  acordes.forEach(a => { freq[a] = (freq[a] || 0) + 1; });
+  const unicos = Object.keys(freq);
+  const total = acordes.length;
 
-  let melhorPontuacao = -1;
-  let melhorTom = null;
-  let melhorMenor = false;
+  let melhor = null;
+  let melhorPts = -1;
 
   for (let i = 0; i < 12; i++) {
-    const tonica = notesArr[i];
+    const t = notesArr[i];
 
-    // Testa maior
-    const diatMaj = MAJOR_SCALE_STEPS.map((s, idx) =>
-      notesArr[(i + s) % 12] + MAJOR_QUALITIES[idx]
-    );
-    let pontos = 0;
-    unicos.forEach(a => { if (diatMaj.includes(a)) pontos++; });
-    // Bônus se a tônica maior aparecer
-    if (unicos.includes(tonica)) pontos += 0.5;
-    if (pontos > melhorPontuacao) {
-      melhorPontuacao = pontos; melhorTom = tonica; melhorMenor = false;
-    }
+    for (const [sufixo, steps, quals] of [
+      ['',  MAJOR_SCALE_STEPS, MAJOR_QUALITIES],
+      ['m', MINOR_SCALE_STEPS, MINOR_QUALITIES],
+    ]) {
+      const campo = steps.map((s,j) => notesArr[(i+s)%12] + quals[j]);
+      const campoSet = new Set(campo);
+      const chave = t + sufixo;
 
-    // Testa menor
-    const diatMin = MINOR_SCALE_STEPS.map((s, idx) =>
-      notesArr[(i + s) % 12] + MINOR_QUALITIES[idx]
-    );
-    pontos = 0;
-    unicos.forEach(a => { if (diatMin.includes(a)) pontos++; });
-    // Bônus se a tônica menor aparecer
-    if (unicos.includes(tonica + 'm')) pontos += 0.5;
-    if (pontos > melhorPontuacao) {
-      melhorPontuacao = pontos; melhorTom = tonica; melhorMenor = true;
+      // Pontuação base: soma freq de cada acorde diatônico
+      let pts = 0;
+      unicos.forEach(a => {
+        if (campoSet.has(a)) pts += freq[a];
+      });
+
+      // Normaliza pela quantidade total de acordes (0 a 1)
+      let score = pts / total;
+
+      // Bônus forte: tônica aparece na música
+      if (freq[t + sufixo]) score += 0.4;
+
+      // Bônus: dominante (V maior) aparece — forte indicador tonal
+      const dominante = campo[4]; // grau V
+      if (freq[dominante]) score += 0.25;
+
+      // Bônus: primeiro acorde da música coincide com a tônica
+      if (acordes[0] === t + sufixo) score += 0.2;
+
+      // Penalidade: acordes fora do campo (cromatismo/modulação)
+      const foraCount = unicos.filter(a => !campoSet.has(a)).reduce((s,a) => s + freq[a], 0);
+      score -= (foraCount / total) * 0.3;
+
+      if (score > melhorPts) {
+        melhorPts = score;
+        melhor = { tonica: t, menor: sufixo === 'm' };
+      }
     }
   }
 
-  return melhorPontuacao > 0 ? { tonica: melhorTom, menor: melhorMenor } : null;
+  return melhorPts > 0 ? melhor : null;
 }
 
 // Converte nota interna (C#) para exibição amigável
@@ -1923,19 +1955,19 @@ function ehLinhaDeAcordes(linha) {
 
   // Rejeita se tiver palavras longas com vogais (letra de música)
   const temLetra = tokens.some(tk =>
-    !ehAcorde(tk) && tk.length > 4 && /[aeiouáéíóú]{2,}/i.test(tk)
+    !ehAcorde(tk) && tk.length > 3 && /[aeiouáéíóú]/i.test(tk)
   );
   if (temLetra) return false;
 
-  // Rejeita acorde único de letra simples sozinho na linha
+  // Rejeita acorde único de 1 caractere sozinho
   if (n === 1 && tokens.length === 1 && acordes[0].length === 1) return false;
 
-  // Rejeita linhas com 4+ notas que são cordas soltas do violão/guitarra
-  // (ruído de PDF que extrai afinação ou tablatura como texto)
+  // Rejeita linhas com 4+ cordas soltas de guitarra (ruído de PDF)
   const letrasSimples = acordes.filter(a => /^[A-G]$/.test(a));
   const cordasPresentes = letrasSimples.filter(a => CORDAS_GUITARRA.has(a));
   if (cordasPresentes.length >= 4) return false;
 
+  // Mínimo 45% de tokens sendo acordes
   return (n / tokens.length) >= 0.45;
 }
 
@@ -1947,14 +1979,20 @@ function comprimir(acordes) {
 // Encontra o menor padrão que se repete no array
 function encontrarPadrao(acordes) {
   if (!acordes.length) return [];
-  // Comprime antes para detectar padrão mesmo com acordes repetidos por sílaba
+  // Comprime consecutivos iguais: [A,A,B,B] → [A,B]
   const ac = comprimir(acordes);
+  // Tenta encontrar padrão repetido exato
   for (let l = 1; l <= Math.floor(ac.length / 2); l++) {
     const cand = ac.slice(0, l);
-    if (ac.every((a, i) => a === cand[i % l])) return cand;
+    if (ac.every((a, i) => a === cand[i % l])) {
+      // Deduplica o padrão encontrado (mantém primeira aparição)
+      const vistos = new Set();
+      return cand.filter(a => { if (vistos.has(a)) return false; vistos.add(a); return true; });
+    }
   }
-  // Sem padrão exato — retorna únicos mantendo ordem
-  return [...new Map(ac.map(a => [a, a])).values()];
+  // Sem padrão exato — remove duplicados mantendo ordem de primeira aparição
+  const vistos = new Set();
+  return ac.filter(a => { if (vistos.has(a)) return false; vistos.add(a); return true; });
 }
 
 function parsearCifra(texto) {
@@ -2000,36 +2038,82 @@ function parsearCifra(texto) {
     return { secao: b.secao, padrao, chave };
   }).filter(b => b.padrao.length > 0);
 
-  // ── Passo 3: atribui nomes automáticos por padrão harmônico ──────────
-  const padroesVistos = new Map(); // chave → nome
-  let autoIdx = 0;
+  // ── Passo 3: nomeia por frequência ────────────────────────────────────
+
+  // Conta ocorrências de cada padrão
+  const contagemPadrao = new Map();
+  blocsComPadrao.forEach(b =>
+    contagemPadrao.set(b.chave, (contagemPadrao.get(b.chave) || 0) + 1)
+  );
+
+  // Ordena chaves: primeiro por frequência decrescente,
+  // desempate pela primeira aparição na música (índice menor = aparece antes)
+  const primeiraAparicao = new Map();
+  blocsComPadrao.forEach((b, i) => {
+    if (!primeiraAparicao.has(b.chave)) primeiraAparicao.set(b.chave, i);
+  });
+
+  const porFreq = [...contagemPadrao.entries()]
+    .sort((a, b) => {
+      if (b[1] !== a[1]) return b[1] - a[1]; // mais frequente primeiro
+      return primeiraAparicao.get(a[0]) - primeiraAparicao.get(b[0]); // empate: aparece antes
+    })
+    .map(([chave]) => chave);
+
+  // Nomes por rank de frequência (rank 0 = mais frequente):
+  // rank 0 = PONTE, rank 1 = REFRÃO, rank 2 = PRÉ-REFRÃO, rank 3+ = VERSO
+  // VERSO 2/3 só existem se o padrão for harmonicamente diferente do VERSO 1
+  const NOMES_RANK = ['PONTE', 'REFRÃO', 'PRÉ-REFRÃO', 'VERSO', 'VERSO 2', 'VERSO 3'];
+  // Ajuste para músicas com poucos padrões
+  const MAPA_N = {
+    1: ['VERSO'],
+    2: ['REFRÃO', 'VERSO'],
+    3: ['PONTE', 'REFRÃO', 'VERSO'],
+  };
+  const nomesBase = MAPA_N[porFreq.length] || NOMES_RANK;
+
+  const nomesPorChave = new Map();
+  let versoCount = 0;
+  porFreq.forEach((chave, rank) => {
+    let nome = nomesBase[rank] || ('PARTE ' + (rank + 1));
+    // VERSO 2/3: só se o padrão for realmente diferente dos outros versos
+    // (já garantido pois cada chave é única — padrões iguais nunca chegam aqui como chaves separadas)
+    // Não cria VERSO 2 automaticamente — só se vier marcador explícito na cifra
+    if (nome === 'VERSO 2' || nome === 'VERSO 3') nome = 'VERSO';
+    nomesPorChave.set(chave, nome);
+  });
+
+  // Aplica nomes — marcadores explícitos da cifra têm prioridade
+  // Coleta todos os nomes únicos em ordem de primeira aparição
+  const nomeVistos = new Set();
   const resultado = [];
 
-  for (const bloco of blocsComPadrao) {
-    let nome = bloco.secao;
+  blocsComPadrao.forEach(bloco => {
+    let nome = bloco.secao || nomesPorChave.get(bloco.chave) || 'PARTE';
+    if (bloco.secao) nomesPorChave.set(bloco.chave, bloco.secao);
+    if (nomeVistos.has(nome)) return; // cada seção aparece só 1x no resultado
+    nomeVistos.add(nome);
+    resultado.push({ titulo: nome, conteudo: bloco.padrao.join('  ') });
+  });
 
-    if (!nome) {
-      // Sem marcador explícito — reutiliza nome se mesmo padrão já foi visto
-      if (padroesVistos.has(bloco.chave)) {
-        nome = padroesVistos.get(bloco.chave);
-      } else {
-        // Novo padrão → próximo nome automático
-        nome = NOMES_AUTO[autoIdx] || ('PARTE ' + (autoIdx + 1));
-        autoIdx++;
-        padroesVistos.set(bloco.chave, nome);
-      }
-    } else {
-      // Marcador explícito → regista o padrão com esse nome
-      if (!padroesVistos.has(bloco.chave)) {
-        padroesVistos.set(bloco.chave, nome);
-      }
-    }
+  // ── Passo 4: reordena pelo padrão musical correto ─────────────────────
+  // Estrutura: INTRO → VERSO → VERSO 2 (só se marcador explícito) → PRÉ-REFRÃO → REFRÃO → INSTRUMENTAL → PONTE → FINAL
+  const ORDEM_MUSICAL = [
+    'INTRO', 'VERSO', 'VERSO 2', 'VERSO 3',
+    'PRÉ-REFRÃO', 'REFRÃO',
+    'INSTRUMENTAL', 'SOLO',
+    'PONTE', 'FINAL'
+  ];
 
-    const conteudo = bloco.padrao.join('  ');
-    // Não adiciona seção que já existe (mesmo nome, qualquer posição)
-    if (resultado.some(s => s.titulo === nome)) continue;
-    resultado.push({ titulo: nome, conteudo });
-  }
+  resultado.sort((a, b) => {
+    const ia = ORDEM_MUSICAL.indexOf(a.titulo);
+    const ib = ORDEM_MUSICAL.indexOf(b.titulo);
+    // Seções não mapeadas ficam no final na ordem original
+    if (ia === -1 && ib === -1) return 0;
+    if (ia === -1) return 1;
+    if (ib === -1) return -1;
+    return ia - ib;
+  });
 
   return resultado;
 }
@@ -2038,6 +2122,25 @@ function aplicarCifra() {
   if (!cifraSecoes.length) return;
   document.getElementById('notes-grid').innerHTML = '';
   cifraSecoes.forEach(s => addPart(s.titulo, s.conteudo.trim()));
+
+  // Detecta tom original da cifra e exibe no badge
+  const todosAcordes = cifraSecoes.flatMap(s =>
+    s.conteudo.trim().split(/\s+/).filter(ehAcorde)
+  );
+  const tonalidade = detectarTonalidade(todosAcordes.map(normalizarAcorde));
+  const badge = document.getElementById('tom-original-badge');
+  const valEl = document.getElementById('tom-original-val');
+  if (tonalidade) {
+    const label = tonalidade.tonica + (tonalidade.menor ? 'm' : '');
+    valEl.innerText = label;
+    badge.style.display = 'flex';
+  } else {
+    badge.style.display = 'none';
+  }
+
+  // Reset transposição ao carregar nova cifra
+  document.getElementById('trans-val').innerText = 0;
+
   fecharModalCifra();
   broadcastEstado();
   showToast(cifraSecoes.length + ' seções carregadas!');
