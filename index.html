@@ -2081,21 +2081,60 @@ function criarSala() {
       guestConns.push(conn);
       conn.on('open', () => {
         atualizarSyncBar();
-        // Envia estado atual para o novo viewer
         conn.send({ type: 'state', payload: capturarEstado() });
-        // Notifica todos os outros viewers sobre nova contagem
         broadcastEstado();
-        showToast('Musico conectado!');
+        // Nome provisório até receber 'join'
+        conn._nomePeer = 'Músico';
+      });
+      conn.on('data', dados => {
+        if (dados.type === 'join') {
+          conn._nomePeer = dados.nome || 'Músico';
+          showToast(conn._nomePeer + ' entrou na sala');
+          adicionarNotif('event',
+            conn._nomePeer + ' entrou na sala',
+            'Código ' + myRoomCode + ' · ' + (1 + guestConns.length) + ' online',
+            'join_' + conn.peer + '_' + Date.now()
+          );
+          broadcastEstado();
+        } else if (dados.type === 'leave') {
+          conn._left = true;
+          const nome = dados.nome || conn._nomePeer || 'Músico';
+          showToast(nome + ' saiu da sala');
+          adicionarNotif('alert',
+            nome + ' saiu da sala',
+            'Código ' + myRoomCode + ' · ' + Math.max(0, guestConns.length - 1) + ' online',
+            'leave_' + conn.peer + '_' + Date.now()
+          );
+        }
       });
       conn.on('close', () => {
+        const nome = conn._nomePeer || 'Músico';
         guestConns = guestConns.filter(c => c !== conn);
         atualizarSyncBar();
         broadcastEstado();
+        // Só notifica se não recebeu 'leave' explícito (evita duplicado)
+        if (!conn._left) {
+          showToast(nome + ' saiu da sala');
+          adicionarNotif('alert',
+            nome + ' saiu da sala',
+            'Código ' + myRoomCode + ' · ' + guestConns.length + ' online',
+            'leave_' + conn.peer + '_' + Date.now()
+          );
+        }
       });
       conn.on('error', () => {
+        const nome = conn._nomePeer || 'Músico';
         guestConns = guestConns.filter(c => c !== conn);
         atualizarSyncBar();
         broadcastEstado();
+        if (!conn._left) {
+          showToast(nome + ' saiu da sala');
+          adicionarNotif('alert',
+            nome + ' saiu da sala',
+            'Código ' + myRoomCode + ' · ' + guestConns.length + ' online',
+            'err_' + conn.peer + '_' + Date.now()
+          );
+        }
       });
     });
 
@@ -2124,6 +2163,10 @@ function entrarNaSala() {
       document.getElementById('app-body').classList.add('viewer-mode');
       atualizarSyncBar(code);
       showToast('Sala ' + code + ' — modo visualização');
+      // Envia nome ao host
+      const _perfil = JSON.parse(localStorage.getItem('map_perfil_v1') || '{}');
+      const _nome = _perfil.nome || 'Músico';
+      hostConn.send({ type: 'join', nome: _nome });
     });
     hostConn.on('data', dados => {
       if (dados.type === 'state') aplicarEstado(dados.payload);
@@ -2134,6 +2177,13 @@ function entrarNaSala() {
       atualizarLetreiroDrumCam();
       document.getElementById('sync-bar').classList.remove('visible','viewer');
       showToast('Desconectado da sala.');
+    });
+    // Envia 'leave' ao host ao desconectar
+    window.addEventListener('beforeunload', function() {
+      if (isViewer && hostConn) {
+        const _perfil = JSON.parse(localStorage.getItem('map_perfil_v1') || '{}');
+        try { hostConn.send({ type: 'leave', nome: _perfil.nome || 'Músico' }); } catch(e) {}
+      }
     });
     hostConn.on('error', () => {
       setConnStatus('Sala não encontrada. Verifica o código.', 'error');
