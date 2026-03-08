@@ -1157,7 +1157,10 @@ body.viewer-mode input[type="text"] { pointer-events: none; }
   <div class="sync-dot"></div>
   <span id="sync-label">SINCRONIZADO</span>
   <span class="sync-code" id="sync-code-display"></span>
-  <span id="sync-guests" style="margin-left:auto; opacity:0.6; font-size:10px;"></span>
+  <span id="sync-guests" style="margin-left:auto; font-size:10px; font-weight:800; opacity:0.8; display:flex; align-items:center; gap:5px;">
+    <span style="display:inline-block; width:6px; height:6px; border-radius:50%; background:currentColor; animation:pulse 1.4s infinite;"></span>
+    <span id="sync-guests-count"></span>
+  </span>
   <button onclick="desconectar()" style="margin-left:8px; background:none; border:none; color:inherit; cursor:pointer; font-size:10px; opacity:0.6; font-weight:700;">✕ SAIR</button>
 </div>
 
@@ -1665,15 +1668,19 @@ function criarSala() {
         atualizarSyncBar();
         // Envia estado atual para o novo viewer
         conn.send({ type: 'state', payload: capturarEstado() });
+        // Notifica todos os outros viewers sobre nova contagem
+        broadcastEstado();
         showToast('Musico conectado!');
       });
       conn.on('close', () => {
         guestConns = guestConns.filter(c => c !== conn);
         atualizarSyncBar();
+        broadcastEstado();
       });
       conn.on('error', () => {
         guestConns = guestConns.filter(c => c !== conn);
         atualizarSyncBar();
+        broadcastEstado();
       });
     });
 
@@ -1743,7 +1750,10 @@ function capturarEstado() {
     currentSongName: currentSongIndex >= 0 && songs[currentSongIndex] ? songs[currentSongIndex].name : null,
     songTotal: songs.length,
     // velocidade do teleprompter
-    scrollSpeed: parseInt(document.getElementById('scroll-speed').value)
+    scrollSpeed: parseInt(document.getElementById('scroll-speed').value),
+    // presença online: host + viewers
+    onlineCount: 1 + guestConns.length,
+    roomCode: myRoomCode
   };
 }
 
@@ -1797,6 +1807,17 @@ function aplicarEstado(estado) {
     }
   }
 
+  // Presença online — atualiza sync bar do viewer
+  if (estado.onlineCount !== undefined) {
+    const guests = document.getElementById('sync-guests');
+    if (guests) { const sc = guests.querySelector('#sync-guests-count'); if(sc) sc.innerText = estado.onlineCount + ' online'; }
+    // Guarda código da sala para mostrar
+    if (estado.roomCode) {
+      const codeEl = document.getElementById('sync-code-display');
+      if (codeEl && !codeEl.innerText) codeEl.innerText = estado.roomCode;
+    }
+  }
+
   syncPaused = false;
 }
 
@@ -1834,12 +1855,13 @@ function atualizarSyncBar(code) {
     bar.classList.remove('viewer');
     label.innerText = 'HOST';
     codeEl.innerText = myRoomCode;
-    guests.innerText = guestConns.length + ' conectado(s)';
+    const total = 1 + guestConns.length;
+    guests.querySelector('#sync-guests-count').innerText = total + ' online';
   } else if (isViewer) {
     bar.classList.add('visible','viewer');
     label.innerText = 'A VER';
-    codeEl.innerText = code || '';
-    guests.innerText = '';
+    codeEl.innerText = code || codeEl.innerText || '';
+    // contagem atualizada via broadcastEstado
   } else {
     bar.classList.remove('visible','viewer');
   }
@@ -1861,9 +1883,30 @@ function mostrarEscolhaSala() {
   document.getElementById('sala-escolha').style.display = 'block';
   document.getElementById('tab-criar').style.display = 'none';
   document.getElementById('tab-entrar').style.display = 'none';
+  // Reset tela criar para próxima vez
+  const rc = document.getElementById('my-room-code');
+  const cs = document.getElementById('criar-status');
+  const bc = document.getElementById('btn-copiar-codigo');
+  if (rc) { rc.classList.add('loading'); rc.innerText = '···'; }
+  if (cs) cs.innerText = 'A criar sala...';
+  if (bc) bc.disabled = true;
+  // Limpa inputs da tela entrar
+  ['d0','d1','d2','d3'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.value = '';
+  });
+  const cs2 = document.getElementById('connect-status');
+  if (cs2) cs2.innerText = '';
 }
 
 function voltarEscolhaSala() {
+  // Se host sem nenhum viewer conectado, encerra a sala silenciosamente ao voltar
+  if (isHost && guestConns.length === 0) {
+    if (peer) { try { peer.destroy(); } catch(e){} peer = null; }
+    isHost = false;
+    myRoomCode = null;
+    document.getElementById('sync-bar').classList.remove('visible', 'viewer');
+  }
   mostrarEscolhaSala();
 }
 
@@ -1889,6 +1932,13 @@ function mostrarTabsSala(tab) {
 
 function fecharModal() {
   document.getElementById('modal-sala').classList.remove('show');
+  // Se host sem viewers, encerra a sala ao fechar o modal
+  if (isHost && guestConns.length === 0) {
+    if (peer) { try { peer.destroy(); } catch(e){} peer = null; }
+    isHost = false;
+    myRoomCode = null;
+    document.getElementById('sync-bar').classList.remove('visible', 'viewer');
+  }
   if (!isHost && !isViewer) mostrarEscolhaSala();
 }
 
