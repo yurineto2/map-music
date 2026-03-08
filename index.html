@@ -2448,6 +2448,12 @@ function iniciarPeer(id, onReady) {
     peer.on('disconnected', () => {
       try { if (peer && !peer.destroyed) peer.reconnect(); } catch(e) {}
     });
+    peer.on('close', () => {
+      // Peer destruído — agenda reconexão se ainda somos host/viewer
+      if (isHost || isViewer) {
+        setTimeout(_tentarReconexao, 1500);
+      }
+    });
   } catch(e) {
     showToast('PeerJS não disponível. Verifica a ligação.');
   }
@@ -2703,6 +2709,100 @@ function desconectar() {
   document.getElementById('app-body').classList.remove('viewer-mode');
   document.getElementById('sync-bar').classList.remove('visible','viewer');
   showToast('Sala encerrada.');
+}
+
+// ─── RECONEXÃO AUTOMÁTICA DA SALA ────────────────────────────────────────────
+let _reconectando = false;
+
+function _verificarConexaoSala() {
+  if (!isHost && !isViewer) return;
+  if (!peer || peer.destroyed || peer.disconnected) {
+    _tentarReconexao();
+  }
+}
+
+function _tentarReconexao() {
+  if (_reconectando) return;
+  if (!isHost && !isViewer) return;
+  _reconectando = true;
+
+  const eraSala = myRoomCode;
+  const eraHost = isHost;
+  const eraViewer = isViewer;
+
+  // Mostra toast informativo
+  showToast('Reconectando sala...');
+
+  // Destrói peer antigo
+  try { if (peer) peer.destroy(); } catch(e) {}
+  peer = null;
+
+  setTimeout(() => {
+    _reconectando = false;
+    if (eraHost && eraSala) {
+      // Reinicia como host com o MESMO código
+      isHost = false;
+      const savedCode = eraSala;
+      myRoomCode = savedCode;
+
+      const el = document.getElementById('my-room-code');
+      const st = document.getElementById('criar-status');
+      if (el) { el.classList.add('loading'); el.innerText = '···'; }
+      if (st) st.innerText = 'Reconectando...';
+
+      iniciarPeer(codeToId(savedCode), () => {
+        isHost = true;
+        myRoomCode = savedCode;
+        if (el) { el.classList.remove('loading'); el.innerText = savedCode; }
+        if (st) st.innerText = 'Sala reativada! Código mantido.';
+        document.getElementById('btn-copiar-codigo') && (document.getElementById('btn-copiar-codigo').disabled = false);
+
+        // Reregistra listener de conexões
+        peer.on('connection', conn => {
+          guestConns.push(conn);
+          conn.on('open', () => {
+            atualizarSyncBar();
+            conn.send({ type: 'state', payload: capturarEstado() });
+            broadcastEstado();
+            conn._nomePeer = 'Músico';
+          });
+          conn.on('data', dados => {
+            if (dados.type === 'join') {
+              conn._nomePeer = dados.nome || 'Músico';
+              showToast(conn._nomePeer + ' entrou na sala');
+              broadcastEstado();
+            } else if (dados.type === 'leave') {
+              conn._left = true;
+            }
+          });
+          conn.on('close', () => {
+            guestConns = guestConns.filter(c => c !== conn);
+            atualizarSyncBar();
+          });
+          conn.on('error', () => {
+            guestConns = guestConns.filter(c => c !== conn);
+            atualizarSyncBar();
+          });
+        });
+
+        atualizarSyncBar();
+        showToast('Sala reativada — código ' + savedCode);
+      });
+
+    } else if (eraViewer && eraSala) {
+      // Viewer reconecta: preenche os dígitos e chama entrarNaSala
+      isViewer = false;
+      const digits = eraSala.split('');
+      ['d0','d1','d2','d3'].forEach((id, i) => {
+        const el = document.getElementById(id);
+        if (el) el.value = digits[i] || '';
+      });
+      // Abre o modal na aba entrar e reconecta
+      mostrarTabsSala('entrar');
+      abrirModalSala();
+      setTimeout(() => entrarNaSala(), 200);
+    }
+  }, 800);
 }
 
 // ─── SISTEMA DE NOTIFICAÇÕES ──────────────────────────────────────────────────
@@ -3520,6 +3620,8 @@ document.addEventListener('visibilitychange', () => {
   // Reativa wake lock sempre que o app volta ao primeiro plano
   if (document.visibilityState === 'visible') {
     ativarWakeLock();
+    // Verifica se a conexão da sala ainda está viva ao voltar ao primeiro plano
+    _verificarConexaoSala();
   }
 });
 
