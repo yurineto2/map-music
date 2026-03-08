@@ -693,7 +693,7 @@ body { font-family: 'Inter', sans-serif; background: var(--bg-primary); color: v
 .chord-area { font-family: 'Monaco', monospace; font-size: 19px; font-weight: 700; color: var(--note-color); background: none; border: none; width: 100%; resize: none; outline: none; margin-top: 10px; line-height: 1.4; }
 
 /* METRÔNOMO */
-.metronome-card { background: var(--bg-secondary); border-radius: var(--radius-xl); border: 1px solid var(--border-color); padding: 20px; text-align: center; position: sticky; top: 100px; }
+.metronome-card { background: var(--bg-secondary); border-radius: var(--radius-xl); border: 1px solid var(--border-color); padding: 20px 20px 100px; text-align: center; position: sticky; top: 100px; }
 .bpm-val { font-size: 56px; font-weight: 800; color: var(--accent-primary); }
 
 /* PERFORMANCE MODE */
@@ -1146,6 +1146,80 @@ body.performance-mode .perf-song-indicator { display: flex; }
 body.viewer-mode .chord-area { pointer-events: none; }
 body.viewer-mode .btn-save-vitro { display: none; }
 body.viewer-mode input[type="text"] { pointer-events: none; }
+
+/* Modal de Edição (Música / Evento) */
+.modal-edit {
+  position: fixed; inset: 0; z-index: 8000;
+  background: rgba(0,0,0,0.88); display: none;
+  align-items: center; justify-content: center; padding: 24px;
+}
+.modal-edit.show { display: flex; }
+.modal-edit-box {
+  background: #0d1117; border: 1px solid rgba(255,255,255,0.12);
+  border-radius: 20px; padding: 28px 24px; width: 100%; max-width: 380px;
+  display: flex; flex-direction: column; gap: 14px;
+  box-shadow: 0 24px 60px rgba(0,0,0,0.9);
+  animation: editSlideIn 0.22s cubic-bezier(0.34,1.56,0.64,1);
+}
+@keyframes editSlideIn {
+  from { opacity:0; transform: scale(0.93) translateY(10px); }
+  to   { opacity:1; transform: scale(1)    translateY(0); }
+}
+.modal-edit-title {
+  font-size: 15px; font-weight: 900; color: #fff;
+  letter-spacing: 0.5px; margin-bottom: 2px;
+  display: flex; align-items: center; gap: 10px;
+}
+.modal-edit-badge {
+  font-size: 9px; font-weight: 700; letter-spacing: 2px;
+  color: var(--accent-primary); text-transform: uppercase;
+  background: rgba(29,185,84,0.1); border: 1px solid rgba(29,185,84,0.25);
+  padding: 3px 8px; border-radius: 20px;
+}
+.modal-edit label {
+  font-size: 9px; font-weight: 800; letter-spacing: 2px;
+  text-transform: uppercase; color: rgba(255,255,255,0.35);
+  display: block; margin-bottom: 5px;
+}
+.modal-edit input {
+  background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 10px; color: #fff; font-size: 14px; font-weight: 700;
+  padding: 12px 14px; outline: none; width: 100%; box-sizing: border-box;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+.modal-edit input:focus {
+  border-color: rgba(29,185,84,0.5);
+  box-shadow: 0 0 0 3px rgba(29,185,84,0.1);
+}
+.modal-edit input::placeholder { color: rgba(255,255,255,0.2); }
+.modal-edit input[type=number] { -moz-appearance: textfield; }
+.modal-edit input[type=number]::-webkit-outer-spin-button,
+.modal-edit input[type=number]::-webkit-inner-spin-button { -webkit-appearance: none; }
+.modal-edit-btns { display: flex; gap: 10px; margin-top: 4px; }
+.modal-edit-cancel {
+  flex: 1; padding: 12px; border-radius: 10px;
+  background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08);
+  color: rgba(255,255,255,0.45); font-size: 11px; font-weight: 700;
+  cursor: pointer; text-transform: uppercase; letter-spacing: 1px;
+  transition: 0.2s;
+}
+.modal-edit-cancel:hover { background: rgba(255,255,255,0.08); color: #fff; }
+.modal-edit-save {
+  flex: 2; padding: 12px; border-radius: 10px;
+  background: rgba(29,185,84,0.15); border: 1px solid rgba(29,185,84,0.35);
+  color: var(--accent-primary); font-size: 12px; font-weight: 900;
+  cursor: pointer; text-transform: uppercase; letter-spacing: 1.5px;
+  transition: 0.2s;
+}
+.modal-edit-save:hover { background: rgba(29,185,84,0.28); }
+.btn-edit-inline {
+  flex: 0; padding: 6px 11px; border-radius: 8px; font-size: 14px;
+  cursor: pointer; background: rgba(255,255,255,0.05);
+  border: 1px solid rgba(255,255,255,0.1); color: rgba(255,255,255,0.4);
+  transition: 0.15s; line-height: 1;
+}
+.btn-edit-inline:hover { color: #fff; border-color: rgba(255,255,255,0.3); background: rgba(255,255,255,0.1); }
+
 </style>
 </head>
 <body id="app-body">
@@ -1417,6 +1491,7 @@ body.viewer-mode input[type="text"] { pointer-events: none; }
       <button class="evento-detalhe-back" onclick="voltarEventos()">← Voltar</button>
       <div class="evento-detalhe-title" id="evento-detalhe-title">Evento</div>
       <button class="evento-detalhe-add" onclick="abrirEditarEventoAtual()" style="margin-right:6px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);color:rgba(255,255,255,0.4);">Editar</button>
+      <button onclick="abrirEditEvento(eventoAbertoId)" title="Editar evento" style="background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);color:rgba(255,255,255,0.45);padding:7px 14px;border-radius:20px;font-size:11px;font-weight:700;cursor:pointer;letter-spacing:0.5px;text-transform:uppercase;transition:0.2s;margin-right:4px;" onmouseover="this.style.color='#fff'" onmouseout="this.style.color='rgba(255,255,255,0.45)'">✎ Editar</button>
       <button class="evento-detalhe-add" onclick="abrirAddMusica()">+ Música</button>
     </div>
     <div class="biblioteca-search">
@@ -2183,9 +2258,10 @@ function saveSong() {
     title: p.querySelector('input').value,
     content: p.querySelector('textarea').value
   }));
-  songs.push({ name, bpm, parts, id: Date.now(), favorite: false });
+  const newSong = { name, bpm, parts, id: Date.now(), favorite: false };
+  songs.push(newSong);
   updateStorage();
-  showToast('Música salva!');
+  showToast('Música salva! Abra a Biblioteca para editar.');
 }
 
 function toggleFavorite(id, e) {
@@ -2242,6 +2318,7 @@ function togglePerf() {
   setTimeout(atualizarLetreiroDrumCam, 50);
   const isPerf = document.getElementById('app-body').classList.toggle('performance-mode');
   document.getElementById('mode-text').innerText = isPerf ? "SAIR DO SHOW" : "MODO SHOW";
+
   if (!isPerf) { stopScroll(); window.scrollTo(0,0); }
   else {
     atualizarIndicador();
@@ -2856,6 +2933,7 @@ function renderBiblioteca(filtro = '') {
           flex:0.7;padding:6px 0;border-radius:8px;font-size:13px;cursor:pointer;">★</button>
         <button class="album-btn" onclick="abrirEditarMusica(${s.id}, event)"
           style="background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.08);color:rgba(255,255,255,0.4);flex:0.7;padding:6px 0;border-radius:8px;font-size:10px;font-weight:800;cursor:pointer;letter-spacing:1px;">ED</button>
+        <button class="btn-edit-inline" onclick="abrirEditMusica(${s.id}, event)" title="Editar">✎</button>
         <button class="album-btn album-btn-del" onclick="deleteSongBiblioteca(${s.id}, event)">✕</button>
       </div>
     </div>`;
@@ -2982,6 +3060,7 @@ function renderEventos(filtro = '') {
         <button class="evento-btn evento-btn-open" onclick="abrirEventoDetalhe(${ev.id})">Ver</button>
         <button class="evento-btn" onclick="abrirEditarEvento(${ev.id}, event)"
           style="background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.08);color:rgba(255,255,255,0.4);flex:0.7;padding:6px 0;border-radius:8px;font-size:10px;font-weight:800;cursor:pointer;letter-spacing:1px;">ED</button>
+        <button class="evento-btn" onclick="abrirEditEvento(${ev.id}, event)" title="Editar" style="flex:0.8;padding:6px 0;border-radius:8px;font-size:14px;cursor:pointer;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);color:rgba(255,255,255,0.45);transition:0.15s;" onmouseover="this.style.color='#fff'" onmouseout="this.style.color='rgba(255,255,255,0.45)'">✎</button>
         <button class="evento-btn evento-btn-del" onclick="deletarEvento(${ev.id}, event)">✕</button>
       </div>
     </div>`;
@@ -3091,6 +3170,7 @@ function renderEventoDetalhe() {
       </div>
       <div class="album-actions">
         <button class="album-btn album-btn-load" onclick="loadSongBiblioteca(${s.id})">Abrir</button>
+        <button class="btn-edit-inline" onclick="abrirEditMusica(${s.id}, event)" title="Editar">✎</button>
         <button class="album-btn album-btn-del" onclick="removerDoEvento(${s.id}, event)">✕</button>
       </div>
     </div>`;
@@ -3789,6 +3869,118 @@ function escapeHtml(str) {
 }
 renderSetlist();
 ["INTRO","VERSO","REFRÃO","PONTE","FINAL"].forEach(p => addPart(p));
+
+// ─── MODAL DE EDIÇÃO ───────────────────────────────────────────────────────
+let _editTipo = null;
+let _editId   = null;
+
+function abrirEditMusica(id, e) {
+  e && e.stopPropagation && e.stopPropagation();
+  const s = songs.find(x => x.id === id);
+  if (!s) return;
+  _editTipo = 'musica'; _editId = id;
+  document.getElementById('edit-modal-type').innerText = 'MÚSICA';
+  document.getElementById('edit-input-nome').value = s.name;
+  document.getElementById('edit-input-bpm').value  = s.bpm;
+  document.getElementById('edit-field-bpm').style.display  = 'block';
+  document.getElementById('edit-field-data').style.display = 'none';
+  document.getElementById('modal-edit').classList.add('show');
+  setTimeout(() => document.getElementById('edit-input-nome').select(), 80);
+}
+
+function abrirEditEvento(id, e) {
+  e && e.stopPropagation && e.stopPropagation();
+  const ev = eventos.find(x => x.id === id);
+  if (!ev) return;
+  _editTipo = 'evento'; _editId = id;
+  document.getElementById('edit-modal-type').innerText = 'EVENTO';
+  document.getElementById('edit-input-nome').value = ev.nome;
+  document.getElementById('edit-input-data').value = ev.data || '';
+  document.getElementById('edit-field-bpm').style.display  = 'none';
+  document.getElementById('edit-field-data').style.display = 'block';
+  document.getElementById('modal-edit').classList.add('show');
+  setTimeout(() => document.getElementById('edit-input-nome').select(), 80);
+}
+
+function fecharModalEdit() {
+  document.getElementById('modal-edit').classList.remove('show');
+  _editTipo = null; _editId = null;
+}
+
+function salvarModalEdit() {
+  const nome = document.getElementById('edit-input-nome').value.trim();
+  if (!nome) { document.getElementById('edit-input-nome').focus(); return; }
+
+  if (_editTipo === 'musica') {
+    const bpmVal = parseInt(document.getElementById('edit-input-bpm').value) || 120;
+    const s = songs.find(x => x.id === _editId);
+    if (s) {
+      s.name = nome;
+      s.bpm  = Math.min(Math.max(bpmVal, 40), 860);
+      updateStorage();
+      if (currentSongIndex >= 0 && songs[currentSongIndex] && songs[currentSongIndex].id === _editId) {
+        bpm = s.bpm;
+        document.getElementById('bpm-display').innerText = bpm;
+        document.getElementById('dc-bpm').textContent   = bpm;
+        atualizarIndicador();
+      }
+      showToast('Música atualizada!');
+    }
+    fecharModalEdit();
+    renderBiblioteca(document.getElementById('biblioteca-search')?.value || '');
+    if (eventoAbertoId) renderEventoDetalhe();
+
+  } else if (_editTipo === 'evento') {
+    const data = document.getElementById('edit-input-data').value;
+    const ev = eventos.find(x => x.id === _editId);
+    if (ev) {
+      ev.nome = nome; ev.data = data;
+      salvarEventos();
+      if (eventoAbertoId === _editId)
+        document.getElementById('evento-detalhe-title').textContent = nome;
+      showToast('Evento atualizado!');
+    }
+    fecharModalEdit();
+    renderEventos(document.getElementById('biblioteca-search')?.value || '');
+  }
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+  document.getElementById('modal-edit').addEventListener('click', function(e) {
+    if (e.target === this) fecharModalEdit();
+  });
+});
+// Fechar modal-edit ao pressionar Escape
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape' && document.getElementById('modal-edit').classList.contains('show')) {
+    fecharModalEdit();
+  }
+});
+
 </script>
+
+<!-- MODAL EDIÇÃO (Música / Evento) -->
+<div class="modal-edit" id="modal-edit">
+  <div class="modal-edit-box">
+    <div class="modal-edit-title">Editar <span class="modal-edit-badge" id="edit-modal-type">MÚSICA</span></div>
+    <div id="edit-field-nome">
+      <label>Nome</label>
+      <input type="text" id="edit-input-nome" placeholder="Nome..." maxlength="60">
+    </div>
+    <div id="edit-field-bpm" style="display:none">
+      <label>BPM</label>
+      <input type="number" id="edit-input-bpm" min="40" max="860" placeholder="120">
+    </div>
+    <div id="edit-field-data" style="display:none">
+      <label>Data do Evento</label>
+      <input type="date" id="edit-input-data">
+    </div>
+    <div class="modal-edit-btns">
+      <button class="modal-edit-cancel" onclick="fecharModalEdit()">Cancelar</button>
+      <button class="modal-edit-save" onclick="salvarModalEdit()">Salvar</button>
+    </div>
+  </div>
+</div>
+
 </body>
 </html>
