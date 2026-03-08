@@ -1,11 +1,20 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
+<script>
+// Suprime "Script error." de CDNs cross-origin (Safari/iOS)
+window.addEventListener('error', function(e) {
+  if (!e.message || e.message === 'Script error.' || e.message === 'Script error') {
+    e.preventDefault(); e.stopPropagation(); return true;
+  }
+}, true);
+</script>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>Map Music Pro - Elite Edition</title>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
-<script src="https://cdnjs.cloudflare.com/ajax/libs/peerjs/1.5.4/peerjs.min.js">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/peerjs/1.5.4/peerjs.min.js" onerror="void(0)"></script>
+<script>
 // ─── ONBOARDING ───────────────────────────────────────────────────────────────
 (function() {
   const perfil = localStorage.getItem('map_perfil_v1');
@@ -112,22 +121,26 @@ function terminarOnboarding() {
 
   localStorage.setItem('map_perfil_v1', JSON.stringify(perfil));
 
-  // Notificação de boas-vindas
-  adicionarNotif('update',
-    'Bem-vindo, ' + nome + '!',
-    'Perfil criado. Começa por salvar a tua primeira música.',
-    'welcome_' + Date.now()
-  );
-
   // Animação de saída
   const ov = document.getElementById('onboarding-overlay');
   ov.classList.add('done');
-  setTimeout(() => ov.remove(), 500);
+
+  // Notificação de boas-vindas — chamada após o main script carregar
+  setTimeout(() => {
+    if (typeof adicionarNotif === 'function') {
+      adicionarNotif('update',
+        'Bem-vindo, ' + nome + '!',
+        'Perfil criado. Comece salvando sua primeira música.',
+        'welcome_' + Date.now()
+      );
+    }
+    ov.remove();
+  }, 500);
 }
 
 </script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js" onerror="void(0)"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js" onerror="void(0)"></script>
 
 <style>
 :root {
@@ -1622,6 +1635,7 @@ body.viewer-mode input[type="text"] { pointer-events: none; }
 }
 
 </style>
+
 </head>
 <body id="app-body">
 
