@@ -94,6 +94,131 @@ body { font-family: 'Inter', sans-serif; background: var(--bg-primary); color: v
 .sync-code { background: rgba(255,255,255,0.08); padding: 3px 10px; border-radius: 20px; font-size: 15px; letter-spacing: 4px; font-weight: 900; }
 
 /* SAVE BTN */
+/* ── BIBLIOTECA ── */
+.biblioteca-overlay {
+  position: fixed; inset: 0; z-index: 5500;
+  background: #03030a;
+  display: none; flex-direction: column;
+  overflow: hidden;
+}
+.biblioteca-overlay.show { display: flex; }
+
+.biblioteca-header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 20px 24px 12px;
+  border-bottom: 1px solid rgba(255,255,255,0.06);
+  flex-shrink: 0;
+}
+.biblioteca-titulo {
+  font-size: 22px; font-weight: 900; color: #fff; letter-spacing: 1px;
+}
+.biblioteca-titulo span {
+  color: var(--accent-primary); font-size: 11px;
+  font-weight: 700; letter-spacing: 3px; vertical-align: super;
+}
+.biblioteca-close {
+  background: none; border: 1px solid rgba(255,255,255,0.1);
+  color: rgba(255,255,255,0.4); padding: 7px 18px;
+  border-radius: 30px; font-size: 10px; font-weight: 700;
+  letter-spacing: 1px; cursor: pointer; text-transform: uppercase;
+  transition: 0.2s;
+}
+.biblioteca-close:hover { color: #fff; border-color: rgba(255,255,255,0.3); }
+
+.biblioteca-search {
+  padding: 14px 24px 10px; flex-shrink: 0;
+}
+.biblioteca-search input {
+  width: 100%; background: rgba(255,255,255,0.05);
+  border: 1px solid rgba(255,255,255,0.08); border-radius: 12px;
+  color: #fff; font-size: 13px; padding: 10px 16px; outline: none;
+  box-sizing: border-box; transition: border-color 0.2s;
+}
+.biblioteca-search input:focus { border-color: rgba(29,185,84,0.4); }
+.biblioteca-search input::placeholder { color: rgba(255,255,255,0.25); }
+
+.biblioteca-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  gap: 16px; padding: 16px 24px 100px;
+  overflow-y: auto; flex: 1;
+}
+
+.album-card {
+  display: flex; flex-direction: column; gap: 10px;
+  cursor: pointer; transition: transform 0.2s;
+}
+.album-card:active { transform: scale(0.96); }
+
+.album-cover {
+  width: 100%; aspect-ratio: 1; border-radius: 12px;
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  position: relative; overflow: hidden;
+  border: 1px solid rgba(255,255,255,0.06);
+}
+.album-cover-bg {
+  position: absolute; inset: 0;
+  background: linear-gradient(135deg, var(--ac1), var(--ac2));
+  opacity: 0.85;
+}
+.album-cover-initial {
+  position: relative; z-index: 1;
+  font-size: 36px; font-weight: 900; color: rgba(255,255,255,0.9);
+  text-transform: uppercase; letter-spacing: -1px;
+  text-shadow: 0 2px 8px rgba(0,0,0,0.4);
+}
+.album-cover-bpm {
+  position: relative; z-index: 1;
+  font-size: 9px; font-weight: 800; letter-spacing: 2px;
+  color: rgba(255,255,255,0.6); text-transform: uppercase; margin-top: 4px;
+}
+.album-cover-fav {
+  position: absolute; top: 8px; right: 8px; z-index: 2;
+  font-size: 14px; color: gold; opacity: 0;
+  transition: opacity 0.2s;
+}
+.album-card.fav .album-cover-fav { opacity: 1; }
+
+.album-info { padding: 0 2px; }
+.album-name {
+  font-size: 12px; font-weight: 800; color: #fff;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  line-height: 1.3;
+}
+.album-meta {
+  font-size: 10px; color: rgba(255,255,255,0.35);
+  font-weight: 600; margin-top: 2px;
+}
+
+.album-actions {
+  display: flex; gap: 6px; padding: 0 2px;
+}
+.album-btn {
+  flex: 1; padding: 6px 0; border-radius: 8px;
+  font-size: 9px; font-weight: 800; letter-spacing: 1px;
+  text-transform: uppercase; cursor: pointer; border: none;
+  transition: 0.15s;
+}
+.album-btn-load {
+  background: rgba(29,185,84,0.15); color: var(--accent-primary);
+  border: 1px solid rgba(29,185,84,0.25);
+}
+.album-btn-load:hover { background: rgba(29,185,84,0.25); }
+.album-btn-del {
+  background: rgba(255,60,60,0.1); color: rgba(255,80,80,0.7);
+  border: 1px solid rgba(255,60,60,0.15);
+}
+.album-btn-del:hover { background: rgba(255,60,60,0.2); }
+
+.biblioteca-vazia {
+  display: flex; flex-direction: column; align-items: center;
+  justify-content: center; flex: 1; gap: 12px;
+  color: rgba(255,255,255,0.2); font-size: 13px; font-weight: 700;
+  letter-spacing: 1px;
+}
+.biblioteca-vazia-icon { font-size: 48px; opacity: 0.15; }
+
 /* ── DRUM CAM ── */
 .drumcam-overlay {
   position: fixed; inset: 0; z-index: 6000;
@@ -159,14 +284,16 @@ body { font-family: 'Inter', sans-serif; background: var(--bg-primary); color: v
 .drumcam-beat.flash { opacity: 1; }
 
 /* Grid de pads */
+.drumcam-pads-row {
+  display: flex; align-items: center; gap: 12px;
+  width: min(95vw, 560px); position: relative; z-index: 2;
+}
 .drumcam-pads {
-  display: flex; flex-direction: row; flex-wrap: wrap;
-  gap: 6px; width: min(95vw, 520px);
-  justify-content: center;
-  position: relative; z-index: 2;
+  display: grid; grid-template-columns: repeat(6, 1fr);
+  gap: 6px; flex: 1;
 }
 .drumcam-pad {
-  width: 52px; height: 36px; border-radius: 8px;
+  height: 56px; border-radius: 10px;
   border: 1px solid rgba(255,255,255,0.07);
   background: rgba(255,255,255,0.04);
   display: flex; align-items: center; justify-content: center;
@@ -187,6 +314,31 @@ body { font-family: 'Inter', sans-serif; background: var(--bg-primary); color: v
   color: var(--accent-primary);
 }
 .drumcam-pad.playing::after { opacity: 1; animation: padGlow 2s ease-in-out infinite; }
+
+/* Slider oitava */
+.drumcam-octave {
+  display: flex; flex-direction: column;
+  align-items: center; gap: 6px;
+}
+.drumcam-octave-label {
+  font-size: 8px; font-weight: 900; letter-spacing: 1px;
+  color: rgba(255,255,255,0.25); text-transform: uppercase;
+}
+.drumcam-octave-val {
+  font-size: 13px; font-weight: 900; color: var(--accent-primary);
+}
+.drumcam-octave input[type=range] {
+  -webkit-appearance: none; appearance: none;
+  writing-mode: vertical-lr; direction: rtl;
+  width: 6px; height: 200px;
+  background: rgba(255,255,255,0.1); border-radius: 3px;
+  outline: none; cursor: pointer;
+}
+.drumcam-octave input[type=range]::-webkit-slider-thumb {
+  -webkit-appearance: none; width: 32px; height: 32px;
+  border-radius: 8px; background: var(--accent-primary); cursor: pointer;
+  box-shadow: 0 0 10px rgba(29,185,84,0.4);
+}
 
 /* TAP + METRO no Drum Cam */
 .drumcam-tap {
@@ -679,11 +831,16 @@ body.performance-mode .perf-song-indicator { display: flex; }
 }
 
 /* Grade de pads ambient */
+.pads-grid-row {
+  display: flex; align-items: center; gap: 14px;
+  width: 100%; max-width: 580px;
+}
 .pads-grid {
-  display: grid; grid-template-columns: repeat(4, 1fr);
-  gap: 12px; width: 100%; max-width: 560px;
+  display: grid; grid-template-columns: repeat(6, 1fr);
+  gap: 10px; flex: 1;
   position: relative; z-index: 1;
 }
+/* Slider oitava nos pads — reutiliza .drumcam-octave */
 .pad {
   aspect-ratio: 1; border-radius: 16px;
   border: 1px solid rgba(255,255,255,0.06);
@@ -807,9 +964,10 @@ body.viewer-mode input[type="text"] { pointer-events: none; }
           <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="1"/><circle cx="12" cy="5" r="1"/><circle cx="12" cy="19" r="1"/></svg>
         </button>
         <div id="m-drop" class="dropdown-menu">
-          <div class="menu-item" onclick="abrirModalCifra()">Importar Cifra</div>
-          <div class="menu-item" onclick="abrirPads()">Pads</div>
+          <div class="menu-item" onclick="abrirBiblioteca()">Biblioteca</div>
           <div class="menu-item" onclick="abrirDrumCam()">Drum Cam</div>
+          <div class="menu-item" onclick="abrirPads()">Pads</div>
+          <div class="menu-item" onclick="abrirModalCifra()">Importar Cifra</div>
           <div class="menu-item danger" onclick="resetSection()">Limpar Seção</div>
         </div>
       </div>
@@ -965,14 +1123,22 @@ body.viewer-mode input[type="text"] { pointer-events: none; }
         oninput="atualizarVolumePads(this.value)" style="width:260px;">
     </div>
   </div>
-  <div class="pads-grid" id="pads-grid"></div>
+  <div class="pads-grid-row">
+    <div class="pads-grid" id="pads-grid"></div>
+    <div class="drumcam-octave">
+      <span class="drumcam-octave-label">AGD</span>
+      <input type="range" id="pads-octave" min="2" max="6" value="3"
+        oninput="padsOitavaChange(this.value)">
+      <span class="drumcam-octave-label">GRV</span>
+      <span class="drumcam-octave-val" id="pads-octave-val">3</span>
+    </div>
+  </div>
 </div>
 
 <div class="main-layout">
-  <aside class="side-panel">
-    <div class="panel-header">Setlist <span id="song-count" style="margin-left:auto; opacity:0.5;">0</span></div>
-    <div class="song-list" id="song-list"></div>
-  </aside>
+  <!-- Setlist movido para Biblioteca -->
+  <span id="song-count" style="display:none;"></span>
+  <div id="song-list" style="display:none;"></div>
 
   <main class="notes-section">
     <div class="toolbar-central">
@@ -1007,6 +1173,19 @@ body.viewer-mode input[type="text"] { pointer-events: none; }
 
 <button class="btn-save-vitro" onclick="saveSong()">Salvar Música</button>
 
+<!-- BIBLIOTECA -->
+<div class="biblioteca-overlay" id="biblioteca-overlay">
+  <div class="biblioteca-header">
+    <div class="biblioteca-titulo">Biblioteca <span>PRO</span></div>
+    <button class="biblioteca-close" onclick="fecharBiblioteca()">Fechar</button>
+  </div>
+  <div class="biblioteca-search">
+    <input type="text" id="biblioteca-search" placeholder="Buscar música..."
+      oninput="renderBiblioteca(this.value)">
+  </div>
+  <div class="biblioteca-grid" id="biblioteca-grid"></div>
+</div>
+
 <!-- DRUM CAM -->
 <div class="drumcam-overlay" id="drumcam-overlay">
   <div class="drumcam-beat" id="drumcam-beat"></div>
@@ -1019,7 +1198,16 @@ body.viewer-mode input[type="text"] { pointer-events: none; }
     <div class="drumcam-bpm" id="dc-bpm">120</div>
     <div class="drumcam-bpm-label">BPM</div>
   </div>
-  <div class="drumcam-pads" id="drumcam-pads"></div>
+  <div class="drumcam-pads-row">
+    <div class="drumcam-pads" id="drumcam-pads"></div>
+    <div class="drumcam-octave">
+      <span class="drumcam-octave-label">AGD</span>
+      <input type="range" id="dc-octave" min="2" max="6" value="4"
+        oninput="dcMudarOitava(this.value)">
+      <span class="drumcam-octave-label">GRV</span>
+      <span class="drumcam-octave-val" id="dc-octave-val">4</span>
+    </div>
+  </div>
   <div class="drumcam-tap">
     <button class="drumcam-tap-btn" id="dc-tap-btn"
       onmousedown="dcTap()" ontouchstart="dcTap(); event.preventDefault()">
@@ -1730,6 +1918,9 @@ function updateStorage() {
   songs.sort((a,b) => { if (a.favorite === b.favorite) return 0; return a.favorite ? -1 : 1; });
   localStorage.setItem('map_pro_elite_v1', JSON.stringify(songs));
   renderSetlist();
+  if (document.getElementById('biblioteca-overlay')?.classList.contains('show')) {
+    renderBiblioteca(document.getElementById('biblioteca-search')?.value || '');
+  }
 }
 
 function renderSetlist() {
@@ -1953,13 +2144,12 @@ function fecharPads() {
 }
 
 function togglePadFlutuante() {
-  const temAtivos = Object.keys(padNodes).length > 0;
+  const temAtivos = Object.keys(padNodes).length > 0 || Object.keys(dcPadNodes).length > 0;
   if (temAtivos) {
-    // Para todos os pads e some o estado ativo
     Object.keys(padNodes).forEach(i => pararPad(i));
+    dcPararTudo();
     atualizarBtnPad();
   } else {
-    // Abre o painel de pads
     abrirPads();
   }
 }
@@ -1967,30 +2157,38 @@ function togglePadFlutuante() {
 function atualizarBtnPad() {
   const btn = document.getElementById('btn-pad-flutuante');
   if (!btn) return;
-  const temAtivos = Object.keys(padNodes).length > 0;
+  const temAtivos = Object.keys(padNodes).length > 0 || Object.keys(dcPadNodes).length > 0;
   btn.classList.toggle('pad-ativo', temAtivos);
-  // Sincroniza estado visual dos pads no Drum Cam
-  document.querySelectorAll('.drumcam-pad').forEach(el => {
-    el.classList.toggle('playing', !!padNodes[parseInt(el.dataset.idx)]);
+}
+
+let padsOitava = 3;
+
+function padsOitavaChange(val) {
+  padsOitava = parseInt(val);
+  document.getElementById('pads-octave-val').textContent = padsOitava;
+  // Para notas ativas e reinicia na nova oitava
+  const ativas = Object.keys(padNodes).map(Number);
+  ativas.forEach(idx => {
+    const novoMidi = (padsOitava + 1) * 12 + idx;
+    pararPad(idx);
+    setTimeout(() => {
+      const el = document.querySelector(`.pad[data-idx="${idx}"]`);
+      if (el) { el.dataset.midi = novoMidi; iniciarPad(el); }
+    }, 100);
   });
+  renderPads();
 }
 
 function renderPads() {
   const grid = document.getElementById('pads-grid');
   // Não para os pads ao re-renderizar
-
   const NOTA_DISPLAY = ['C','C#','D','D#','E','F','F#','G','G#','A','A#','B'];
-  const NOTA_BEMOL   = ['C','Db','D','Eb','E','F','Gb','G','Ab','A','Bb','B'];
   const isBlack      = [false,true,false,true,false,false,true,false,true,false,true,false];
 
-  grid.innerHTML = Array.from({length: 16}, (_, i) => {
-    const notaIdx = i % 12;
-    const oitava  = i < 12 ? 3 : 4;
-    const midi    = 48 + notaIdx + (i >= 12 ? 12 : 0);
-    const sharp   = NOTA_DISPLAY[notaIdx];
-    const flat    = NOTA_BEMOL[notaIdx];
-    const black   = isBlack[notaIdx];
-    // Marca pads que já estão tocando
+  // 12 notas únicas na oitava atual — sem duplicatas
+  grid.innerHTML = NOTA_DISPLAY.map((sharp, i) => {
+    const midi  = (padsOitava + 1) * 12 + i;
+    const black = isBlack[i];
     const playing = padNodes[i] ? 'playing' : '';
     return `
       <div class="pad ${black ? 'pad-black' : 'pad-white'} ${playing}"
@@ -2280,10 +2478,90 @@ function pararPad(idx) {
   atualizarBtnPad();
 }
 
+// ─── BIBLIOTECA ────────────────────────────────────────────────────────────
+
+const ALBUM_PALETTES = [
+  ['#1a1a2e','#16213e'],['#0d1b2a','#1b4332'],['#1a0533','#3d0c6e'],
+  ['#0d2137','#1d4e89'],['#1a0a0a','#6b1c1c'],['#0a1628','#1e3a5f'],
+  ['#16213e','#0f3460'],['#1b2838','#2a475e'],['#0e1117','#1b6ca8'],
+  ['#1a1a1a','#2d5a27'],['#2d1b69','#11998e'],['#1f0b38','#4a0e8f'],
+];
+
+function albumColor(id) {
+  const p = ALBUM_PALETTES[id % ALBUM_PALETTES.length];
+  return { ac1: p[0], ac2: p[1] };
+}
+
+function abrirBiblioteca() {
+  fecharMenu();
+  document.getElementById('biblioteca-overlay').classList.add('show');
+  document.getElementById('biblioteca-search').value = '';
+  renderBiblioteca('');
+}
+
+function fecharBiblioteca() {
+  document.getElementById('biblioteca-overlay').classList.remove('show');
+}
+
+function renderBiblioteca(filtro = '') {
+  const grid = document.getElementById('biblioteca-grid');
+  const termo = (filtro || '').toLowerCase();
+  const lista = songs.filter(s => s.name.toLowerCase().includes(termo));
+
+  if (!lista.length) {
+    grid.innerHTML = `<div class="biblioteca-vazia" style="grid-column:1/-1">
+      <div class="biblioteca-vazia-icon">♪</div>
+      <div>${filtro ? 'Nenhum resultado' : 'Biblioteca vazia'}</div>
+      <div style="font-size:10px;opacity:0.6;font-weight:500;">Salve músicas para vê-las aqui</div>
+    </div>`;
+    return;
+  }
+
+  grid.innerHTML = lista.map((s, idx) => {
+    const cor = albumColor(s.id || idx);
+    const inicial = s.name.trim().charAt(0).toUpperCase();
+    const partes = s.parts ? s.parts.length : 0;
+    return `
+    <div class="album-card ${s.favorite ? 'fav' : ''}" data-id="${s.id}">
+      <div class="album-cover" style="--ac1:${cor.ac1};--ac2:${cor.ac2}"
+        onclick="loadSongBiblioteca(${s.id})">
+        <div class="album-cover-bg"></div>
+        <div class="album-cover-initial">${inicial}</div>
+        <div class="album-cover-bpm">${s.bpm} BPM</div>
+        <div class="album-cover-fav">★</div>
+      </div>
+      <div class="album-info">
+        <div class="album-name" title="${s.name}">${s.name}</div>
+        <div class="album-meta">${partes} parte${partes !== 1 ? 's' : ''} · ${s.favorite ? '★ Fav' : ''}</div>
+      </div>
+      <div class="album-actions">
+        <button class="album-btn album-btn-load" onclick="loadSongBiblioteca(${s.id})">Abrir</button>
+        <button class="album-btn album-btn-del" onclick="deleteSongBiblioteca(${s.id}, event)">✕</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function loadSongBiblioteca(id) {
+  loadSong(id);
+  fecharBiblioteca();
+  showToast('Música carregada!');
+}
+
+function deleteSongBiblioteca(id, e) {
+  e.stopPropagation();
+  if (confirm('Excluir música?')) {
+    songs = songs.filter(s => s.id !== id);
+    updateStorage();
+    renderBiblioteca(document.getElementById('biblioteca-search').value);
+    showToast('Removida.');
+  }
+}
+
 // ─── DRUM CAM ──────────────────────────────────────────────────────────────
 
 const NOTA_DISPLAY_DC = ['C','C#','D','D#','E','F','F#','G','G#','A','A#','B'];
-const isBlack_DC = [false,true,false,true,false,false,true,false,true,false,true,false];
+let dcOitava = 4; // oitava atual dos pads do drum cam
 
 function abrirDrumCam() {
   fecharMenu();
@@ -2314,14 +2592,84 @@ function atualizarLetreiroDrumCam() {
   el.style.display = (modoSala && modoShow) ? 'block' : 'none';
 }
 
+// padNodes do DrumCam — separado do padNodes dos pads normais
+// chave = nota index (0-11), valor = { oscs, masterGain, dA, dB, midi, volScale }
+const dcPadNodes = {};
+
+function dcTocarNota(midi, notaIdx) {
+  if (audioCtx.state === 'suspended') audioCtx.resume();
+  // Se já tocando essa nota, para
+  if (dcPadNodes[notaIdx]) {
+    dcPararNota(notaIdx);
+    return;
+  }
+  const vol  = parseInt(document.getElementById('pads-vol').value) / 100;
+  const ctx  = audioCtx;
+  const now  = ctx.currentTime;
+  const freq = midiToFreq(midi);
+
+  const master = ctx.createGain();
+  master.gain.setValueAtTime(0, now);
+  master.connect(ctx.destination);
+
+  const dA = ctx.createDelay(3); dA.delayTime.value = 0.25;
+  const dB = ctx.createDelay(3); dB.delayTime.value = 0.52;
+  const fbA = ctx.createGain(); fbA.gain.value = 0.28;
+  const fbB = ctx.createGain(); fbB.gain.value = 0.2;
+  dA.connect(fbA); fbA.connect(dA); dB.connect(fbB); fbB.connect(dB);
+  const wet = ctx.createGain(); wet.gain.value = 0.55;
+  master.connect(dA); master.connect(dB);
+  dA.connect(wet); dB.connect(wet); wet.connect(ctx.destination);
+
+  // Mesmo timbre do padTipoAtual — reutiliza a lógica criando elemento fake
+  const fakeEl = { dataset: { idx: 'dc_' + notaIdx, midi: String(midi), qual: '' }, classList: { add: ()=>{}, remove: ()=>{} } };
+  // Sintetiza direto: ambient simplificado para drum cam
+  const volScale = 0.42;
+  master.gain.linearRampToValueAtTime(vol * volScale, now + 1.8);
+  const vLFO = ctx.createOscillator(); const vG = ctx.createGain();
+  vLFO.frequency.value = 5.2; vG.gain.setValueAtTime(0,now); vG.gain.linearRampToValueAtTime(18,now+2.5);
+  vLFO.connect(vG); vLFO.start(now);
+  const oscs = [];
+  [{d:-14,g:0.35},{d:-5,g:0.4},{d:0,g:0.45},{d:6,g:0.4},{d:13,g:0.35}].forEach(v => {
+    const saw = ctx.createOscillator(); saw.type='sawtooth'; saw.frequency.value=freq; saw.detune.value=v.d;
+    vG.connect(saw.detune);
+    const lpf = ctx.createBiquadFilter(); lpf.type='lowpass'; lpf.frequency.value=2200;
+    const hpf = ctx.createBiquadFilter(); hpf.type='highpass'; hpf.frequency.value=80;
+    const g = ctx.createGain(); g.gain.value=v.g*0.18;
+    saw.connect(hpf); hpf.connect(lpf); lpf.connect(g); g.connect(master); saw.start(now);
+    oscs.push(saw);
+  });
+  oscs.push(vLFO);
+  dcPadNodes[notaIdx] = { oscs, masterGain: master, dA, dB, midi, volScale };
+  // Atualiza visual
+  renderDrumCamPads();
+  atualizarBtnPad();
+}
+
+function dcPararNota(notaIdx) {
+  const node = dcPadNodes[notaIdx];
+  if (!node) return;
+  const ctx = audioCtx; const now = ctx.currentTime;
+  node.masterGain.gain.cancelScheduledValues(now);
+  node.masterGain.gain.setValueAtTime(node.masterGain.gain.value, now);
+  node.masterGain.gain.linearRampToValueAtTime(0, now + 2.0);
+  node.oscs.forEach(o => { try { o.stop(now + 2.1); } catch(e){} });
+  delete dcPadNodes[notaIdx];
+  renderDrumCamPads();
+  atualizarBtnPad();
+}
+
+function dcPararTudo() {
+  Object.keys(dcPadNodes).forEach(k => dcPararNota(k));
+}
+
 function renderDrumCamPads() {
   const grid = document.getElementById('drumcam-pads');
-  grid.innerHTML = Array.from({length: 16}, (_, i) => {
-    const notaIdx = i % 12;
-    const midi = 48 + notaIdx + (i >= 12 ? 12 : 0);
-    const nome = NOTA_DISPLAY_DC[notaIdx];
-    const playing = padNodes[i] ? 'playing' : '';
-    return `<div class="drumcam-pad ${playing}" data-idx="${i}" data-midi="${midi}"
+  if (!grid) return;
+  grid.innerHTML = NOTA_DISPLAY_DC.map((nome, i) => {
+    const midi = (dcOitava + 1) * 12 + i;
+    const playing = dcPadNodes[i] ? 'playing' : '';
+    return `<div class="drumcam-pad ${playing}" data-nota="${i}" data-midi="${midi}"
       onmousedown="toggleDrumCamPad(this)"
       ontouchstart="toggleDrumCamPad(this); event.preventDefault()">
       ${nome}
@@ -2329,19 +2677,23 @@ function renderDrumCamPads() {
   }).join('');
 }
 
+function dcMudarOitava(val) {
+  dcOitava = parseInt(val);
+  document.getElementById('dc-octave-val').textContent = dcOitava;
+  // Para notas ativas e reinicia na nova oitava
+  const ativas = Object.keys(dcPadNodes).map(Number);
+  ativas.forEach(notaIdx => {
+    dcPararNota(notaIdx);
+    const novoMidi = (dcOitava + 1) * 12 + notaIdx;
+    setTimeout(() => dcTocarNota(novoMidi, notaIdx), 100);
+  });
+  if (!ativas.length) renderDrumCamPads();
+}
+
 function toggleDrumCamPad(el) {
-  if (audioCtx.state === 'suspended') audioCtx.resume();
-  const idx = parseInt(el.dataset.idx);
-  if (padNodes[idx]) {
-    pararPad(idx);
-    el.classList.remove('playing');
-  } else {
-    // Usa a função iniciarPad existente passando elemento compatível
-    el.dataset.qual = '';
-    iniciarPad(el);
-    el.classList.add('playing');
-  }
-  atualizarBtnPad();
+  const notaIdx = parseInt(el.dataset.nota);
+  const midi    = parseInt(el.dataset.midi);
+  dcTocarNota(midi, notaIdx);
 }
 
 // Flash de beat no Drum Cam sincronizado com o metrônomo
