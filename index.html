@@ -43,6 +43,63 @@ function obToggleChip(btn) {
   obInstrumentoSelecionado = btn.dataset.val;
 }
 
+
+// ─── PERFIL ─────────────────────────────────────────────────────────────────
+let perfilInstrumentoSelecionado = null;
+
+function abrirModalPerfil() {
+  const perfil = JSON.parse(localStorage.getItem('map_perfil_v1') || '{}');
+  const nome = perfil.nome || '';
+  const inst = perfil.instrumento || null;
+
+  document.getElementById('perfil-nome-input').value = nome;
+  perfilInstrumentoSelecionado = inst;
+
+  // Chips
+  document.querySelectorAll('#perfil-chips .ob-chip').forEach(c => {
+    c.classList.toggle('selected', c.dataset.val === inst);
+  });
+
+  // Stats
+  document.getElementById('perfil-stat-musicas').textContent = songs.length;
+  document.getElementById('perfil-stat-eventos').textContent = (JSON.parse(localStorage.getItem('map_pro_eventos_v1') || '[]')).length;
+
+  atualizarPreviewPerfil();
+  document.getElementById('modal-perfil').style.display = 'flex';
+  // Fecha o menu dropdown
+  document.getElementById('m-drop').classList.remove('show');
+}
+
+function fecharModalPerfil() {
+  document.getElementById('modal-perfil').style.display = 'none';
+}
+
+function perfilToggleChip(btn) {
+  document.querySelectorAll('#perfil-chips .ob-chip').forEach(c => c.classList.remove('selected'));
+  btn.classList.add('selected');
+  perfilInstrumentoSelecionado = btn.dataset.val;
+  atualizarPreviewPerfil();
+}
+
+function atualizarPreviewPerfil() {
+  const nome = (document.getElementById('perfil-nome-input').value || '').trim();
+  const inicial = nome ? nome.charAt(0).toUpperCase() : '?';
+  document.getElementById('perfil-avatar').textContent = inicial;
+  document.getElementById('perfil-nome-display').textContent = nome || '—';
+  document.getElementById('perfil-inst-display').textContent = perfilInstrumentoSelecionado || 'Instrumento não definido';
+}
+
+function salvarPerfil() {
+  const nome = (document.getElementById('perfil-nome-input').value || '').trim();
+  if (nome.length < 2) { showToast('Nome precisa ter pelo menos 2 caracteres'); return; }
+  const perfil = JSON.parse(localStorage.getItem('map_perfil_v1') || '{}');
+  perfil.nome = nome;
+  perfil.instrumento = perfilInstrumentoSelecionado || perfil.instrumento || null;
+  localStorage.setItem('map_perfil_v1', JSON.stringify(perfil));
+  fecharModalPerfil();
+  showToast('Perfil atualizado!');
+}
+
 function terminarOnboarding() {
   const nome = (document.getElementById('ob-nome').value || '').trim();
   if (nome.length < 2) return;
@@ -1570,6 +1627,128 @@ body.viewer-mode input[type="text"] { pointer-events: none; }
 
 <div class="toast" id="toast"></div>
 
+<!-- ONBOARDING — PRIMEIRO ACESSO -->
+<div id="onboarding-overlay">
+  <div class="ob-hero">
+    <div class="ob-hero-bg"></div>
+    <div class="ob-hero-ring"></div>
+    <div class="ob-hero-ring"></div>
+    <div class="ob-logo-mark"><span>M</span></div>
+    <h1>Map Music<span>PRO</span></h1>
+    <p>A ferramenta profissional para músicos ao vivo</p>
+  </div>
+  <div class="ob-form">
+    <div class="ob-field">
+      <label class="ob-label">Seu nome ou banda</label>
+      <input class="ob-input" id="ob-nome" type="text" placeholder="Ex: João Silva ou Banda XYZ" autocomplete="off">
+    </div>
+    <div class="ob-field">
+      <label class="ob-label">Instrumento</label>
+      <div class="ob-chips">
+        <button class="ob-chip" data-val="guitarra" onclick="obToggleChip(this)">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 3H5a2 2 0 0 0-2 2v4m6-6h10a2 2 0 0 1 2 2v4M9 3v18m0 0h10a2 2 0 0 0 2-2v-4M9 21H5a2 2 0 0 1-2-2v-4m0 0h18"/></svg>
+          Guitarra
+        </button>
+        <button class="ob-chip" data-val="baixo" onclick="obToggleChip(this)">Baixo</button>
+        <button class="ob-chip" data-val="teclado" onclick="obToggleChip(this)">Teclado</button>
+        <button class="ob-chip" data-val="bateria" onclick="obToggleChip(this)">Bateria</button>
+        <button class="ob-chip" data-val="voz" onclick="obToggleChip(this)">Voz</button>
+        <button class="ob-chip" data-val="violao" onclick="obToggleChip(this)">Violão</button>
+        <button class="ob-chip" data-val="produtor" onclick="obToggleChip(this)">Produtor</button>
+        <button class="ob-chip" data-val="outro" onclick="obToggleChip(this)">Outro</button>
+      </div>
+    </div>
+    <div class="ob-field">
+      <label class="ob-label">O que você vai usar</label>
+      <div class="ob-features">
+        <div class="ob-feature-item">
+          <div class="ob-feature-icon">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 3H5a2 2 0 0 0-2 2v4m6-6h10a2 2 0 0 1 2 2v4M9 3v18m0 0h10a2 2 0 0 0 2-2v-4M9 21H5a2 2 0 0 1-2-2v-4m0 0h18"/></svg>
+          </div>
+          <div class="ob-feature-text">
+            <div class="ob-feature-title">Cifras e Metrônomo</div>
+            <div class="ob-feature-desc">Salve músicas com acordes, BPM e partes separadas</div>
+          </div>
+        </div>
+        <div class="ob-feature-item">
+          <div class="ob-feature-icon">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+          </div>
+          <div class="ob-feature-text">
+            <div class="ob-feature-title">Setlist e Eventos</div>
+            <div class="ob-feature-desc">Organize shows e playlists para cada apresentação</div>
+          </div>
+        </div>
+        <div class="ob-feature-item">
+          <div class="ob-feature-icon">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+          </div>
+          <div class="ob-feature-text">
+            <div class="ob-feature-title">Sala de Sincronia</div>
+            <div class="ob-feature-desc">Sincronize cifras em tempo real com toda a banda</div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <button class="ob-cta" id="ob-cta" onclick="terminarOnboarding()" disabled>Começar</button>
+    <p class="ob-terms">Os seus dados ficam apenas no seu dispositivo</p>
+  </div>
+</div>
+
+<!-- MODAL PERFIL -->
+<div id="modal-perfil" style="position:fixed;inset:0;z-index:99998;background:rgba(0,0,0,0.85);display:none;align-items:center;justify-content:center;padding:24px;">
+  <div style="background:#0d0d15;border:1px solid rgba(255,255,255,0.1);border-radius:20px;padding:28px 24px;width:100%;max-width:380px;display:flex;flex-direction:column;gap:18px;">
+    <div style="display:flex;align-items:center;justify-content:space-between;">
+      <span style="font-size:16px;font-weight:900;color:#fff;">Meu Perfil</span>
+      <button onclick="fecharModalPerfil()" style="background:none;border:none;color:rgba(255,255,255,0.3);font-size:18px;cursor:pointer;padding:4px 8px;">✕</button>
+    </div>
+    <!-- Avatar gerado -->
+    <div style="display:flex;align-items:center;gap:16px;">
+      <div id="perfil-avatar" style="width:56px;height:56px;border-radius:16px;background:linear-gradient(135deg,#1db954,#17a349);display:flex;align-items:center;justify-content:center;font-size:24px;font-weight:900;color:#000;flex-shrink:0;"></div>
+      <div>
+        <div id="perfil-nome-display" style="font-size:18px;font-weight:900;color:#fff;"></div>
+        <div id="perfil-inst-display" style="font-size:11px;color:rgba(255,255,255,0.4);margin-top:3px;text-transform:capitalize;letter-spacing:0.5px;"></div>
+      </div>
+    </div>
+    <!-- Editar nome -->
+    <div style="display:flex;flex-direction:column;gap:6px;">
+      <label style="font-size:9px;font-weight:800;letter-spacing:2px;color:rgba(255,255,255,0.3);text-transform:uppercase;">Nome / Banda</label>
+      <input id="perfil-nome-input" type="text" style="background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);border-radius:10px;color:#fff;font-size:13px;padding:12px 14px;outline:none;width:100%;box-sizing:border-box;transition:0.2s;font-family:inherit;" oninput="atualizarPreviewPerfil()">
+    </div>
+    <!-- Instrumento -->
+    <div style="display:flex;flex-direction:column;gap:8px;">
+      <label style="font-size:9px;font-weight:800;letter-spacing:2px;color:rgba(255,255,255,0.3);text-transform:uppercase;">Instrumento</label>
+      <div style="display:flex;flex-wrap:wrap;gap:8px;" id="perfil-chips">
+        <button class="ob-chip" data-val="guitarra" onclick="perfilToggleChip(this)">Guitarra</button>
+        <button class="ob-chip" data-val="baixo" onclick="perfilToggleChip(this)">Baixo</button>
+        <button class="ob-chip" data-val="teclado" onclick="perfilToggleChip(this)">Teclado</button>
+        <button class="ob-chip" data-val="bateria" onclick="perfilToggleChip(this)">Bateria</button>
+        <button class="ob-chip" data-val="voz" onclick="perfilToggleChip(this)">Voz</button>
+        <button class="ob-chip" data-val="violao" onclick="perfilToggleChip(this)">Violão</button>
+        <button class="ob-chip" data-val="produtor" onclick="perfilToggleChip(this)">Produtor</button>
+        <button class="ob-chip" data-val="outro" onclick="perfilToggleChip(this)">Outro</button>
+      </div>
+    </div>
+    <!-- Stats -->
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+      <div style="background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.07);border-radius:12px;padding:12px;text-align:center;">
+        <div id="perfil-stat-musicas" style="font-size:22px;font-weight:900;color:#1db954;"></div>
+        <div style="font-size:9px;color:rgba(255,255,255,0.3);font-weight:700;letter-spacing:1px;margin-top:2px;">MÚSICAS</div>
+      </div>
+      <div style="background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.07);border-radius:12px;padding:12px;text-align:center;">
+        <div id="perfil-stat-eventos" style="font-size:22px;font-weight:900;color:#1db954;"></div>
+        <div style="font-size:9px;color:rgba(255,255,255,0.3);font-weight:700;letter-spacing:1px;margin-top:2px;">EVENTOS</div>
+      </div>
+    </div>
+    <div style="display:flex;gap:10px;">
+      <button onclick="fecharModalPerfil()" style="flex:1;padding:12px;border-radius:10px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);color:rgba(255,255,255,0.5);font-size:12px;font-weight:700;cursor:pointer;letter-spacing:1px;text-transform:uppercase;font-family:inherit;">Cancelar</button>
+      <button onclick="salvarPerfil()" style="flex:2;padding:12px;border-radius:10px;background:rgba(29,185,84,0.15);border:1px solid rgba(29,185,84,0.3);color:#1db954;font-size:12px;font-weight:800;cursor:pointer;letter-spacing:1px;text-transform:uppercase;font-family:inherit;transition:0.2s;">Salvar</button>
+    </div>
+  </div>
+</div>
+
+
+
 <!-- SYNC BAR -->
 <div class="sync-bar" id="sync-bar">
   <div class="sync-dot"></div>
@@ -1613,6 +1792,7 @@ body.viewer-mode input[type="text"] { pointer-events: none; }
           <div class="menu-item" onclick="abrirDrumCam()">Drum Cam</div>
           <div class="menu-item" onclick="abrirPads()">Pads</div>
           <div class="menu-item" onclick="abrirModalCifra()">Importar Cifra</div>
+          <div class="menu-item" onclick="abrirModalPerfil()">Meu Perfil</div>
           <div class="menu-item danger" onclick="resetSection()">Limpar Seção</div>
         </div>
       </div>
