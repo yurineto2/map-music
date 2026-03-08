@@ -219,6 +219,189 @@ body { font-family: 'Inter', sans-serif; background: var(--bg-primary); color: v
 }
 .biblioteca-vazia-icon { font-size: 48px; opacity: 0.15; }
 
+/* Nav tabs biblioteca */
+.biblioteca-tabs {
+  display: flex; gap: 0; padding: 0 24px;
+  border-bottom: 1px solid rgba(255,255,255,0.06);
+  flex-shrink: 0;
+}
+.biblioteca-tab {
+  padding: 10px 20px; font-size: 11px; font-weight: 800;
+  letter-spacing: 1px; text-transform: uppercase;
+  color: rgba(255,255,255,0.3); cursor: pointer;
+  border-bottom: 2px solid transparent; transition: 0.2s;
+}
+.biblioteca-tab.active {
+  color: var(--accent-primary);
+  border-bottom-color: var(--accent-primary);
+}
+
+/* Card de evento/álbum */
+.evento-card {
+  background: rgba(255,255,255,0.03);
+  border: 1px solid rgba(255,255,255,0.07);
+  border-radius: 16px; overflow: hidden; cursor: pointer;
+  transition: border-color 0.2s, transform 0.2s;
+}
+.evento-card:hover { border-color: rgba(29,185,84,0.3); }
+.evento-card:active { transform: scale(0.98); }
+
+.evento-cover {
+  width: 100%; aspect-ratio: 16/9;
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  position: relative; overflow: hidden;
+}
+.evento-cover-bg {
+  position: absolute; inset: 0;
+  background: linear-gradient(135deg, var(--ac1), var(--ac2));
+}
+.evento-cover-nome {
+  position: relative; z-index: 1;
+  font-size: clamp(13px, 3vw, 18px); font-weight: 900;
+  color: #fff; text-align: center; padding: 0 12px;
+  text-shadow: 0 2px 8px rgba(0,0,0,0.5);
+  text-transform: uppercase; letter-spacing: 1px;
+}
+.evento-cover-data {
+  position: relative; z-index: 1;
+  font-size: 9px; font-weight: 700; letter-spacing: 2px;
+  color: rgba(255,255,255,0.6); margin-top: 6px;
+  text-transform: uppercase;
+}
+.evento-cover-count {
+  position: absolute; bottom: 8px; right: 10px; z-index: 2;
+  font-size: 9px; font-weight: 800; letter-spacing: 1px;
+  color: rgba(255,255,255,0.5);
+  background: rgba(0,0,0,0.3); padding: 3px 8px; border-radius: 20px;
+}
+
+.evento-info { padding: 10px 12px 6px; }
+.evento-nome {
+  font-size: 12px; font-weight: 800; color: #fff;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.evento-meta { font-size: 10px; color: rgba(255,255,255,0.3); margin-top: 2px; }
+
+.evento-actions { display: flex; gap: 6px; padding: 6px 12px 12px; }
+.evento-btn {
+  flex: 1; padding: 6px 0; border-radius: 8px;
+  font-size: 9px; font-weight: 800; letter-spacing: 1px;
+  text-transform: uppercase; cursor: pointer; border: none; transition: 0.15s;
+}
+.evento-btn-open {
+  background: rgba(29,185,84,0.12); color: var(--accent-primary);
+  border: 1px solid rgba(29,185,84,0.2);
+}
+.evento-btn-open:hover { background: rgba(29,185,84,0.22); }
+.evento-btn-del {
+  background: rgba(255,60,60,0.08); color: rgba(255,80,80,0.6);
+  border: 1px solid rgba(255,60,60,0.12);
+}
+
+/* Tela interna do evento */
+.evento-detalhe {
+  display: none; flex-direction: column; height: 100%;
+}
+.evento-detalhe.show { display: flex; }
+.biblioteca-main { display: flex; flex-direction: column; flex: 1; overflow: hidden; }
+.biblioteca-main.hidden { display: none; }
+
+.evento-detalhe-header {
+  display: flex; align-items: center; gap: 12px;
+  padding: 14px 24px; border-bottom: 1px solid rgba(255,255,255,0.06);
+  flex-shrink: 0;
+}
+.evento-detalhe-back {
+  background: none; border: 1px solid rgba(255,255,255,0.1);
+  color: rgba(255,255,255,0.4); padding: 6px 14px;
+  border-radius: 20px; font-size: 10px; font-weight: 700;
+  cursor: pointer; text-transform: uppercase; letter-spacing: 1px;
+  transition: 0.2s;
+}
+.evento-detalhe-back:hover { color: #fff; }
+.evento-detalhe-title {
+  font-size: 16px; font-weight: 900; color: #fff;
+  flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.evento-detalhe-add {
+  background: rgba(29,185,84,0.12); border: 1px solid rgba(29,185,84,0.3);
+  color: var(--accent-primary); padding: 7px 16px;
+  border-radius: 20px; font-size: 10px; font-weight: 800;
+  cursor: pointer; text-transform: uppercase; letter-spacing: 1px;
+  transition: 0.2s;
+}
+.evento-detalhe-add:hover { background: rgba(29,185,84,0.22); }
+
+/* Modal novo evento */
+.modal-evento {
+  position: fixed; inset: 0; z-index: 7000;
+  background: rgba(0,0,0,0.85); display: none;
+  align-items: center; justify-content: center; padding: 24px;
+}
+.modal-evento.show { display: flex; }
+.modal-evento-box {
+  background: #0d1117; border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 20px; padding: 28px 24px; width: 100%; max-width: 380px;
+  display: flex; flex-direction: column; gap: 14px;
+}
+.modal-evento-title {
+  font-size: 16px; font-weight: 900; color: #fff; margin-bottom: 4px;
+}
+.modal-evento input {
+  background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 10px; color: #fff; font-size: 13px; padding: 12px 14px;
+  outline: none; width: 100%; box-sizing: border-box; transition: 0.2s;
+}
+.modal-evento input:focus { border-color: rgba(29,185,84,0.4); }
+.modal-evento input::placeholder { color: rgba(255,255,255,0.25); }
+.modal-evento-btns { display: flex; gap: 10px; margin-top: 4px; }
+.modal-evento-cancel {
+  flex: 1; padding: 12px; border-radius: 10px;
+  background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1);
+  color: rgba(255,255,255,0.5); font-size: 12px; font-weight: 700;
+  cursor: pointer; text-transform: uppercase; letter-spacing: 1px;
+}
+.modal-evento-save {
+  flex: 2; padding: 12px; border-radius: 10px;
+  background: rgba(29,185,84,0.15); border: 1px solid rgba(29,185,84,0.3);
+  color: var(--accent-primary); font-size: 12px; font-weight: 800;
+  cursor: pointer; text-transform: uppercase; letter-spacing: 1px;
+  transition: 0.2s;
+}
+.modal-evento-save:hover { background: rgba(29,185,84,0.25); }
+
+/* Modal adicionar música ao evento */
+.modal-addmusica { position: fixed; inset: 0; z-index: 7000;
+  background: rgba(0,0,0,0.85); display: none;
+  align-items: flex-end; justify-content: center; }
+.modal-addmusica.show { display: flex; }
+.modal-addmusica-box {
+  background: #0d1117; border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 20px 20px 0 0; padding: 20px 0 40px;
+  width: 100%; max-width: 500px; max-height: 70vh;
+  display: flex; flex-direction: column;
+}
+.modal-addmusica-header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 0 20px 14px; border-bottom: 1px solid rgba(255,255,255,0.06);
+  flex-shrink: 0;
+}
+.modal-addmusica-list { overflow-y: auto; flex: 1; padding: 10px 0; }
+.modal-addmusica-item {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 12px 20px; cursor: pointer; transition: background 0.15s;
+}
+.modal-addmusica-item:hover { background: rgba(255,255,255,0.04); }
+.modal-addmusica-item.added { opacity: 0.35; pointer-events: none; }
+.modal-addmusica-item span { font-size: 12px; font-weight: 700; color: #fff; }
+.modal-addmusica-item small { font-size: 10px; color: rgba(255,255,255,0.3); }
+.modal-addmusica-plus {
+  background: rgba(29,185,84,0.15); border: 1px solid rgba(29,185,84,0.3);
+  color: var(--accent-primary); padding: 5px 12px; border-radius: 20px;
+  font-size: 11px; font-weight: 800; cursor: pointer;
+}
+
 /* ── DRUM CAM ── */
 .drumcam-overlay {
   position: fixed; inset: 0; z-index: 6000;
@@ -1179,11 +1362,57 @@ body.viewer-mode input[type="text"] { pointer-events: none; }
     <div class="biblioteca-titulo">Biblioteca <span>PRO</span></div>
     <button class="biblioteca-close" onclick="fecharBiblioteca()">Fechar</button>
   </div>
-  <div class="biblioteca-search">
-    <input type="text" id="biblioteca-search" placeholder="Buscar música..."
-      oninput="renderBiblioteca(this.value)">
+
+  <!-- MAIN: tabs + conteúdo -->
+  <div class="biblioteca-main" id="biblioteca-main">
+    <div class="biblioteca-tabs">
+      <div class="biblioteca-tab active" id="tab-musicas" onclick="bibTab('musicas')">Músicas</div>
+      <div class="biblioteca-tab" id="tab-eventos" onclick="bibTab('eventos')">Eventos</div>
+    </div>
+    <div class="biblioteca-search">
+      <input type="text" id="biblioteca-search" placeholder="Buscar..."
+        oninput="renderBibAtivo(this.value)">
+    </div>
+    <div class="biblioteca-grid" id="biblioteca-grid"></div>
   </div>
-  <div class="biblioteca-grid" id="biblioteca-grid"></div>
+
+  <!-- DETALHE EVENTO -->
+  <div class="evento-detalhe" id="evento-detalhe">
+    <div class="evento-detalhe-header">
+      <button class="evento-detalhe-back" onclick="voltarEventos()">← Voltar</button>
+      <div class="evento-detalhe-title" id="evento-detalhe-title">Evento</div>
+      <button class="evento-detalhe-add" onclick="abrirAddMusica()">+ Música</button>
+    </div>
+    <div class="biblioteca-search">
+      <input type="text" id="evento-search" placeholder="Buscar na lista..."
+        oninput="renderEventoDetalhe()">
+    </div>
+    <div class="biblioteca-grid" id="evento-grid"></div>
+  </div>
+</div>
+
+<!-- MODAL NOVO EVENTO -->
+<div class="modal-evento" id="modal-evento">
+  <div class="modal-evento-box">
+    <div class="modal-evento-title">Novo Evento</div>
+    <input type="text" id="evento-nome-input" placeholder="Nome do evento (ex: Show de Natal)">
+    <input type="date" id="evento-data-input">
+    <div class="modal-evento-btns">
+      <button class="modal-evento-cancel" onclick="fecharModalEvento()">Cancelar</button>
+      <button class="modal-evento-save" onclick="salvarEvento()">Criar</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL ADICIONAR MÚSICA AO EVENTO -->
+<div class="modal-addmusica" id="modal-addmusica">
+  <div class="modal-addmusica-box">
+    <div class="modal-addmusica-header">
+      <span style="font-size:13px;font-weight:900;color:#fff;">Adicionar ao Evento</span>
+      <button onclick="fecharAddMusica()" style="background:none;border:none;color:rgba(255,255,255,0.4);font-size:18px;cursor:pointer;">✕</button>
+    </div>
+    <div class="modal-addmusica-list" id="modal-addmusica-list"></div>
+  </div>
 </div>
 
 <!-- DRUM CAM -->
@@ -1919,7 +2148,8 @@ function updateStorage() {
   localStorage.setItem('map_pro_elite_v1', JSON.stringify(songs));
   renderSetlist();
   if (document.getElementById('biblioteca-overlay')?.classList.contains('show')) {
-    renderBiblioteca(document.getElementById('biblioteca-search')?.value || '');
+    renderBibAtivo(document.getElementById('biblioteca-search')?.value || '');
+    if (eventoAbertoId) renderEventoDetalhe();
   }
 }
 
@@ -2479,7 +2709,6 @@ function pararPad(idx) {
 }
 
 // ─── BIBLIOTECA ────────────────────────────────────────────────────────────
-
 const ALBUM_PALETTES = [
   ['#1a1a2e','#16213e'],['#0d1b2a','#1b4332'],['#1a0533','#3d0c6e'],
   ['#0d2137','#1d4e89'],['#1a0a0a','#6b1c1c'],['#0a1628','#1e3a5f'],
@@ -2487,8 +2716,16 @@ const ALBUM_PALETTES = [
   ['#1a1a1a','#2d5a27'],['#2d1b69','#11998e'],['#1f0b38','#4a0e8f'],
 ];
 
+let eventos = JSON.parse(localStorage.getItem('map_pro_eventos_v1')) || [];
+let bibTabAtiva = 'musicas'; // 'musicas' | 'eventos'
+let eventoAbertoId = null;
+
+function salvarEventos() {
+  localStorage.setItem('map_pro_eventos_v1', JSON.stringify(eventos));
+}
+
 function albumColor(id) {
-  const p = ALBUM_PALETTES[id % ALBUM_PALETTES.length];
+  const p = ALBUM_PALETTES[Math.abs(id) % ALBUM_PALETTES.length];
   return { ac1: p[0], ac2: p[1] };
 }
 
@@ -2496,13 +2733,40 @@ function abrirBiblioteca() {
   fecharMenu();
   document.getElementById('biblioteca-overlay').classList.add('show');
   document.getElementById('biblioteca-search').value = '';
+  bibTabAtiva = 'musicas';
+  mostrarBibMain();
+  ativarTab('musicas');
   renderBiblioteca('');
 }
 
 function fecharBiblioteca() {
   document.getElementById('biblioteca-overlay').classList.remove('show');
+  eventoAbertoId = null;
 }
 
+function mostrarBibMain() {
+  document.getElementById('biblioteca-main').classList.remove('hidden');
+  document.getElementById('evento-detalhe').classList.remove('show');
+}
+
+function bibTab(aba) {
+  bibTabAtiva = aba;
+  ativarTab(aba);
+  document.getElementById('biblioteca-search').value = '';
+  renderBibAtivo('');
+}
+
+function ativarTab(aba) {
+  document.getElementById('tab-musicas').classList.toggle('active', aba === 'musicas');
+  document.getElementById('tab-eventos').classList.toggle('active', aba === 'eventos');
+}
+
+function renderBibAtivo(filtro) {
+  if (bibTabAtiva === 'musicas') renderBiblioteca(filtro);
+  else renderEventos(filtro);
+}
+
+// ── ABA MÚSICAS ──
 function renderBiblioteca(filtro = '') {
   const grid = document.getElementById('biblioteca-grid');
   const termo = (filtro || '').toLowerCase();
@@ -2532,7 +2796,7 @@ function renderBiblioteca(filtro = '') {
       </div>
       <div class="album-info">
         <div class="album-name" title="${s.name}">${s.name}</div>
-        <div class="album-meta">${partes} parte${partes !== 1 ? 's' : ''} · ${s.favorite ? '★ Fav' : ''}</div>
+        <div class="album-meta">${partes} parte${partes !== 1 ? 's' : ''} ${s.favorite ? '· ★' : ''}</div>
       </div>
       <div class="album-actions">
         <button class="album-btn album-btn-load" onclick="loadSongBiblioteca(${s.id})">Abrir</button>
@@ -2556,6 +2820,192 @@ function deleteSongBiblioteca(id, e) {
     renderBiblioteca(document.getElementById('biblioteca-search').value);
     showToast('Removida.');
   }
+}
+
+// ── ABA EVENTOS ──
+function renderEventos(filtro = '') {
+  const grid = document.getElementById('biblioteca-grid');
+  const termo = (filtro || '').toLowerCase();
+  const lista = eventos.filter(e => e.nome.toLowerCase().includes(termo));
+
+  // Botão criar evento sempre no topo
+  const btnCriar = `<div style="grid-column:1/-1;margin-bottom:4px;">
+    <button onclick="abrirModalEvento()" style="width:100%;padding:14px;border-radius:12px;
+      background:rgba(29,185,84,0.1);border:1px dashed rgba(29,185,84,0.3);
+      color:var(--accent-primary);font-size:12px;font-weight:800;letter-spacing:1px;
+      cursor:pointer;text-transform:uppercase;">
+      + Criar Evento
+    </button>
+  </div>`;
+
+  if (!lista.length) {
+    grid.innerHTML = btnCriar + `<div class="biblioteca-vazia" style="grid-column:1/-1">
+      <div class="biblioteca-vazia-icon">♩</div>
+      <div>Nenhum evento</div>
+      <div style="font-size:10px;opacity:0.6;font-weight:500;">Crie eventos para organizar repertórios</div>
+    </div>`;
+    return;
+  }
+
+  grid.innerHTML = btnCriar + lista.map(ev => {
+    const cor = albumColor(ev.id);
+    const dataFmt = ev.data ? new Date(ev.data + 'T12:00').toLocaleDateString('pt-BR', { day:'2-digit', month:'short', year:'numeric' }) : '';
+    const qtd = (ev.musicIds || []).length;
+    return `
+    <div class="evento-card">
+      <div class="evento-cover" style="--ac1:${cor.ac1};--ac2:${cor.ac2}"
+        onclick="abrirEventoDetalhe(${ev.id})">
+        <div class="evento-cover-bg"></div>
+        <div class="evento-cover-nome">${ev.nome}</div>
+        ${dataFmt ? `<div class="evento-cover-data">${dataFmt}</div>` : ''}
+        <div class="evento-cover-count">${qtd} música${qtd !== 1 ? 's' : ''}</div>
+      </div>
+      <div class="evento-info">
+        <div class="evento-nome">${ev.nome}</div>
+        <div class="evento-meta">${dataFmt || 'Sem data'} · ${qtd} música${qtd !== 1 ? 's' : ''}</div>
+      </div>
+      <div class="evento-actions">
+        <button class="evento-btn evento-btn-open" onclick="abrirEventoDetalhe(${ev.id})">Ver</button>
+        <button class="evento-btn evento-btn-del" onclick="deletarEvento(${ev.id}, event)">✕</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function abrirModalEvento() {
+  document.getElementById('modal-evento').classList.add('show');
+  document.getElementById('evento-nome-input').value = '';
+  document.getElementById('evento-data-input').value = '';
+  setTimeout(() => document.getElementById('evento-nome-input').focus(), 100);
+}
+
+function fecharModalEvento() {
+  document.getElementById('modal-evento').classList.remove('show');
+}
+
+function salvarEvento() {
+  const nome = document.getElementById('evento-nome-input').value.trim();
+  if (!nome) { document.getElementById('evento-nome-input').focus(); return; }
+  const data = document.getElementById('evento-data-input').value;
+  eventos.push({ id: Date.now(), nome, data, musicIds: [] });
+  salvarEventos();
+  fecharModalEvento();
+  renderEventos('');
+  showToast('Evento criado!');
+}
+
+function deletarEvento(id, e) {
+  e.stopPropagation();
+  if (confirm('Excluir evento?')) {
+    eventos = eventos.filter(ev => ev.id !== id);
+    salvarEventos();
+    renderEventos(document.getElementById('biblioteca-search').value);
+    showToast('Evento removido.');
+  }
+}
+
+// ── DETALHE DO EVENTO ──
+function abrirEventoDetalhe(id) {
+  eventoAbertoId = id;
+  const ev = eventos.find(e => e.id === id);
+  if (!ev) return;
+  document.getElementById('biblioteca-main').classList.add('hidden');
+  document.getElementById('evento-detalhe').classList.add('show');
+  document.getElementById('evento-detalhe-title').textContent = ev.nome;
+  document.getElementById('evento-search').value = '';
+  renderEventoDetalhe();
+}
+
+function voltarEventos() {
+  eventoAbertoId = null;
+  mostrarBibMain();
+  bibTabAtiva = 'eventos';
+  ativarTab('eventos');
+  renderEventos('');
+}
+
+function renderEventoDetalhe() {
+  const ev = eventos.find(e => e.id === eventoAbertoId);
+  if (!ev) return;
+  const grid = document.getElementById('evento-grid');
+  const filtro = (document.getElementById('evento-search').value || '').toLowerCase();
+  const musicIds = ev.musicIds || [];
+  const lista = songs.filter(s => musicIds.includes(s.id) && s.name.toLowerCase().includes(filtro));
+
+  if (!lista.length) {
+    grid.innerHTML = `<div class="biblioteca-vazia" style="grid-column:1/-1">
+      <div class="biblioteca-vazia-icon">♪</div>
+      <div>${filtro ? 'Nenhum resultado' : 'Evento vazio'}</div>
+      <div style="font-size:10px;opacity:0.6;font-weight:500;">Toque em "+ Música" para adicionar</div>
+    </div>`;
+    return;
+  }
+
+  grid.innerHTML = lista.map((s, idx) => {
+    const cor = albumColor(s.id || idx);
+    const inicial = s.name.trim().charAt(0).toUpperCase();
+    const partes = s.parts ? s.parts.length : 0;
+    return `
+    <div class="album-card" data-id="${s.id}">
+      <div class="album-cover" style="--ac1:${cor.ac1};--ac2:${cor.ac2}"
+        onclick="loadSongBiblioteca(${s.id})">
+        <div class="album-cover-bg"></div>
+        <div class="album-cover-initial">${inicial}</div>
+        <div class="album-cover-bpm">${s.bpm} BPM</div>
+      </div>
+      <div class="album-info">
+        <div class="album-name">${s.name}</div>
+        <div class="album-meta">${partes} parte${partes !== 1 ? 's' : ''}</div>
+      </div>
+      <div class="album-actions">
+        <button class="album-btn album-btn-load" onclick="loadSongBiblioteca(${s.id})">Abrir</button>
+        <button class="album-btn album-btn-del" onclick="removerDoEvento(${s.id}, event)">✕</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function removerDoEvento(songId, e) {
+  e.stopPropagation();
+  const ev = eventos.find(e => e.id === eventoAbertoId);
+  if (!ev) return;
+  ev.musicIds = ev.musicIds.filter(id => id !== songId);
+  salvarEventos();
+  renderEventoDetalhe();
+  showToast('Removida do evento.');
+}
+
+// ── ADICIONAR MÚSICA AO EVENTO ──
+function abrirAddMusica() {
+  const ev = eventos.find(e => e.id === eventoAbertoId);
+  if (!ev) return;
+  const lista = document.getElementById('modal-addmusica-list');
+  lista.innerHTML = songs.length === 0
+    ? `<div style="padding:20px;text-align:center;color:rgba(255,255,255,0.3);font-size:12px;">Nenhuma música salva</div>`
+    : songs.map(s => {
+        const added = (ev.musicIds || []).includes(s.id);
+        return `<div class="modal-addmusica-item ${added ? 'added' : ''}" onclick="adicionarAoEvento(${s.id})">
+          <div><span>${s.name}</span><br><small>${s.bpm} BPM</small></div>
+          ${added ? '<small style="color:rgba(255,255,255,0.25)">Já adicionada</small>' : '<button class="modal-addmusica-plus">+</button>'}
+        </div>`;
+      }).join('');
+  document.getElementById('modal-addmusica').classList.add('show');
+}
+
+function fecharAddMusica() {
+  document.getElementById('modal-addmusica').classList.remove('show');
+}
+
+function adicionarAoEvento(songId) {
+  const ev = eventos.find(e => e.id === eventoAbertoId);
+  if (!ev) return;
+  if (!ev.musicIds.includes(songId)) {
+    ev.musicIds.push(songId);
+    salvarEventos();
+    renderEventoDetalhe();
+    showToast('Adicionada ao evento!');
+  }
+  fecharAddMusica();
 }
 
 // ─── DRUM CAM ──────────────────────────────────────────────────────────────
