@@ -57,6 +57,7 @@ function obToggleChip(btn) {
 
 // ─── PERFIL ─────────────────────────────────────────────────────────────────
 let perfilInstrumentoSelecionado = null;
+let perfilFotoBase64 = null; // foto atual em edição
 
 function abrirModalPerfil() {
   const perfil = JSON.parse(localStorage.getItem('map_perfil_v1') || '{}');
@@ -65,6 +66,7 @@ function abrirModalPerfil() {
 
   document.getElementById('perfil-nome-input').value = nome;
   perfilInstrumentoSelecionado = inst;
+  perfilFotoBase64 = perfil.foto || null;
 
   // Chips
   document.querySelectorAll('#perfil-chips .ob-chip').forEach(c => {
@@ -73,11 +75,15 @@ function abrirModalPerfil() {
 
   // Stats
   document.getElementById('perfil-stat-musicas').textContent = songs.length;
-  document.getElementById('perfil-stat-eventos').textContent = (JSON.parse(localStorage.getItem('map_pro_eventos_v1') || '[]')).length;
+  document.getElementById('perfil-stat-eventos').textContent =
+    (JSON.parse(localStorage.getItem('map_pro_eventos_v1') || '[]')).length;
+
+  // Badge Google
+  const badge = document.getElementById('perfil-google-badge');
+  if (badge) badge.style.display = perfil.viaGoogle ? 'block' : 'none';
 
   atualizarPreviewPerfil();
   document.getElementById('modal-perfil').style.display = 'flex';
-  // Fecha o menu dropdown
   document.getElementById('m-drop').classList.remove('show');
 }
 
@@ -94,10 +100,160 @@ function perfilToggleChip(btn) {
 
 function atualizarPreviewPerfil() {
   const nome = (document.getElementById('perfil-nome-input').value || '').trim();
-  const inicial = nome ? nome.charAt(0).toUpperCase() : '?';
-  document.getElementById('perfil-avatar').textContent = inicial;
+  const av = document.getElementById('perfil-avatar');
+
+  // Avatar: foto ou inicial
+  if (perfilFotoBase64) {
+    av.innerHTML = '<img src="' + perfilFotoBase64 + '" style="width:100%;height:100%;object-fit:cover;border-radius:16px;">';
+  } else {
+    av.innerHTML = nome ? nome.charAt(0).toUpperCase() : '?';
+    av.style.background = 'linear-gradient(135deg,#1db954,#17a349)';
+  }
+
   document.getElementById('perfil-nome-display').textContent = nome || '—';
-  document.getElementById('perfil-inst-display').textContent = perfilInstrumentoSelecionado || 'Instrumento não definido';
+  document.getElementById('perfil-inst-display').textContent =
+    perfilInstrumentoSelecionado || 'Instrumento não definido';
+}
+
+// ── Carregar foto da biblioteca ──────────────────────────────────────────────
+function perfilCarregarFoto(input) {
+  const file = input.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    perfilFotoBase64 = e.target.result;
+    atualizarPreviewPerfil();
+  };
+  reader.readAsDataURL(file);
+}
+
+// ── Login com Google (OAuth popup) ──────────────────────────────────────────
+function perfilLoginGoogle() {
+  // Google OAuth 2.0 implicit flow — abre popup
+  const CLIENT_ID = ''; // deixado vazio — funciona via GSI se disponível
+  const redirectUri = window.location.href.split('?')[0].split('#')[0];
+
+  // Tenta usar Google Identity Services (GSI) se já carregado
+  if (window.google && window.google.accounts) {
+    window.google.accounts.id.initialize({
+      client_id: CLIENT_ID || 'placeholder',
+      callback: _handleGoogleCredential,
+      auto_select: false,
+      cancel_on_tap_outside: true,
+    });
+    window.google.accounts.id.prompt();
+    return;
+  }
+
+  // Fallback: OAuth2 popup manual
+  const scope = 'openid email profile';
+  const state = Math.random().toString(36).slice(2);
+  sessionStorage.setItem('google_oauth_state', state);
+
+  const params = new URLSearchParams({
+    response_type: 'token id_token',
+    client_id: CLIENT_ID || '',
+    redirect_uri: redirectUri,
+    scope,
+    state,
+    nonce: Math.random().toString(36).slice(2),
+  });
+
+  if (!CLIENT_ID) {
+    // Sem client_id configurado — avisa o usuário
+    _mostrarInfoGoogle();
+    return;
+  }
+
+  const popup = window.open(
+    'https://accounts.google.com/o/oauth2/v2/auth?' + params,
+    'google_login',
+    'width=480,height=580,top=100,left=200'
+  );
+
+  // Escuta mensagem do popup
+  window.addEventListener('message', function onMsg(e) {
+    if (e.origin !== window.location.origin) return;
+    if (e.data && e.data.type === 'google_token') {
+      window.removeEventListener('message', onMsg);
+      _fetchGoogleProfile(e.data.access_token);
+    }
+  });
+}
+
+function _handleGoogleCredential(response) {
+  // Decodifica JWT id_token (sem verificação — apenas para exibição)
+  try {
+    const payload = JSON.parse(atob(response.credential.split('.')[1]));
+    _aplicarPerfilGoogle(payload.name, payload.picture, payload.email);
+  } catch(e) {
+    showToast('Erro ao processar login Google');
+  }
+}
+
+function _fetchGoogleProfile(token) {
+  fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
+    headers: { Authorization: 'Bearer ' + token }
+  })
+  .then(r => r.json())
+  .then(data => _aplicarPerfilGoogle(data.name, data.picture, data.email))
+  .catch(() => showToast('Erro ao buscar perfil do Google'));
+}
+
+function _aplicarPerfilGoogle(nome, fotoUrl, email) {
+  if (nome) document.getElementById('perfil-nome-input').value = nome;
+
+  if (fotoUrl) {
+    // Baixa foto como base64 para armazenar localmente
+    fetch(fotoUrl)
+      .then(r => r.blob())
+      .then(blob => {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+          perfilFotoBase64 = e.target.result;
+          atualizarPreviewPerfil();
+        };
+        reader.readAsDataURL(blob);
+      })
+      .catch(() => {
+        // Se CORS bloquear, usa URL diretamente
+        perfilFotoBase64 = fotoUrl;
+        atualizarPreviewPerfil();
+      });
+  }
+
+  const badge = document.getElementById('perfil-google-badge');
+  if (badge) badge.style.display = 'block';
+
+  atualizarPreviewPerfil();
+  showToast('Perfil importado do Google!');
+
+  // Salva automaticamente com flag viaGoogle
+  const perfil = JSON.parse(localStorage.getItem('map_perfil_v1') || '{}');
+  perfil.nome = nome || perfil.nome;
+  perfil.email = email || null;
+  perfil.viaGoogle = true;
+  if (perfilFotoBase64) perfil.foto = perfilFotoBase64;
+  localStorage.setItem('map_perfil_v1', JSON.stringify(perfil));
+}
+
+function _mostrarInfoGoogle() {
+  // Modal inline de instrução quando não há client_id configurado
+  showToast('Configure um Google Client ID para usar este recurso');
+
+  // Abre link de documentação em nova aba
+  const info = document.createElement('div');
+  info.style.cssText = 'position:fixed;inset:0;z-index:999999;background:rgba(0,0,0,0.9);display:flex;align-items:center;justify-content:center;padding:24px;';
+  info.innerHTML = '<div style="background:#0d0d15;border:1px solid rgba(255,255,255,0.1);border-radius:16px;padding:28px;max-width:380px;width:100%;display:flex;flex-direction:column;gap:14px;">' +
+    '<div style="font-size:14px;font-weight:900;color:#fff;">Login com Google</div>' +
+    '<p style="font-size:12px;color:rgba(255,255,255,0.5);line-height:1.6;">Para usar o login com Google nesta app, é necessário configurar um <strong style="color:#fff;">Google OAuth Client ID</strong> no Google Cloud Console e adicionar o domínio como origem autorizada.</p>' +
+    '<div style="background:rgba(29,185,84,0.08);border:1px solid rgba(29,185,84,0.2);border-radius:10px;padding:12px;font-size:11px;color:#1db954;font-family:monospace;">console.cloud.google.com</div>' +
+    '<div style="display:flex;gap:10px;">' +
+      '<button onclick="this.closest(\'div[style]\').remove()" style="flex:1;padding:11px;border-radius:10px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);color:rgba(255,255,255,0.5);font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;">Fechar</button>' +
+      '<a href="https://console.cloud.google.com/apis/credentials" target="_blank" style="flex:2;padding:11px;border-radius:10px;background:rgba(29,185,84,0.15);border:1px solid rgba(29,185,84,0.3);color:#1db954;font-size:12px;font-weight:800;cursor:pointer;font-family:inherit;text-decoration:none;display:flex;align-items:center;justify-content:center;letter-spacing:0.5px;">Abrir Google Console</a>' +
+    '</div>' +
+  '</div>';
+  document.body.appendChild(info);
 }
 
 function salvarPerfil() {
@@ -106,6 +262,7 @@ function salvarPerfil() {
   const perfil = JSON.parse(localStorage.getItem('map_perfil_v1') || '{}');
   perfil.nome = nome;
   perfil.instrumento = perfilInstrumentoSelecionado || perfil.instrumento || null;
+  if (perfilFotoBase64) perfil.foto = perfilFotoBase64;
   localStorage.setItem('map_perfil_v1', JSON.stringify(perfil));
   fecharModalPerfil();
   showToast('Perfil atualizado!');
@@ -1066,6 +1223,7 @@ body.performance-mode .perf-song-indicator { display: flex; }
   letter-spacing: 0.5px; margin-top: 2px; display: block;
   text-transform: uppercase;
 }
+@keyframes slideUpModal { from { transform: translateY(100%); opacity:0; } to { transform: translateY(0); opacity:1; } }
 .toast { position: fixed; bottom: 80px; left: 50%; transform: translateX(-50%); background: var(--accent-primary); color: #000; padding: 10px 20px; border-radius: var(--radius-full); font-weight: 700; font-size: 12px; z-index: 9999; opacity: 0; transition: opacity 0.3s; pointer-events: none; white-space: nowrap; }
 .toast.show { opacity: 1; }
 
@@ -1712,85 +1870,95 @@ body.viewer-mode input[type="text"] { pointer-events: none; }
 </div>
 
 <!-- MODAL PERFIL -->
-<div id="modal-perfil" style="position:fixed;inset:0;z-index:99998;background:rgba(0,0,0,0.88);display:none;align-items:center;justify-content:center;padding:20px;overflow-y:auto;">
-  <div style="background:#0d0d15;border:1px solid rgba(255,255,255,0.1);border-radius:20px;padding:24px;width:100%;max-width:400px;display:flex;flex-direction:column;gap:16px;position:relative;">
+<div id="modal-perfil" style="position:fixed;inset:0;z-index:99998;background:rgba(0,0,0,0.92);display:none;align-items:flex-end;justify-content:center;padding:0;">
+  <div style="background:#0c0c14;border:1px solid rgba(255,255,255,0.08);border-radius:24px 24px 0 0;width:100%;max-width:480px;display:flex;flex-direction:column;overflow:hidden;max-height:95vh;animation:slideUpModal 0.3s cubic-bezier(0.34,1.56,0.64,1);">
 
-    <!-- Header -->
-    <div style="display:flex;align-items:center;justify-content:space-between;">
-      <span style="font-size:16px;font-weight:900;color:#fff;letter-spacing:0.3px;">Meu Perfil</span>
-      <button onclick="fecharModalPerfil()" style="background:none;border:none;color:rgba(255,255,255,0.3);font-size:18px;cursor:pointer;padding:4px 8px;line-height:1;">✕</button>
-    </div>
-
-    <!-- Avatar + nome preview -->
-    <div style="display:flex;align-items:center;gap:16px;">
-      <!-- Avatar clicável -->
-      <div style="position:relative;flex-shrink:0;cursor:pointer;" onclick="document.getElementById('perfil-foto-input').click()">
-        <div id="perfil-avatar" style="width:64px;height:64px;border-radius:16px;background:linear-gradient(135deg,#1db954,#17a349);display:flex;align-items:center;justify-content:center;font-size:26px;font-weight:900;color:#000;overflow:hidden;"></div>
-        <!-- Overlay de edição -->
-        <div style="position:absolute;inset:0;border-radius:16px;background:rgba(0,0,0,0.55);display:flex;align-items:center;justify-content:center;opacity:0;transition:opacity 0.2s;" id="perfil-avatar-overlay"
-          onmouseenter="this.style.opacity=1" onmouseleave="this.style.opacity=0">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+    <!-- Hero banner -->
+    <div style="position:relative;height:110px;background:linear-gradient(135deg,#0d2918 0%,#0a1a10 40%,#06100a 100%);flex-shrink:0;overflow:hidden;">
+      <!-- Glow rings -->
+      <div style="position:absolute;top:-40px;left:50%;transform:translateX(-50%);width:220px;height:220px;border-radius:50%;background:radial-gradient(circle,rgba(29,185,84,0.12) 0%,transparent 70%);pointer-events:none;"></div>
+      <!-- Close btn -->
+      <button onclick="fecharModalPerfil()" style="position:absolute;top:14px;right:16px;background:rgba(255,255,255,0.07);border:1px solid rgba(255,255,255,0.1);color:rgba(255,255,255,0.5);width:30px;height:30px;border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:14px;line-height:1;transition:0.2s;" onmouseenter="this.style.background='rgba(255,255,255,0.14)'" onmouseleave="this.style.background='rgba(255,255,255,0.07)'">✕</button>
+      <!-- Label -->
+      <div style="position:absolute;top:16px;left:20px;font-size:9px;font-weight:900;letter-spacing:3px;color:rgba(29,185,84,0.6);text-transform:uppercase;">Perfil</div>
+      <!-- Stats row inside hero -->
+      <div style="position:absolute;bottom:14px;right:20px;display:flex;gap:20px;">
+        <div style="text-align:right;">
+          <div id="perfil-stat-musicas" style="font-size:20px;font-weight:900;color:#fff;line-height:1;"></div>
+          <div style="font-size:8px;font-weight:700;color:rgba(255,255,255,0.3);letter-spacing:1.5px;margin-top:1px;">MÚSICAS</div>
         </div>
-        <input type="file" id="perfil-foto-input" accept="image/*" style="display:none;" onchange="perfilCarregarFoto(this)">
-      </div>
-      <div style="flex:1;min-width:0;">
-        <div id="perfil-nome-display" style="font-size:17px;font-weight:900;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;"></div>
-        <div id="perfil-inst-display" style="font-size:11px;color:rgba(255,255,255,0.4);margin-top:3px;text-transform:capitalize;letter-spacing:0.5px;"></div>
-        <div id="perfil-google-badge" style="display:none;margin-top:5px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);border-radius:20px;padding:3px 10px;font-size:9px;font-weight:700;color:rgba(255,255,255,0.4);letter-spacing:1px;width:fit-content;">VIA GOOGLE</div>
+        <div style="text-align:right;">
+          <div id="perfil-stat-eventos" style="font-size:20px;font-weight:900;color:#fff;line-height:1;"></div>
+          <div style="font-size:8px;font-weight:700;color:rgba(255,255,255,0.3);letter-spacing:1.5px;margin-top:1px;">EVENTOS</div>
+        </div>
       </div>
     </div>
 
-    <!-- Botão Google -->
-    <button id="btn-google-login" onclick="perfilLoginGoogle()" style="display:flex;align-items:center;justify-content:center;gap:10px;width:100%;padding:12px;border-radius:10px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.12);color:#fff;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;transition:all 0.2s;letter-spacing:0.3px;">
-      <svg width="16" height="16" viewBox="0 0 24 24"><path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/><path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/><path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z" fill="#FBBC05"/><path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/></svg>
-      Entrar com Google
-    </button>
-
-    <!-- Separador -->
-    <div style="display:flex;align-items:center;gap:10px;">
-      <div style="flex:1;height:1px;background:rgba(255,255,255,0.06);"></div>
-      <span style="font-size:9px;font-weight:700;color:rgba(255,255,255,0.2);letter-spacing:1px;">OU EDITAR MANUALMENTE</span>
-      <div style="flex:1;height:1px;background:rgba(255,255,255,0.06);"></div>
-    </div>
-
-    <!-- Nome -->
-    <div style="display:flex;flex-direction:column;gap:6px;">
-      <label style="font-size:9px;font-weight:800;letter-spacing:2px;color:rgba(255,255,255,0.3);text-transform:uppercase;">Nome / Banda</label>
-      <input id="perfil-nome-input" type="text" style="background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);border-radius:10px;color:#fff;font-size:13px;padding:12px 14px;outline:none;width:100%;box-sizing:border-box;font-family:inherit;" oninput="atualizarPreviewPerfil()">
-    </div>
-
-    <!-- Instrumento -->
-    <div style="display:flex;flex-direction:column;gap:8px;">
-      <label style="font-size:9px;font-weight:800;letter-spacing:2px;color:rgba(255,255,255,0.3);text-transform:uppercase;">Instrumento</label>
-      <div style="display:flex;flex-wrap:wrap;gap:8px;" id="perfil-chips">
-        <button class="ob-chip" data-val="guitarra" onclick="perfilToggleChip(this)">Guitarra</button>
-        <button class="ob-chip" data-val="baixo" onclick="perfilToggleChip(this)">Baixo</button>
-        <button class="ob-chip" data-val="teclado" onclick="perfilToggleChip(this)">Teclado</button>
-        <button class="ob-chip" data-val="bateria" onclick="perfilToggleChip(this)">Bateria</button>
-        <button class="ob-chip" data-val="voz" onclick="perfilToggleChip(this)">Voz</button>
-        <button class="ob-chip" data-val="violao" onclick="perfilToggleChip(this)">Violão</button>
-        <button class="ob-chip" data-val="produtor" onclick="perfilToggleChip(this)">Produtor</button>
-        <button class="ob-chip" data-val="outro" onclick="perfilToggleChip(this)">Outro</button>
+    <!-- Avatar (sobrepõe o hero) -->
+    <div style="padding:0 24px;margin-top:-36px;flex-shrink:0;position:relative;z-index:2;">
+      <div style="display:flex;align-items:flex-end;justify-content:space-between;">
+        <div style="position:relative;cursor:pointer;" onclick="document.getElementById('perfil-foto-input').click()">
+          <div id="perfil-avatar" style="width:72px;height:72px;border-radius:18px;background:linear-gradient(135deg,#1db954,#17a349);display:flex;align-items:center;justify-content:center;font-size:28px;font-weight:900;color:#000;overflow:hidden;border:3px solid #0c0c14;box-shadow:0 4px 20px rgba(0,0,0,0.6);"></div>
+          <!-- Camera badge -->
+          <div style="position:absolute;bottom:-4px;right:-4px;width:22px;height:22px;border-radius:50%;background:#1db954;border:2px solid #0c0c14;display:flex;align-items:center;justify-content:center;">
+            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#000" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+          </div>
+          <input type="file" id="perfil-foto-input" accept="image/*" style="display:none;" onchange="perfilCarregarFoto(this)">
+        </div>
+        <div style="padding-bottom:4px;">
+          <div id="perfil-nome-display" style="font-size:16px;font-weight:900;color:#fff;line-height:1.2;text-align:right;max-width:240px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;"></div>
+          <div id="perfil-inst-display" style="font-size:10px;color:rgba(255,255,255,0.35);margin-top:4px;text-transform:uppercase;letter-spacing:1.5px;font-weight:700;text-align:right;"></div>
+        </div>
       </div>
     </div>
 
-    <!-- Stats -->
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
-      <div style="background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.07);border-radius:12px;padding:12px;text-align:center;">
-        <div id="perfil-stat-musicas" style="font-size:22px;font-weight:900;color:#1db954;"></div>
-        <div style="font-size:9px;color:rgba(255,255,255,0.3);font-weight:700;letter-spacing:1px;margin-top:2px;">MÚSICAS</div>
-      </div>
-      <div style="background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.07);border-radius:12px;padding:12px;text-align:center;">
-        <div id="perfil-stat-eventos" style="font-size:22px;font-weight:900;color:#1db954;"></div>
-        <div style="font-size:9px;color:rgba(255,255,255,0.3);font-weight:700;letter-spacing:1px;margin-top:2px;">EVENTOS</div>
-      </div>
-    </div>
+    <!-- Divider -->
+    <div style="height:1px;background:rgba(255,255,255,0.05);margin:16px 0 0;flex-shrink:0;"></div>
 
-    <!-- Botões ação -->
-    <div style="display:flex;gap:10px;">
-      <button onclick="fecharModalPerfil()" style="flex:1;padding:12px;border-radius:10px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);color:rgba(255,255,255,0.5);font-size:12px;font-weight:700;cursor:pointer;letter-spacing:1px;text-transform:uppercase;font-family:inherit;">Cancelar</button>
-      <button onclick="salvarPerfil()" style="flex:2;padding:12px;border-radius:10px;background:rgba(29,185,84,0.15);border:1px solid rgba(29,185,84,0.3);color:#1db954;font-size:12px;font-weight:800;cursor:pointer;letter-spacing:1px;text-transform:uppercase;font-family:inherit;transition:0.2s;">Salvar</button>
+    <!-- Scrollable form area -->
+    <div style="overflow-y:auto;flex:1;padding:20px 24px 32px;display:flex;flex-direction:column;gap:20px;">
+
+      <!-- Nome -->
+      <div style="display:flex;flex-direction:column;gap:6px;">
+        <label style="font-size:9px;font-weight:800;letter-spacing:2px;color:rgba(255,255,255,0.3);text-transform:uppercase;">Nome / Banda</label>
+        <div style="position:relative;">
+          <input id="perfil-nome-input" type="text" autocomplete="off"
+            style="background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.09);border-radius:12px;color:#fff;font-size:14px;font-weight:600;padding:13px 16px 13px 44px;outline:none;width:100%;box-sizing:border-box;font-family:inherit;transition:border-color 0.2s,background 0.2s;"
+            onfocus="this.style.borderColor='rgba(29,185,84,0.5)';this.style.background='rgba(29,185,84,0.04)'"
+            onblur="this.style.borderColor='rgba(255,255,255,0.09)';this.style.background='rgba(255,255,255,0.04)'"
+            oninput="atualizarPreviewPerfil()">
+          <div style="position:absolute;left:14px;top:50%;transform:translateY(-50%);color:rgba(29,185,84,0.5);">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+          </div>
+        </div>
+      </div>
+
+      <!-- Instrumento -->
+      <div style="display:flex;flex-direction:column;gap:10px;">
+        <label style="font-size:9px;font-weight:800;letter-spacing:2px;color:rgba(255,255,255,0.3);text-transform:uppercase;">Instrumento</label>
+        <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;" id="perfil-chips">
+          <button class="ob-chip" data-val="guitarra" onclick="perfilToggleChip(this)" style="justify-content:center;padding:10px 6px;font-size:10px;">Guitarra</button>
+          <button class="ob-chip" data-val="baixo" onclick="perfilToggleChip(this)" style="justify-content:center;padding:10px 6px;font-size:10px;">Baixo</button>
+          <button class="ob-chip" data-val="teclado" onclick="perfilToggleChip(this)" style="justify-content:center;padding:10px 6px;font-size:10px;">Teclado</button>
+          <button class="ob-chip" data-val="bateria" onclick="perfilToggleChip(this)" style="justify-content:center;padding:10px 6px;font-size:10px;">Bateria</button>
+          <button class="ob-chip" data-val="voz" onclick="perfilToggleChip(this)" style="justify-content:center;padding:10px 6px;font-size:10px;">Voz</button>
+          <button class="ob-chip" data-val="violao" onclick="perfilToggleChip(this)" style="justify-content:center;padding:10px 6px;font-size:10px;">Violão</button>
+          <button class="ob-chip" data-val="produtor" onclick="perfilToggleChip(this)" style="justify-content:center;padding:10px 6px;font-size:10px;">Produtor</button>
+          <button class="ob-chip" data-val="outro" onclick="perfilToggleChip(this)" style="justify-content:center;padding:10px 6px;font-size:10px;">Outro</button>
+        </div>
+      </div>
+
+      <!-- Botões ação -->
+      <div style="display:flex;gap:10px;padding-top:4px;">
+        <button onclick="fecharModalPerfil()" style="flex:1;padding:13px;border-radius:12px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);color:rgba(255,255,255,0.4);font-size:11px;font-weight:700;cursor:pointer;letter-spacing:1px;text-transform:uppercase;font-family:inherit;transition:0.2s;" onmouseenter="this.style.background='rgba(255,255,255,0.08)'" onmouseleave="this.style.background='rgba(255,255,255,0.04)'">Cancelar</button>
+        <button onclick="salvarPerfil()" style="flex:2;padding:13px;border-radius:12px;background:#1db954;border:none;color:#000;font-size:12px;font-weight:900;cursor:pointer;letter-spacing:1px;text-transform:uppercase;font-family:inherit;transition:0.2s;" onmouseenter="this.style.background='#22d461'" onmouseleave="this.style.background='#1db954'">Salvar Perfil</button>
+      </div>
+
     </div>
+    <!-- hidden badge for compat -->
+    <div id="perfil-google-badge" style="display:none !important;"></div>
+  </div>
+</div>
 
   </div>
 </div>
