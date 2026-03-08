@@ -6,7 +6,70 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>Map Music Pro - Elite Edition</title>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
-<script src="https://cdnjs.cloudflare.com/ajax/libs/peerjs/1.5.4/peerjs.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/peerjs/1.5.4/peerjs.min.js">
+// ─── ONBOARDING ───────────────────────────────────────────────────────────────
+(function() {
+  const perfil = localStorage.getItem('map_perfil_v1');
+  if (perfil) {
+    // Já tem perfil — remove overlay imediatamente
+    const ov = document.getElementById('onboarding-overlay');
+    if (ov) ov.remove();
+    return;
+  }
+
+// Mostra overlay — ativa validação do campo nome
+const nomeInput = document.getElementById(‘ob-nome’);
+const cta = document.getElementById(‘ob-cta’);
+
+function validarOb() {
+const nome = (nomeInput.value || ‘’).trim();
+cta.disabled = nome.length < 2;
+}
+
+if (nomeInput) {
+nomeInput.addEventListener(‘input’, validarOb);
+nomeInput.addEventListener(‘keydown’, function(e) {
+if (e.key === ‘Enter’ && !cta.disabled) terminarOnboarding();
+});
+}
+})();
+
+let obInstrumentoSelecionado = null;
+
+function obToggleChip(btn) {
+// Desmarca todos
+document.querySelectorAll(’.ob-chip’).forEach(c => c.classList.remove(‘selected’));
+// Marca o clicado
+btn.classList.add(‘selected’);
+obInstrumentoSelecionado = btn.dataset.val;
+}
+
+function terminarOnboarding() {
+const nome = (document.getElementById(‘ob-nome’).value || ‘’).trim();
+if (nome.length < 2) return;
+
+const perfil = {
+nome,
+instrumento: obInstrumentoSelecionado || null,
+criadoEm: Date.now()
+};
+
+localStorage.setItem(‘map_perfil_v1’, JSON.stringify(perfil));
+
+// Notificação de boas-vindas
+adicionarNotif(‘update’,
+’Bem-vindo, ’ + nome + ‘!’,
+‘Perfil criado. Começa por salvar a tua primeira música.’,
+‘welcome_’ + Date.now()
+);
+
+// Animação de saída
+const ov = document.getElementById(‘onboarding-overlay’);
+ov.classList.add(‘done’);
+setTimeout(() => ov.remove(), 500);
+}
+
+</script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js"></script>
 
@@ -1199,6 +1262,282 @@ body.viewer-mode input[type="text"] { pointer-events: none; }
 .ctx-item.ctx-fav:hover { background: rgba(255,215,0,0.08); color: #ffd700; }
 .ctx-item svg { flex-shrink: 0; opacity: 0.7; }
 
+
+/* ── NOTIFICAÇÕES ─────────────────────────────────────────────────────────── */
+.notif-btn {
+  position: relative;
+  background: none;
+  border: none;
+  color: rgba(255,255,255,0.45);
+  width: 36px; height: 36px;
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer; transition: color 0.2s; flex-shrink: 0;
+  border-radius: 8px;
+}
+.notif-btn:hover { color: #fff; }
+.notif-badge {
+  position: absolute; top: 2px; right: 2px;
+  background: #1db954; color: #000;
+  font-size: 8px; font-weight: 900;
+  width: 14px; height: 14px; border-radius: 50%;
+  display: none; align-items: center; justify-content: center;
+  border: 1.5px solid #0d0d14;
+}
+.notif-badge.show { display: flex; }
+
+/* Painel */
+.notif-panel {
+  position: fixed; top: 58px; right: 12px; z-index: 8000;
+  width: 300px; max-width: calc(100vw - 24px);
+  background: #111118;
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 12px;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.6);
+  display: none; flex-direction: column; overflow: hidden;
+  max-height: 65vh;
+}
+.notif-panel.show { display: flex; }
+
+.notif-panel-header {
+  padding: 14px 16px 12px;
+  border-bottom: 1px solid rgba(255,255,255,0.06);
+  display: flex; align-items: center; justify-content: space-between;
+  flex-shrink: 0;
+}
+.notif-panel-header h3 {
+  font-size: 11px; font-weight: 900; letter-spacing: 1.5px;
+  text-transform: uppercase; color: rgba(255,255,255,0.6);
+}
+.notif-clear-btn {
+  font-size: 10px; font-weight: 700;
+  color: rgba(255,255,255,0.25);
+  background: none; border: none; cursor: pointer; padding: 2px 4px;
+  transition: color 0.15s; letter-spacing: 0.5px;
+}
+.notif-clear-btn:hover { color: rgba(255,255,255,0.6); }
+
+.notif-list { overflow-y: auto; flex: 1; }
+.notif-empty {
+  padding: 28px 16px; text-align: center;
+  font-size: 11px; color: rgba(255,255,255,0.2); font-weight: 600;
+  letter-spacing: 0.5px;
+}
+.notif-item {
+  padding: 12px 16px;
+  border-bottom: 1px solid rgba(255,255,255,0.04);
+  display: flex; gap: 10px; align-items: flex-start;
+  transition: background 0.15s;
+}
+.notif-item:last-child { border-bottom: none; }
+.notif-item.unread { background: rgba(29,185,84,0.03); }
+.notif-item:hover { background: rgba(255,255,255,0.02); }
+
+.notif-icon {
+  width: 28px; height: 28px; border-radius: 6px;
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+}
+.notif-icon.event  { background: rgba(29,185,84,0.1);  color: #1db954; }
+.notif-icon.update { background: rgba(120,120,255,0.1); color: #7878ff; }
+.notif-icon.alert  { background: rgba(255,160,0,0.1);  color: #ffa000; }
+
+.notif-body { flex: 1; min-width: 0; }
+.notif-title {
+  font-size: 11px; font-weight: 800; color: rgba(255,255,255,0.85);
+  margin-bottom: 2px; line-height: 1.3;
+}
+.notif-desc {
+  font-size: 10px; color: rgba(255,255,255,0.35); font-weight: 500;
+  line-height: 1.5;
+}
+.notif-time {
+  font-size: 9px; color: rgba(255,255,255,0.18);
+  font-weight: 600; margin-top: 4px; letter-spacing: 0.3px;
+}
+.notif-dot {
+  width: 5px; height: 5px; border-radius: 50%;
+  background: #1db954; flex-shrink: 0; margin-top: 5px;
+}
+
+/* ── ONBOARDING ───────────────────────────────────────────────────────────── */
+#onboarding-overlay {
+  position: fixed; inset: 0; z-index: 99999;
+  background: #09090f;
+  display: flex; flex-direction: column;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+}
+#onboarding-overlay.done {
+  animation: obFadeOut 0.5s ease forwards;
+}
+@keyframes obFadeOut {
+  to { opacity: 0; pointer-events: none; }
+}
+
+/* Hero section */
+.ob-hero {
+  min-height: 52vh;
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  padding: 60px 32px 40px;
+  position: relative; overflow: hidden;
+  text-align: center;
+}
+.ob-hero-bg {
+  position: absolute; inset: 0; z-index: 0;
+  background: radial-gradient(ellipse 70% 60% at 50% 40%,
+    rgba(29,185,84,0.10) 0%,
+    transparent 70%);
+}
+.ob-hero-ring {
+  position: absolute; top: 50%; left: 50%;
+  transform: translate(-50%, -55%);
+  width: 340px; height: 340px; border-radius: 50%;
+  border: 1px solid rgba(29,185,84,0.06);
+  animation: obPulse 4s ease-in-out infinite;
+}
+.ob-hero-ring:nth-child(2) {
+  width: 480px; height: 480px;
+  border-color: rgba(29,185,84,0.03);
+  animation-delay: 1s;
+}
+@keyframes obPulse {
+  0%, 100% { opacity: 0.5; transform: translate(-50%,-55%) scale(1); }
+  50%       { opacity: 1;   transform: translate(-50%,-55%) scale(1.03); }
+}
+
+.ob-logo-mark {
+  position: relative; z-index: 1;
+  width: 72px; height: 72px; border-radius: 20px;
+  background: linear-gradient(135deg, #1db954 0%, #17a349 100%);
+  display: flex; align-items: center; justify-content: center;
+  margin-bottom: 24px;
+  box-shadow: 0 0 0 1px rgba(29,185,84,0.3), 0 20px 50px rgba(29,185,84,0.2);
+  animation: obLogoIn 0.7s cubic-bezier(0.34,1.56,0.64,1) both;
+}
+@keyframes obLogoIn {
+  from { opacity:0; transform: scale(0.7) translateY(10px); }
+  to   { opacity:1; transform: scale(1)   translateY(0); }
+}
+.ob-logo-mark span {
+  font-size: 32px; font-weight: 900; color: #000; line-height: 1;
+}
+.ob-hero h1 {
+  position: relative; z-index: 1;
+  font-size: 28px; font-weight: 900; letter-spacing: -0.5px;
+  color: #fff; margin-bottom: 8px;
+  animation: obTextIn 0.6s 0.2s ease both;
+}
+.ob-hero h1 span { color: #1db954; }
+.ob-hero p {
+  position: relative; z-index: 1;
+  font-size: 14px; color: rgba(255,255,255,0.4);
+  font-weight: 500; line-height: 1.6; max-width: 260px;
+  animation: obTextIn 0.6s 0.35s ease both;
+}
+@keyframes obTextIn {
+  from { opacity:0; transform: translateY(12px); }
+  to   { opacity:1; transform: translateY(0); }
+}
+
+/* Form section */
+.ob-form {
+  background: #0d0d15;
+  border-top: 1px solid rgba(255,255,255,0.05);
+  padding: 36px 24px 48px;
+  display: flex; flex-direction: column; gap: 28px;
+  animation: obTextIn 0.6s 0.5s ease both;
+}
+
+/* Field */
+.ob-field { display: flex; flex-direction: column; gap: 8px; }
+.ob-label {
+  font-size: 10px; font-weight: 800; letter-spacing: 1.8px;
+  text-transform: uppercase; color: rgba(255,255,255,0.3);
+}
+.ob-input {
+  background: rgba(255,255,255,0.04);
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 10px;
+  padding: 14px 16px;
+  font-size: 15px; font-weight: 600; color: #fff;
+  font-family: inherit;
+  outline: none; transition: border-color 0.2s, background 0.2s;
+  -webkit-appearance: none;
+}
+.ob-input::placeholder { color: rgba(255,255,255,0.18); font-weight: 500; }
+.ob-input:focus {
+  border-color: rgba(29,185,84,0.4);
+  background: rgba(29,185,84,0.03);
+}
+
+/* Instrument chips */
+.ob-chips {
+  display: flex; flex-wrap: wrap; gap: 8px;
+}
+.ob-chip {
+  padding: 8px 16px; border-radius: 8px;
+  background: rgba(255,255,255,0.04);
+  border: 1px solid rgba(255,255,255,0.08);
+  font-size: 11px; font-weight: 700; color: rgba(255,255,255,0.45);
+  cursor: pointer; transition: all 0.15s; letter-spacing: 0.3px;
+  -webkit-tap-highlight-color: transparent;
+  display: flex; align-items: center; gap: 6px;
+}
+.ob-chip.selected {
+  background: rgba(29,185,84,0.1);
+  border-color: rgba(29,185,84,0.35);
+  color: #1db954;
+}
+.ob-chip svg { flex-shrink: 0; }
+
+/* Features list */
+.ob-features {
+  display: flex; flex-direction: column; gap: 0;
+  border: 1px solid rgba(255,255,255,0.06);
+  border-radius: 12px; overflow: hidden;
+}
+.ob-feature-item {
+  display: flex; align-items: center; gap: 14px;
+  padding: 14px 16px;
+  border-bottom: 1px solid rgba(255,255,255,0.04);
+}
+.ob-feature-item:last-child { border-bottom: none; }
+.ob-feature-icon {
+  width: 34px; height: 34px; border-radius: 9px;
+  background: rgba(29,185,84,0.08);
+  border: 1px solid rgba(29,185,84,0.12);
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0; color: #1db954;
+}
+.ob-feature-text { flex: 1; }
+.ob-feature-title {
+  font-size: 12px; font-weight: 800; color: rgba(255,255,255,0.85);
+  margin-bottom: 2px;
+}
+.ob-feature-desc {
+  font-size: 10px; color: rgba(255,255,255,0.3); font-weight: 500; line-height: 1.4;
+}
+
+/* CTA button */
+.ob-cta {
+  width: 100%; padding: 16px;
+  background: #1db954; border: none; border-radius: 12px;
+  font-size: 13px; font-weight: 900; letter-spacing: 1.5px;
+  text-transform: uppercase; color: #000;
+  cursor: pointer; transition: all 0.2s;
+  font-family: inherit;
+  -webkit-tap-highlight-color: transparent;
+}
+.ob-cta:active { transform: scale(0.98); background: #17a349; }
+.ob-cta:disabled { opacity: 0.4; cursor: not-allowed; }
+
+.ob-terms {
+  text-align: center; font-size: 10px;
+  color: rgba(255,255,255,0.18); font-weight: 500;
+  line-height: 1.6;
+}
+
 </style>
 
 </head>
@@ -1235,19 +1574,28 @@ body.viewer-mode input[type="text"] { pointer-events: none; }
       <button onclick="abrirModalSala()" id="btn-sala" style="background:rgba(29,185,84,0.12); border:1px solid rgba(29,185,84,0.3); color:var(--accent-primary); padding:8px 16px; border-radius:var(--radius-full); font-size:10px; font-weight:800; cursor:pointer; letter-spacing:1px; text-transform:uppercase; transition:0.2s;">
         SALA
       </button>
-      <div class="menu-container">
-        <button onclick="toggleMenu(event)" class="menu-btn">
-          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="1"/><circle cx="12" cy="5" r="1"/><circle cx="12" cy="19" r="1"/></svg>
-        </button>
-        <div id="m-drop" class="dropdown-menu">
-          <div class="menu-item" onclick="abrirBiblioteca()">Biblioteca</div>
-          <div class="menu-item" onclick="abrirDrumCam()">Drum Cam</div>
-          <div class="menu-item" onclick="abrirPads()">Pads</div>
-          <div class="menu-item" onclick="abrirModalCifra()">Importar Cifra</div>
-          <div class="menu-item danger" onclick="resetSection()">Limpar Seção</div>
-        </div>
-      </div>
+      <!-- Botão de Notificações -->
+      <button class="notif-btn" id="notif-btn" onclick="toggleNotifPanel()" title="Notificações">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+        <span class="notif-badge" id="notif-badge"></span>
+      </button>
+
+```
+  <div class="menu-container">
+    <button onclick="toggleMenu(event)" class="menu-btn">
+      <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="1"/><circle cx="12" cy="5" r="1"/><circle cx="12" cy="19" r="1"/></svg>
+    </button>
+    <div id="m-drop" class="dropdown-menu">
+      <div class="menu-item" onclick="abrirBiblioteca()">Biblioteca</div>
+      <div class="menu-item" onclick="abrirDrumCam()">Drum Cam</div>
+      <div class="menu-item" onclick="abrirPads()">Pads</div>
+      <div class="menu-item" onclick="abrirModalCifra()">Importar Cifra</div>
+      <div class="menu-item danger" onclick="resetSection()">Limpar Seção</div>
     </div>
+  </div>
+</div>
+```
+
   </div>
 </header>
 
@@ -1917,6 +2265,172 @@ function desconectar() {
   document.getElementById('sync-bar').classList.remove('visible','viewer');
   showToast('Sala encerrada.');
 }
+
+// ─── SISTEMA DE NOTIFICAÇÕES ──────────────────────────────────────────────────
+const APP_VERSION = '1.4.6';
+let notificacoes = JSON.parse(localStorage.getItem('map_notifs_v1')) || [];
+let notifPanelOpen = false;
+
+function salvarNotifs() {
+  localStorage.setItem('map_notifs_v1', JSON.stringify(notificacoes));
+}
+
+function adicionarNotif(tipo, titulo, desc, id) {
+  // Evita duplicados pelo mesmo id
+  if (id && notificacoes.find(n => n.id === id)) return;
+  const notif = {
+    id: id || ('n_' + Date.now()),
+    tipo,   // 'event' | 'update' | 'alert'
+    titulo,
+    desc,
+    ts: Date.now(),
+    lida: false
+  };
+  notificacoes.unshift(notif);
+  if (notificacoes.length > 30) notificacoes = notificacoes.slice(0, 30);
+  salvarNotifs();
+  renderNotifPanel();
+  atualizarBadge();
+  // Vibração suave se disponível
+  if (navigator.vibrate) navigator.vibrate(60);
+}
+
+function atualizarBadge() {
+  const naoLidas = notificacoes.filter(n => !n.lida).length;
+  const badge = document.getElementById('notif-badge');
+  if (!badge) return;
+  if (naoLidas > 0) {
+    badge.innerText = naoLidas > 9 ? '9+' : naoLidas;
+    badge.classList.add('show');
+  } else {
+    badge.classList.remove('show');
+  }
+}
+
+function toggleNotifPanel() {
+  const panel = document.getElementById('notif-panel');
+  notifPanelOpen = !notifPanelOpen;
+  panel.classList.toggle('show', notifPanelOpen);
+  if (notifPanelOpen) {
+    // Marca todas como lidas ao abrir
+    notificacoes.forEach(n => n.lida = true);
+    salvarNotifs();
+    atualizarBadge();
+    renderNotifPanel();
+  }
+}
+
+function fecharNotifPanel() {
+  notifPanelOpen = false;
+  document.getElementById('notif-panel').classList.remove('show');
+}
+
+function limparNotificacoes() {
+  notificacoes = [];
+  salvarNotifs();
+  renderNotifPanel();
+  atualizarBadge();
+}
+
+function renderNotifPanel() {
+  const list = document.getElementById('notif-list');
+  if (!list) return;
+  if (!notificacoes.length) {
+    list.innerHTML = '<div class="notif-empty">Sem notificações de momento</div>';
+    return;
+  }
+  const icons = {
+    event:  '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>',
+    update: '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>',
+    alert:  '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>'
+  };
+  list.innerHTML = notificacoes.map(n => `
+    <div class="notif-item ${n.lida ? '' : 'unread'}">
+      <div class="notif-icon ${n.tipo}">${icons[n.tipo] || icons.alert}</div>
+      <div class="notif-body">
+        <div class="notif-title">${n.titulo}</div>
+        <div class="notif-desc">${n.desc}</div>
+        <div class="notif-time">${formatNotifTime(n.ts)}</div>
+      </div>
+      ${!n.lida ? '<div class="notif-dot"></div>' : ''}
+    </div>
+  `).join('');
+}
+
+function formatNotifTime(ts) {
+  const diff = Date.now() - ts;
+  const min = Math.floor(diff / 60000);
+  if (min < 1)  return 'Agora';
+  if (min < 60) return min + ' min atrás';
+  const h = Math.floor(min / 60);
+  if (h < 24)   return h + 'h atrás';
+  return Math.floor(h / 24) + 'd atrás';
+}
+
+// ── Verificar eventos próximos ────────────────────────────────────────────────
+function verificarEventosProximos() {
+  if (!eventos || !eventos.length) return;
+  const hoje = new Date();
+  hoje.setHours(0,0,0,0);
+
+  eventos.forEach(ev => {
+    if (!ev.data) return;
+    const dataEv = new Date(ev.data + 'T00:00:00');
+    const diffDias = Math.round((dataEv - hoje) / 86400000);
+
+    if (diffDias === 0) {
+      adicionarNotif('alert', 'HOJE — ' + ev.nome,
+        'Tens um evento agendado para hoje! Verifica o setlist.',
+        'ev_hoje_' + ev.id);
+    } else if (diffDias === 1) {
+      adicionarNotif('event', 'Amanhã — ' + ev.nome,
+        'Falta 1 dia. Revê a setlist e afina os instrumentos.',
+        'ev_ama_' + ev.id);
+    } else if (diffDias === 7) {
+      adicionarNotif('event', 'Em 1 semana — ' + ev.nome,
+        'Faltam 7 dias para o evento. Hora de ensaiar!',
+        'ev_sem_' + ev.id);
+    } else if (diffDias === 3) {
+      adicionarNotif('event', 'Em 3 dias — ' + ev.nome,
+        'Faltam apenas 3 dias. Confirma os músicos da sala.',
+        'ev_3d_' + ev.id);
+    }
+  });
+}
+
+// ── Verificar versão / novidades ──────────────────────────────────────────────
+function verificarAtualizacoes() {
+  const lastVer = localStorage.getItem('map_last_version');
+  if (lastVer !== APP_VERSION) {
+    localStorage.setItem('map_last_version', APP_VERSION);
+    if (lastVer) { // Não é primeira abertura
+      adicionarNotif('update', 'Versão ' + APP_VERSION + ' disponível',
+        'Menu de contexto nos álbuns, presença online na sala e melhorias de estabilidade.',
+        'update_' + APP_VERSION);
+    }
+  }
+}
+
+// ── Fechar painel ao clicar fora ──────────────────────────────────────────────
+document.addEventListener('click', function(e) {
+  if (!notifPanelOpen) return;
+  const panel = document.getElementById('notif-panel');
+  const btn   = document.getElementById('notif-btn');
+  if (panel && btn && !panel.contains(e.target) && !btn.contains(e.target)) {
+    fecharNotifPanel();
+  }
+});
+
+// ── Init ao carregar ───────────────────────────────────────────────────────────
+window.addEventListener('load', function() {
+  renderNotifPanel();
+  atualizarBadge();
+  verificarAtualizacoes();
+  setTimeout(verificarEventosProximos, 1500);
+  // Verifica periodicamente (a cada hora)
+  setInterval(verificarEventosProximos, 3600000);
+});
+
 
 // ─── MENU DE CONTEXTO DOS ÁLBUNS ─────────────────────────────────────────────
 let ctxSongId = null;
@@ -3271,6 +3785,7 @@ eventos.push({ id: Date.now(), nome, data, musicIds: [] });
 showToast(‘Evento criado!’);
 }
 salvarEventos();
+verificarEventosProximos();
 fecharModalEvento();
 if (bibTabAtiva === ‘eventos’) renderEventos(’’);
 }
@@ -4021,6 +4536,18 @@ renderSetlist();
 [“INTRO”,“VERSO”,“REFRÃO”,“PONTE”,“FINAL”].forEach(p => addPart(p));
 </script>
 
+<!-- PAINEL DE NOTIFICAÇÕES -->
+
+<div class="notif-panel" id="notif-panel">
+  <div class="notif-panel-header">
+    <h3>Notificações</h3>
+    <button class="notif-clear-btn" onclick="limparNotificacoes()">Limpar tudo</button>
+  </div>
+  <div class="notif-list" id="notif-list">
+    <div class="notif-empty">Sem notificações</div>
+  </div>
+</div>
+
 <!-- MENU DE CONTEXTO DO ÁLBUM -->
 
 <div class="album-ctx-menu" id="album-ctx-menu">
@@ -4047,4 +4574,4 @@ renderSetlist();
 </div>
 
 </body>
-  </html>
+</html>
