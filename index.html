@@ -219,6 +219,41 @@ body { font-family: 'Inter', sans-serif; background: var(--bg-primary); color: v
 }
 .biblioteca-vazia-icon { font-size: 48px; opacity: 0.15; }
 
+/* Modal editar música */
+.modal-editar { position: fixed; inset: 0; z-index: 7000;
+  background: rgba(0,0,0,0.85); display: none;
+  align-items: center; justify-content: center; padding: 24px; }
+.modal-editar.show { display: flex; }
+.modal-editar-box {
+  background: #0d1117; border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 20px; padding: 28px 24px; width: 100%; max-width: 380px;
+  display: flex; flex-direction: column; gap: 14px;
+}
+.modal-editar-title { font-size: 16px; font-weight: 900; color: #fff; margin-bottom: 4px; }
+.modal-editar input {
+  background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 10px; color: #fff; font-size: 13px; padding: 12px 14px;
+  outline: none; width: 100%; box-sizing: border-box; transition: 0.2s;
+}
+.modal-editar input:focus { border-color: rgba(29,185,84,0.4); }
+.modal-editar input::placeholder { color: rgba(255,255,255,0.25); }
+.modal-editar-label { font-size: 9px; font-weight: 800; letter-spacing: 2px;
+  color: rgba(255,255,255,0.3); text-transform: uppercase; margin-bottom: -8px; }
+.modal-editar-btns { display: flex; gap: 10px; margin-top: 4px; }
+.modal-editar-cancel {
+  flex: 1; padding: 12px; border-radius: 10px;
+  background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1);
+  color: rgba(255,255,255,0.5); font-size: 12px; font-weight: 700;
+  cursor: pointer; text-transform: uppercase; letter-spacing: 1px;
+}
+.modal-editar-save {
+  flex: 2; padding: 12px; border-radius: 10px;
+  background: rgba(29,185,84,0.15); border: 1px solid rgba(29,185,84,0.3);
+  color: var(--accent-primary); font-size: 12px; font-weight: 800;
+  cursor: pointer; text-transform: uppercase; letter-spacing: 1px; transition: 0.2s;
+}
+.modal-editar-save:hover { background: rgba(29,185,84,0.25); }
+
 /* Nav tabs biblioteca */
 .biblioteca-tabs {
   display: flex; gap: 0; padding: 0 24px;
@@ -1366,8 +1401,8 @@ body.viewer-mode input[type="text"] { pointer-events: none; }
   <!-- MAIN: tabs + conteúdo -->
   <div class="biblioteca-main" id="biblioteca-main">
     <div class="biblioteca-tabs">
-      <div class="biblioteca-tab active" id="tab-musicas" onclick="bibTab('musicas')">Músicas</div>
-      <div class="biblioteca-tab" id="tab-eventos" onclick="bibTab('eventos')">Eventos</div>
+      <div class="biblioteca-tab active" id="tab-eventos" onclick="bibTab('eventos')">Eventos</div>
+      <div class="biblioteca-tab" id="tab-musicas" onclick="bibTab('musicas')">Músicas</div>
     </div>
     <div class="biblioteca-search">
       <input type="text" id="biblioteca-search" placeholder="Buscar..."
@@ -1381,6 +1416,7 @@ body.viewer-mode input[type="text"] { pointer-events: none; }
     <div class="evento-detalhe-header">
       <button class="evento-detalhe-back" onclick="voltarEventos()">← Voltar</button>
       <div class="evento-detalhe-title" id="evento-detalhe-title">Evento</div>
+      <button class="evento-detalhe-add" onclick="abrirEditarEventoAtual()" style="margin-right:6px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);color:rgba(255,255,255,0.4);">Editar</button>
       <button class="evento-detalhe-add" onclick="abrirAddMusica()">+ Música</button>
     </div>
     <div class="biblioteca-search">
@@ -1391,15 +1427,30 @@ body.viewer-mode input[type="text"] { pointer-events: none; }
   </div>
 </div>
 
+<!-- MODAL EDITAR MÚSICA -->
+<div class="modal-editar" id="modal-editar-musica">
+  <div class="modal-editar-box">
+    <div class="modal-editar-title">Editar Música</div>
+    <div class="modal-editar-label">Nome</div>
+    <input type="text" id="editar-musica-nome" placeholder="Nome da música">
+    <div class="modal-editar-label">BPM</div>
+    <input type="number" id="editar-musica-bpm" placeholder="BPM" min="40" max="300" inputmode="numeric">
+    <div class="modal-editar-btns">
+      <button class="modal-editar-cancel" onclick="fecharEditarMusica()">Cancelar</button>
+      <button class="modal-editar-save" onclick="salvarEditarMusica()">Salvar</button>
+    </div>
+  </div>
+</div>
+
 <!-- MODAL NOVO EVENTO -->
 <div class="modal-evento" id="modal-evento">
   <div class="modal-evento-box">
-    <div class="modal-evento-title">Novo Evento</div>
+    <div class="modal-evento-title" id="modal-evento-title">Novo Evento</div>
     <input type="text" id="evento-nome-input" placeholder="Nome do evento (ex: Show de Natal)">
     <input type="date" id="evento-data-input">
     <div class="modal-evento-btns">
       <button class="modal-evento-cancel" onclick="fecharModalEvento()">Cancelar</button>
-      <button class="modal-evento-save" onclick="salvarEvento()">Criar</button>
+      <button class="modal-evento-save" onclick="salvarEvento()">Salvar</button>
     </div>
   </div>
 </div>
@@ -2717,7 +2768,7 @@ const ALBUM_PALETTES = [
 ];
 
 let eventos = JSON.parse(localStorage.getItem('map_pro_eventos_v1')) || [];
-let bibTabAtiva = 'musicas'; // 'musicas' | 'eventos'
+let bibTabAtiva = 'eventos'; // 'eventos' | 'musicas'
 let eventoAbertoId = null;
 
 function salvarEventos() {
@@ -2733,10 +2784,10 @@ function abrirBiblioteca() {
   fecharMenu();
   document.getElementById('biblioteca-overlay').classList.add('show');
   document.getElementById('biblioteca-search').value = '';
-  bibTabAtiva = 'musicas';
+  bibTabAtiva = 'eventos';
   mostrarBibMain();
-  ativarTab('musicas');
-  renderBiblioteca('');
+  ativarTab('eventos');
+  renderEventos('');
 }
 
 function fecharBiblioteca() {
@@ -2757,8 +2808,8 @@ function bibTab(aba) {
 }
 
 function ativarTab(aba) {
-  document.getElementById('tab-musicas').classList.toggle('active', aba === 'musicas');
   document.getElementById('tab-eventos').classList.toggle('active', aba === 'eventos');
+  document.getElementById('tab-musicas').classList.toggle('active', aba === 'musicas');
 }
 
 function renderBibAtivo(filtro) {
@@ -2796,10 +2847,15 @@ function renderBiblioteca(filtro = '') {
       </div>
       <div class="album-info">
         <div class="album-name" title="${s.name}">${s.name}</div>
-        <div class="album-meta">${partes} parte${partes !== 1 ? 's' : ''} ${s.favorite ? '· ★' : ''}</div>
+        <div class="album-meta">${partes} parte${partes !== 1 ? 's' : ''}</div>
       </div>
       <div class="album-actions">
         <button class="album-btn album-btn-load" onclick="loadSongBiblioteca(${s.id})">Abrir</button>
+        <button class="album-btn" onclick="favoritarBiblioteca(${s.id}, event)"
+          style="${s.favorite ? 'background:rgba(255,215,0,0.15);border:1px solid rgba(255,215,0,0.3);color:#ffd700;' : 'background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);color:rgba(255,255,255,0.3);'}
+          flex:0.7;padding:6px 0;border-radius:8px;font-size:13px;cursor:pointer;">★</button>
+        <button class="album-btn" onclick="abrirEditarMusica(${s.id}, event)"
+          style="background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.08);color:rgba(255,255,255,0.4);flex:0.7;padding:6px 0;border-radius:8px;font-size:10px;font-weight:800;cursor:pointer;letter-spacing:1px;">ED</button>
         <button class="album-btn album-btn-del" onclick="deleteSongBiblioteca(${s.id}, event)">✕</button>
       </div>
     </div>`;
@@ -2810,6 +2866,64 @@ function loadSongBiblioteca(id) {
   loadSong(id);
   fecharBiblioteca();
   showToast('Música carregada!');
+}
+
+// ── EDITAR MÚSICA ──
+let editarMusicaId = null;
+
+function abrirEditarMusica(id, e) {
+  if (e) e.stopPropagation();
+  editarMusicaId = id;
+  const s = songs.find(x => x.id === id);
+  if (!s) return;
+  document.getElementById('editar-musica-nome').value = s.name;
+  document.getElementById('editar-musica-bpm').value = s.bpm;
+  document.getElementById('modal-editar-musica').classList.add('show');
+  setTimeout(() => document.getElementById('editar-musica-nome').focus(), 100);
+}
+
+function fecharEditarMusica() {
+  document.getElementById('modal-editar-musica').classList.remove('show');
+  editarMusicaId = null;
+}
+
+function salvarEditarMusica() {
+  const nome = document.getElementById('editar-musica-nome').value.trim();
+  const bpmVal = parseInt(document.getElementById('editar-musica-bpm').value);
+  if (!nome) { document.getElementById('editar-musica-nome').focus(); return; }
+  const s = songs.find(x => x.id === editarMusicaId);
+  if (s) {
+    s.name = nome;
+    if (!isNaN(bpmVal) && bpmVal >= 40 && bpmVal <= 300) s.bpm = bpmVal;
+    updateStorage();
+    showToast('Música atualizada!');
+  }
+  fecharEditarMusica();
+}
+
+// ── EDITAR EVENTO ──
+let editarEventoId = null;
+
+function abrirEditarEvento(id, e) {
+  if (e) e.stopPropagation();
+  editarEventoId = id;
+  const ev = eventos.find(x => x.id === id);
+  if (!ev) return;
+  document.getElementById('modal-evento-title').textContent = 'Editar Evento';
+  document.getElementById('evento-nome-input').value = ev.nome;
+  document.getElementById('evento-data-input').value = ev.data || '';
+  document.getElementById('modal-evento').classList.add('show');
+  setTimeout(() => document.getElementById('evento-nome-input').focus(), 100);
+}
+
+function abrirEditarEventoAtual() {
+  if (eventoAbertoId) abrirEditarEvento(eventoAbertoId);
+}
+
+function favoritarBiblioteca(id, e) {
+  e.stopPropagation();
+  const s = songs.find(x => x.id === id);
+  if (s) { s.favorite = !s.favorite; updateStorage(); showToast(s.favorite ? '★ Favorita!' : 'Removida dos favoritos.'); }
 }
 
 function deleteSongBiblioteca(id, e) {
@@ -2866,6 +2980,8 @@ function renderEventos(filtro = '') {
       </div>
       <div class="evento-actions">
         <button class="evento-btn evento-btn-open" onclick="abrirEventoDetalhe(${ev.id})">Ver</button>
+        <button class="evento-btn" onclick="abrirEditarEvento(${ev.id}, event)"
+          style="background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.08);color:rgba(255,255,255,0.4);flex:0.7;padding:6px 0;border-radius:8px;font-size:10px;font-weight:800;cursor:pointer;letter-spacing:1px;">ED</button>
         <button class="evento-btn evento-btn-del" onclick="deletarEvento(${ev.id}, event)">✕</button>
       </div>
     </div>`;
@@ -2873,25 +2989,41 @@ function renderEventos(filtro = '') {
 }
 
 function abrirModalEvento() {
-  document.getElementById('modal-evento').classList.add('show');
+  editarEventoId = null;
+  document.getElementById('modal-evento-title').textContent = 'Novo Evento';
   document.getElementById('evento-nome-input').value = '';
   document.getElementById('evento-data-input').value = '';
+  document.getElementById('modal-evento').classList.add('show');
   setTimeout(() => document.getElementById('evento-nome-input').focus(), 100);
 }
 
 function fecharModalEvento() {
   document.getElementById('modal-evento').classList.remove('show');
+  editarEventoId = null;
 }
 
 function salvarEvento() {
   const nome = document.getElementById('evento-nome-input').value.trim();
   if (!nome) { document.getElementById('evento-nome-input').focus(); return; }
   const data = document.getElementById('evento-data-input').value;
-  eventos.push({ id: Date.now(), nome, data, musicIds: [] });
+  if (editarEventoId) {
+    // Editar existente
+    const ev = eventos.find(x => x.id === editarEventoId);
+    if (ev) { ev.nome = nome; ev.data = data; }
+    salvarEventos();
+    // Atualiza título se detalhe estiver aberto
+    if (eventoAbertoId === editarEventoId) {
+      document.getElementById('evento-detalhe-title').textContent = nome;
+    }
+    showToast('Evento atualizado!');
+  } else {
+    // Novo evento
+    eventos.push({ id: Date.now(), nome, data, musicIds: [] });
+    showToast('Evento criado!');
+  }
   salvarEventos();
   fecharModalEvento();
-  renderEventos('');
-  showToast('Evento criado!');
+  if (bibTabAtiva === 'eventos') renderEventos('');
 }
 
 function deletarEvento(id, e) {
