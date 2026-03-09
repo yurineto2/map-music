@@ -311,7 +311,11 @@ window.addEventListener('unhandledrejection', function(e) {
       try {
         const data = await _get('salas/' + codigo);
         if (!data || !data.ativa) return null;
-        await _set('salas/' + codigo, { onlineCount: (data.onlineCount || 1) + 1 }, true);
+        // Escreve viewer no documento da sala para que o host veja
+        const viewers = Object.assign({}, data.viewers || {});
+        viewers[viewerUid] = viewerNome;
+        const onlineCount = Object.keys(viewers).length + 1; // +1 for host
+        await _set('salas/' + codigo, { viewers, onlineCount }, true);
         return data;
       } catch(e) { return null; }
     },
@@ -319,28 +323,39 @@ window.addEventListener('unhandledrejection', function(e) {
       try {
         const data = await _get('salas/' + codigo);
         if (!data) return;
-        const n = Math.max(1, (data.onlineCount || 2) - 1);
-        await _set('salas/' + codigo, { onlineCount: n }, true);
+        const viewers = Object.assign({}, data.viewers || {});
+        delete viewers[viewerUid];
+        const onlineCount = Math.max(1, Object.keys(viewers).length + 1);
+        await _set('salas/' + codigo, { viewers, onlineCount }, true);
       } catch(e) {}
     },
     async enviarMensagemSala(codigo, msg) {
       try { return await _add('salas/' + codigo + '/mensagens', msg); } catch(e) { return false; }
     },
     ouvirMensagensSala(codigo, callback) {
-      // Poll mensagens — filtra pelo timestamp local
-      let _since = Date.now();
+      // Poll sala doc — deteta mudanças no campo 'viewers'
+      let _lastViewers = null;
       return _poll('salas/' + codigo, function(data) {
-        // Estado mudou — notifica como se fosse mensagem
-        if (data && data._lastMsg) {
-          try {
-            const msg = JSON.parse(data._lastMsg);
-            if (msg._t && msg._t > _since) {
-              _since = msg._t;
-              callback([msg]);
-            }
-          } catch(e) {}
-        }
-      }, 2000);
+        if (!data) return;
+        const viewers = data.viewers || {};
+        const viewersStr = JSON.stringify(viewers);
+        if (_lastViewers === null) { _lastViewers = viewersStr; return; } // skip first
+        if (viewersStr === _lastViewers) return;
+        // Detetou mudança — descobre quem entrou/saiu
+        const oldV = JSON.parse(_lastViewers || '{}');
+        const newV = viewers;
+        const msgs = [];
+        // Entrou
+        Object.keys(newV).forEach(uid => {
+          if (!oldV[uid]) msgs.push({ tipo: 'join', uid, nome: newV[uid], _t: Date.now() });
+        });
+        // Saiu
+        Object.keys(oldV).forEach(uid => {
+          if (!newV[uid]) msgs.push({ tipo: 'leave', uid, nome: oldV[uid], _t: Date.now() });
+        });
+        _lastViewers = viewersStr;
+        if (msgs.length) callback(msgs);
+      }, 3000);
     },
 
     async salvarEstatistica(uid, dados) {
@@ -3317,8 +3332,7 @@ async function entrarNaSala() {
   atualizarSyncBar(code);
   showToast('Sala ' + code + ' — modo visualização');
 
-  // Envia mensagem de join
-  await window._fb.enviarMensagemSala(code, { tipo: 'join', uid, nome });
+  // Join registado pelo entrarSalaFb (campo viewers no doc da sala)
 
   // Escuta atualizações de estado em tempo real
   _salaListener = window._fb.ouvirSala(code, function(data) {
@@ -3355,7 +3369,7 @@ async function _sairDaSala() {
 
   if (_salaListener) { _salaListener(); _salaListener = null; }
   if (code) {
-    await window._fb.enviarMensagemSala(code, { tipo: 'leave', uid, nome }).catch(() => {});
+    // Leave registado pelo sairSalaFb (remove do campo viewers no doc da sala)
     await window._fb.sairSalaFb(code, uid).catch(() => {});
   }
 
