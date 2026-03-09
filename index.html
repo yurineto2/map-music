@@ -3138,6 +3138,7 @@ let songs = JSON.parse(localStorage.getItem('map_pro_elite_v1')) || [];
 let guestConns = []; // kept for compatibility       // host → viewers
 let isHost = false;
 let _fbReady = false;
+let _salaOnlineTimer = null;
 // Sincroniza _fbReady com window._fbReady (definido sincronamente pelo script Firebase)
 function _isFbReady() {
   if (!_fbReady && window._fbReady && window._fb) _fbReady = true;
@@ -3498,12 +3499,10 @@ function mostrarEscolhaSala() {
 }
 
 function voltarEscolhaSala() {
-  // Se host sem nenhum viewer conectado, encerra a sala silenciosamente ao voltar
-  if (isHost && guestConns.length === 0) {
-    if (peer) { try { peer.destroy(); } catch(e){} peer = null; }
-    isHost = false;
-    myRoomCode = null;
-    document.getElementById('sync-bar').classList.remove('visible', 'viewer');
+  // Se sala ativa, encerra/sai antes de voltar
+  if (isHost || isViewer) {
+    desconectar();
+    return; // desconectar já chama mostrarEscolhaSala()
   }
   mostrarEscolhaSala();
 }
@@ -3530,13 +3529,8 @@ function mostrarTabsSala(tab) {
 
 function fecharModal() {
   document.getElementById('modal-sala').classList.remove('show');
-  // Se host sem viewers, encerra a sala ao fechar o modal
-  if (isHost && guestConns.length === 0) {
-    if (peer) { try { peer.destroy(); } catch(e){} peer = null; }
-    isHost = false;
-    myRoomCode = null;
-    document.getElementById('sync-bar').classList.remove('visible', 'viewer');
-  }
+  // Apenas fecha o modal — a sala continua ativa em background
+  // O utilizador pode reabrir e ver o código ou desconectar explicitamente
   if (!isHost && !isViewer) mostrarEscolhaSala();
 }
 
@@ -4081,15 +4075,27 @@ document.addEventListener('click', function(e) {
 
 
 function desconectar() {
-  if (isHost) {
-    guestConns.forEach(c => { try { c.close(); } catch(e){} });
-    guestConns = [];
+  const code = myRoomCode;
+  const uid = _getUid();
+  // Para listeners
+  if (_salaListener) { try { _salaListener(); } catch(e){} _salaListener = null; }
+  if (_mensagensListener) { try { _mensagensListener(); } catch(e){} _mensagensListener = null; }
+  clearInterval(_salaOnlineTimer);
+  // Firebase: encerra sala (host) ou sai (viewer)
+  if (code && window._fb) {
+    if (isHost) {
+      window._fb.encerrarSala(code).catch(() => {});
+    } else if (isViewer) {
+      window._fb.sairSalaFb(code, uid).catch(() => {});
+      window._fb.enviarMensagemSala(code, { tipo: 'leave', uid, nome: (_getPerfilLocal().nome || 'Músico'), _t: Date.now() }).catch(() => {});
+    }
   }
-  if (isViewer && hostConn) { try { hostConn.close(); } catch(e){} }
-  if (peer) { peer.destroy(); peer = null; }
   isHost = false; isViewer = false;
+  myRoomCode = null;
+  _viewersOnline = {};
   document.getElementById('app-body').classList.remove('viewer-mode');
-  document.getElementById('sync-bar').classList.remove('visible','viewer');
+  document.getElementById('sync-bar').classList.remove('visible', 'viewer');
+  mostrarEscolhaSala();
   showToast('Sala encerrada.');
 }
 
