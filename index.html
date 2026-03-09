@@ -3529,7 +3529,6 @@ function mostrarTabsSala(tab) {
 }
 
 function fecharModal() {
-  _bloquearFantasma();
   document.getElementById('modal-sala').classList.remove('show');
   // Se host sem viewers, encerra a sala ao fechar o modal
   if (isHost && guestConns.length === 0) {
@@ -4213,7 +4212,6 @@ function abrirPads() {
 }
 
 function fecharPads() {
-  _bloquearFantasma();
   // Não para os pads — continuam tocando em background
   document.getElementById('pads-overlay').classList.remove('show');
 }
@@ -4629,7 +4627,6 @@ function abrirBiblioteca() {
 }
 
 function fecharBiblioteca() {
-  _bloquearFantasma();
   document.getElementById('biblioteca-overlay').classList.remove('show');
   eventoAbertoId = null;
 }
@@ -4714,7 +4711,6 @@ function abrirEditarMusica(id, e) {
 }
 
 function fecharEditarMusica() {
-  _bloquearFantasma();
   document.getElementById('modal-editar-musica').classList.remove('show');
   editarMusicaId = null;
 }
@@ -4830,7 +4826,6 @@ function abrirModalEvento() {
 }
 
 function fecharModalEvento() {
-  _bloquearFantasma();
   document.getElementById('modal-evento').classList.remove('show');
   editarEventoId = null;
 }
@@ -4957,7 +4952,6 @@ function abrirAddMusica() {
 }
 
 function fecharAddMusica() {
-  _bloquearFantasma();
   document.getElementById('modal-addmusica').classList.remove('show');
 }
 
@@ -4989,7 +4983,6 @@ function abrirDrumCam() {
 }
 
 function fecharDrumCam() {
-  _bloquearFantasma();
   document.getElementById('drumcam-overlay').classList.remove('show');
 }
 
@@ -6033,7 +6026,6 @@ async function abrirModalAmigos() {
 }
 
 function fecharModalAmigos() {
-  _bloquearFantasma();
   document.getElementById('modal-amigos').classList.remove('show');
 }
 
@@ -6322,7 +6314,6 @@ function toggleNotifPanel(e) {
 }
 
 function fecharNotifPanel() {
-  _bloquearFantasma();
   notifPanelOpen = false;
   document.getElementById('notif-panel').classList.remove('show');
 }
@@ -6571,17 +6562,29 @@ function _bloquearFantasma() {
   // Remove shield anterior se existir
   if (_shieldEl) { try { _shieldEl.remove(); } catch(e){} }
   _shieldEl = document.createElement('div');
-  _shieldEl.style.cssText = 'position:fixed;inset:0;z-index:99999;background:transparent;';
-  // Captura e cancela qualquer toque/click
-  const _absorb = function(e) { e.stopImmediatePropagation(); e.preventDefault(); };
+  _shieldEl.style.cssText = 'position:fixed;inset:0;z-index:99999;background:transparent;pointer-events:auto;';
+  // Captura e cancela ghost clicks — mas NÃO bloqueia botões ou elementos interativos
+  const _absorb = function(e) {
+    // Deixa passar se o alvo for um botão, input, ou elemento dentro de modal/overlay
+    const t = e.target;
+    if (t && (t.tagName === 'BUTTON' || t.tagName === 'INPUT' || t.tagName === 'TEXTAREA'
+        || t.tagName === 'SELECT' || t.closest('button') || t.closest('.modal-box')
+        || t.closest('.amigos-sheet') || t.closest('.modal-overlay')
+        || t.closest('[id$="-overlay"]'))) {
+      if (_shieldEl) { try { _shieldEl.remove(); } catch(e){} _shieldEl = null; }
+      return; // deixa o evento passar normalmente
+    }
+    e.stopImmediatePropagation();
+    e.preventDefault();
+  };
   _shieldEl.addEventListener('touchstart', _absorb, { passive: false, capture: true });
   _shieldEl.addEventListener('touchend',   _absorb, { passive: false, capture: true });
   _shieldEl.addEventListener('click',      _absorb, { passive: false, capture: true });
   document.body.appendChild(_shieldEl);
-  // Remove após 400ms
+  // Remove após 250ms
   setTimeout(() => {
     if (_shieldEl) { try { _shieldEl.remove(); } catch(e){} _shieldEl = null; }
-  }, 400);
+  }, 250);
 }
 
 renderSetlist();
