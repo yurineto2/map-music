@@ -2,440 +2,235 @@
 <html lang="pt-BR">
 <head>
 <script>
-// Captura e loga todos os erros para debug
+// Suprime "Script error." de CDNs cross-origin (Safari/iOS)
 window.addEventListener('error', function(e) {
-  const msg = (e.message || '') + ' | file:' + (e.filename || '').split('/').pop() + ':' + e.lineno + ':' + e.colno;
-  const stack = e.error && e.error.stack ? e.error.stack.slice(0,300) : '';
-  console.warn('APP ERROR:', msg, stack);
-  // Suprime "Script error." genérico de cross-origin
   if (!e.message || e.message === 'Script error.' || e.message === 'Script error') {
     e.preventDefault(); e.stopPropagation(); return true;
   }
 }, true);
-window.addEventListener('unhandledrejection', function(e) {
-  console.warn('UNHANDLED PROMISE:', e.reason && e.reason.stack ? e.reason.stack.slice(0,300) : String(e.reason));
-});
 </script>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>Map Music Pro - Elite Edition</title>
-<!-- Google Fonts removed — using system fonts -->
-<script>
-// ─── FIREBASE via REST API — sem CDN, funciona em qualquer browser ────────────
-(function() {
-  const _PROJECT = 'map-music-eb8aa';
-  const _API_KEY = 'AIzaSyBausGqamGuEbxV8NdHfuRY0Tx21LELj-Y';
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+<script type="module">
+  import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
+  import {
+    getFirestore, doc, setDoc, getDoc, collection, query, where,
+    getDocs, updateDoc, onSnapshot, serverTimestamp, orderBy, limit,
+    deleteDoc, addDoc, writeBatch
+  } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
+  import { getMessaging, getToken, onMessage } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-messaging.js';
 
-  // Fetch com timeout de 10s para evitar hanging no Safari iOS
-  function _ft(url, opts) {
-    // Cria AbortController para timeout — envolto em try/catch para Safari antigo
-    let ctrl, signal;
-    try { ctrl = new AbortController(); signal = ctrl.signal; } catch(e) {}
-    const id = signal ? setTimeout(() => { try { ctrl.abort(); } catch(e){} }, 10000) : null;
-    // Spread num NOVO objeto para evitar DataCloneError no Safari iOS
-    // (atribuir .signal ao objeto original corrompe a clonagem interna do fetch)
-    const reqOpts = Object.assign({}, opts || {});
-    if (signal) reqOpts.signal = signal;
-    return fetch(url, reqOpts).finally(() => { if (id) clearTimeout(id); });
-  }
+  const _fbApp = initializeApp({
+    apiKey: "AIzaSyBausGqamGuEbxV8NdHfuRY0Tx21LELj-Y",
+    authDomain: "map-music-eb8aa.firebaseapp.com",
+    projectId: "map-music-eb8aa",
+    storageBucket: "map-music-eb8aa.firebasestorage.app",
+    messagingSenderId: "902329916479",
+    appId: "1:902329916479:web:e56a4c28757925506aac8a"
+  });
+  const _db = getFirestore(_fbApp);
 
-  const _BASE = 'https://firestore.googleapis.com/v1/projects/' + _PROJECT + '/databases/(default)/documents';
-
-  // ── Helpers REST ─────────────────────────────────────────────────────────────
-  function _url(path, extra) {
-    return _BASE + '/' + path + '?key=' + _API_KEY + (extra || '');
-  }
-
-  function _toFirestore(obj) {
-    function _val(v) {
-      if (v === null || v === undefined) return { nullValue: null };
-      if (typeof v === 'boolean') return { booleanValue: v };
-      if (typeof v === 'number') return Number.isInteger(v) ? { integerValue: String(v) } : { doubleValue: v };
-      if (typeof v === 'string') return { stringValue: v };
-      if (Array.isArray(v)) return { arrayValue: { values: v.map(_val) } };
-      if (typeof v === 'object') return { mapValue: { fields: _toFirestore(v) } };
-      return { stringValue: String(v) };
-    }
-    const fields = {};
-    for (const k in obj) {
-      if (obj[k] !== undefined) fields[k] = _val(obj[k]);
-    }
-    return fields;
-  }
-
-  function _fromFirestore(fields) {
-    if (!fields) return {};
-    const obj = {};
-    for (const k in fields) {
-      const v = fields[k];
-      if ('stringValue' in v) obj[k] = v.stringValue;
-      else if ('integerValue' in v) obj[k] = parseInt(v.integerValue);
-      else if ('doubleValue' in v) obj[k] = v.doubleValue;
-      else if ('booleanValue' in v) obj[k] = v.booleanValue;
-      else if ('nullValue' in v) obj[k] = null;
-      else if ('arrayValue' in v) obj[k] = (v.arrayValue.values || []).map(x => _fromFirestore({_: x})._);
-      else if ('mapValue' in v) obj[k] = _fromFirestore(v.mapValue.fields);
-      else obj[k] = null;
-    }
-    return obj;
-  }
-
-  async function _get(path) {
-    try {
-      const r = await _ft(_url(path));
-      if (!r.ok) return null;
-      const d = await r.json();
-      return d.fields ? _fromFirestore(d.fields) : null;
-    } catch(e) { return null; }
-  }
-
-  async function _set(path, data, merge, retries) {
-    retries = retries === undefined ? 2 : retries;
-    const fields = _toFirestore(data);
-    const suffix = merge ? '&updateMask.fieldPaths=' + Object.keys(fields).join('&updateMask.fieldPaths=') : '';
-    for (let attempt = 0; attempt <= retries; attempt++) {
-      try {
-        const r = await _ft(_url(path, suffix), {
-          method: 'PATCH',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ fields })
-        });
-        if (r.ok) return true;
-        const err = await r.json().catch(() => ({}));
-        const code = err.error && err.error.code;
-        // 403 = regras bloqueiam, não adianta tentar novamente
-        if (code === 403 || code === 401) {
-          console.warn('Firebase: acesso negado (verifique as regras do Firestore)');
-          return false;
-        }
-        if (attempt < retries) await new Promise(r => setTimeout(r, 800 * (attempt + 1)));
-      } catch(e) {
-        if (attempt < retries) await new Promise(r => setTimeout(r, 800 * (attempt + 1)));
-        else throw e;
-      }
-    }
-    return false;
-  }
-
-  async function _add(path, data) {
-    const r = await _ft(_url(path), {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ fields: _toFirestore(data) })
-    });
-    return r.ok;
-  }
-
-  async function _query(collection, filters, orderField, limitN) {
-    const sf = (filters || []).map(f => ({
-      fieldFilter: {
-        field: { fieldPath: f[0] },
-        op: f[1] === '>=' ? 'GREATER_THAN_OR_EQUAL' :
-            f[1] === '<=' ? 'LESS_THAN_OR_EQUAL' :
-            f[1] === '==' ? 'EQUAL' : 'EQUAL',
-        value: _toFirestore({ v: f[2] }).v
-      }
-    }));
-    const body = {
-      structuredQuery: {
-        from: [{ collectionId: collection }],
-        where: sf.length === 1 ? sf[0] : sf.length > 1 ? { compositeFilter: { op: 'AND', filters: sf } } : undefined,
-        orderBy: orderField ? [{ field: { fieldPath: orderField }, direction: 'DESCENDING' }] : undefined,
-        limit: limitN || 20
-      }
-    };
-    const r = await fetch('https://firestore.googleapis.com/v1/projects/' + _PROJECT + '/databases/(default)/documents:runQuery?key=' + _API_KEY, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(body)
-    });
-    if (!r.ok) return [];
-    const rows = await r.json();
-    return (rows || []).filter(x => x.document).map(x => ({
-      id: x.document.name.split('/').pop(),
-      ..._fromFirestore(x.document.fields)
-    }));
-  }
-
-  // ── Polling realtime (onSnapshot simulado) ───────────────────────────────────
-  function _poll(path, callback, intervalMs) {
-    intervalMs = intervalMs || 3000;
-    let last = null;
-    let stopped = false;
-    async function check() {
-      if (stopped) return;
-      try {
-        const data = await _get(path);
-        const str = JSON.stringify(data);
-        if (str !== last) { last = str; if (data) callback(data); }
-      } catch(e) {}
-      if (!stopped) setTimeout(check, intervalMs);
-    }
-    check();
-    return function() { stopped = true; };
-  }
-
-  function _pollQuery(col, filters, callback, intervalMs) {
-    intervalMs = intervalMs || 4000;
-    let last = null;
-    let stopped = false;
-    async function check() {
-      if (stopped) return;
-      try {
-        const rows = await _query(col, filters);
-        const str = JSON.stringify(rows);
-        if (str !== last) { last = str; callback(rows); }
-      } catch(e) {}
-      if (!stopped) setTimeout(check, intervalMs);
-    }
-    check();
-    return function() { stopped = true; };
-  }
-
-  // ── API pública ──────────────────────────────────────────────────────────────
   window._fb = {
 
+    // ── PERFIL ────────────────────────────────────────────────────────────────
     async salvarPerfil(uid, dados) {
       try {
-        await _set('usuarios/' + uid, {
+        await setDoc(doc(_db, 'usuarios', uid), {
           ...dados, uid,
-          nomeLower: (dados.nome || '').toLowerCase()
-        }, true);
+          nomeLower: (dados.nome || '').toLowerCase(),
+          atualizadoEm: serverTimestamp()
+        }, { merge: true });
       } catch(e) { console.warn('FB salvarPerfil:', e); }
     },
 
     async buscarUsuarios(termo) {
       try {
         const t = termo.toLowerCase().trim();
-        return await _query('usuarios', [['nomeLower','>=',t],['nomeLower','<=',t+'']], null, 15);
+        const q = query(collection(_db, 'usuarios'),
+          where('nomeLower', '>=', t), where('nomeLower', '<=', t + ''), limit(15));
+        const snap = await getDocs(q);
+        return snap.docs.map(d => ({ id: d.id, ...d.data() }));
       } catch(e) { return []; }
     },
 
+    // ── AMIGOS ────────────────────────────────────────────────────────────────
     async enviarSolicitacao(deUid, deNome, deInst, paraUid) {
       try {
-        await _set('solicitacoes/' + deUid + '_' + paraUid, {
-          de: deUid, deNome, deInst: deInst || '', para: paraUid, status: 'pendente'
-        }, false);
+        await setDoc(doc(_db, 'solicitacoes', deUid + '_' + paraUid), {
+          de: deUid, deNome, deInst, para: paraUid,
+          status: 'pendente', criadoEm: serverTimestamp()
+        });
         return true;
       } catch(e) { return false; }
     },
     async aceitarSolicitacao(solId) {
-      try { return await _set('solicitacoes/' + solId, { status: 'aceito' }, true); } catch(e) { return false; }
+      try { await updateDoc(doc(_db, 'solicitacoes', solId), { status: 'aceito' }); return true; } catch(e) { return false; }
     },
     async recusarSolicitacao(solId) {
-      try { return await _set('solicitacoes/' + solId, { status: 'recusado' }, true); } catch(e) { return false; }
+      try { await updateDoc(doc(_db, 'solicitacoes', solId), { status: 'recusado' }); return true; } catch(e) { return false; }
     },
     ouvirSolicitacoes(uid, callback) {
-      return _pollQuery('solicitacoes', [['para','==',uid],['status','==','pendente']], callback, 5000);
+      return onSnapshot(query(collection(_db, 'solicitacoes'),
+        where('para', '==', uid), where('status', '==', 'pendente')),
+        snap => callback(snap.docs.map(d => ({ id: d.id, ...d.data() }))));
     },
     async listarAmigos(uid) {
       try {
         const [s1, s2] = await Promise.all([
-          _query('solicitacoes', [['de','==',uid],['status','==','aceito']], null, 50),
-          _query('solicitacoes', [['para','==',uid],['status','==','aceito']], null, 50)
+          getDocs(query(collection(_db, 'solicitacoes'), where('de', '==', uid), where('status', '==', 'aceito'))),
+          getDocs(query(collection(_db, 'solicitacoes'), where('para', '==', uid), where('status', '==', 'aceito')))
         ]);
         const amigos = [];
-        s1.forEach(x => amigos.push({ solId: x.id, uid: x.para, nome: x.deNome, inst: x.deInst }));
-        s2.forEach(x => amigos.push({ solId: x.id, uid: x.de, nome: x.deNome, inst: x.deInst }));
+        s1.docs.forEach(d => { const x = d.data(); amigos.push({ solId: d.id, uid: x.para, nome: x.deNome, inst: x.deInst }); });
+        s2.docs.forEach(d => { const x = d.data(); amigos.push({ solId: d.id, uid: x.de, nome: x.deNome, inst: x.deInst }); });
         return amigos;
       } catch(e) { return []; }
     },
     async sugestoes(uid) {
       try {
-        const rows = await _query('usuarios', [], 'atualizadoEm', 20);
-        return rows.filter(u => u.uid !== uid);
+        const snap = await getDocs(query(collection(_db, 'usuarios'), orderBy('atualizadoEm', 'desc'), limit(20)));
+        return snap.docs.map(d => ({ id: d.id, ...d.data() })).filter(u => u.uid !== uid);
       } catch(e) { return []; }
     },
 
+    // ── BACKUP MÚSICAS ────────────────────────────────────────────────────────
     async backupMusicas(uid, musicas) {
-      try { return await _set('backups/' + uid, { musicas: JSON.stringify(musicas), total: musicas.length }, true); } catch(e) { return false; }
+      try {
+        await setDoc(doc(_db, 'backups', uid), {
+          musicas: JSON.stringify(musicas),
+          total: musicas.length,
+          atualizadoEm: serverTimestamp()
+        });
+        return true;
+      } catch(e) { console.warn('FB backupMusicas:', e); return false; }
     },
     async restaurarMusicas(uid) {
       try {
-        const d = await _get('backups/' + uid);
-        if (!d) return null;
-        return { musicas: JSON.parse(d.musicas || '[]') };
+        const snap = await getDoc(doc(_db, 'backups', uid));
+        if (!snap.exists()) return null;
+        const data = snap.data();
+        return { musicas: JSON.parse(data.musicas || '[]'), atualizadoEm: data.atualizadoEm };
       } catch(e) { return null; }
     },
+
+    // ── BACKUP EVENTOS ────────────────────────────────────────────────────────
     async backupEventos(uid, eventos) {
-      try { return await _set('backups/' + uid, { eventos: JSON.stringify(eventos), totalEventos: eventos.length }, true); } catch(e) { return false; }
+      try {
+        await setDoc(doc(_db, 'backups', uid), {
+          eventos: JSON.stringify(eventos),
+          totalEventos: eventos.length,
+          atualizadoEm: serverTimestamp()
+        }, { merge: true });
+        return true;
+      } catch(e) { return false; }
     },
 
+    // ── SALA VIA FIREBASE (alternativa ao PeerJS) ─────────────────────────────
     async criarSalaFb(codigo, hostUid, hostNome, estado) {
       try {
-        return await _set('salas/' + codigo, {
+        await setDoc(doc(_db, 'salas', codigo), {
           codigo, hostUid, hostNome,
           estado: JSON.stringify(estado),
-          onlineCount: 1,
+          online: [hostUid],
+          criadoEm: serverTimestamp(),
           ativa: true
-        }, false);
+        });
+        return true;
       } catch(e) { return false; }
     },
     async atualizarEstadoSala(codigo, estado, online) {
       try {
-        await _set('salas/' + codigo, {
+        await updateDoc(doc(_db, 'salas', codigo), {
           estado: JSON.stringify(estado),
-          onlineCount: (online || []).length
-        }, true);
+          online,
+          atualizadoEm: serverTimestamp()
+        });
       } catch(e) {}
     },
     async encerrarSala(codigo) {
-      try { await _set('salas/' + codigo, { ativa: false }, true); } catch(e) {}
+      try { await updateDoc(doc(_db, 'salas', codigo), { ativa: false }); } catch(e) {}
     },
     ouvirSala(codigo, callback) {
-      return _poll('salas/' + codigo, callback, 2000);
+      return onSnapshot(doc(_db, 'salas', codigo), snap => {
+        if (snap.exists()) callback(snap.data());
+      });
     },
     async entrarSalaFb(codigo, viewerUid, viewerNome) {
       try {
-        const data = await _get('salas/' + codigo);
-        if (!data || !data.ativa) return null;
-        await _set('salas/' + codigo, { onlineCount: (data.onlineCount || 1) + 1 }, true);
+        const snap = await getDoc(doc(_db, 'salas', codigo));
+        if (!snap.exists() || !snap.data().ativa) return null;
+        const data = snap.data();
+        const online = [...(data.online || [])];
+        if (!online.includes(viewerUid)) online.push(viewerUid);
+        await updateDoc(doc(_db, 'salas', codigo), { online });
         return data;
       } catch(e) { return null; }
     },
     async sairSalaFb(codigo, viewerUid) {
       try {
-        const data = await _get('salas/' + codigo);
-        if (!data) return;
-        const n = Math.max(1, (data.onlineCount || 2) - 1);
-        await _set('salas/' + codigo, { onlineCount: n }, true);
+        const snap = await getDoc(doc(_db, 'salas', codigo));
+        if (!snap.exists()) return;
+        const online = (snap.data().online || []).filter(u => u !== viewerUid);
+        await updateDoc(doc(_db, 'salas', codigo), { online });
       } catch(e) {}
     },
-    async enviarMensagemSala(codigo, msg) {
-      try { return await _add('salas/' + codigo + '/mensagens', msg); } catch(e) { return false; }
-    },
-    ouvirMensagensSala(codigo, callback) {
-      // Poll mensagens — filtra pelo timestamp local
-      let _since = Date.now();
-      return _poll('salas/' + codigo, function(data) {
-        // Estado mudou — notifica como se fosse mensagem
-        if (data && data._lastMsg) {
-          try {
-            const msg = JSON.parse(data._lastMsg);
-            if (msg._t && msg._t > _since) {
-              _since = msg._t;
-              callback([msg]);
-            }
-          } catch(e) {}
-        }
-      }, 2000);
-    },
 
+    // ── ESTATÍSTICAS ──────────────────────────────────────────────────────────
     async salvarEstatistica(uid, dados) {
-      try { await _set('estatisticas/' + uid, { ...dados, uid }, true); } catch(e) {}
+      try {
+        await setDoc(doc(_db, 'estatisticas', uid), {
+          ...dados, uid, atualizadoEm: serverTimestamp()
+        }, { merge: true });
+      } catch(e) {}
     },
     async carregarEstatistica(uid) {
-      try { return await _get('estatisticas/' + uid); } catch(e) { return null; }
+      try {
+        const snap = await getDoc(doc(_db, 'estatisticas', uid));
+        return snap.exists() ? snap.data() : null;
+      } catch(e) { return null; }
     },
 
+    // ── PRESENÇA ONLINE ───────────────────────────────────────────────────────
     async marcarOnline(uid, nome, instrumento) {
-      try { await _set('presenca/' + uid, { uid, nome, instrumento: instrumento || '', online: true }, true); } catch(e) {}
+      try {
+        await setDoc(doc(_db, 'presenca', uid), {
+          uid, nome, instrumento,
+          online: true, ultimaVez: serverTimestamp()
+        });
+      } catch(e) {}
     },
     async marcarOffline(uid) {
-      try { await _set('presenca/' + uid, { online: false }, true); } catch(e) {}
+      try {
+        await updateDoc(doc(_db, 'presenca', uid), { online: false, ultimaVez: serverTimestamp() });
+      } catch(e) {}
     },
     async amigosOnline(uids) {
-      if (!uids || !uids.length) return [];
+      if (!uids.length) return [];
       try {
-        const results = await Promise.all(uids.map(uid => _get('presenca/' + uid)));
-        return results.filter(d => d && d.online).map(d => d);
+        const results = await Promise.all(
+          uids.map(uid => getDoc(doc(_db, 'presenca', uid)))
+        );
+        return results
+          .filter(s => s.exists() && s.data().online)
+          .map(s => s.data());
       } catch(e) { return []; }
     }
   };
 
-  // Aviso único se aberto como ficheiro local
-  if (window.location.protocol === 'file:') {
-    window.addEventListener('firebase-ready', function() {
-      setTimeout(function() {
-        if (typeof showToast === 'function') {
-          showToast('Modo offline: sincronização Firebase requer servidor HTTP');
-        }
-      }, 3000);
-    }, { once: true });
-  }
-
-  window._fbReady = true;
   window.dispatchEvent(new Event('firebase-ready'));
-  console.log('Firebase REST API pronto');
-
-  // Teste silencioso de conectividade — com retry e detecção de bloqueio Safari
-  let _fbOnline = navigator.onLine !== false;
-  let _fbRetryCount = 0;
-  const _MAX_RETRIES = 3;
-
-  async function _testarConectividade() {
-    try {
-      const ctrl = new AbortController();
-      const timeout = setTimeout(() => ctrl.abort(), 8000);
-      const r = await fetch(
-        'https://firestore.googleapis.com/v1/projects/' + _PROJECT + '/databases/(default)/documents?pageSize=1&key=' + _API_KEY,
-        { signal: ctrl.signal }
-      );
-      clearTimeout(timeout);
-      if (r.status === 403) {
-        console.warn('Firebase: regras de segurança bloqueiam acesso.');
-      } else {
-        _fbOnline = true;
-        _fbRetryCount = 0;
-      }
-    } catch(e) {
-      _fbOnline = false;
-      _fbRetryCount++;
-      if (_fbRetryCount < _MAX_RETRIES) {
-        // Retry exponential backoff
-        setTimeout(_testarConectividade, 5000 * _fbRetryCount);
-      }
-      // Detecta se está a correr via file:// (Safari bloqueia fetch nesse contexto)
-      if (window.location.protocol === 'file:') {
-        // Silencioso — esperado quando aberto como ficheiro local
-      }
-    }
-  }
-
-  setTimeout(_testarConectividade, 2000);
-
-  // Reconecta quando volta internet
-  window.addEventListener('online', function() {
-    _fbOnline = true;
-    _fbRetryCount = 0;
-    setTimeout(_testarConectividade, 500);
-  });
-  window.addEventListener('offline', function() { _fbOnline = false; });
-})();
 </script>
 
-<!-- PeerJS removido — sala 100% Firebase -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/peerjs/1.5.4/peerjs.min.js" onerror="void(0)"></script>
 <script>
 // ─── ONBOARDING ───────────────────────────────────────────────────────────────
 document.addEventListener('DOMContentLoaded', function() {
-  // Se já tem perfil, remove splash e overlay imediatamente
   if (localStorage.getItem('map_perfil_v1')) {
-    const splash = document.getElementById('ob-splash');
     const ov = document.getElementById('onboarding-overlay');
-    if (splash) splash.remove();
     if (ov) ov.remove();
     return;
   }
-
-  // ── ANIMAÇÃO DE ENTRADA ──────────────────────────────────────────────────
-  // Fase 1: splash fica visível por 1.8s com animações
-  // Fase 2: splash some, onboarding entra suavemente
-  const splash = document.getElementById('ob-splash');
-  const ov = document.getElementById('onboarding-overlay');
-
-  setTimeout(function() {
-    // Fase 2: revela o form enquanto splash ainda está visível
-    if (ov) ov.classList.add('visible');
-    // Pequeno delay depois para tirar o splash
-    setTimeout(function() {
-      if (splash) {
-        splash.classList.add('hide');
-        setTimeout(function() {
-          if (splash) splash.remove();
-        }, 700);
-      }
-    }, 200);
-  }, 1800);
 
   const nomeInput = document.getElementById('ob-nome');
   const cta = document.getElementById('ob-cta');
@@ -501,19 +296,6 @@ function abrirModalPerfil() {
   document.getElementById('m-drop').classList.remove('show');
 }
 
-function sairDaConta() {
-  if (!confirm('Sair do perfil? Os dados locais serão apagados.\nAs músicas e eventos guardados na nuvem ficam seguros.')) return;
-  // Marca offline no Firebase antes de sair
-  _fbMarcarOffline();
-  // Limpa dados locais
-  localStorage.removeItem('map_perfil_v1');
-  localStorage.removeItem('map_notifs_v1');
-  // Mantém músicas e eventos (apenas dados de conta são apagados)
-  fecharModalPerfil();
-  showToast('Perfil removido. Recarregando...');
-  setTimeout(() => location.reload(), 1000);
-}
-
 function fecharModalPerfil() {
   document.getElementById('modal-perfil').style.display = 'none';
 }
@@ -554,10 +336,134 @@ function perfilCarregarFoto(input) {
   reader.readAsDataURL(file);
 }
 
-// google login removido
+// ── Login com Google (OAuth popup) ──────────────────────────────────────────
+function perfilLoginGoogle() {
+  // Google OAuth 2.0 implicit flow — abre popup
+  const CLIENT_ID = ''; // deixado vazio — funciona via GSI se disponível
+  const redirectUri = window.location.href.split('?')[0].split('#')[0];
 
-// _mostrarInfoGoogle removed
+  // Tenta usar Google Identity Services (GSI) se já carregado
+  if (window.google && window.google.accounts) {
+    window.google.accounts.id.initialize({
+      client_id: CLIENT_ID || 'placeholder',
+      callback: _handleGoogleCredential,
+      auto_select: false,
+      cancel_on_tap_outside: true,
+    });
+    window.google.accounts.id.prompt();
+    return;
+  }
 
+  // Fallback: OAuth2 popup manual
+  const scope = 'openid email profile';
+  const state = Math.random().toString(36).slice(2);
+  sessionStorage.setItem('google_oauth_state', state);
+
+  const params = new URLSearchParams({
+    response_type: 'token id_token',
+    client_id: CLIENT_ID || '',
+    redirect_uri: redirectUri,
+    scope,
+    state,
+    nonce: Math.random().toString(36).slice(2),
+  });
+
+  if (!CLIENT_ID) {
+    // Sem client_id configurado — avisa o usuário
+    _mostrarInfoGoogle();
+    return;
+  }
+
+  const popup = window.open(
+    'https://accounts.google.com/o/oauth2/v2/auth?' + params,
+    'google_login',
+    'width=480,height=580,top=100,left=200'
+  );
+
+  // Escuta mensagem do popup
+  window.addEventListener('message', function onMsg(e) {
+    if (e.origin !== window.location.origin) return;
+    if (e.data && e.data.type === 'google_token') {
+      window.removeEventListener('message', onMsg);
+      _fetchGoogleProfile(e.data.access_token);
+    }
+  });
+}
+
+function _handleGoogleCredential(response) {
+  // Decodifica JWT id_token (sem verificação — apenas para exibição)
+  try {
+    const payload = JSON.parse(atob(response.credential.split('.')[1]));
+    _aplicarPerfilGoogle(payload.name, payload.picture, payload.email);
+  } catch(e) {
+    showToast('Erro ao processar login Google');
+  }
+}
+
+function _fetchGoogleProfile(token) {
+  fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
+    headers: { Authorization: 'Bearer ' + token }
+  })
+  .then(r => r.json())
+  .then(data => _aplicarPerfilGoogle(data.name, data.picture, data.email))
+  .catch(() => showToast('Erro ao buscar perfil do Google'));
+}
+
+function _aplicarPerfilGoogle(nome, fotoUrl, email) {
+  if (nome) document.getElementById('perfil-nome-input').value = nome;
+
+  if (fotoUrl) {
+    // Baixa foto como base64 para armazenar localmente
+    fetch(fotoUrl)
+      .then(r => r.blob())
+      .then(blob => {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+          perfilFotoBase64 = e.target.result;
+          atualizarPreviewPerfil();
+        };
+        reader.readAsDataURL(blob);
+      })
+      .catch(() => {
+        // Se CORS bloquear, usa URL diretamente
+        perfilFotoBase64 = fotoUrl;
+        atualizarPreviewPerfil();
+      });
+  }
+
+  const badge = document.getElementById('perfil-google-badge');
+  if (badge) badge.style.display = 'block';
+
+  atualizarPreviewPerfil();
+  showToast('Perfil importado do Google!');
+
+  // Salva automaticamente com flag viaGoogle
+  const perfil = JSON.parse(localStorage.getItem('map_perfil_v1') || '{}');
+  perfil.nome = nome || perfil.nome;
+  perfil.email = email || null;
+  perfil.viaGoogle = true;
+  if (perfilFotoBase64) perfil.foto = perfilFotoBase64;
+  localStorage.setItem('map_perfil_v1', JSON.stringify(perfil));
+}
+
+function _mostrarInfoGoogle() {
+  // Modal inline de instrução quando não há client_id configurado
+  showToast('Configure um Google Client ID para usar este recurso');
+
+  // Abre link de documentação em nova aba
+  const info = document.createElement('div');
+  info.style.cssText = 'position:fixed;inset:0;z-index:999999;background:rgba(0,0,0,0.9);display:flex;align-items:center;justify-content:center;padding:24px;';
+  info.innerHTML = '<div style="background:#0d0d15;border:1px solid rgba(255,255,255,0.1);border-radius:16px;padding:28px;max-width:380px;width:100%;display:flex;flex-direction:column;gap:14px;">' +
+    '<div style="font-size:14px;font-weight:900;color:#fff;">Login com Google</div>' +
+    '<p style="font-size:12px;color:rgba(255,255,255,0.5);line-height:1.6;">Para usar o login com Google nesta app, é necessário configurar um <strong style="color:#fff;">Google OAuth Client ID</strong> no Google Cloud Console e adicionar o domínio como origem autorizada.</p>' +
+    '<div style="background:rgba(29,185,84,0.08);border:1px solid rgba(29,185,84,0.2);border-radius:10px;padding:12px;font-size:11px;color:#1db954;font-family:monospace;">console.cloud.google.com</div>' +
+    '<div style="display:flex;gap:10px;">' +
+      '<button onclick="this.closest(\'div[style]\').remove()" style="flex:1;padding:11px;border-radius:10px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);color:rgba(255,255,255,0.5);font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;">Fechar</button>' +
+      '<a href="https://console.cloud.google.com/apis/credentials" target="_blank" style="flex:2;padding:11px;border-radius:10px;background:rgba(29,185,84,0.15);border:1px solid rgba(29,185,84,0.3);color:#1db954;font-size:12px;font-weight:800;cursor:pointer;font-family:inherit;text-decoration:none;display:flex;align-items:center;justify-content:center;letter-spacing:0.5px;">Abrir Google Console</a>' +
+    '</div>' +
+  '</div>';
+  document.body.appendChild(info);
+}
 
 function salvarPerfil() {
   const nome = (document.getElementById('perfil-nome-input').value || '').trim();
@@ -614,8 +520,8 @@ function terminarOnboarding() {
 }
 
 </script>
-
-
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js" onerror="void(0)"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js" onerror="void(0)"></script>
 
 <style>
 :root {
@@ -641,7 +547,7 @@ body.performance-mode {
   background: var(--bg-primary);
 }
 * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
-body { font-family: -apple-system, 'Inter', BlinkMacSystemFont, 'Segoe UI', sans-serif; background: var(--bg-primary); color: var(--text-primary); min-height: 100vh; transition: background 0.4s ease; overflow-x: hidden; }
+body { font-family: 'Inter', sans-serif; background: var(--bg-primary); color: var(--text-primary); min-height: 100vh; transition: background 0.4s ease; overflow-x: hidden; }
 
 /* HEADER */
 .app-header { background: rgba(18,18,26,0.95); backdrop-filter: blur(20px); border-bottom: 1px solid var(--border-color); padding: 15px 20px; position: sticky; top: 0; z-index: 1000; }
@@ -1964,7 +1870,7 @@ body.performance-mode .perf-song-indicator { display: flex; }
   resize: vertical; transition: border-color 0.2s;
 }
 .cifra-textarea:focus { border-color: var(--accent-primary); }
-.cifra-textarea::placeholder { color: rgba(255,255,255,0.2); font-family: -apple-system, 'Inter', BlinkMacSystemFont, 'Segoe UI', sans-serif; font-size: 11px; }
+.cifra-textarea::placeholder { color: rgba(255,255,255,0.2); font-family: 'Inter', sans-serif; font-size: 11px; }
 
 @keyframes loadBar {
   0%   { width: 0%; margin-left: 0; }
@@ -2144,113 +2050,23 @@ body.viewer-mode input[type="text"] { pointer-events: none; }
 }
 
 /* ── ONBOARDING ───────────────────────────────────────────────────────────── */
-/* ─── ONBOARDING — ANIMAÇÃO ENTRADA ──────────────────────────────────────── */
-
-/* Fase 1: Splash screen com logo centralizado */
-#ob-splash {
-  position: fixed; inset: 0; z-index: 100000;
-  background: #06060c;
-  display: flex; flex-direction: column;
-  align-items: center; justify-content: center;
-  pointer-events: none;
-}
-#ob-splash-logo {
-  width: 88px; height: 88px; border-radius: 24px;
-  background: linear-gradient(135deg, #1db954 0%, #12a045 100%);
-  display: flex; align-items: center; justify-content: center;
-  box-shadow: 0 0 0 0 rgba(29,185,84,0.5);
-  animation: obSplashLogo 0.8s cubic-bezier(0.34,1.56,0.64,1) 0.2s both;
-}
-#ob-splash-logo span {
-  font-size: 38px; font-weight: 900; color: #000; line-height: 1;
-  font-family: -apple-system, 'Inter', sans-serif;
-}
-#ob-splash-name {
-  margin-top: 20px;
-  font-size: 22px; font-weight: 900; letter-spacing: -0.5px; color: #fff;
-  animation: obFadeUp 0.5s 0.7s ease both;
-}
-#ob-splash-name span { color: #1db954; }
-#ob-splash-sub {
-  margin-top: 6px;
-  font-size: 12px; font-weight: 500; letter-spacing: 1px;
-  color: rgba(255,255,255,0.3);
-  text-transform: uppercase;
-  animation: obFadeUp 0.5s 0.9s ease both;
-}
-#ob-splash-ring {
-  position: absolute; top: 50%; left: 50%;
-  width: 200px; height: 200px; border-radius: 50%;
-  border: 1px solid rgba(29,185,84,0.15);
-  transform: translate(-50%, -50%) scale(0);
-  animation: obRingExpand 1.2s 0.3s cubic-bezier(0.2,0.8,0.4,1) both;
-}
-#ob-splash-ring2 {
-  position: absolute; top: 50%; left: 50%;
-  width: 320px; height: 320px; border-radius: 50%;
-  border: 1px solid rgba(29,185,84,0.07);
-  transform: translate(-50%, -50%) scale(0);
-  animation: obRingExpand 1.4s 0.5s cubic-bezier(0.2,0.8,0.4,1) both;
-}
-#ob-splash-glow {
-  position: absolute; top: 50%; left: 50%;
-  width: 300px; height: 300px;
-  transform: translate(-50%, -50%);
-  background: radial-gradient(circle, rgba(29,185,84,0.12) 0%, transparent 70%);
-  animation: obGlowPulse 2s 0.5s ease-in-out infinite alternate;
-}
-@keyframes obSplashLogo {
-  0%   { opacity: 0; transform: scale(0.4) translateY(20px); box-shadow: 0 0 0 0 rgba(29,185,84,0); }
-  60%  { box-shadow: 0 0 0 20px rgba(29,185,84,0.08); }
-  100% { opacity: 1; transform: scale(1) translateY(0); box-shadow: 0 0 60px rgba(29,185,84,0.25), 0 0 0 1px rgba(29,185,84,0.3); }
-}
-@keyframes obRingExpand {
-  from { opacity: 0; transform: translate(-50%,-50%) scale(0.3); }
-  to   { opacity: 1; transform: translate(-50%,-50%) scale(1); }
-}
-@keyframes obGlowPulse {
-  from { opacity: 0.6; transform: translate(-50%,-50%) scale(0.9); }
-  to   { opacity: 1;   transform: translate(-50%,-50%) scale(1.1); }
-}
-@keyframes obFadeUp {
-  from { opacity: 0; transform: translateY(10px); }
-  to   { opacity: 1; transform: translateY(0); }
-}
-
-/* Saída do splash — slide up para revelar o form */
-#ob-splash.hide {
-  animation: obSplashOut 0.7s cubic-bezier(0.4,0,0.2,1) forwards;
-}
-@keyframes obSplashOut {
-  0%   { opacity: 1; transform: translateY(0); }
-  100% { opacity: 0; transform: translateY(-30px); pointer-events: none; }
-}
-
-/* Fase 2: overlay principal do onboarding */
 #onboarding-overlay {
   position: fixed; inset: 0; z-index: 99999;
   background: #09090f;
   display: flex; flex-direction: column;
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;
-  opacity: 0;
-  transition: opacity 0s;
-}
-#onboarding-overlay.visible {
-  opacity: 1;
-  transition: opacity 0.5s ease;
 }
 #onboarding-overlay.done {
-  animation: obFadeOut 0.55s cubic-bezier(0.4,0,1,1) forwards;
+  animation: obFadeOut 0.5s ease forwards;
 }
 @keyframes obFadeOut {
-  0%   { opacity: 1; transform: scale(1); }
-  100% { opacity: 0; transform: scale(0.97); pointer-events: none; }
+  to { opacity: 0; pointer-events: none; }
 }
 
 /* Hero section */
 .ob-hero {
-  min-height: 50vh;
+  min-height: 52vh;
   display: flex; flex-direction: column;
   align-items: center; justify-content: center;
   padding: 60px 32px 40px;
@@ -2260,53 +2076,57 @@ body.viewer-mode input[type="text"] { pointer-events: none; }
 .ob-hero-bg {
   position: absolute; inset: 0; z-index: 0;
   background: radial-gradient(ellipse 70% 60% at 50% 40%,
-    rgba(29,185,84,0.09) 0%, transparent 70%);
+    rgba(29,185,84,0.10) 0%,
+    transparent 70%);
 }
 .ob-hero-ring {
   position: absolute; top: 50%; left: 50%;
   transform: translate(-50%, -55%);
   width: 340px; height: 340px; border-radius: 50%;
   border: 1px solid rgba(29,185,84,0.06);
-  animation: obPulse 5s ease-in-out infinite;
+  animation: obPulse 4s ease-in-out infinite;
 }
 .ob-hero-ring:nth-child(2) {
-  width: 500px; height: 500px;
-  border-color: rgba(29,185,84,0.025);
-  animation-delay: 1.5s;
+  width: 480px; height: 480px;
+  border-color: rgba(29,185,84,0.03);
+  animation-delay: 1s;
 }
 @keyframes obPulse {
-  0%, 100% { opacity: 0.4; transform: translate(-50%,-55%) scale(1); }
-  50%       { opacity: 1;   transform: translate(-50%,-55%) scale(1.04); }
+  0%, 100% { opacity: 0.5; transform: translate(-50%,-55%) scale(1); }
+  50%       { opacity: 1;   transform: translate(-50%,-55%) scale(1.03); }
 }
+
 .ob-logo-mark {
   position: relative; z-index: 1;
-  width: 68px; height: 68px; border-radius: 18px;
-  background: linear-gradient(135deg, #1db954 0%, #12a045 100%);
+  width: 72px; height: 72px; border-radius: 20px;
+  background: linear-gradient(135deg, #1db954 0%, #17a349 100%);
   display: flex; align-items: center; justify-content: center;
-  margin-bottom: 22px;
-  box-shadow: 0 0 0 1px rgba(29,185,84,0.3), 0 16px 40px rgba(29,185,84,0.18);
-  animation: obLogoIn 0.6s cubic-bezier(0.34,1.56,0.64,1) 0.1s both;
+  margin-bottom: 24px;
+  box-shadow: 0 0 0 1px rgba(29,185,84,0.3), 0 20px 50px rgba(29,185,84,0.2);
+  animation: obLogoIn 0.7s cubic-bezier(0.34,1.56,0.64,1) both;
 }
 @keyframes obLogoIn {
-  from { opacity:0; transform: scale(0.6) translateY(16px); }
+  from { opacity:0; transform: scale(0.7) translateY(10px); }
   to   { opacity:1; transform: scale(1)   translateY(0); }
 }
-.ob-logo-mark span { font-size: 30px; font-weight: 900; color: #000; line-height: 1; }
+.ob-logo-mark span {
+  font-size: 32px; font-weight: 900; color: #000; line-height: 1;
+}
 .ob-hero h1 {
   position: relative; z-index: 1;
-  font-size: 26px; font-weight: 900; letter-spacing: -0.5px;
+  font-size: 28px; font-weight: 900; letter-spacing: -0.5px;
   color: #fff; margin-bottom: 8px;
-  animation: obTextIn 0.55s 0.2s ease both;
+  animation: obTextIn 0.6s 0.2s ease both;
 }
 .ob-hero h1 span { color: #1db954; }
 .ob-hero p {
   position: relative; z-index: 1;
-  font-size: 13px; color: rgba(255,255,255,0.38);
-  font-weight: 500; line-height: 1.6; max-width: 250px;
-  animation: obTextIn 0.55s 0.35s ease both;
+  font-size: 14px; color: rgba(255,255,255,0.4);
+  font-weight: 500; line-height: 1.6; max-width: 260px;
+  animation: obTextIn 0.6s 0.35s ease both;
 }
 @keyframes obTextIn {
-  from { opacity:0; transform: translateY(14px); }
+  from { opacity:0; transform: translateY(12px); }
   to   { opacity:1; transform: translateY(0); }
 }
 
@@ -2316,11 +2136,7 @@ body.viewer-mode input[type="text"] { pointer-events: none; }
   border-top: 1px solid rgba(255,255,255,0.05);
   padding: 36px 24px 48px;
   display: flex; flex-direction: column; gap: 28px;
-  animation: obFormIn 0.65s 0.45s ease both;
-}
-@keyframes obFormIn {
-  from { opacity:0; transform: translateY(24px); }
-  to   { opacity:1; transform: translateY(0); }
+  animation: obTextIn 0.6s 0.5s ease both;
 }
 
 /* Field */
@@ -2418,16 +2234,6 @@ body.viewer-mode input[type="text"] { pointer-events: none; }
 <body id="app-body">
 
 <div class="toast" id="toast"></div>
-
-<!-- SPLASH SCREEN — ANIMAÇÃO INICIAL -->
-<div id="ob-splash">
-  <div id="ob-splash-glow"></div>
-  <div id="ob-splash-ring"></div>
-  <div id="ob-splash-ring2"></div>
-  <div id="ob-splash-logo"><span>M</span></div>
-  <div id="ob-splash-name">Map Music<span>PRO</span></div>
-  <div id="ob-splash-sub">Para músicos ao vivo</div>
-</div>
 
 <!-- ONBOARDING — PRIMEIRO ACESSO -->
 <div id="onboarding-overlay">
@@ -2576,11 +2382,6 @@ body.viewer-mode input[type="text"] { pointer-events: none; }
         </div>
       </div>
 
-      <!-- Sair da conta -->
-      <div style="padding-top:8px;padding-bottom:2px;">
-        <button onclick="sairDaConta()" style="width:100%;padding:11px;border-radius:12px;background:rgba(255,60,60,0.07);border:1px solid rgba(255,60,60,0.18);color:rgba(255,100,100,0.8);font-size:11px;font-weight:800;cursor:pointer;letter-spacing:1px;text-transform:uppercase;font-family:inherit;transition:0.2s;" onmouseenter="this.style.background='rgba(255,60,60,0.14)'" onmouseleave="this.style.background='rgba(255,60,60,0.07)'">Sair do Perfil</button>
-      </div>
-
       <!-- Botões ação -->
       <div style="display:flex;gap:10px;padding-top:4px;">
         <button onclick="fecharModalPerfil()" style="flex:1;padding:13px;border-radius:12px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);color:rgba(255,255,255,0.4);font-size:11px;font-weight:700;cursor:pointer;letter-spacing:1px;text-transform:uppercase;font-family:inherit;transition:0.2s;" onmouseenter="this.style.background='rgba(255,255,255,0.08)'" onmouseleave="this.style.background='rgba(255,255,255,0.04)'">Cancelar</button>
@@ -2599,7 +2400,7 @@ body.viewer-mode input[type="text"] { pointer-events: none; }
 
 
 <!-- MODAL AMIGOS -->
-<div id="modal-amigos" ontouchend="if(event.target===this){event.preventDefault();_bloquearFantasma();fecharModalAmigos();}" onclick="if(event.target===this)if(event.target===this)fecharModalAmigos()">
+<div id="modal-amigos">
   <div class="amigos-sheet">
 
     <!-- Header -->
@@ -2681,7 +2482,7 @@ body.viewer-mode input[type="text"] { pointer-events: none; }
         SALA
       </button>
       <!-- Botão de Notificações -->
-      <button class="notif-btn" id="notif-btn" onclick="toggleNotifPanel(event)" title="Notificações">
+      <button class="notif-btn" id="notif-btn" onclick="toggleNotifPanel()" title="Notificações">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
         <span class="notif-badge" id="notif-badge"></span>
       </button>
@@ -2697,9 +2498,9 @@ body.viewer-mode input[type="text"] { pointer-events: none; }
             <span id="menu-amigos-badge" style="display:none;background:#1db954;color:#000;font-size:8px;font-weight:900;padding:2px 6px;border-radius:20px;margin-left:auto;">0</span>
           </div>
           <div class="menu-item" onclick="abrirBiblioteca()">Biblioteca</div>
+          <div class="menu-item" onclick="abrirModalStats()">Estatísticas</div>
           <div class="menu-item" onclick="abrirDrumCam()">Drum Cam</div>
           <div class="menu-item" onclick="abrirPads()">Pads</div>
-          <div class="menu-item" onclick="abrirModalStats()">Estatísticas</div>
           <div class="menu-item" onclick="abrirModalCifra()">Importar Cifra</div>
           <div class="menu-item danger" onclick="resetSection()">Limpar Seção</div>
         </div>
@@ -2709,7 +2510,7 @@ body.viewer-mode input[type="text"] { pointer-events: none; }
 </header>
 
 <!-- MODAL SALA -->
-<div class="modal-overlay" id="modal-sala" ontouchend="if(event.target===this){event.preventDefault();_bloquearFantasma();fecharModal();}" onclick="if(event.target===this)if(event.target===this)fecharModal()">
+<div class="modal-overlay" id="modal-sala">
   <div class="modal-box" style="max-width:400px; padding:0; overflow:hidden;">
 
     <!-- Cabeçalho -->
@@ -2788,7 +2589,7 @@ body.viewer-mode input[type="text"] { pointer-events: none; }
 </div>
 
 <!-- MODAL IMPORTAR CIFRA -->
-<div class="modal-overlay" id="modal-cifra" ontouchend="if(event.target===this){event.preventDefault();_bloquearFantasma();fecharModalCifra();}" onclick="if(event.target===this)if(event.target===this)fecharModalCifra()">
+<div class="modal-overlay" id="modal-cifra">
   <div class="modal-box" style="max-width:540px;">
     <h2>Importar Cifra</h2>
 
@@ -2977,7 +2778,7 @@ body.viewer-mode input[type="text"] { pointer-events: none; }
 </div>
 
 <!-- MODAL EDITAR MÚSICA -->
-<div class="modal-editar" id="modal-editar-musica" ontouchend="if(event.target===this){event.preventDefault();_bloquearFantasma();fecharEditarMusica();}" onclick="if(event.target===this)if(event.target===this)fecharEditarMusica()">
+<div class="modal-editar" id="modal-editar-musica">
   <div class="modal-editar-box">
     <div class="modal-editar-title">Editar Música</div>
     <div class="modal-editar-label">Nome</div>
@@ -2992,7 +2793,7 @@ body.viewer-mode input[type="text"] { pointer-events: none; }
 </div>
 
 <!-- MODAL NOVO EVENTO -->
-<div class="modal-evento" id="modal-evento" ontouchend="if(event.target===this){event.preventDefault();_bloquearFantasma();fecharModalEvento();}" onclick="if(event.target===this)if(event.target===this)fecharModalEvento()">
+<div class="modal-evento" id="modal-evento">
   <div class="modal-evento-box">
     <div class="modal-evento-title" id="modal-evento-title">Novo Evento</div>
     <input type="text" id="evento-nome-input" placeholder="Nome do evento (ex: Show de Natal)">
@@ -3005,7 +2806,7 @@ body.viewer-mode input[type="text"] { pointer-events: none; }
 </div>
 
 <!-- MODAL ADICIONAR MÚSICA AO EVENTO -->
-<div class="modal-addmusica" id="modal-addmusica" ontouchend="if(event.target===this){event.preventDefault();_bloquearFantasma();fecharAddMusica();}" onclick="if(event.target===this)if(event.target===this)fecharAddMusica()">
+<div class="modal-addmusica" id="modal-addmusica">
   <div class="modal-addmusica-box">
     <div class="modal-addmusica-header">
       <span style="font-size:13px;font-weight:900;color:#fff;">Adicionar ao Evento</span>
@@ -3088,6 +2889,11 @@ body.viewer-mode input[type="text"] { pointer-events: none; }
 </div>
 
 <script>
+// Suprime erros genéricos de scripts cross-origin (ex: PeerJS CDN no Safari)
+window.addEventListener('error', function(e) {
+  if (e.message === 'Script error.' || e.message === 'Script error') return true;
+}, true);
+
 // ─── ESTADO ────────────────────────────────────────────────────────────────
 let bpm = 120;
 let isPlaying = false;
@@ -3095,27 +2901,15 @@ let nextNoteTime = 0.0;
 let timerID = null;
 let scrollInterval = null;
 let tapTimes = [];
-let audioCtx = null;
-function _getAudioCtx() {
-  if (!audioCtx) {
-    try {
-      audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-    } catch(e) { return null; }
-  }
-  try {
-    if (audioCtx.state === 'suspended') audioCtx.resume();
-  } catch(e) {}
-  return audioCtx;
-}
+const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
 const notesArr = ["C","C#","D","D#","E","F","F#","G","G#","A","A#","B"];
 let songs = JSON.parse(localStorage.getItem('map_pro_elite_v1')) || [];
 
 // ─── PEER / SALA ────────────────────────────────────────────────────────────
-// peer removed (Firebase)
-// hostConn removed (Firebase)       // viewer → host
-let guestConns = []; // kept for compatibility       // host → viewers
+let peer = null;
+let hostConn = null;       // viewer → host
+let guestConns = [];       // host → viewers
 let isHost = false;
-let _fbReady = false;
 let isViewer = false;
 let myRoomCode = null;
 let syncPaused = false;    // evita loop ao aplicar estado recebido
@@ -3127,203 +2921,1142 @@ function gerarCodigo4() {
   return String(Math.floor(1000 + Math.random() * 9000));
 }
 
+const _PEER_CFG = {
+      debug: 0,
+      config: {
+        iceServers: [
+          { urls: 'stun:stun.l.google.com:19302' },
+          { urls: 'stun:stun1.l.google.com:19302' },
+          { urls: 'stun:stun2.l.google.com:19302' },
+          { urls: 'stun:stun.cloudflare.com:3478' }
+        ]
+      }
+    };
 
-// iniciarPeer removido — Firebase
+function iniciarPeer(id, onReady, onError) {
+  try {
+    if (peer) { try { peer.destroy(); } catch(e){} peer = null; }
+    peer = new Peer(id, _PEER_CFG);
 
-// duplicate removed
+    // Timeout de 15s para abrir conexão com servidor
+    const _openTimer = setTimeout(() => {
+      if (!peer || peer.open) return;
+      try { peer.destroy(); } catch(e) {}
+      peer = null;
+      if (onError) onError('timeout');
+      else { setConnStatus('Servidor demorou. Tenta novamente.', 'error'); document.getElementById('btn-entrar') && (document.getElementById('btn-entrar').disabled = false); }
+    }, 15000);
 
-
-// ── Utilitário UI ────────────────────────────────────────────────────────────
-function setConnStatus(msg, type) {
-  const el = document.getElementById('criar-status') || document.getElementById('entrar-status');
-  if (el) el.innerText = msg;
+    peer.on('open', () => {
+      clearTimeout(_openTimer);
+      try { onReady(); } catch(e) { console.error('onReady error:', e); }
+    });
+    peer.on('error', err => {
+      clearTimeout(_openTimer);
+      try {
+        if (err.type === 'unavailable-id') {
+          if (onError) onError('unavailable-id');
+          else iniciarPeer(codeToId(gerarCodigo4()), onReady);
+        } else if (err.type === 'network' || err.type === 'server-error' || err.type === 'socket-error' || err.type === 'socket-closed') {
+          const msg = 'Sem ligação ao servidor. Verifica a rede.';
+          document.getElementById('criar-status') && (document.getElementById('criar-status').innerText = msg);
+          setConnStatus(msg, 'error');
+          document.getElementById('btn-entrar') && (document.getElementById('btn-entrar').disabled = false);
+          if (onError) onError(err.type);
+        } else {
+          const msg = 'Erro: ' + (err.type || err.message || 'desconhecido');
+          setConnStatus(msg, 'error');
+          document.getElementById('btn-entrar') && (document.getElementById('btn-entrar').disabled = false);
+          if (onError) onError(err.type);
+        }
+      } catch(e) {}
+    });
+    peer.on('disconnected', () => {
+      try { if (peer && !peer.destroyed) peer.reconnect(); } catch(e) {}
+    });
+    peer.on('close', () => {
+      if (isHost || isViewer) setTimeout(_tentarReconexao, 2000);
+    });
+  } catch(e) {
+    setConnStatus('PeerJS não disponível.', 'error');
+    if (onError) onError('exception');
+  }
 }
 
-// ── HOST: Criar Sala ─────────────────────────────────────────────────────────
-async function criarSala() {
+// HOST: criar sala
+function criarSala() {
   if (isHost) { showToast('Sala já ativa — código: ' + myRoomCode); return; }
-  if (!_fbReady || !window._fb) { showToast('Firebase não disponível'); return; }
-
   const code = gerarCodigo4();
   myRoomCode = code;
+  document.getElementById('my-room-code').classList.add('loading');
+  document.getElementById('my-room-code').innerText = '···';
+  document.getElementById('criar-status').innerText = 'A criar sala...';
+  document.getElementById('btn-copiar-codigo').disabled = true;
 
-  const el = document.getElementById('my-room-code');
-  el.classList.add('loading');
-  el.innerText = '···';
-  document.getElementById('criar-status').innerText = 'Criando sala...';
+  iniciarPeer(codeToId(code), () => {
+    isHost = true;
+  atualizarLetreiroDrumCam();
+    myRoomCode = code;
+    document.getElementById('my-room-code').classList.remove('loading');
+    document.getElementById('my-room-code').innerText = code;
+    document.getElementById('criar-status').innerText = 'Sala ativa! Partilha o código.';
+    document.getElementById('btn-copiar-codigo').disabled = false;
 
-  const perfil = _getPerfilLocal();
-  const uid    = _getUid();
-  const estado = capturarEstado();
+    // Aceita conexões de viewers
+    peer.on('connection', _registarConexaoGuest);
 
-  const ok = await window._fb.criarSalaFb(code, uid, perfil.nome || 'Host', estado);
-  if (!ok) {
-    document.getElementById('criar-status').innerText = 'Erro ao criar sala. Tenta novamente.';
-    el.classList.remove('loading');
-    el.innerText = '—';
-    return;
+    atualizarSyncBar();
+  });
+}
+
+// VIEWER: entrar na sala
+function entrarNaSala() {
+  const code = ['d0','d1','d2','d3'].map(id => document.getElementById(id).value).join('');
+  if (code.length < 4 || !/^\d{4}$/.test(code)) {
+    setConnStatus('Insere os 4 dígitos.', 'error'); return;
+  }
+  setConnStatus('A conectar...', '');
+  document.getElementById('btn-entrar').disabled = true;
+
+  // viewer usa id aleatório
+  const viewerId = 'mapmusic-viewer-' + Date.now();
+  iniciarPeer(viewerId, () => {
+    hostConn = peer.connect(codeToId(code), { reliable: true });
+    hostConn.on('open', () => {
+      isViewer = true;
+      atualizarLetreiroDrumCam();
+      setConnStatus('Conectado!', 'success');
+      fecharModal();
+      document.getElementById('app-body').classList.add('viewer-mode');
+      atualizarSyncBar(code);
+    // Regista sala no Firebase
+    if (_fbReady && window._fb) {
+      const _p = _getPerfilLocal();
+      window._fb.criarSalaFb(code, _getUid(), _p.nome || 'Host', capturarEstado());
+    }
+      showToast('Sala ' + code + ' — modo visualização');
+      // Envia nome ao host
+      const _perfil = JSON.parse(localStorage.getItem('map_perfil_v1') || '{}');
+      const _nome = _perfil.nome || 'Músico';
+      hostConn.send({ type: 'join', nome: _nome });
+      // Heartbeat — mantém conexão viva em background
+      const _hb = setInterval(() => {
+        if (!isViewer || !hostConn || hostConn.open === false) { clearInterval(_hb); return; }
+        try { hostConn.send({ type: 'ping' }); } catch(e) {}
+      }, 10000);
+    });
+    hostConn.on('data', dados => {
+      if (dados.type === 'state') aplicarEstado(dados.payload);
+    });
+    hostConn.on('close', () => {
+      isViewer = false;
+      document.getElementById('app-body').classList.remove('viewer-mode');
+      atualizarLetreiroDrumCam();
+      document.getElementById('sync-bar').classList.remove('visible','viewer');
+      showToast('Desconectado da sala.');
+    });
+    // Envia 'leave' ao host ao desconectar
+    window.addEventListener('beforeunload', function() {
+      if (isViewer && hostConn) {
+        const _perfil = JSON.parse(localStorage.getItem('map_perfil_v1') || '{}');
+        try { hostConn.send({ type: 'leave', nome: _perfil.nome || 'Músico' }); } catch(e) {}
+      }
+    });
+    hostConn.on('error', () => {
+      setConnStatus('Sala não encontrada. Verifica o código.', 'error');
+      document.getElementById('btn-entrar').disabled = false;
+    });
+    // timeout se não conectar em 20s
+    const _connTimer = setTimeout(() => {
+      if (!isViewer) {
+        setConnStatus('Sala não encontrada ou sem rede. Tenta novamente.', 'error');
+        document.getElementById('btn-entrar').disabled = false;
+        try { if (peer) peer.destroy(); peer = null; } catch(e) {}
+      }
+    }, 20000);
+    hostConn.on('open', () => clearTimeout(_connTimer));
+    hostConn.on('error', () => clearTimeout(_connTimer));
+  }, (errType) => {
+    setConnStatus('Erro ao conectar: ' + errType + '. Tenta novamente.', 'error');
+    document.getElementById('btn-entrar').disabled = false;
+    try { if (peer) peer.destroy(); peer = null; } catch(e) {}
+  });
+}
+
+// Captura estado atual da app
+function capturarEstado() {
+  const parts = Array.from(document.querySelectorAll('.song-part')).map(p => ({
+    title: p.querySelector('input').value,
+    content: p.querySelector('textarea').value
+  }));
+  return {
+    bpm,
+    transVal: parseInt(document.getElementById('trans-val').innerText),
+    parts,
+    perfMode: document.getElementById('app-body').classList.contains('performance-mode'),
+    // nome e posição da música atual
+    currentSongIndex,
+    currentSongName: currentSongIndex >= 0 && songs[currentSongIndex] ? songs[currentSongIndex].name : null,
+    songTotal: songs.length,
+    // velocidade do teleprompter
+    scrollSpeed: parseInt(document.getElementById('scroll-speed').value),
+    // presença online: host + viewers
+    onlineCount: 1 + guestConns.length,
+    roomCode: myRoomCode
+  };
+}
+
+// Aplica estado recebido (viewer)
+function aplicarEstado(estado) {
+  syncPaused = true;
+  bpm = estado.bpm;
+  document.getElementById('bpm-display').innerText = bpm;
+  document.getElementById('dc-bpm').textContent = bpm;
+  document.getElementById('trans-val').innerText = estado.transVal;
+
+  // Partes / acordes
+  document.getElementById('notes-grid').innerHTML = '';
+  estado.parts.forEach(p => addPart(p.title, p.content));
+
+  // Modo show
+  const body = document.getElementById('app-body');
+  if (estado.perfMode && !body.classList.contains('performance-mode')) {
+    body.classList.add('performance-mode');
+    document.getElementById('mode-text').innerText = 'SAIR DO SHOW';
+  } else if (!estado.perfMode && body.classList.contains('performance-mode')) {
+    body.classList.remove('performance-mode');
+    document.getElementById('mode-text').innerText = 'MODO SHOW';
+    stopScroll();
   }
 
-  isHost = true;
+  // Nome e posição da música no indicador
+  if (estado.currentSongName) {
+    currentSongIndex = estado.currentSongIndex;
+    document.getElementById('perf-song-name').innerText = estado.currentSongName;
+    document.getElementById('perf-song-pos').innerText =
+      (estado.currentSongIndex + 1) + '/' + estado.songTotal;
+    document.getElementById('dc-song-name').textContent = estado.currentSongName;
+  } else {
+    document.getElementById('perf-song-name').innerText = 'Nenhuma musica';
+    document.getElementById('perf-song-pos').innerText = '—';
+    document.getElementById('dc-song-name').textContent = '—';
+  }
+  // Atualiza visibilidade do letreiro no Drum Cam
   atualizarLetreiroDrumCam();
-  el.classList.remove('loading');
-  el.innerText = code;
-  document.getElementById('criar-status').innerText = 'Sala ativa! Partilha o código.';
-  atualizarSyncBar(code);
-  showToast('Sala criada! Código: ' + code);
 
-  // Escuta mensagens dos viewers (join/leave/ping)
-  _iniciarListenerMensagens(code, uid);
+  // Teleprompter — sincroniza velocidade
+  const slider = document.getElementById('scroll-speed');
+  const speed = estado.scrollSpeed || 0;
+  if (parseInt(slider.value) !== speed) {
+    slider.value = speed;
+    document.getElementById('scroll-speed-val').innerText = speed;
+    clearInterval(scrollInterval);
+    if (speed > 0) {
+      scrollInterval = setInterval(() => window.scrollBy(0, 1), 175 - speed);
+    }
+  }
 
-  // Keepalive — atualiza sala a cada 20s para não expirar
-  _salaOnlineTimer = setInterval(() => {
-    if (!isHost || !myRoomCode) { clearInterval(_salaOnlineTimer); return; }
-    broadcastEstado();
-  }, 20000);
+  // Presença online — atualiza sync bar do viewer
+  if (estado.onlineCount !== undefined) {
+    const guests = document.getElementById('sync-guests');
+    if (guests) { const sc = guests.querySelector('#sync-guests-count'); if(sc) sc.innerText = estado.onlineCount + ' online'; }
+    // Guarda código da sala para mostrar
+    if (estado.roomCode) {
+      const codeEl = document.getElementById('sync-code-display');
+      if (codeEl && !codeEl.innerText) codeEl.innerText = estado.roomCode;
+    }
+  }
+
+  syncPaused = false;
 }
 
-function copiarCodigo() {
-  navigator.clipboard.writeText(myRoomCode).then(() => showToast('Código copiado: ' + myRoomCode));
-}
-
-// ── HOST: Broadcast de Estado ────────────────────────────────────────────────
+// Host envia estado para todos os viewers
 function broadcastEstado() {
   if (!isHost || syncPaused) return;
   const estado = capturarEstado();
+  // Sync to Firebase for reliability
   if (_fbReady && window._fb && myRoomCode) {
-    const onlineUids = Object.keys(_viewersOnline || {});
-    window._fb.atualizarEstadoSala(myRoomCode, estado, [_getUid(), ...onlineUids]).catch(() => {});
+    window._fb.atualizarEstadoSala(myRoomCode, estado, [_getUid()]).catch(() => {});
+  }
+  guestConns.forEach(conn => {
+    try { conn.send({ type: 'state', payload: estado }); } catch(e) {}
+  });
+}
+
+// Desconectar
+function desconectar() {
+  if (isHost) {
+    guestConns.forEach(c => { try { c.close(); } catch(e){} });
+    guestConns = [];
+  }
+  if (isViewer && hostConn) { try { hostConn.close(); } catch(e){} }
+  if (peer) { peer.destroy(); peer = null; }
+  isHost = false; isViewer = false;
+  document.getElementById('app-body').classList.remove('viewer-mode');
+  document.getElementById('sync-bar').classList.remove('visible','viewer');
+  showToast('Sala encerrada.');
+}
+
+// ─── FIREBASE HELPERS ────────────────────────────────────────────────────────
+
+// Debounce backup — não spama o Firestore
+let _backupTimer = null;
+function _fbBackupMusicas() {
+  if (!_fbReady || !window._fb) return;
+  clearTimeout(_backupTimer);
+  _backupTimer = setTimeout(async () => {
+    const uid = _getUid();
+    const ok = await window._fb.backupMusicas(uid, songs);
+    if (ok) {
+      // Atualiza estatísticas
+      _fbAtualizarStats();
+      console.log('☁ Backup músicas OK —', songs.length, 'músicas');
+    }
+  }, 2000);
+}
+
+let _backupEventosTimer = null;
+function _fbBackupEventos() {
+  if (!_fbReady || !window._fb) return;
+  clearTimeout(_backupEventosTimer);
+  _backupEventosTimer = setTimeout(async () => {
+    const uid = _getUid();
+    const eventos = JSON.parse(localStorage.getItem('map_pro_eventos_v1') || '[]');
+    await window._fb.backupEventos(uid, eventos);
+  }, 2000);
+}
+
+async function _fbRestaurarBackup() {
+  if (!_fbReady || !window._fb) { showToast('Firebase não disponível'); return; }
+  const uid = _getUid();
+  showToast('Buscando backup...');
+  const backup = await window._fb.restaurarMusicas(uid);
+  if (!backup || !backup.musicas || backup.musicas.length === 0) {
+    showToast('Nenhum backup encontrado na nuvem');
+    return;
+  }
+  const confirm = window.confirm('Encontrado backup com ' + backup.musicas.length + ' músicas na nuvem. Restaurar?');
+  if (!confirm) return;
+  songs = backup.musicas;
+  localStorage.setItem('map_pro_elite_v1', JSON.stringify(songs));
+  showToast('✓ ' + songs.length + ' músicas restauradas!');
+  adicionarNotif('update', 'Backup restaurado!',
+    songs.length + ' músicas carregadas da nuvem.', 'restore_' + Date.now());
+}
+
+// ── Estatísticas ─────────────────────────────────────────────────────────────
+async function _fbAtualizarStats() {
+  if (!_fbReady || !window._fb) return;
+  const uid = _getUid();
+  const eventos = JSON.parse(localStorage.getItem('map_pro_eventos_v1') || '[]');
+  const bpms = songs.map(s => s.bpm).filter(Boolean);
+  const bpmMedio = bpms.length ? Math.round(bpms.reduce((a,b) => a+b, 0) / bpms.length) : 0;
+  const instrumentos = {};
+  songs.forEach(s => {
+    if (s.parts) s.parts.forEach(p => {
+      if (p.title) instrumentos[p.title] = (instrumentos[p.title] || 0) + 1;
+    });
+  });
+  await window._fb.salvarEstatistica(uid, {
+    totalMusicas: songs.length,
+    totalEventos: eventos.length,
+    bpmMedio,
+    ultimaMusica: songs.length ? songs[songs.length-1].name : null
+  });
+}
+
+// ── Presença Online ───────────────────────────────────────────────────────────
+function _fbMarcarOnline() {
+  if (!_fbReady || !window._fb) return;
+  const perfil = _getPerfilLocal();
+  if (!perfil.nome) return;
+  window._fb.marcarOnline(_getUid(), perfil.nome, perfil.instrumento || null);
+}
+
+function _fbMarcarOffline() {
+  if (!_fbReady || !window._fb) return;
+  window._fb.marcarOffline(_getUid());
+}
+
+// Marca online ao abrir, offline ao fechar
+window.addEventListener('firebase-ready', function() {
+  _fbMarcarOnline();
+  // Backup inicial silencioso
+  setTimeout(() => {
+    _fbBackupMusicas();
+    _fbBackupEventos();
+    _fbAtualizarStats();
+  }, 3000);
+});
+window.addEventListener('beforeunload', _fbMarcarOffline);
+document.addEventListener('visibilitychange', function() {
+  if (document.visibilityState === 'visible') _fbMarcarOnline();
+  else _fbMarcarOffline();
+});
+
+// ── Modal de Estatísticas ─────────────────────────────────────────────────────
+async function abrirModalStats() {
+  if (!_fbReady || !window._fb) { showToast('Firebase não disponível'); return; }
+  document.getElementById('m-drop').classList.remove('show');
+  const uid = _getUid();
+  const stats = await window._fb.carregarEstatistica(uid);
+  const eventos = JSON.parse(localStorage.getItem('map_pro_eventos_v1') || '[]');
+
+  const bpms = songs.map(s => s.bpm).filter(Boolean);
+  const bpmMedio = bpms.length ? Math.round(bpms.reduce((a,b)=>a+b,0)/bpms.length) : 0;
+  const bpmMax = bpms.length ? Math.max(...bpms) : 0;
+  const bpmMin = bpms.length ? Math.min(...bpms) : 0;
+  const favs = songs.filter(s => s.favorite).length;
+
+  const html = `<div id="modal-stats" style="position:fixed;inset:0;z-index:99997;background:rgba(0,0,0,0.92);display:flex;align-items:flex-end;justify-content:center;" onclick="if(event.target===this)this.remove()">
+  <div style="background:#0c0c14;border:1px solid rgba(255,255,255,0.08);border-radius:24px 24px 0 0;width:100%;max-width:480px;max-height:85vh;overflow-y:auto;padding:24px;animation:slideUpModal 0.3s cubic-bezier(0.34,1.56,0.64,1);">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;">
+      <span style="font-size:16px;font-weight:900;color:#fff;">Estatísticas</span>
+      <button onclick="document.getElementById('modal-stats').remove()" style="background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.1);color:rgba(255,255,255,0.4);width:30px;height:30px;border-radius:50%;cursor:pointer;font-size:14px;">✕</button>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px;">
+      ${_statCard(songs.length, 'MÚSICAS', '#1db954')}
+      ${_statCard(eventos.length, 'EVENTOS', '#1db954')}
+      ${_statCard(favs, 'FAVORITAS', '#ffd700')}
+      ${_statCard(bpmMedio || '—', 'BPM MÉDIO', '#7878ff')}
+      ${_statCard(bpmMax || '—', 'BPM MÁX', '#ff6b6b')}
+      ${_statCard(bpmMin || '—', 'BPM MÍN', '#4ecdc4')}
+    </div>
+    <div style="height:1px;background:rgba(255,255,255,0.05);margin:16px 0;"></div>
+    <div style="font-size:9px;font-weight:900;letter-spacing:2px;color:rgba(255,255,255,0.25);margin-bottom:12px;">BACKUP NA NUVEM</div>
+    <div style="display:flex;gap:10px;">
+      <button onclick="_fbBackupMusicas();showToast('Backup realizado!')" style="flex:1;padding:12px;border-radius:10px;background:rgba(29,185,84,0.1);border:1px solid rgba(29,185,84,0.25);color:#1db954;font-size:11px;font-weight:800;cursor:pointer;font-family:inherit;">Fazer Backup</button>
+      <button onclick="_fbRestaurarBackup()" style="flex:1;padding:12px;border-radius:10px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);color:rgba(255,255,255,0.5);font-size:11px;font-weight:800;cursor:pointer;font-family:inherit;">Restaurar</button>
+    </div>
+  </div>
+</div>`;
+
+  document.body.insertAdjacentHTML('beforeend', html);
+}
+
+function _statCard(valor, label, cor) {
+  return `<div style="background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.06);border-radius:14px;padding:16px;text-align:center;">
+    <div style="font-size:28px;font-weight:900;color:${cor};line-height:1;">${valor}</div>
+    <div style="font-size:8px;font-weight:800;color:rgba(255,255,255,0.25);letter-spacing:2px;margin-top:6px;">${label}</div>
+  </div>`;
+}
+
+// ─── RECONEXÃO AUTOMÁTICA DA SALA ────────────────────────────────────────────
+let _reconectando = false;
+
+function _verificarConexaoSala() {
+  if (!isHost && !isViewer) return;
+  if (!peer || peer.destroyed || peer.disconnected) {
+    _tentarReconexao();
   }
 }
 
-// ── HOST: Escuta mensagens dos viewers ───────────────────────────────────────
-let _viewersOnline = {}; // uid → nome
+function _tentarReconexao() {
+  if (_reconectando) return;
+  if (!isHost && !isViewer) return;
+  _reconectando = true;
 
-function _iniciarListenerMensagens(code, hostUid) {
-  if (_mensagensListener) { _mensagensListener(); _mensagensListener = null; }
-  _mensagensListener = window._fb.ouvirMensagensSala(code, function(msgs) {
-    msgs.forEach(msg => {
-      if (msg.uid === hostUid) return; // ignora próprias msgs
-      if (msg.tipo === 'join') {
-        const jaEntrou = !!_viewersOnline[msg.uid];
-        _viewersOnline[msg.uid] = msg.nome;
-        if (!jaEntrou) {
-          showToast(msg.nome + ' entrou na sala');
-          adicionarNotif('event', msg.nome + ' entrou na sala',
-            'Código ' + myRoomCode, 'join_' + msg.uid);
+  const eraSala = myRoomCode;
+  const eraHost = isHost;
+  const eraViewer = isViewer;
+
+  // Mostra toast informativo
+  showToast('Reconectando sala...');
+
+  // Destrói peer antigo
+  try { if (peer) peer.destroy(); } catch(e) {}
+  peer = null;
+
+  setTimeout(() => {
+    _reconectando = false;
+    if (eraHost && eraSala) {
+      // Reinicia como host com o MESMO código
+      isHost = false;
+      const savedCode = eraSala;
+      myRoomCode = savedCode;
+
+      const el = document.getElementById('my-room-code');
+      const st = document.getElementById('criar-status');
+      if (el) { el.classList.add('loading'); el.innerText = '···'; }
+      if (st) st.innerText = 'Reconectando...';
+
+      _reconectarHostComCodigo(savedCode, el, st, 0);
+
+    } else if (eraViewer && eraSala) {
+      // Viewer reconecta: preenche os dígitos e chama entrarNaSala
+      isViewer = false;
+      const digits = eraSala.split('');
+      ['d0','d1','d2','d3'].forEach((id, i) => {
+        const el = document.getElementById(id);
+        if (el) el.value = digits[i] || '';
+      });
+      // Abre o modal na aba entrar e reconecta
+      mostrarTabsSala('entrar');
+      abrirModalSala();
+      setTimeout(() => entrarNaSala(), 200);
+    }
+  }, 800);
+}
+
+// Reconecta host com o mesmo código, com retry se unavailable-id
+function _reconectarHostComCodigo(savedCode, el, st, tentativa) {
+  if (tentativa > 6) {
+    // Desistiu — gera novo código
+    showToast('Não foi possível reusar o código. Cria nova sala.');
+    isHost = false; myRoomCode = null;
+    if (el) { el.classList.remove('loading'); el.innerText = '—'; }
+    if (st) st.innerText = 'Erro ao reativar. Cria nova sala.';
+    return;
+  }
+
+  const delay = tentativa === 0 ? 0 : 3000;
+  if (tentativa > 0 && st) st.innerText = 'Aguardando servidor... (' + tentativa + '/6)';
+
+  setTimeout(() => {
+    try { if (peer) peer.destroy(); } catch(e) {}
+    peer = null;
+
+    try {
+      peer = new Peer(codeToId(savedCode), {
+      debug: 0,
+      config: {
+        iceServers: [
+          { urls: 'stun:stun.l.google.com:19302' },
+          { urls: 'stun:stun1.l.google.com:19302' },
+          { urls: 'stun:stun2.l.google.com:19302' },
+          { urls: 'stun:stun.cloudflare.com:3478' }
+        ]
+      }
+    });
+      peer.on('open', () => {
+        isHost = true;
+        myRoomCode = savedCode;
+        if (el) { el.classList.remove('loading'); el.innerText = savedCode; }
+        if (st) st.innerText = 'Sala reativada! Código mantido.';
+        const btn = document.getElementById('btn-copiar-codigo');
+        if (btn) btn.disabled = false;
+
+        peer.on('disconnected', () => {
+          try { if (peer && !peer.destroyed) peer.reconnect(); } catch(e) {}
+        });
+        peer.on('close', () => {
+          if (isHost || isViewer) setTimeout(_tentarReconexao, 1500);
+        });
+        peer.on('connection', _registarConexaoGuest);
+        atualizarSyncBar();
+        showToast('Sala reativada — código ' + savedCode);
+      });
+      peer.on('error', err => {
+        if (err.type === 'unavailable-id') {
+          // Servidor ainda tem o ID — tenta de novo em 3s
+          _reconectarHostComCodigo(savedCode, el, st, tentativa + 1);
+        } else {
+          showToast('Erro ao reativar sala: ' + (err.type || err.message));
+          isHost = false; myRoomCode = null;
         }
-        broadcastEstado(); // envia estado atual ao novo viewer
-        atualizarSyncBar(myRoomCode);
-      } else if (msg.tipo === 'leave') {
-        const nome = _viewersOnline[msg.uid] || 'Músico';
-        delete _viewersOnline[msg.uid];
-        showToast(nome + ' saiu da sala');
-        atualizarSyncBar(myRoomCode);
+      });
+    } catch(e) {
+      showToast('Erro ao reconectar.');
+    }
+  }, delay);
+}
+
+// Registar uma nova conexão de guest (reutilizável)
+function _registarConexaoGuest(conn) {
+  // Evita duplicados — mesma peer.id já conectada
+  if (guestConns.some(c => c.peer === conn.peer)) {
+    try { conn.close(); } catch(e) {}
+    return;
+  }
+  guestConns.push(conn);
+  conn._nomePeer = 'Músico';
+  conn._joined = false;
+
+  conn.on('open', () => {
+    // Envia estado mas NÃO notifica ainda — espera o 'join' com o nome
+    conn.send({ type: 'state', payload: capturarEstado() });
+    atualizarSyncBar();
+  });
+
+  conn.on('data', dados => {
+    if (dados.type === 'join' && !conn._joined) {
+      conn._joined = true;
+      conn._nomePeer = dados.nome || 'Músico';
+      showToast(conn._nomePeer + ' entrou na sala');
+      adicionarNotif('event', conn._nomePeer + ' entrou na sala',
+        'Código ' + myRoomCode, 'join_' + conn.peer);
+      atualizarSyncBar();
+      broadcastEstado();
+    } else if (dados.type === 'leave') {
+      conn._left = true;
+    }
+    // ignora 'ping' e joins duplicados
+  });
+
+  conn.on('close', () => {
+    const nome = conn._nomePeer || 'Músico';
+    guestConns = guestConns.filter(c => c !== conn);
+    atualizarSyncBar();
+    broadcastEstado();
+    if (!conn._left && conn._joined) {
+      showToast(nome + ' saiu da sala');
+      adicionarNotif('alert', nome + ' saiu da sala',
+        'Código ' + myRoomCode, 'leave_' + conn.peer);
+    }
+  });
+
+  conn.on('error', () => {
+    guestConns = guestConns.filter(c => c !== conn);
+    atualizarSyncBar();
+    broadcastEstado();
+  });
+}
+
+
+// ─── SISTEMA DE AMIGOS (Firebase) ───────────────────────────────────────────
+
+let _amigoTab = 'amigos';
+let _fbReady = false;
+let _solicitacoesListener = null;
+let _solicitacoesPendentes = []; // cache em tempo real
+let _amigosCache = [];
+
+// UID local — gerado uma vez e salvo no perfil
+function _getUid() {
+  let perfil = JSON.parse(localStorage.getItem('map_perfil_v1') || '{}');
+  if (!perfil.uid) {
+    perfil.uid = 'u_' + Date.now() + '_' + Math.random().toString(36).slice(2,8);
+    localStorage.setItem('map_perfil_v1', JSON.stringify(perfil));
+  }
+  return perfil.uid;
+}
+
+function _getPerfilLocal() {
+  return JSON.parse(localStorage.getItem('map_perfil_v1') || '{}');
+}
+
+// Inicializa Firebase quando estiver pronto
+window.addEventListener('firebase-ready', function() {
+  _fbReady = true;
+  const perfil = _getPerfilLocal();
+  if (perfil.nome) {
+    // Publica perfil no Firestore ao carregar
+    window._fb.salvarPerfil(_getUid(), {
+      nome: perfil.nome,
+      instrumento: perfil.instrumento || null
+    });
+    // Escuta solicitações recebidas em tempo real
+    _iniciarListenerSolicitacoes();
+  }
+});
+
+function _iniciarListenerSolicitacoes() {
+  if (_solicitacoesListener) return;
+  const uid = _getUid();
+  _solicitacoesListener = window._fb.ouvirSolicitacoes(uid, function(sols) {
+    _solicitacoesPendentes = sols;
+    _atualizarBadgesAmigos();
+    // Notificação para novas solicitações
+    sols.forEach(s => {
+      const notifId = 'sol_' + s.id;
+      const notifs = JSON.parse(localStorage.getItem('map_notifs_v1') || '[]');
+      if (!notifs.some(n => n.id === notifId)) {
+        adicionarNotif('event',
+          s.deNome + ' quer ser seu amigo!',
+          'Instrumento: ' + (s.deInst || 'não informado'),
+          notifId
+        );
       }
     });
   });
 }
 
-// ── VIEWER: Entrar na Sala ───────────────────────────────────────────────────
-async function entrarNaSala() {
-  const code = ['d0','d1','d2','d3']
-    .map(id => document.getElementById(id).value).join('').trim().toUpperCase();
+function _atualizarBadgesAmigos() {
+  const total = _solicitacoesPendentes.length;
+  const menuBadge = document.getElementById('menu-amigos-badge');
+  if (menuBadge) {
+    menuBadge.textContent = total;
+    menuBadge.style.display = total > 0 ? 'inline-flex' : 'none';
+  }
+  const tbP = document.getElementById('atab-pendentes-badge');
+  if (tbP) {
+    tbP.textContent = total;
+    tbP.classList.toggle('show', total > 0);
+  }
+}
 
-  if (code.length !== 4) { showToast('Código inválido'); return; }
-  if (!_fbReady || !window._fb) { showToast('Firebase não disponível'); return; }
+async function abrirModalAmigos() {
+  document.getElementById('modal-amigos').classList.add('show');
+  document.getElementById('m-drop').classList.remove('show');
+  _atualizarBannerSala();
+  await _renderAmigos();
+  // Inicia listener se ainda não iniciado
+  if (_fbReady && !_solicitacoesListener) _iniciarListenerSolicitacoes();
+}
 
-  const btn = document.getElementById('btn-entrar');
-  if (btn) btn.disabled = true;
-  setConnStatus('Conectando...', 'loading');
+function fecharModalAmigos() {
+  document.getElementById('modal-amigos').classList.remove('show');
+}
 
+function amigoTab(tab) {
+  _amigoTab = tab;
+  document.querySelectorAll('.amigos-tab').forEach(t => t.classList.remove('active'));
+  document.getElementById('atab-' + tab).classList.add('active');
+  _renderAmigos();
+}
+
+function _atualizarBannerSala() {
+  const banner = document.getElementById('amigos-sala-banner');
+  const codeEl = document.getElementById('amigos-sala-code');
+  if (isHost && myRoomCode) {
+    banner.classList.add('show');
+    codeEl.textContent = myRoomCode;
+  } else {
+    banner.classList.remove('show');
+  }
+}
+
+// ── Buscar usuários ──────────────────────────────────────────────────────────
+let _buscaTimer = null;
+function buscarAmigosInput(val) {
+  clearTimeout(_buscaTimer);
+  if (val.trim().length < 2) {
+    if (_amigoTab === 'buscar') _renderAmigos();
+    return;
+  }
+  _buscaTimer = setTimeout(async () => {
+    if (!_fbReady) { showToast('Firebase ainda a carregar...'); return; }
+    const uid = _getUid();
+    const resultados = await window._fb.buscarUsuarios(val.trim());
+    const lista = document.getElementById('amigos-list');
+    if (!lista) return;
+
+    // Filtra o próprio utilizador
+    const filtrados = resultados.filter(u => u.uid !== uid);
+
+    if (filtrados.length === 0) {
+      lista.innerHTML = '<div class="amigos-empty"><p>Nenhum utilizador encontrado</p></div>';
+      return;
+    }
+
+    // Verifica quem já é amigo ou tem solicitação
+    const amigosUids = _amigosCache.map(a => a.uid);
+    const pendentesUids = _solicitacoesPendentes.map(s => s.de);
+    const solEnviadasUids = (window._solEnviadas || []).map(s => s.para);
+
+    lista.innerHTML = filtrados.map(u => {
+      const inicial = (u.nome || '?').charAt(0).toUpperCase();
+      const jaAmigo = amigosUids.includes(u.uid);
+      const solRecebida = pendentesUids.includes(u.uid);
+      const solEnviada = solEnviadasUids.includes(u.uid);
+
+      let btn = '';
+      if (jaAmigo) {
+        btn = '<span style="font-size:10px;color:#1db954;font-weight:700;">Amigo</span>';
+      } else if (solEnviada) {
+        btn = '<span style="font-size:10px;color:rgba(255,255,255,0.3);font-weight:700;">Enviada</span>';
+      } else {
+        btn = `<button class="amigo-btn amigo-btn-aceitar" onclick="enviarSolicitacaoFb('${u.uid}','${(u.nome||'').replace(/'/g,"\'")}','${u.instrumento||''}')">+ Adicionar</button>`;
+      }
+
+      return `<div class="amigo-item">
+        <div class="amigo-avatar">${inicial}</div>
+        <div class="amigo-info">
+          <div class="amigo-nome">${u.nome || '—'}</div>
+          <div class="amigo-inst">${u.instrumento || 'Instrumento não definido'}</div>
+        </div>
+        <div class="amigo-actions">${btn}</div>
+      </div>`;
+    }).join('');
+  }, 400);
+}
+
+async function enviarSolicitacaoFb(paraUid, paraNome, paraInst) {
+  if (!_fbReady) { showToast('Firebase não disponível'); return; }
   const perfil = _getPerfilLocal();
-  const uid    = _getUid();
-  const nome   = perfil.nome || 'Músico';
+  const uid = _getUid();
+  const ok = await window._fb.enviarSolicitacao(uid, perfil.nome || 'Músico', perfil.instrumento || null, paraUid);
+  if (ok) {
+    // Guarda localmente quais enviei
+    window._solEnviadas = window._solEnviadas || [];
+    window._solEnviadas.push({ para: paraUid });
+    showToast('Solicitação enviada para ' + paraNome + '!');
+    buscarAmigosInput(document.getElementById('amigos-add-input').value);
+  } else {
+    showToast('Erro ao enviar solicitação');
+  }
+}
 
-  const salaData = await window._fb.entrarSalaFb(code, uid, nome);
+// ── Pendentes ────────────────────────────────────────────────────────────────
+async function aceitarSolicitacaoFb(solId, deNome) {
+  if (!_fbReady) return;
+  const ok = await window._fb.aceitarSolicitacao(solId);
+  if (ok) {
+    showToast(deNome + ' é agora seu amigo!');
+    adicionarNotif('event', deNome + ' é agora seu amigo!', 'Pode convidar para salas.', 'acc_' + solId);
+    _solicitacoesPendentes = _solicitacoesPendentes.filter(s => s.id !== solId);
+    _atualizarBadgesAmigos();
+    _amigosCache = await window._fb.listarAmigos(_getUid());
+    amigoTab('amigos');
+  }
+}
 
-  if (!salaData) {
-    setConnStatus('Sala não encontrada ou encerrada.', 'error');
-    if (btn) btn.disabled = false;
+async function recusarSolicitacaoFb(solId, deNome) {
+  if (!_fbReady) return;
+  await window._fb.recusarSolicitacao(solId);
+  _solicitacoesPendentes = _solicitacoesPendentes.filter(s => s.id !== solId);
+  _atualizarBadgesAmigos();
+  showToast('Solicitação de ' + deNome + ' recusada');
+  _renderAmigos();
+}
+
+// ── Convidar para sala ───────────────────────────────────────────────────────
+function convidarAmigo(nome) {
+  if (!isHost || !myRoomCode) { showToast('Cria uma sala primeiro'); return; }
+  const perfil = _getPerfilLocal();
+  const msg = (perfil.nome || 'Músico') + ' convidou você para a sala ' + myRoomCode + ' no Map Music Pro!\n\nCódigo: ' + myRoomCode + '\n\n' + window.location.href.split('?')[0];
+  if (navigator.share) {
+    navigator.share({ title: 'Sala ' + myRoomCode + ' — Map Music Pro', text: msg }).catch(() => {});
+  } else {
+    navigator.clipboard.writeText(msg).then(() => showToast('Convite copiado para ' + nome));
+  }
+}
+
+// ── Render principal ─────────────────────────────────────────────────────────
+async function _renderAmigos() {
+  const lista = document.getElementById('amigos-list');
+  if (!lista) return;
+
+  if (_amigoTab === 'buscar') {
+    lista.innerHTML = '<div class="amigos-empty"><p>Digite acima para buscar músicos</p></div>';
     return;
   }
 
-  // Aplica estado atual da sala
-  try {
-    const estadoAtual = JSON.parse(salaData.estado || '{}');
-    if (estadoAtual && estadoAtual.bpm) aplicarEstado(estadoAtual);
-  } catch(e) {}
-
-  isViewer = true;
-  atualizarLetreiroDrumCam();
-  setConnStatus('Conectado!', 'success');
-  fecharModal();
-  document.getElementById('app-body').classList.add('viewer-mode');
-  atualizarSyncBar(code);
-  showToast('Sala ' + code + ' — modo visualização');
-
-  // Envia mensagem de join
-  await window._fb.enviarMensagemSala(code, { tipo: 'join', uid, nome });
-
-  // Escuta atualizações de estado em tempo real
-  _salaListener = window._fb.ouvirSala(code, function(data) {
-    if (!isViewer) return;
-    if (!data.ativa) {
-      // Sala encerrada pelo host
-      _sairDaSala();
-      showToast('A sala foi encerrada pelo host');
+  if (_amigoTab === 'pendentes') {
+    const sols = _solicitacoesPendentes;
+    if (sols.length === 0) {
+      lista.innerHTML = '<div class="amigos-empty"><svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg><p>Nenhuma solicitação pendente</p></div>';
       return;
     }
-    try {
-      const estado = JSON.parse(data.estado || '{}');
-      if (estado && estado.bpm) aplicarEstado(estado);
-      // Atualiza contagem online
-      const total = (data.online || []).length;
-      const sc = document.querySelector('#sync-guests-count');
-      if (sc) sc.innerText = total + ' online';
-    } catch(e) {}
+    lista.innerHTML = sols.map(s => `
+      <div class="amigo-item">
+        <div class="amigo-avatar">${(s.deNome||'?').charAt(0).toUpperCase()}</div>
+        <div class="amigo-info">
+          <div class="amigo-nome">${s.deNome || '—'}</div>
+          <div class="amigo-inst">${s.deInst || 'Instrumento não definido'}</div>
+        </div>
+        <div class="amigo-actions">
+          <button class="amigo-btn amigo-btn-aceitar" onclick="aceitarSolicitacaoFb('${s.id}','${(s.deNome||'').replace(/'/g,"\'")}')">Aceitar</button>
+          <button class="amigo-btn amigo-btn-recusar" onclick="recusarSolicitacaoFb('${s.id}','${(s.deNome||'').replace(/'/g,"\'")}')">Recusar</button>
+        </div>
+      </div>`).join('');
+    return;
+  }
+
+  // Tab amigos — carrega do Firebase
+  lista.innerHTML = '<div class="amigos-empty"><p style="opacity:0.4;">Carregando...</p></div>';
+
+  if (!_fbReady) {
+    lista.innerHTML = '<div class="amigos-empty"><p>Firebase a carregar...</p></div>';
+    return;
+  }
+
+  _amigosCache = await window._fb.listarAmigos(_getUid());
+
+  // Badge amigos tab
+  const tbA = document.getElementById('atab-amigos-badge');
+  if (tbA) { tbA.textContent = _amigosCache.length; tbA.classList.toggle('show', _amigosCache.length > 0); }
+
+  if (_amigosCache.length === 0) {
+    // Mostra sugestões se não tem amigos
+    const sugs = await window._fb.sugestoes(_getUid());
+    if (sugs.length === 0) {
+      lista.innerHTML = '<div class="amigos-empty"><svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg><p>Busca músicos pelo nome acima</p></div>';
+      return;
+    }
+    const perfil = _getPerfilLocal();
+    lista.innerHTML = '<div style="padding:12px 24px 4px;font-size:9px;font-weight:900;letter-spacing:2px;color:rgba(255,255,255,0.2);">SUGESTÕES</div>' +
+      sugs.slice(0,8).map(u => {
+        const inicial = (u.nome||'?').charAt(0).toUpperCase();
+        const jaEnviou = (window._solEnviadas||[]).some(s => s.para === u.uid);
+        const btn = jaEnviou
+          ? '<span style="font-size:10px;color:rgba(255,255,255,0.3);font-weight:700;">Enviada</span>'
+          : `<button class="amigo-btn amigo-btn-aceitar" onclick="enviarSolicitacaoFb('${u.uid}','${(u.nome||'').replace(/'/g,"\'")}','${u.instrumento||''}')">+ Adicionar</button>`;
+        return `<div class="amigo-item">
+          <div class="amigo-avatar">${inicial}</div>
+          <div class="amigo-info">
+            <div class="amigo-nome">${u.nome||'—'}</div>
+            <div class="amigo-inst">${u.instrumento||'Instrumento não definido'}</div>
+          </div>
+          <div class="amigo-actions">${btn}</div>
+        </div>`;
+      }).join('');
+    return;
+  }
+
+  // Check online status for all friends
+  const amigosUidsOnline = await (async () => {
+    if (!window._fb || !_fbReady) return [];
+    const uids = _amigosCache.map(a => a.uid);
+    const onlines = await window._fb.amigosOnline(uids);
+    return onlines.map(o => o.uid);
+  })();
+
+  lista.innerHTML = _amigosCache.map(a => {
+    const inicial = (a.nome||'?').charAt(0).toUpperCase();
+    const isOnline = amigosUidsOnline.includes(a.uid);
+    const btnConvidar = (isHost && myRoomCode)
+      ? `<button class="amigo-btn amigo-btn-convidar" onclick="convidarAmigo('${(a.nome||'').replace(/'/g,"\'")}')">Convidar</button>`
+      : '';
+    return `<div class="amigo-item">
+      <div class="amigo-avatar">${inicial}</div>
+      <div class="amigo-info">
+        <div style="display:flex;align-items:center;gap:7px;">
+          <div class="amigo-nome">${a.nome||'—'}</div>
+          <div class="${isOnline ? 'amigo-online-dot' : 'amigo-offline-dot'}" title="${isOnline ? 'Online agora' : 'Offline'}"></div>
+        </div>
+        <div class="amigo-inst">${a.inst||'Instrumento não definido'}</div>
+      </div>
+      <div class="amigo-actions">${btnConvidar}</div>
+    </div>`;
+  }).join('');
+}
+
+// Sincroniza perfil ao Firebase quando salvo
+const _origSalvarPerfil = window.salvarPerfil;
+
+// ─── SISTEMA DE NOTIFICAÇÕES ──────────────────────────────────────────────────
+const APP_VERSION = '1.4.6';
+let notificacoes = JSON.parse(localStorage.getItem('map_notifs_v1')) || [];
+let notifPanelOpen = false;
+
+function salvarNotifs() {
+  localStorage.setItem('map_notifs_v1', JSON.stringify(notificacoes));
+}
+
+function adicionarNotif(tipo, titulo, desc, id) {
+  // Evita duplicados pelo mesmo id
+  if (id && notificacoes.find(n => n.id === id)) return;
+  const notif = {
+    id: id || ('n_' + Date.now()),
+    tipo,   // 'event' | 'update' | 'alert'
+    titulo,
+    desc,
+    ts: Date.now(),
+    lida: false
+  };
+  notificacoes.unshift(notif);
+  if (notificacoes.length > 30) notificacoes = notificacoes.slice(0, 30);
+  salvarNotifs();
+  renderNotifPanel();
+  atualizarBadge();
+  // Vibração suave se disponível
+  if (navigator.vibrate) navigator.vibrate(60);
+}
+
+function atualizarBadge() {
+  const naoLidas = notificacoes.filter(n => !n.lida).length;
+  const badge = document.getElementById('notif-badge');
+  if (!badge) return;
+  if (naoLidas > 0) {
+    badge.innerText = naoLidas > 9 ? '9+' : naoLidas;
+    badge.classList.add('show');
+  } else {
+    badge.classList.remove('show');
+  }
+}
+
+function toggleNotifPanel() {
+  const panel = document.getElementById('notif-panel');
+  notifPanelOpen = !notifPanelOpen;
+  panel.classList.toggle('show', notifPanelOpen);
+  if (notifPanelOpen) {
+    // Marca todas como lidas ao abrir
+    notificacoes.forEach(n => n.lida = true);
+    salvarNotifs();
+    atualizarBadge();
+    renderNotifPanel();
+  }
+}
+
+function fecharNotifPanel() {
+  notifPanelOpen = false;
+  document.getElementById('notif-panel').classList.remove('show');
+}
+
+function limparNotificacoes() {
+  notificacoes = [];
+  salvarNotifs();
+  renderNotifPanel();
+  atualizarBadge();
+}
+
+function renderNotifPanel() {
+  const list = document.getElementById('notif-list');
+  if (!list) return;
+  if (!notificacoes.length) {
+    list.innerHTML = '<div class="notif-empty">Sem notificações de momento</div>';
+    return;
+  }
+  const icons = {
+    event:  '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>',
+    update: '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>',
+    alert:  '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>'
+  };
+  list.innerHTML = notificacoes.map(n => `
+    <div class="notif-item ${n.lida ? '' : 'unread'}">
+      <div class="notif-icon ${n.tipo}">${icons[n.tipo] || icons.alert}</div>
+      <div class="notif-body">
+        <div class="notif-title">${n.titulo}</div>
+        <div class="notif-desc">${n.desc}</div>
+        <div class="notif-time">${formatNotifTime(n.ts)}</div>
+      </div>
+      ${!n.lida ? '<div class="notif-dot"></div>' : ''}
+    </div>
+  `).join('');
+}
+
+function formatNotifTime(ts) {
+  const diff = Date.now() - ts;
+  const min = Math.floor(diff / 60000);
+  if (min < 1)  return 'Agora';
+  if (min < 60) return min + ' min atrás';
+  const h = Math.floor(min / 60);
+  if (h < 24)   return h + 'h atrás';
+  return Math.floor(h / 24) + 'd atrás';
+}
+
+// ── Verificar eventos próximos ────────────────────────────────────────────────
+function verificarEventosProximos() {
+  if (!eventos || !eventos.length) return;
+  const hoje = new Date();
+  hoje.setHours(0,0,0,0);
+
+  eventos.forEach(ev => {
+    if (!ev.data) return;
+    const dataEv = new Date(ev.data + 'T00:00:00');
+    const diffDias = Math.round((dataEv - hoje) / 86400000);
+
+    if (diffDias === 0) {
+      adicionarNotif('alert', 'HOJE — ' + ev.nome,
+        'Tens um evento agendado para hoje! Verifica o setlist.',
+        'ev_hoje_' + ev.id);
+    } else if (diffDias === 1) {
+      adicionarNotif('event', 'Amanhã — ' + ev.nome,
+        'Falta 1 dia. Revê a setlist e afina os instrumentos.',
+        'ev_ama_' + ev.id);
+    } else if (diffDias === 7) {
+      adicionarNotif('event', 'Em 1 semana — ' + ev.nome,
+        'Faltam 7 dias para o evento. Hora de ensaiar!',
+        'ev_sem_' + ev.id);
+    } else if (diffDias === 3) {
+      adicionarNotif('event', 'Em 3 dias — ' + ev.nome,
+        'Faltam apenas 3 dias. Confirma os músicos da sala.',
+        'ev_3d_' + ev.id);
+    }
   });
 }
 
-// ── Sair da sala (viewer) ────────────────────────────────────────────────────
-async function _sairDaSala() {
-  if (!isViewer) return;
-  const code = document.getElementById('sync-code-display')?.innerText || myRoomCode;
-  const uid  = _getUid();
-  const nome = (_getPerfilLocal()).nome || 'Músico';
-
-  if (_salaListener) { _salaListener(); _salaListener = null; }
-  if (code) {
-    await window._fb.enviarMensagemSala(code, { tipo: 'leave', uid, nome }).catch(() => {});
-    await window._fb.sairSalaFb(code, uid).catch(() => {});
+// ── Verificar versão / novidades ──────────────────────────────────────────────
+function verificarAtualizacoes() {
+  const lastVer = localStorage.getItem('map_last_version');
+  if (lastVer !== APP_VERSION) {
+    localStorage.setItem('map_last_version', APP_VERSION);
+    if (lastVer) { // Não é primeira abertura
+      adicionarNotif('update', 'Versão ' + APP_VERSION + ' disponível',
+        'Menu de contexto nos álbuns, presença online na sala e melhorias de estabilidade.',
+        'update_' + APP_VERSION);
+    }
   }
-
-  isViewer = false;
-  document.getElementById('app-body').classList.remove('viewer-mode');
-  atualizarSyncBar();
-  atualizarLetreiroDrumCam();
 }
 
-// ── Encerrar sala (host) ─────────────────────────────────────────────────────
-async function encerrarSala() {
-  if (!isHost) return;
-  if (_mensagensListener) { _mensagensListener(); _mensagensListener = null; }
-  clearInterval(_salaOnlineTimer);
-  if (myRoomCode && _fbReady && window._fb) {
-    await window._fb.encerrarSala(myRoomCode);
+// ── Fechar painel ao clicar fora ──────────────────────────────────────────────
+document.addEventListener('click', function(e) {
+  if (!notifPanelOpen) return;
+  const panel = document.getElementById('notif-panel');
+  const btn   = document.getElementById('notif-btn');
+  if (panel && btn && !panel.contains(e.target) && !btn.contains(e.target)) {
+    fecharNotifPanel();
   }
-  isHost = false;
-  _viewersOnline = {};
-  myRoomCode = null;
-  atualizarSyncBar();
-  atualizarLetreiroDrumCam();
-  showToast('Sala encerrada');
+});
+
+// ── Init ao carregar ───────────────────────────────────────────────────────────
+window.addEventListener('load', function() {
+  // Activa Wake Lock ao abrir o app
+  ativarWakeLock();
+  renderNotifPanel();
+  atualizarBadge();
+  verificarAtualizacoes();
+  setTimeout(verificarEventosProximos, 1500);
+  // Verifica periodicamente (a cada hora)
+  setInterval(verificarEventosProximos, 3600000);
+});
+
+
+// ─── MENU DE CONTEXTO DOS ÁLBUNS ─────────────────────────────────────────────
+let ctxSongId = null;
+let ctxModo = null; // 'biblioteca' | 'evento'
+
+function abrirCtxMenu(e, songId, modo) {
+  e.stopPropagation();
+  ctxSongId = songId;
+  ctxModo = modo;
+
+  const song = songs.find(s => s.id === songId);
+  const menu = document.getElementById('album-ctx-menu');
+
+  // Atualiza label favorito
+  const favLabel = document.getElementById('ctx-fav-label');
+  if (favLabel) favLabel.innerText = (song && song.favorite) ? 'Desfavoritar' : 'Favoritar';
+
+  // Mostra/esconde opções conforme contexto
+  document.getElementById('ctx-fav').style.display    = modo === 'biblioteca' ? 'flex' : 'none';
+  document.getElementById('ctx-editar').style.display = modo === 'biblioteca' ? 'flex' : 'none';
+  document.getElementById('ctx-deletar').style.display = modo === 'biblioteca' ? 'flex' : 'none';
+  document.getElementById('ctx-remover').style.display = modo === 'evento'     ? 'flex' : 'none';
+
+  // Posiciona o menu perto do botão
+  menu.classList.add('show');
+  const btn = e.currentTarget;
+  const r = btn.getBoundingClientRect();
+  const mw = 190, mh = menu.offsetHeight || 180;
+  let top = r.bottom + 4;
+  let left = r.right - mw;
+  if (left < 8) left = 8;
+  if (top + mh > window.innerHeight - 8) top = r.top - mh - 4;
+  menu.style.top  = top + 'px';
+  menu.style.left = left + 'px';
 }
 
-// ── Sync Bar ─────────────────────────────────────────────────────────────────
+function fecharCtxMenu() {
+  document.getElementById('album-ctx-menu').classList.remove('show');
+  ctxSongId = null;
+  ctxModo = null;
+}
+
+function ctxAcao(acao) {
+  fecharCtxMenu();
+  if (ctxSongId === null) return;
+  const id = ctxSongId;
+  if (acao === 'abrir')   { loadSongBiblioteca(id); }
+  if (acao === 'fav')     { favoritarBiblioteca(id, null); }
+  if (acao === 'editar')  { abrirEditarMusica(id, null); }
+  if (acao === 'deletar') { deleteSongBiblioteca(id, null); }
+  if (acao === 'remover') { removerDoEvento(id, null); }
+}
+
+// Fecha ao clicar fora
+document.addEventListener('click', function(e) {
+  const menu = document.getElementById('album-ctx-menu');
+  if (menu && menu.classList.contains('show') && !menu.contains(e.target)) {
+    fecharCtxMenu();
+  }
+});
+
+
 function atualizarSyncBar(code) {
-  const bar    = document.getElementById('sync-bar');
-  const label  = document.getElementById('sync-label');
+  const bar = document.getElementById('sync-bar');
+  const label = document.getElementById('sync-label');
   const codeEl = document.getElementById('sync-code-display');
   const guests = document.getElementById('sync-guests');
 
@@ -3331,99 +4064,18 @@ function atualizarSyncBar(code) {
     bar.classList.add('visible');
     bar.classList.remove('viewer');
     label.innerText = 'HOST';
-    codeEl.innerText = myRoomCode || code || '';
-    const total = 1 + Object.keys(_viewersOnline || {}).length;
+    codeEl.innerText = myRoomCode;
+    const total = 1 + guestConns.filter(c => c.open !== false).length;
     guests.querySelector('#sync-guests-count').innerText = total + ' online';
   } else if (isViewer) {
-    bar.classList.add('visible', 'viewer');
+    bar.classList.add('visible','viewer');
     label.innerText = 'A VER';
     codeEl.innerText = code || codeEl.innerText || '';
+    // contagem atualizada via broadcastEstado
   } else {
-    bar.classList.remove('visible', 'viewer');
+    bar.classList.remove('visible','viewer');
   }
 }
-
-// ── Reconexão automática ao voltar ao foreground ─────────────────────────────
-// visibilitychange handled in sala Firebase block
-
-function togglePerf() {
-  setTimeout(atualizarLetreiroDrumCam, 50);
-  const isPerf = document.getElementById('app-body').classList.toggle('performance-mode');
-  document.getElementById('mode-text').innerText = isPerf ? "SAIR DO SHOW" : "MODO SHOW";
-  if (!isPerf) { stopScroll(); window.scrollTo(0,0); liberarWakeLock(); }
-  else {
-    atualizarIndicador();
-    ativarWakeLock();
-    // Inicia teleprompter automaticamente no 9
-    const slider = document.getElementById('scroll-speed');
-    slider.value = 9;
-    document.getElementById('scroll-speed-val').innerText = '9';
-    clearInterval(scrollInterval);
-    scrollInterval = setInterval(() => window.scrollBy(0, 1), 175 - 9);
-  }
-  broadcastEstado();
-}
-
-function atualizarIndicador() {
-  if (songs.length === 0 || currentSongIndex === -1) {
-    document.getElementById('perf-song-pos').innerText = '—';
-    document.getElementById('perf-song-name').innerText = 'Nenhuma musica';
-    return;
-  }
-  const s = songs[currentSongIndex];
-  document.getElementById('perf-song-pos').innerText = (currentSongIndex + 1) + '/' + songs.length;
-  document.getElementById('perf-song-name').innerText = s ? s.name : '—';
-}
-
-function navegarSetlist(dir) {
-  if (songs.length === 0) { showToast('Setlist vazio.'); return; }
-  const novoIdx = currentSongIndex + dir;
-  if (novoIdx < 0 || novoIdx >= songs.length) {
-    flashSwipe(dir < 0 ? 'INICIO' : 'FIM');
-    return;
-  }
-  currentSongIndex = novoIdx;
-  const s = songs[currentSongIndex];
-  bpm = s.bpm;
-  document.getElementById('bpm-display').innerText = bpm;
-  document.getElementById('notes-grid').innerHTML = '';
-  s.parts.forEach(p => addPart(p.title, p.content));
-  window.scrollTo(0, 0);
-  atualizarIndicador();
-  flashSwipe(dir > 0 ? '>' : '<');
-  broadcastEstado();
-}
-
-function flashSwipe(txt) {
-  const el = document.getElementById('swipe-hint');
-  el.innerText = txt;
-  el.classList.add('show');
-  setTimeout(() => el.classList.remove('show'), 500);
-}
-
-// SWIPE touch
-let touchStartX = 0;
-let touchStartY = 0;
-document.addEventListener('touchstart', e => {
-  touchStartX = e.touches[0].clientX;
-  touchStartY = e.touches[0].clientY;
-}, { passive: true });
-
-document.addEventListener('touchend', e => {
-  if (!document.getElementById('app-body').classList.contains('performance-mode')) return;
-  const dx = e.changedTouches[0].clientX - touchStartX;
-  const dy = e.changedTouches[0].clientY - touchStartY;
-  if (Math.abs(dx) < 60 || Math.abs(dx) < Math.abs(dy) * 1.5) return; // ignora swipe vertical
-  navegarSetlist(dx < 0 ? 1 : -1);
-}, { passive: true });
-
-// TECLADO: setas esquerda/direita no modo show
-document.addEventListener('keydown', e => {
-  if (!document.getElementById('app-body').classList.contains('performance-mode')) return;
-  if (e.key === 'ArrowRight') navegarSetlist(1);
-  if (e.key === 'ArrowLeft') navegarSetlist(-1);
-  if (e.key === 'Escape') togglePerf();
-});
 
 // ─── MODAL ────────────────────────────────────────────────────────────────
 function abrirModalSala() {
@@ -3489,7 +4141,6 @@ function mostrarTabsSala(tab) {
 }
 
 function fecharModal() {
-  _bloquearFantasma();
   document.getElementById('modal-sala').classList.remove('show');
   // Se host sem viewers, encerra a sala ao fechar o modal
   if (isHost && guestConns.length === 0) {
@@ -3506,11 +4157,15 @@ function switchTab(tab) {
   if (tab === 'criar' && !isHost && !isViewer) criarSala();
 }
 
-// copiarCodigo deduplicated
+function copiarCodigo() {
+  navigator.clipboard.writeText(myRoomCode).then(() => showToast('Código copiado: ' + myRoomCode));
+}
 
-
-// setConnStatus deduplicated
-
+function setConnStatus(msg, type) {
+  const el = document.getElementById('connect-status');
+  el.innerText = msg;
+  el.className = 'connect-status' + (type ? ' ' + type : '');
+}
 
 // Inputs do código — navegar entre campos
 function nextDigit(el, nextIdx) {
@@ -3537,13 +4192,7 @@ function fecharMenu(e) {
   if (container && !container.contains(e.target)) menu.classList.remove('show');
 }
 window.addEventListener('click', fecharMenu);
-window.addEventListener('touchend', function(e) {
-  if (!e || !e.target) return;
-  // Só fecha o menu se o toque NÃO foi dentro de nenhum overlay/painel/modal
-  if (!e.target.closest('#notif-panel, #notif-btn, .menu-container, #m-drop, [id$="-overlay"], .modal, .modal-box, .amigos-sheet, .slide-panel')) {
-    fecharMenu(e);
-  }
-}, { passive: true });
+window.addEventListener('touchend', fecharMenu, { passive: true });
 
 function resetSection() {
   if(confirm("Limpar a seção atual?")) {
@@ -3829,11 +4478,8 @@ document.addEventListener('click', e => {
   }
 });
 
-// Fecha ao deslizar o dedo (touchmove) ou scroll — mas NÃO dentro de overlays
-document.addEventListener('touchmove', function(e) {
-  if (e.target.closest('[id$="-overlay"], #notif-panel, .modal, .modal-box, .amigos-sheet, #harmonic-popup, .chord-area')) return;
-  fecharHarmonic();
-}, { passive: true });
+// Fecha ao deslizar o dedo (touchmove) ou scroll
+document.addEventListener('touchmove', () => fecharHarmonic(), { passive: true });
 document.addEventListener('scroll', () => fecharHarmonic(), { passive: true });
 
 // Fecha ao mudar de seção (foco em outro campo)
@@ -3975,84 +4621,109 @@ function deleteSong(id, e) {
 // ─── MODO SHOW ─────────────────────────────────────────────────────────────
 let currentSongIndex = -1; // -1 = nenhuma musica do setlist carregada
 
+// ─── WAKE LOCK (evita hibernação no modo show) ────────────────────────────
+let _wakeLock = null;
 
-// ─── MENU DE CONTEXTO DOS ÁLBUNS ─────────────────────────────────────────────
-let ctxSongId = null;
-let ctxModo = null; // 'biblioteca' | 'evento'
-
-function abrirCtxMenu(e, songId, modo) {
-  e.stopPropagation();
-  ctxSongId = songId;
-  ctxModo = modo;
-
-  const song = songs.find(s => s.id === songId);
-  const menu = document.getElementById('album-ctx-menu');
-
-  // Atualiza label favorito
-  const favLabel = document.getElementById('ctx-fav-label');
-  if (favLabel) favLabel.innerText = (song && song.favorite) ? 'Desfavoritar' : 'Favoritar';
-
-  // Mostra/esconde opções conforme contexto
-  document.getElementById('ctx-fav').style.display    = modo === 'biblioteca' ? 'flex' : 'none';
-  document.getElementById('ctx-editar').style.display = modo === 'biblioteca' ? 'flex' : 'none';
-  document.getElementById('ctx-deletar').style.display = modo === 'biblioteca' ? 'flex' : 'none';
-  document.getElementById('ctx-remover').style.display = modo === 'evento'     ? 'flex' : 'none';
-
-  // Posiciona o menu perto do botão
-  menu.classList.add('show');
-  const btn = e.currentTarget;
-  const r = btn.getBoundingClientRect();
-  const mw = 190, mh = menu.offsetHeight || 180;
-  let top = r.bottom + 4;
-  let left = r.right - mw;
-  if (left < 8) left = 8;
-  if (top + mh > window.innerHeight - 8) top = r.top - mh - 4;
-  menu.style.top  = top + 'px';
-  menu.style.left = left + 'px';
+async function ativarWakeLock() {
+  if (!('wakeLock' in navigator)) return;
+  try {
+    _wakeLock = await navigator.wakeLock.request('screen');
+    _wakeLock.addEventListener('release', () => { _wakeLock = null; });
+  } catch(e) {}
 }
 
-function fecharCtxMenu() {
-  document.getElementById('album-ctx-menu').classList.remove('show');
-  ctxSongId = null;
-  ctxModo = null;
+function liberarWakeLock() {
+  if (_wakeLock) { _wakeLock.release().catch(()=>{}); _wakeLock = null; }
 }
 
-function ctxAcao(acao) {
-  fecharCtxMenu();
-  if (ctxSongId === null) return;
-  const id = ctxSongId;
-  if (acao === 'abrir')   { loadSongBiblioteca(id); }
-  if (acao === 'fav')     { favoritarBiblioteca(id, null); }
-  if (acao === 'editar')  { abrirEditarMusica(id, null); }
-  if (acao === 'deletar') { deleteSongBiblioteca(id, null); }
-  if (acao === 'remover') { removerDoEvento(id, null); }
-}
-
-// Fecha ao clicar fora
-document.addEventListener('click', function(e) {
-  const menu = document.getElementById('album-ctx-menu');
-  if (menu && menu.classList.contains('show') && !menu.contains(e.target)) {
-    fecharCtxMenu();
+// Reativa o wake lock se a aba volcar a ficar visível durante o show
+document.addEventListener('visibilitychange', () => {
+  // Reativa wake lock sempre que o app volta ao primeiro plano
+  if (document.visibilityState === 'visible') {
+    ativarWakeLock();
+    // Verifica se a conexão da sala ainda está viva ao voltar ao primeiro plano
+    _verificarConexaoSala();
   }
 });
 
-
-// atualizarSyncBar deduplicated
-
-
-
-function desconectar() {
-  if (isHost) {
-    guestConns.forEach(c => { try { c.close(); } catch(e){} });
-    guestConns = [];
+function togglePerf() {
+  setTimeout(atualizarLetreiroDrumCam, 50);
+  const isPerf = document.getElementById('app-body').classList.toggle('performance-mode');
+  document.getElementById('mode-text').innerText = isPerf ? "SAIR DO SHOW" : "MODO SHOW";
+  if (!isPerf) { stopScroll(); window.scrollTo(0,0); liberarWakeLock(); }
+  else {
+    atualizarIndicador();
+    ativarWakeLock();
+    // Inicia teleprompter automaticamente no 9
+    const slider = document.getElementById('scroll-speed');
+    slider.value = 9;
+    document.getElementById('scroll-speed-val').innerText = '9';
+    clearInterval(scrollInterval);
+    scrollInterval = setInterval(() => window.scrollBy(0, 1), 175 - 9);
   }
-  if (isViewer && hostConn) { try { hostConn.close(); } catch(e){} }
-  if (peer) { peer.destroy(); peer = null; }
-  isHost = false; isViewer = false;
-  document.getElementById('app-body').classList.remove('viewer-mode');
-  document.getElementById('sync-bar').classList.remove('visible','viewer');
-  showToast('Sala encerrada.');
+  broadcastEstado();
 }
+
+function atualizarIndicador() {
+  if (songs.length === 0 || currentSongIndex === -1) {
+    document.getElementById('perf-song-pos').innerText = '—';
+    document.getElementById('perf-song-name').innerText = 'Nenhuma musica';
+    return;
+  }
+  const s = songs[currentSongIndex];
+  document.getElementById('perf-song-pos').innerText = (currentSongIndex + 1) + '/' + songs.length;
+  document.getElementById('perf-song-name').innerText = s ? s.name : '—';
+}
+
+function navegarSetlist(dir) {
+  if (songs.length === 0) { showToast('Setlist vazio.'); return; }
+  const novoIdx = currentSongIndex + dir;
+  if (novoIdx < 0 || novoIdx >= songs.length) {
+    flashSwipe(dir < 0 ? 'INICIO' : 'FIM');
+    return;
+  }
+  currentSongIndex = novoIdx;
+  const s = songs[currentSongIndex];
+  bpm = s.bpm;
+  document.getElementById('bpm-display').innerText = bpm;
+  document.getElementById('notes-grid').innerHTML = '';
+  s.parts.forEach(p => addPart(p.title, p.content));
+  window.scrollTo(0, 0);
+  atualizarIndicador();
+  flashSwipe(dir > 0 ? '>' : '<');
+  broadcastEstado();
+}
+
+function flashSwipe(txt) {
+  const el = document.getElementById('swipe-hint');
+  el.innerText = txt;
+  el.classList.add('show');
+  setTimeout(() => el.classList.remove('show'), 500);
+}
+
+// SWIPE touch
+let touchStartX = 0;
+let touchStartY = 0;
+document.addEventListener('touchstart', e => {
+  touchStartX = e.touches[0].clientX;
+  touchStartY = e.touches[0].clientY;
+}, { passive: true });
+
+document.addEventListener('touchend', e => {
+  if (!document.getElementById('app-body').classList.contains('performance-mode')) return;
+  const dx = e.changedTouches[0].clientX - touchStartX;
+  const dy = e.changedTouches[0].clientY - touchStartY;
+  if (Math.abs(dx) < 60 || Math.abs(dx) < Math.abs(dy) * 1.5) return; // ignora swipe vertical
+  navegarSetlist(dx < 0 ? 1 : -1);
+}, { passive: true });
+
+// TECLADO: setas esquerda/direita no modo show
+document.addEventListener('keydown', e => {
+  if (!document.getElementById('app-body').classList.contains('performance-mode')) return;
+  if (e.key === 'ArrowRight') navegarSetlist(1);
+  if (e.key === 'ArrowLeft') navegarSetlist(-1);
+  if (e.key === 'Escape') togglePerf();
+});
 
 // ─── TELEPROMPTER ──────────────────────────────────────────────────────────
 const scrollSlider = document.getElementById('scroll-speed');
@@ -4116,7 +4787,7 @@ function setPadType(tipo, el) {
   activosBefore.forEach(idx => {
     const node = padNodes[idx];
     if (!node) return;
-    const now = _getAudioCtx().currentTime;
+    const now = audioCtx.currentTime;
     node.masterGain.gain.cancelScheduledValues(now);
     node.masterGain.gain.setValueAtTime(node.masterGain.gain.value, now);
     node.masterGain.gain.linearRampToValueAtTime(0, now + 0.3);
@@ -4137,7 +4808,7 @@ function atualizarVolumePads(val) {
   const vol = parseInt(val) / 100;
   // Rampa suave de 1.2s para subir, 0.8s para baixar — evita saltos bruscos
   Object.values(padNodes).forEach(node => {
-    const ctx = _getAudioCtx();
+    const ctx = audioCtx;
     const now = ctx.currentTime;
     const alvo = vol * node.volScale;
     const atual = node.masterGain.gain.value;
@@ -4168,12 +4839,11 @@ function acordeParaMidi(rootMidi, qualidade) {
 
 function abrirPads() {
   document.getElementById('pads-overlay').classList.add('show');
-  if (_getAudioCtx().state === 'suspended') _getAudioCtx().resume();
+  if (audioCtx.state === 'suspended') audioCtx.resume();
   renderPads();
 }
 
 function fecharPads() {
-  _bloquearFantasma();
   // Não para os pads — continuam tocando em background
   document.getElementById('pads-overlay').classList.remove('show');
 }
@@ -4219,11 +4889,11 @@ function padsOitavaChange(val) {
     node.oscs.forEach(o => {
       try {
         if (o.frequency) {
-          o.frequency.cancelScheduledValues(_getAudioCtx().currentTime);
-          o.frequency.setValueAtTime(o.frequency.value, _getAudioCtx().currentTime);
+          o.frequency.cancelScheduledValues(audioCtx.currentTime);
+          o.frequency.setValueAtTime(o.frequency.value, audioCtx.currentTime);
           o.frequency.linearRampToValueAtTime(
             newFreq * (o._freqRatio || 1),
-            _getAudioCtx().currentTime + 0.08
+            audioCtx.currentTime + 0.08
           );
         }
       } catch(e) {}
@@ -4280,14 +4950,14 @@ function renderPads() {
 }
 
 function iniciarPad(el) {
-  if (_getAudioCtx().state === 'suspended') _getAudioCtx().resume();
+  if (audioCtx.state === 'suspended') audioCtx.resume();
   const idx = parseInt(el.dataset.idx);
   if (padNodes[idx]) { pararPad(idx); return; }
   el.classList.add('playing');
 
   const midi = parseInt(el.dataset.midi);
   const vol  = parseInt(document.getElementById('pads-vol').value) / 100;
-  const ctx  = _getAudioCtx();
+  const ctx  = audioCtx;
   const now  = ctx.currentTime;
   const freq = midiToFreq(midi);
 
@@ -4544,7 +5214,7 @@ function iniciarPad(el) {
 function pararPad(idx) {
   const node = padNodes[idx];
   if (!node) return;
-  const ctx = _getAudioCtx();
+  const ctx = audioCtx;
   const now = ctx.currentTime;
 
   node.masterGain.gain.cancelScheduledValues(now);
@@ -4589,7 +5259,6 @@ function abrirBiblioteca() {
 }
 
 function fecharBiblioteca() {
-  _bloquearFantasma();
   document.getElementById('biblioteca-overlay').classList.remove('show');
   eventoAbertoId = null;
 }
@@ -4674,7 +5343,6 @@ function abrirEditarMusica(id, e) {
 }
 
 function fecharEditarMusica() {
-  _bloquearFantasma();
   document.getElementById('modal-editar-musica').classList.remove('show');
   editarMusicaId = null;
 }
@@ -4790,7 +5458,6 @@ function abrirModalEvento() {
 }
 
 function fecharModalEvento() {
-  _bloquearFantasma();
   document.getElementById('modal-evento').classList.remove('show');
   editarEventoId = null;
 }
@@ -4917,7 +5584,6 @@ function abrirAddMusica() {
 }
 
 function fecharAddMusica() {
-  _bloquearFantasma();
   document.getElementById('modal-addmusica').classList.remove('show');
 }
 
@@ -4941,7 +5607,7 @@ let dcOitava = 4; // oitava atual dos pads do drum cam
 function abrirDrumCam() {
   fecharMenu();
   document.getElementById('drumcam-overlay').classList.add('show');
-  if (_getAudioCtx().state === 'suspended') _getAudioCtx().resume();
+  if (audioCtx.state === 'suspended') audioCtx.resume();
   atualizarDrumCamInfo();
   renderDrumCamPads();
   atualizarLetreiroDrumCam();
@@ -4949,7 +5615,6 @@ function abrirDrumCam() {
 }
 
 function fecharDrumCam() {
-  _bloquearFantasma();
   document.getElementById('drumcam-overlay').classList.remove('show');
 }
 
@@ -4973,14 +5638,14 @@ function atualizarLetreiroDrumCam() {
 const dcPadNodes = {};
 
 function dcTocarNota(midi, notaIdx) {
-  if (_getAudioCtx().state === 'suspended') _getAudioCtx().resume();
+  if (audioCtx.state === 'suspended') audioCtx.resume();
   // Se já tocando essa nota, para
   if (dcPadNodes[notaIdx]) {
     dcPararNota(notaIdx);
     return;
   }
   const vol  = parseInt(document.getElementById('pads-vol').value) / 100;
-  const ctx  = _getAudioCtx();
+  const ctx  = audioCtx;
   const now  = ctx.currentTime;
   const freq = midiToFreq(midi);
 
@@ -5025,7 +5690,7 @@ function dcTocarNota(midi, notaIdx) {
 function dcPararNota(notaIdx) {
   const node = dcPadNodes[notaIdx];
   if (!node) return;
-  const ctx = _getAudioCtx(); const now = ctx.currentTime;
+  const ctx = audioCtx; const now = ctx.currentTime;
   node.masterGain.gain.cancelScheduledValues(now);
   node.masterGain.gain.setValueAtTime(node.masterGain.gain.value, now);
   node.masterGain.gain.linearRampToValueAtTime(0, now + 2.0);
@@ -5124,22 +5789,10 @@ function abrirModalCifra() {
   document.getElementById('cifra-file-input').value = '';
   cifraSecoes = [];
 }
-function fecharModalCifra() {
-  _bloquearFantasma(); document.getElementById('modal-cifra').classList.remove('show'); }
+function fecharModalCifra() { document.getElementById('modal-cifra').classList.remove('show'); }
 function voltarCifra() {
   document.getElementById('cifra-step-2').style.display = 'none';
   document.getElementById('cifra-step-1').style.display = 'block';
-}
-
-function _loadScript(src) {
-  return new Promise((resolve, reject) => {
-    if (document.querySelector('script[src="' + src + '"]')) { resolve(); return; }
-    const s = document.createElement('script');
-    s.src = src;
-    s.onload = resolve;
-    s.onerror = reject;
-    document.head.appendChild(s);
-  });
 }
 
 function lerArquivoCifra(input) {
@@ -5159,7 +5812,6 @@ function lerArquivoCifra(input) {
     const reader = new FileReader();
     reader.onload = async e => {
       try {
-        await _loadScript('https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js');
         pdfjsLib.GlobalWorkerOptions.workerSrc =
           'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
         const pdf = await pdfjsLib.getDocument({ data: e.target.result }).promise;
@@ -5309,7 +5961,6 @@ function lerArquivoCifra(input) {
     const reader = new FileReader();
     reader.onload = async e => {
       try {
-        await _loadScript('https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js');
         const result = await mammoth.extractRawText({ arrayBuffer: e.target.result });
         document.getElementById('cifra-input').value = limparTexto(result.value);
         showToast('Documento carregado!');
@@ -5595,958 +6246,8 @@ function aplicarCifra() {
 function escapeHtml(str) {
   return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
 }
-
-// ─── FIREBASE HELPERS ────────────────────────────────────────────────────────
-
-// Debounce backup — não spama o Firestore
-let _backupTimer = null;
-function _fbBackupMusicas() {
-  if (!_fbReady || !window._fb) return;
-  clearTimeout(_backupTimer);
-  _backupTimer = setTimeout(async () => {
-    const uid = _getUid();
-    const ok = await window._fb.backupMusicas(uid, songs);
-    if (ok) {
-      // Atualiza estatísticas
-      _fbAtualizarStats();
-      console.log('☁ Backup músicas OK —', songs.length, 'músicas');
-    }
-  }, 2000);
-}
-
-let _backupEventosTimer = null;
-function _fbBackupEventos() {
-  if (!_fbReady || !window._fb) return;
-  clearTimeout(_backupEventosTimer);
-  _backupEventosTimer = setTimeout(async () => {
-    const uid = _getUid();
-    const eventos = JSON.parse(localStorage.getItem('map_pro_eventos_v1') || '[]');
-    await window._fb.backupEventos(uid, eventos);
-  }, 2000);
-}
-
-async function _fbRestaurarBackup() {
-  if (!_fbReady || !window._fb) { showToast('Firebase não disponível'); return; }
-  const uid = _getUid();
-  showToast('Buscando backup...');
-  const backup = await window._fb.restaurarMusicas(uid);
-  if (!backup || !backup.musicas || backup.musicas.length === 0) {
-    showToast('Nenhum backup encontrado na nuvem');
-    return;
-  }
-  const confirm = window.confirm('Encontrado backup com ' + backup.musicas.length + ' músicas na nuvem. Restaurar?');
-  if (!confirm) return;
-  songs = backup.musicas;
-  localStorage.setItem('map_pro_elite_v1', JSON.stringify(songs));
-  showToast('✓ ' + songs.length + ' músicas restauradas!');
-  adicionarNotif('update', 'Backup restaurado!',
-    songs.length + ' músicas carregadas da nuvem.', 'restore_' + Date.now());
-}
-
-// ── Estatísticas ─────────────────────────────────────────────────────────────
-async function _fbAtualizarStats() {
-  if (!_fbReady || !window._fb) return;
-  const uid = _getUid();
-  const eventos = JSON.parse(localStorage.getItem('map_pro_eventos_v1') || '[]');
-  const bpms = songs.map(s => s.bpm).filter(Boolean);
-  const bpmMedio = bpms.length ? Math.round(bpms.reduce((a,b) => a+b, 0) / bpms.length) : 0;
-  const instrumentos = {};
-  songs.forEach(s => {
-    if (s.parts) s.parts.forEach(p => {
-      if (p.title) instrumentos[p.title] = (instrumentos[p.title] || 0) + 1;
-    });
-  });
-  await window._fb.salvarEstatistica(uid, {
-    totalMusicas: songs.length,
-    totalEventos: eventos.length,
-    bpmMedio,
-    ultimaMusica: songs.length ? songs[songs.length-1].name : null
-  });
-}
-
-// ── Presença Online ───────────────────────────────────────────────────────────
-function _fbMarcarOnline() {
-  if (!_fbReady || !window._fb) return;
-  const perfil = _getPerfilLocal();
-  if (!perfil.nome) return;
-  window._fb.marcarOnline(_getUid(), perfil.nome, perfil.instrumento || null);
-}
-
-function _fbMarcarOffline() {
-  if (!_fbReady || !window._fb) return;
-  window._fb.marcarOffline(_getUid());
-}
-
-// Marca online ao abrir, offline ao fechar
-window.addEventListener('firebase-ready', function() {
-  _fbMarcarOnline();
-  // Backup inicial silencioso
-  setTimeout(() => {
-    _fbBackupMusicas();
-    _fbBackupEventos();
-    _fbAtualizarStats();
-  }, 3000);
-});
-window.addEventListener('beforeunload', _fbMarcarOffline);
-document.addEventListener('visibilitychange', function() {
-  if (document.visibilityState === 'visible') _fbMarcarOnline();
-  else _fbMarcarOffline();
-});
-
-// ── Modal de Estatísticas ─────────────────────────────────────────────────────
-async function abrirModalStats() {
-  if (!_fbReady || !window._fb) { showToast('Firebase não disponível'); return; }
-  document.getElementById('m-drop').classList.remove('show');
-  const uid = _getUid();
-  const stats = await window._fb.carregarEstatistica(uid);
-  const eventos = JSON.parse(localStorage.getItem('map_pro_eventos_v1') || '[]');
-
-  const bpms = songs.map(s => s.bpm).filter(Boolean);
-  const bpmMedio = bpms.length ? Math.round(bpms.reduce((a,b)=>a+b,0)/bpms.length) : 0;
-  const bpmMax = bpms.length ? Math.max(...bpms) : 0;
-  const bpmMin = bpms.length ? Math.min(...bpms) : 0;
-  const favs = songs.filter(s => s.favorite).length;
-
-  const html = `<div id="modal-stats" style="position:fixed;inset:0;z-index:99997;background:rgba(0,0,0,0.92);display:flex;align-items:flex-end;justify-content:center;" ontouchend="if(event.target===this){event.preventDefault();if(event.target===this)this.remove();}" onclick="if(event.target===this)if(event.target===this)this.remove()">
-  <div style="background:#0c0c14;border:1px solid rgba(255,255,255,0.08);border-radius:24px 24px 0 0;width:100%;max-width:480px;max-height:85vh;overflow-y:auto;padding:24px;animation:slideUpModal 0.3s cubic-bezier(0.34,1.56,0.64,1);">
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;">
-      <span style="font-size:16px;font-weight:900;color:#fff;">Estatísticas</span>
-      <button onclick="document.getElementById('modal-stats').remove()" style="background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.1);color:rgba(255,255,255,0.4);width:30px;height:30px;border-radius:50%;cursor:pointer;font-size:14px;">✕</button>
-    </div>
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px;">
-      ${_statCard(songs.length, 'MÚSICAS', '#1db954')}
-      ${_statCard(eventos.length, 'EVENTOS', '#1db954')}
-      ${_statCard(favs, 'FAVORITAS', '#ffd700')}
-      ${_statCard(bpmMedio || '—', 'BPM MÉDIO', '#7878ff')}
-      ${_statCard(bpmMax || '—', 'BPM MÁX', '#ff6b6b')}
-      ${_statCard(bpmMin || '—', 'BPM MÍN', '#4ecdc4')}
-    </div>
-    <div style="height:1px;background:rgba(255,255,255,0.05);margin:16px 0;"></div>
-    <div style="font-size:9px;font-weight:900;letter-spacing:2px;color:rgba(255,255,255,0.25);margin-bottom:12px;">BACKUP NA NUVEM</div>
-    <div style="display:flex;gap:10px;">
-      <button onclick="_fbBackupMusicas();showToast('Backup realizado!')" style="flex:1;padding:12px;border-radius:10px;background:rgba(29,185,84,0.1);border:1px solid rgba(29,185,84,0.25);color:#1db954;font-size:11px;font-weight:800;cursor:pointer;font-family:inherit;">Fazer Backup</button>
-      <button onclick="_fbRestaurarBackup()" style="flex:1;padding:12px;border-radius:10px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);color:rgba(255,255,255,0.5);font-size:11px;font-weight:800;cursor:pointer;font-family:inherit;">Restaurar</button>
-    </div>
-  </div>
-</div>`;
-
-  document.body.insertAdjacentHTML('beforeend', html);
-}
-
-function _statCard(valor, label, cor) {
-  return `<div style="background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.06);border-radius:14px;padding:16px;text-align:center;">
-    <div style="font-size:28px;font-weight:900;color:${cor};line-height:1;">${valor}</div>
-    <div style="font-size:8px;font-weight:800;color:rgba(255,255,255,0.25);letter-spacing:2px;margin-top:6px;">${label}</div>
-  </div>`;
-}
-
-// ─── RECONEXÃO AUTOMÁTICA DA SALA ────────────────────────────────────────────
-let _reconectando = false;
-
-function _verificarConexaoSala() {
-  if (!isHost && !isViewer) return;
-  if (!peer || peer.destroyed || peer.disconnected) {
-    _tentarReconexao();
-  }
-}
-
-function _tentarReconexao() {
-  if (_reconectando) return;
-  if (!isHost && !isViewer) return;
-  _reconectando = true;
-
-  const eraSala = myRoomCode;
-  const eraHost = isHost;
-  const eraViewer = isViewer;
-
-  // Mostra toast informativo
-  showToast('Reconectando sala...');
-
-  // Destrói peer antigo
-  try { if (peer) peer.destroy(); } catch(e) {}
-  peer = null;
-
-  setTimeout(() => {
-    _reconectando = false;
-    if (eraHost && eraSala) {
-      // Reinicia como host com o MESMO código
-      isHost = false;
-      const savedCode = eraSala;
-      myRoomCode = savedCode;
-
-      const el = document.getElementById('my-room-code');
-      const st = document.getElementById('criar-status');
-      if (el) { el.classList.add('loading'); el.innerText = '···'; }
-      if (st) st.innerText = 'Reconectando...';
-
-      _reconectarHostComCodigo(savedCode, el, st, 0);
-
-    } else if (eraViewer && eraSala) {
-      // Viewer reconecta: preenche os dígitos e chama entrarNaSala
-      isViewer = false;
-      const digits = eraSala.split('');
-      ['d0','d1','d2','d3'].forEach((id, i) => {
-        const el = document.getElementById(id);
-        if (el) el.value = digits[i] || '';
-      });
-      // Abre o modal na aba entrar e reconecta
-      mostrarTabsSala('entrar');
-      abrirModalSala();
-      setTimeout(() => entrarNaSala(), 200);
-    }
-  }, 800);
-}
-
-// Reconecta host com o mesmo código, com retry se unavailable-id
-function _reconectarHostComCodigo(savedCode, el, st, tentativa) {
-  if (tentativa > 6) {
-    // Desistiu — gera novo código
-    showToast('Não foi possível reusar o código. Cria nova sala.');
-    isHost = false; myRoomCode = null;
-    if (el) { el.classList.remove('loading'); el.innerText = '—'; }
-    if (st) st.innerText = 'Erro ao reativar. Cria nova sala.';
-    return;
-  }
-
-  const delay = tentativa === 0 ? 0 : 3000;
-  if (tentativa > 0 && st) st.innerText = 'Aguardando servidor... (' + tentativa + '/6)';
-
-  setTimeout(() => {
-    try { if (peer) peer.destroy(); } catch(e) {}
-    peer = null;
-
-    try {
-      peer = new Peer(codeToId(savedCode), {
-      debug: 0,
-      config: {
-        iceServers: [
-          { urls: 'stun:stun.l.google.com:19302' },
-          { urls: 'stun:stun1.l.google.com:19302' },
-          { urls: 'stun:stun2.l.google.com:19302' },
-          { urls: 'stun:stun.cloudflare.com:3478' }
-        ]
-      }
-    });
-      peer.on('open', () => {
-        isHost = true;
-        myRoomCode = savedCode;
-        if (el) { el.classList.remove('loading'); el.innerText = savedCode; }
-        if (st) st.innerText = 'Sala reativada! Código mantido.';
-        const btn = document.getElementById('btn-copiar-codigo');
-        if (btn) btn.disabled = false;
-
-        peer.on('disconnected', () => {
-          try { if (peer && !peer.destroyed) peer.reconnect(); } catch(e) {}
-        });
-        peer.on('close', () => {
-          if (isHost || isViewer) setTimeout(_tentarReconexao, 1500);
-        });
-        peer.on('connection', _registarConexaoGuest);
-        atualizarSyncBar();
-        showToast('Sala reativada — código ' + savedCode);
-      });
-      peer.on('error', err => {
-        if (err.type === 'unavailable-id') {
-          // Servidor ainda tem o ID — tenta de novo em 3s
-          _reconectarHostComCodigo(savedCode, el, st, tentativa + 1);
-        } else {
-          showToast('Erro ao reativar sala: ' + (err.type || err.message));
-          isHost = false; myRoomCode = null;
-        }
-      });
-    } catch(e) {
-      showToast('Erro ao reconectar.');
-    }
-  }, delay);
-}
-
-// Registar uma nova conexão de guest (reutilizável)
-function _registarConexaoGuest(conn) {
-  // Evita duplicados — mesma peer.id já conectada
-  if (guestConns.some(c => c.peer === conn.peer)) {
-    try { conn.close(); } catch(e) {}
-    return;
-  }
-  guestConns.push(conn);
-  conn._nomePeer = 'Músico';
-  conn._joined = false;
-
-  conn.on('open', () => {
-    // Envia estado mas NÃO notifica ainda — espera o 'join' com o nome
-    conn.send({ type: 'state', payload: capturarEstado() });
-    atualizarSyncBar();
-  });
-
-  conn.on('data', dados => {
-    if (dados.type === 'join' && !conn._joined) {
-      conn._joined = true;
-      conn._nomePeer = dados.nome || 'Músico';
-      showToast(conn._nomePeer + ' entrou na sala');
-      adicionarNotif('event', conn._nomePeer + ' entrou na sala',
-        'Código ' + myRoomCode, 'join_' + conn.peer);
-      atualizarSyncBar();
-      broadcastEstado();
-    } else if (dados.type === 'leave') {
-      conn._left = true;
-    }
-    // ignora 'ping' e joins duplicados
-  });
-
-  conn.on('close', () => {
-    const nome = conn._nomePeer || 'Músico';
-    guestConns = guestConns.filter(c => c !== conn);
-    atualizarSyncBar();
-    broadcastEstado();
-    if (!conn._left && conn._joined) {
-      showToast(nome + ' saiu da sala');
-      adicionarNotif('alert', nome + ' saiu da sala',
-        'Código ' + myRoomCode, 'leave_' + conn.peer);
-    }
-  });
-
-  conn.on('error', () => {
-    guestConns = guestConns.filter(c => c !== conn);
-    atualizarSyncBar();
-    broadcastEstado();
-  });
-}
-
-
-// ─── SISTEMA DE AMIGOS (Firebase) ───────────────────────────────────────────
-
-let _amigoTab = 'amigos';
-let _solicitacoesListener = null;
-let _solicitacoesPendentes = []; // cache em tempo real
-let _amigosCache = [];
-
-// UID local — gerado uma vez e salvo no perfil
-function _getUid() {
-  let perfil = JSON.parse(localStorage.getItem('map_perfil_v1') || '{}');
-  if (!perfil.uid) {
-    perfil.uid = 'u_' + Date.now() + '_' + Math.random().toString(36).slice(2,8);
-    localStorage.setItem('map_perfil_v1', JSON.stringify(perfil));
-  }
-  return perfil.uid;
-}
-
-function _getPerfilLocal() {
-  return JSON.parse(localStorage.getItem('map_perfil_v1') || '{}');
-}
-
-// Inicializa Firebase quando estiver pronto
-window.addEventListener('firebase-ready', function() {
-  _fbReady = true;
-  const perfil = _getPerfilLocal();
-  if (perfil.nome) {
-    // Publica perfil no Firestore ao carregar
-    window._fb.salvarPerfil(_getUid(), {
-      nome: perfil.nome,
-      instrumento: perfil.instrumento || null
-    });
-    // Escuta solicitações recebidas em tempo real
-    _iniciarListenerSolicitacoes();
-  }
-});
-
-function _iniciarListenerSolicitacoes() {
-  if (_solicitacoesListener) return;
-  const uid = _getUid();
-  _solicitacoesListener = window._fb.ouvirSolicitacoes(uid, function(sols) {
-    _solicitacoesPendentes = sols;
-    _atualizarBadgesAmigos();
-    // Notificação para novas solicitações
-    sols.forEach(s => {
-      const notifId = 'sol_' + s.id;
-      const notifs = JSON.parse(localStorage.getItem('map_notifs_v1') || '[]');
-      if (!notifs.some(n => n.id === notifId)) {
-        adicionarNotif('event',
-          s.deNome + ' quer ser seu amigo!',
-          'Instrumento: ' + (s.deInst || 'não informado'),
-          notifId
-        );
-      }
-    });
-  });
-}
-
-function _atualizarBadgesAmigos() {
-  const total = _solicitacoesPendentes.length;
-  const menuBadge = document.getElementById('menu-amigos-badge');
-  if (menuBadge) {
-    menuBadge.textContent = total;
-    menuBadge.style.display = total > 0 ? 'inline-flex' : 'none';
-  }
-  const tbP = document.getElementById('atab-pendentes-badge');
-  if (tbP) {
-    tbP.textContent = total;
-    tbP.classList.toggle('show', total > 0);
-  }
-}
-
-async function abrirModalAmigos() {
-  document.getElementById('modal-amigos').classList.add('show');
-  document.getElementById('m-drop').classList.remove('show');
-  _atualizarBannerSala();
-  await _renderAmigos();
-  // Inicia listener se ainda não iniciado
-  if (_fbReady && !_solicitacoesListener) _iniciarListenerSolicitacoes();
-}
-
-function fecharModalAmigos() {
-  _bloquearFantasma();
-  document.getElementById('modal-amigos').classList.remove('show');
-}
-
-function amigoTab(tab) {
-  _amigoTab = tab;
-  document.querySelectorAll('.amigos-tab').forEach(t => t.classList.remove('active'));
-  document.getElementById('atab-' + tab).classList.add('active');
-  _renderAmigos();
-}
-
-function _atualizarBannerSala() {
-  const banner = document.getElementById('amigos-sala-banner');
-  const codeEl = document.getElementById('amigos-sala-code');
-  if (isHost && myRoomCode) {
-    banner.classList.add('show');
-    codeEl.textContent = myRoomCode;
-  } else {
-    banner.classList.remove('show');
-  }
-}
-
-// ── Buscar usuários ──────────────────────────────────────────────────────────
-let _buscaTimer = null;
-function buscarAmigosInput(val) {
-  clearTimeout(_buscaTimer);
-  if (val.trim().length < 2) {
-    if (_amigoTab === 'buscar') _renderAmigos();
-    return;
-  }
-  _buscaTimer = setTimeout(async () => {
-    if (!_fbReady) { showToast('Firebase ainda a carregar...'); return; }
-    const uid = _getUid();
-    const resultados = await window._fb.buscarUsuarios(val.trim());
-    const lista = document.getElementById('amigos-list');
-    if (!lista) return;
-
-    // Filtra o próprio utilizador
-    const filtrados = resultados.filter(u => u.uid !== uid);
-
-    if (filtrados.length === 0) {
-      lista.innerHTML = '<div class="amigos-empty"><p>Nenhum utilizador encontrado</p></div>';
-      return;
-    }
-
-    // Verifica quem já é amigo ou tem solicitação
-    const amigosUids = _amigosCache.map(a => a.uid);
-    const pendentesUids = _solicitacoesPendentes.map(s => s.de);
-    const solEnviadasUids = (window._solEnviadas || []).map(s => s.para);
-
-    lista.innerHTML = filtrados.map(u => {
-      const inicial = (u.nome || '?').charAt(0).toUpperCase();
-      const jaAmigo = amigosUids.includes(u.uid);
-      const solRecebida = pendentesUids.includes(u.uid);
-      const solEnviada = solEnviadasUids.includes(u.uid);
-
-      let btn = '';
-      if (jaAmigo) {
-        btn = '<span style="font-size:10px;color:#1db954;font-weight:700;">Amigo</span>';
-      } else if (solEnviada) {
-        btn = '<span style="font-size:10px;color:rgba(255,255,255,0.3);font-weight:700;">Enviada</span>';
-      } else {
-        btn = `<button class="amigo-btn amigo-btn-aceitar" onclick="enviarSolicitacaoFb('${u.uid}','${(u.nome||'').replace(/'/g,"\'")}','${u.instrumento||''}')">+ Adicionar</button>`;
-      }
-
-      return `<div class="amigo-item">
-        <div class="amigo-avatar">${inicial}</div>
-        <div class="amigo-info">
-          <div class="amigo-nome">${u.nome || '—'}</div>
-          <div class="amigo-inst">${u.instrumento || 'Instrumento não definido'}</div>
-        </div>
-        <div class="amigo-actions">${btn}</div>
-      </div>`;
-    }).join('');
-  }, 400);
-}
-
-async function enviarSolicitacaoFb(paraUid, paraNome, paraInst) {
-  if (!_fbReady) { showToast('Firebase não disponível'); return; }
-  const perfil = _getPerfilLocal();
-  const uid = _getUid();
-  const ok = await window._fb.enviarSolicitacao(uid, perfil.nome || 'Músico', perfil.instrumento || null, paraUid);
-  if (ok) {
-    // Guarda localmente quais enviei
-    window._solEnviadas = window._solEnviadas || [];
-    window._solEnviadas.push({ para: paraUid });
-    showToast('Solicitação enviada para ' + paraNome + '!');
-    buscarAmigosInput(document.getElementById('amigos-add-input').value);
-  } else {
-    showToast('Erro ao enviar solicitação');
-  }
-}
-
-// ── Pendentes ────────────────────────────────────────────────────────────────
-async function aceitarSolicitacaoFb(solId, deNome) {
-  if (!_fbReady) return;
-  const ok = await window._fb.aceitarSolicitacao(solId);
-  if (ok) {
-    showToast(deNome + ' é agora seu amigo!');
-    adicionarNotif('event', deNome + ' é agora seu amigo!', 'Pode convidar para salas.', 'acc_' + solId);
-    _solicitacoesPendentes = _solicitacoesPendentes.filter(s => s.id !== solId);
-    _atualizarBadgesAmigos();
-    _amigosCache = await window._fb.listarAmigos(_getUid());
-    amigoTab('amigos');
-  }
-}
-
-async function recusarSolicitacaoFb(solId, deNome) {
-  if (!_fbReady) return;
-  await window._fb.recusarSolicitacao(solId);
-  _solicitacoesPendentes = _solicitacoesPendentes.filter(s => s.id !== solId);
-  _atualizarBadgesAmigos();
-  showToast('Solicitação de ' + deNome + ' recusada');
-  _renderAmigos();
-}
-
-// ── Convidar para sala ───────────────────────────────────────────────────────
-function convidarAmigo(nome) {
-  if (!isHost || !myRoomCode) { showToast('Cria uma sala primeiro'); return; }
-  const perfil = _getPerfilLocal();
-  const msg = (perfil.nome || 'Músico') + ' convidou você para a sala ' + myRoomCode + ' no Map Music Pro!\n\nCódigo: ' + myRoomCode + '\n\n' + window.location.href.split('?')[0];
-  if (navigator.share) {
-    navigator.share({ title: 'Sala ' + myRoomCode + ' — Map Music Pro', text: msg }).catch(() => {});
-  } else {
-    navigator.clipboard.writeText(msg).then(() => showToast('Convite copiado para ' + nome));
-  }
-}
-
-// ── Render principal ─────────────────────────────────────────────────────────
-async function _renderAmigos() {
-  const lista = document.getElementById('amigos-list');
-  if (!lista) return;
-
-  if (_amigoTab === 'buscar') {
-    lista.innerHTML = '<div class="amigos-empty"><p>Digite acima para buscar músicos</p></div>';
-    return;
-  }
-
-  if (_amigoTab === 'pendentes') {
-    const sols = _solicitacoesPendentes;
-    if (sols.length === 0) {
-      lista.innerHTML = '<div class="amigos-empty"><svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg><p>Nenhuma solicitação pendente</p></div>';
-      return;
-    }
-    lista.innerHTML = sols.map(s => `
-      <div class="amigo-item">
-        <div class="amigo-avatar">${(s.deNome||'?').charAt(0).toUpperCase()}</div>
-        <div class="amigo-info">
-          <div class="amigo-nome">${s.deNome || '—'}</div>
-          <div class="amigo-inst">${s.deInst || 'Instrumento não definido'}</div>
-        </div>
-        <div class="amigo-actions">
-          <button class="amigo-btn amigo-btn-aceitar" onclick="aceitarSolicitacaoFb('${s.id}','${(s.deNome||'').replace(/'/g,"\'")}')">Aceitar</button>
-          <button class="amigo-btn amigo-btn-recusar" onclick="recusarSolicitacaoFb('${s.id}','${(s.deNome||'').replace(/'/g,"\'")}')">Recusar</button>
-        </div>
-      </div>`).join('');
-    return;
-  }
-
-  // Tab amigos — carrega do Firebase
-  lista.innerHTML = '<div class="amigos-empty"><p style="opacity:0.4;">Carregando...</p></div>';
-
-  if (!_fbReady) {
-    lista.innerHTML = '<div class="amigos-empty"><p>Firebase a carregar...</p></div>';
-    return;
-  }
-
-  _amigosCache = await window._fb.listarAmigos(_getUid());
-
-  // Badge amigos tab
-  const tbA = document.getElementById('atab-amigos-badge');
-  if (tbA) { tbA.textContent = _amigosCache.length; tbA.classList.toggle('show', _amigosCache.length > 0); }
-
-  if (_amigosCache.length === 0) {
-    // Mostra sugestões se não tem amigos
-    const sugs = await window._fb.sugestoes(_getUid());
-    if (sugs.length === 0) {
-      lista.innerHTML = '<div class="amigos-empty"><svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg><p>Busca músicos pelo nome acima</p></div>';
-      return;
-    }
-    const perfil = _getPerfilLocal();
-    lista.innerHTML = '<div style="padding:12px 24px 4px;font-size:9px;font-weight:900;letter-spacing:2px;color:rgba(255,255,255,0.2);">SUGESTÕES</div>' +
-      sugs.slice(0,8).map(u => {
-        const inicial = (u.nome||'?').charAt(0).toUpperCase();
-        const jaEnviou = (window._solEnviadas||[]).some(s => s.para === u.uid);
-        const btn = jaEnviou
-          ? '<span style="font-size:10px;color:rgba(255,255,255,0.3);font-weight:700;">Enviada</span>'
-          : `<button class="amigo-btn amigo-btn-aceitar" onclick="enviarSolicitacaoFb('${u.uid}','${(u.nome||'').replace(/'/g,"\'")}','${u.instrumento||''}')">+ Adicionar</button>`;
-        return `<div class="amigo-item">
-          <div class="amigo-avatar">${inicial}</div>
-          <div class="amigo-info">
-            <div class="amigo-nome">${u.nome||'—'}</div>
-            <div class="amigo-inst">${u.instrumento||'Instrumento não definido'}</div>
-          </div>
-          <div class="amigo-actions">${btn}</div>
-        </div>`;
-      }).join('');
-    return;
-  }
-
-  // Check online status for all friends
-  const amigosUidsOnline = await (async () => {
-    if (!window._fb || !_fbReady) return [];
-    const uids = _amigosCache.map(a => a.uid);
-    const onlines = await window._fb.amigosOnline(uids);
-    return onlines.map(o => o.uid);
-  })();
-
-  lista.innerHTML = _amigosCache.map(a => {
-    const inicial = (a.nome||'?').charAt(0).toUpperCase();
-    const isOnline = amigosUidsOnline.includes(a.uid);
-    const btnConvidar = (isHost && myRoomCode)
-      ? `<button class="amigo-btn amigo-btn-convidar" onclick="convidarAmigo('${(a.nome||'').replace(/'/g,"\'")}')">Convidar</button>`
-      : '';
-    return `<div class="amigo-item">
-      <div class="amigo-avatar">${inicial}</div>
-      <div class="amigo-info">
-        <div style="display:flex;align-items:center;gap:7px;">
-          <div class="amigo-nome">${a.nome||'—'}</div>
-          <div class="${isOnline ? 'amigo-online-dot' : 'amigo-offline-dot'}" title="${isOnline ? 'Online agora' : 'Offline'}"></div>
-        </div>
-        <div class="amigo-inst">${a.inst||'Instrumento não definido'}</div>
-      </div>
-      <div class="amigo-actions">${btnConvidar}</div>
-    </div>`;
-  }).join('');
-}
-
-// Sincroniza perfil ao Firebase quando salvo
-const _origSalvarPerfil = window.salvarPerfil;
-
-
-
-// ─── SISTEMA DE NOTIFICAÇÕES ──────────────────────────────────────────────────
-const APP_VERSION = '1.4.6';
-let notificacoes = JSON.parse(localStorage.getItem('map_notifs_v1')) || [];
-let notifPanelOpen = false;
-
-function salvarNotifs() {
-  localStorage.setItem('map_notifs_v1', JSON.stringify(notificacoes));
-}
-
-function adicionarNotif(tipo, titulo, desc, id) {
-  // Evita duplicados pelo mesmo id
-  if (id && notificacoes.find(n => n.id === id)) return;
-  const notif = {
-    id: id || ('n_' + Date.now()),
-    tipo,   // 'event' | 'update' | 'alert'
-    titulo,
-    desc,
-    ts: Date.now(),
-    lida: false
-  };
-  notificacoes.unshift(notif);
-  if (notificacoes.length > 30) notificacoes = notificacoes.slice(0, 30);
-  salvarNotifs();
-  renderNotifPanel();
-  atualizarBadge();
-  // Vibração suave se disponível
-  if (navigator.vibrate) navigator.vibrate(60);
-}
-
-function atualizarBadge() {
-  const naoLidas = notificacoes.filter(n => !n.lida).length;
-  const badge = document.getElementById('notif-badge');
-  if (!badge) return;
-  if (naoLidas > 0) {
-    badge.innerText = naoLidas > 9 ? '9+' : naoLidas;
-    badge.classList.add('show');
-  } else {
-    badge.classList.remove('show');
-  }
-}
-
-function toggleNotifPanel(e) {
-  if (e) e.stopPropagation();
-  const panel = document.getElementById('notif-panel');
-  notifPanelOpen = !notifPanelOpen;
-  panel.classList.toggle('show', notifPanelOpen);
-  if (notifPanelOpen) {
-    // Marca todas como lidas ao abrir
-    notificacoes.forEach(n => n.lida = true);
-    salvarNotifs();
-    atualizarBadge();
-    renderNotifPanel();
-  }
-}
-
-function fecharNotifPanel() {
-  _bloquearFantasma();
-  notifPanelOpen = false;
-  document.getElementById('notif-panel').classList.remove('show');
-}
-
-function limparNotificacoes() {
-  notificacoes = [];
-  salvarNotifs();
-  renderNotifPanel();
-  atualizarBadge();
-}
-
-function renderNotifPanel() {
-  const list = document.getElementById('notif-list');
-  if (!list) return;
-  if (!notificacoes.length) {
-    list.innerHTML = '<div class="notif-empty">Sem notificações de momento</div>';
-    return;
-  }
-  const icons = {
-    event:  '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>',
-    update: '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>',
-    alert:  '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>'
-  };
-  list.innerHTML = notificacoes.map(n => `
-    <div class="notif-item ${n.lida ? '' : 'unread'}">
-      <div class="notif-icon ${n.tipo}">${icons[n.tipo] || icons.alert}</div>
-      <div class="notif-body">
-        <div class="notif-title">${n.titulo}</div>
-        <div class="notif-desc">${n.desc}</div>
-        <div class="notif-time">${formatNotifTime(n.ts)}</div>
-      </div>
-      ${!n.lida ? '<div class="notif-dot"></div>' : ''}
-    </div>
-  `).join('');
-}
-
-function formatNotifTime(ts) {
-  const diff = Date.now() - ts;
-  const min = Math.floor(diff / 60000);
-  if (min < 1)  return 'Agora';
-  if (min < 60) return min + ' min atrás';
-  const h = Math.floor(min / 60);
-  if (h < 24)   return h + 'h atrás';
-  return Math.floor(h / 24) + 'd atrás';
-}
-
-// ── Verificar eventos próximos ────────────────────────────────────────────────
-function verificarEventosProximos() {
-  if (!eventos || !eventos.length) return;
-  const hoje = new Date();
-  hoje.setHours(0,0,0,0);
-
-  eventos.forEach(ev => {
-    if (!ev.data) return;
-    const dataEv = new Date(ev.data + 'T00:00:00');
-    const diffDias = Math.round((dataEv - hoje) / 86400000);
-
-    if (diffDias === 0) {
-      adicionarNotif('alert', 'HOJE — ' + ev.nome,
-        'Tens um evento agendado para hoje! Verifica o setlist.',
-        'ev_hoje_' + ev.id);
-    } else if (diffDias === 1) {
-      adicionarNotif('event', 'Amanhã — ' + ev.nome,
-        'Falta 1 dia. Revê a setlist e afina os instrumentos.',
-        'ev_ama_' + ev.id);
-    } else if (diffDias === 7) {
-      adicionarNotif('event', 'Em 1 semana — ' + ev.nome,
-        'Faltam 7 dias para o evento. Hora de ensaiar!',
-        'ev_sem_' + ev.id);
-    } else if (diffDias === 3) {
-      adicionarNotif('event', 'Em 3 dias — ' + ev.nome,
-        'Faltam apenas 3 dias. Confirma os músicos da sala.',
-        'ev_3d_' + ev.id);
-    }
-  });
-}
-
-// ── Verificar versão / novidades ──────────────────────────────────────────────
-function verificarAtualizacoes() {
-  const lastVer = localStorage.getItem('map_last_version');
-  if (lastVer !== APP_VERSION) {
-    localStorage.setItem('map_last_version', APP_VERSION);
-    if (lastVer) { // Não é primeira abertura
-      adicionarNotif('update', 'Versão ' + APP_VERSION + ' disponível',
-        'Menu de contexto nos álbuns, presença online na sala e melhorias de estabilidade.',
-        'update_' + APP_VERSION);
-    }
-  }
-}
-
-// ── Fechar painel ao clicar fora ──────────────────────────────────────────────
-document.addEventListener('click', function(e) {
-  if (!notifPanelOpen) return;
-  const panel = document.getElementById('notif-panel');
-  const btn   = document.getElementById('notif-btn');
-  // Ignora cliques no próprio botão (ele já tem onclick que faz o toggle)
-  // e cliques dentro do painel
-  if (panel && btn && !panel.contains(e.target) && !btn.contains(e.target)) {
-    // Pequeno delay para deixar o onclick do botão processar primeiro
-    setTimeout(fecharNotifPanel, 10);
-  }
-});
-document.addEventListener('touchend', function(e) {
-  if (!notifPanelOpen) return;
-  const panel = document.getElementById('notif-panel');
-  const btn   = document.getElementById('notif-btn');
-  if (panel && btn && !panel.contains(e.target) && !btn.contains(e.target)) {
-    setTimeout(fecharNotifPanel, 10);
-  }
-}, { passive: true });
-
-// ── Init ao carregar ───────────────────────────────────────────────────────────
-
-// ─── WAKE LOCK ──────────────────────────────────────────────────────────────
-let _wakeLock = null;
-
-function ativarWakeLock() {
-  try {
-    if ('wakeLock' in navigator && navigator.wakeLock) {
-      navigator.wakeLock.request('screen')
-        .then(function(lock) { _wakeLock = lock; })
-        .catch(function() { /* não suportado ou página não visível */ });
-    }
-  } catch(e) { /* silencioso */ }
-}
-
-function liberarWakeLock() {
-  if (_wakeLock) { _wakeLock.release().catch(() => {}); _wakeLock = null; }
-}
-
-// Re-ativa WakeLock ao voltar ao tab
-document.addEventListener('visibilitychange', function() {
-  if (document.visibilityState === 'visible') ativarWakeLock();
-});
-
-window.addEventListener('load', function() {
-  // Activa Wake Lock ao abrir o app
-  ativarWakeLock();
-  renderNotifPanel();
-  atualizarBadge();
-  verificarAtualizacoes();
-  setTimeout(verificarEventosProximos, 1500);
-  // Verifica periodicamente (a cada hora)
-  setInterval(verificarEventosProximos, 3600000);
-});
-
-
-// ─── ESTADO DA SALA ───────────────────────────────────────────────────────────
-
-function capturarEstado() {
-  const parts = Array.from(document.querySelectorAll('.song-part')).map(p => ({
-    title: p.querySelector('input').value,
-    content: p.querySelector('textarea').value
-  }));
-  return {
-    bpm,
-    transVal: parseInt(document.getElementById('trans-val').innerText),
-    parts,
-    perfMode: document.getElementById('app-body').classList.contains('performance-mode'),
-    currentSongIndex,
-    currentSongName: currentSongIndex >= 0 && songs[currentSongIndex] ? songs[currentSongIndex].name : null,
-    songTotal: songs.length,
-    scrollSpeed: parseInt(document.getElementById('scroll-speed').value),
-    onlineCount: 1 + Object.keys(_viewersOnline || {}).length,
-    roomCode: myRoomCode
-  };
-}
-
-// Aplica estado recebido (viewer)
-function aplicarEstado(estado) {
-  syncPaused = true;
-  bpm = estado.bpm;
-  document.getElementById('bpm-display').innerText = bpm;
-  document.getElementById('dc-bpm').textContent = bpm;
-  document.getElementById('trans-val').innerText = estado.transVal;
-
-  // Partes / acordes
-  document.getElementById('notes-grid').innerHTML = '';
-  estado.parts.forEach(p => addPart(p.title, p.content));
-
-  // Modo show
-  const body = document.getElementById('app-body');
-  if (estado.perfMode && !body.classList.contains('performance-mode')) {
-    body.classList.add('performance-mode');
-    document.getElementById('mode-text').innerText = 'SAIR DO SHOW';
-  } else if (!estado.perfMode && body.classList.contains('performance-mode')) {
-    body.classList.remove('performance-mode');
-    document.getElementById('mode-text').innerText = 'MODO SHOW';
-    stopScroll();
-  }
-
-  // Nome e posição da música
-  if (estado.currentSongName) {
-    currentSongIndex = estado.currentSongIndex;
-    document.getElementById('perf-song-name').innerText = estado.currentSongName;
-    document.getElementById('perf-song-pos').innerText =
-      (estado.currentSongIndex + 1) + '/' + estado.songTotal;
-    document.getElementById('dc-song-name').textContent = estado.currentSongName;
-  } else {
-    document.getElementById('perf-song-name').innerText = 'Nenhuma musica';
-    document.getElementById('perf-song-pos').innerText = '—';
-    document.getElementById('dc-song-name').textContent = '—';
-  }
-  atualizarLetreiroDrumCam();
-
-  // Teleprompter — sincroniza velocidade
-  const slider = document.getElementById('scroll-speed');
-  const speed = estado.scrollSpeed || 0;
-  if (parseInt(slider.value) !== speed) {
-    slider.value = speed;
-    document.getElementById('scroll-speed-val').innerText = speed;
-    clearInterval(scrollInterval);
-    if (speed > 0) {
-      scrollInterval = setInterval(() => window.scrollBy(0, 1), 175 - speed);
-    }
-  }
-
-  // Presença online — atualiza sync bar do viewer
-  if (estado.onlineCount !== undefined) {
-    const sc = document.getElementById('sync-guests-count');
-    if (sc) sc.innerText = estado.onlineCount + ' online';
-    if (estado.roomCode) {
-      const codeEl = document.getElementById('sync-code-display');
-      if (codeEl && !codeEl.innerText) codeEl.innerText = estado.roomCode;
-    }
-  }
-
-  syncPaused = false;
-}
-
-
-// ─── MODAL SALA — UTILITÁRIOS ─────────────────────────────────────────────────
-// abrirModalSala deduplicated
-
-// mostrarEscolhaSala deduplicated
-
-// mostrarTabsSala deduplicated
-
-// voltarEscolhaSala deduplicated
-
-// ─── BLOQUEADOR DE GHOST CLICKS (iOS Safari) ──────────────────────────────
-// Usa um div físico transparente que cobre toda a tela após fechar qualquer
-// modal/overlay, absorvendo o ghost click do iOS Safari por 400ms
-let _shieldEl = null;
-function _bloquearFantasma() {
-  // Remove shield anterior se existir
-  if (_shieldEl) { try { _shieldEl.remove(); } catch(e){} }
-  _shieldEl = document.createElement('div');
-  _shieldEl.style.cssText = 'position:fixed;inset:0;z-index:99999;background:transparent;';
-  // Captura e cancela qualquer toque/click
-  const _absorb = function(e) { e.stopImmediatePropagation(); e.preventDefault(); };
-  _shieldEl.addEventListener('touchstart', _absorb, { passive: false, capture: true });
-  _shieldEl.addEventListener('touchend',   _absorb, { passive: false, capture: true });
-  _shieldEl.addEventListener('click',      _absorb, { passive: false, capture: true });
-  document.body.appendChild(_shieldEl);
-  // Remove após 400ms
-  setTimeout(() => {
-    if (_shieldEl) { try { _shieldEl.remove(); } catch(e){} _shieldEl = null; }
-  }, 400);
-}
-
 renderSetlist();
 ["INTRO","VERSO","REFRÃO","PONTE","FINAL"].forEach(p => addPart(p));
-
 </script>
 
 
