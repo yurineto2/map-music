@@ -2479,66 +2479,7 @@ function criarSala() {
     document.getElementById('btn-copiar-codigo').disabled = false;
 
     // Aceita conexões de viewers
-    peer.on('connection', conn => {
-      guestConns.push(conn);
-      conn.on('open', () => {
-        atualizarSyncBar();
-        conn.send({ type: 'state', payload: capturarEstado() });
-        broadcastEstado();
-        // Nome provisório até receber 'join'
-        conn._nomePeer = 'Músico';
-      });
-      conn.on('data', dados => {
-        if (dados.type === 'join') {
-          conn._nomePeer = dados.nome || 'Músico';
-          showToast(conn._nomePeer + ' entrou na sala');
-          adicionarNotif('event',
-            conn._nomePeer + ' entrou na sala',
-            'Código ' + myRoomCode + ' · ' + (1 + guestConns.length) + ' online',
-            'join_' + conn.peer + '_' + Date.now()
-          );
-          broadcastEstado();
-        } else if (dados.type === 'leave') {
-          conn._left = true;
-          const nome = dados.nome || conn._nomePeer || 'Músico';
-          showToast(nome + ' saiu da sala');
-          adicionarNotif('alert',
-            nome + ' saiu da sala',
-            'Código ' + myRoomCode + ' · ' + Math.max(0, guestConns.length - 1) + ' online',
-            'leave_' + conn.peer + '_' + Date.now()
-          );
-        }
-      });
-      conn.on('close', () => {
-        const nome = conn._nomePeer || 'Músico';
-        guestConns = guestConns.filter(c => c !== conn);
-        atualizarSyncBar();
-        broadcastEstado();
-        // Só notifica se não recebeu 'leave' explícito (evita duplicado)
-        if (!conn._left) {
-          showToast(nome + ' saiu da sala');
-          adicionarNotif('alert',
-            nome + ' saiu da sala',
-            'Código ' + myRoomCode + ' · ' + guestConns.length + ' online',
-            'leave_' + conn.peer + '_' + Date.now()
-          );
-        }
-      });
-      conn.on('error', () => {
-        const nome = conn._nomePeer || 'Músico';
-        guestConns = guestConns.filter(c => c !== conn);
-        atualizarSyncBar();
-        broadcastEstado();
-        if (!conn._left) {
-          showToast(nome + ' saiu da sala');
-          adicionarNotif('alert',
-            nome + ' saiu da sala',
-            'Código ' + myRoomCode + ' · ' + guestConns.length + ' online',
-            'err_' + conn.peer + '_' + Date.now()
-          );
-        }
-      });
-    });
+    peer.on('connection', _registarConexaoGuest);
 
     atualizarSyncBar();
   });
@@ -2591,13 +2532,16 @@ function entrarNaSala() {
       setConnStatus('Sala não encontrada. Verifica o código.', 'error');
       document.getElementById('btn-entrar').disabled = false;
     });
-    // timeout se não conectar
-    setTimeout(() => {
+    // timeout se não conectar em 20s
+    const _connTimer = setTimeout(() => {
       if (!isViewer) {
-        setConnStatus('Tempo esgotado. Tenta novamente.', 'error');
+        setConnStatus('Sala não encontrada ou sem rede. Tenta novamente.', 'error');
         document.getElementById('btn-entrar').disabled = false;
+        try { if (peer) peer.destroy(); peer = null; } catch(e) {}
       }
-    }, 8000);
+    }, 20000);
+    hostConn.on('open', () => clearTimeout(_connTimer));
+    hostConn.on('error', () => clearTimeout(_connTimer));
   });
 }
 
@@ -2750,44 +2694,7 @@ function _tentarReconexao() {
       if (el) { el.classList.add('loading'); el.innerText = '···'; }
       if (st) st.innerText = 'Reconectando...';
 
-      iniciarPeer(codeToId(savedCode), () => {
-        isHost = true;
-        myRoomCode = savedCode;
-        if (el) { el.classList.remove('loading'); el.innerText = savedCode; }
-        if (st) st.innerText = 'Sala reativada! Código mantido.';
-        document.getElementById('btn-copiar-codigo') && (document.getElementById('btn-copiar-codigo').disabled = false);
-
-        // Reregistra listener de conexões
-        peer.on('connection', conn => {
-          guestConns.push(conn);
-          conn.on('open', () => {
-            atualizarSyncBar();
-            conn.send({ type: 'state', payload: capturarEstado() });
-            broadcastEstado();
-            conn._nomePeer = 'Músico';
-          });
-          conn.on('data', dados => {
-            if (dados.type === 'join') {
-              conn._nomePeer = dados.nome || 'Músico';
-              showToast(conn._nomePeer + ' entrou na sala');
-              broadcastEstado();
-            } else if (dados.type === 'leave') {
-              conn._left = true;
-            }
-          });
-          conn.on('close', () => {
-            guestConns = guestConns.filter(c => c !== conn);
-            atualizarSyncBar();
-          });
-          conn.on('error', () => {
-            guestConns = guestConns.filter(c => c !== conn);
-            atualizarSyncBar();
-          });
-        });
-
-        atualizarSyncBar();
-        showToast('Sala reativada — código ' + savedCode);
-      });
+      _reconectarHostComCodigo(savedCode, el, st, 0);
 
     } else if (eraViewer && eraSala) {
       // Viewer reconecta: preenche os dígitos e chama entrarNaSala
@@ -2803,6 +2710,95 @@ function _tentarReconexao() {
       setTimeout(() => entrarNaSala(), 200);
     }
   }, 800);
+}
+
+// Reconecta host com o mesmo código, com retry se unavailable-id
+function _reconectarHostComCodigo(savedCode, el, st, tentativa) {
+  if (tentativa > 6) {
+    // Desistiu — gera novo código
+    showToast('Não foi possível reusar o código. Cria nova sala.');
+    isHost = false; myRoomCode = null;
+    if (el) { el.classList.remove('loading'); el.innerText = '—'; }
+    if (st) st.innerText = 'Erro ao reativar. Cria nova sala.';
+    return;
+  }
+
+  const delay = tentativa === 0 ? 0 : 3000;
+  if (tentativa > 0 && st) st.innerText = 'Aguardando servidor... (' + tentativa + '/6)';
+
+  setTimeout(() => {
+    try { if (peer) peer.destroy(); } catch(e) {}
+    peer = null;
+
+    try {
+      peer = new Peer(codeToId(savedCode), { debug: 0 });
+      peer.on('open', () => {
+        isHost = true;
+        myRoomCode = savedCode;
+        if (el) { el.classList.remove('loading'); el.innerText = savedCode; }
+        if (st) st.innerText = 'Sala reativada! Código mantido.';
+        const btn = document.getElementById('btn-copiar-codigo');
+        if (btn) btn.disabled = false;
+
+        peer.on('disconnected', () => {
+          try { if (peer && !peer.destroyed) peer.reconnect(); } catch(e) {}
+        });
+        peer.on('close', () => {
+          if (isHost || isViewer) setTimeout(_tentarReconexao, 1500);
+        });
+        peer.on('connection', _registarConexaoGuest);
+        atualizarSyncBar();
+        showToast('Sala reativada — código ' + savedCode);
+      });
+      peer.on('error', err => {
+        if (err.type === 'unavailable-id') {
+          // Servidor ainda tem o ID — tenta de novo em 3s
+          _reconectarHostComCodigo(savedCode, el, st, tentativa + 1);
+        } else {
+          showToast('Erro ao reativar sala: ' + (err.type || err.message));
+          isHost = false; myRoomCode = null;
+        }
+      });
+    } catch(e) {
+      showToast('Erro ao reconectar.');
+    }
+  }, delay);
+}
+
+// Registar uma nova conexão de guest (reutilizável)
+function _registarConexaoGuest(conn) {
+  guestConns.push(conn);
+  conn.on('open', () => {
+    atualizarSyncBar();
+    conn.send({ type: 'state', payload: capturarEstado() });
+    broadcastEstado();
+    conn._nomePeer = 'Músico';
+  });
+  conn.on('data', dados => {
+    if (dados.type === 'join') {
+      conn._nomePeer = dados.nome || 'Músico';
+      showToast(conn._nomePeer + ' entrou na sala');
+      adicionarNotif('event', conn._nomePeer + ' entrou na sala',
+        'Código ' + myRoomCode, 'join_' + conn.peer + '_' + Date.now());
+      broadcastEstado();
+    } else if (dados.type === 'leave') {
+      conn._left = true;
+    }
+  });
+  conn.on('close', () => {
+    const nome = conn._nomePeer || 'Músico';
+    guestConns = guestConns.filter(c => c !== conn);
+    atualizarSyncBar();
+    if (!conn._left) {
+      showToast(nome + ' saiu da sala');
+      adicionarNotif('alert', nome + ' saiu da sala',
+        'Código ' + myRoomCode, 'leave_' + conn.peer + '_' + Date.now());
+    }
+  });
+  conn.on('error', () => {
+    guestConns = guestConns.filter(c => c !== conn);
+    atualizarSyncBar();
+  });
 }
 
 // ─── SISTEMA DE NOTIFICAÇÕES ──────────────────────────────────────────────────
