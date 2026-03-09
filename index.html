@@ -2732,13 +2732,13 @@ body.viewer-mode input[type="text"] { pointer-events: none; }
 
 <!-- MODAL SALA -->
 <div class="modal-overlay" id="modal-sala" ontouchend="if(event.target===this){event.preventDefault();_bloquearFantasma();fecharModal();}" onclick="if(event.target===this)if(event.target===this)fecharModal()">
-  <div class="modal-box" style="max-width:400px; padding:0; overflow:hidden;">
+  <div class="modal-box" style="max-width:400px; padding:0; overflow-y:auto; overflow-x:hidden; max-height:90vh;">
 
     <!-- Cabeçalho -->
     <div style="padding:28px 28px 20px; border-bottom:1px solid var(--glass-border);">
       <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:6px;">
         <h2 style="font-size:17px; font-weight:900; letter-spacing:0.5px;" id="sala-titulo">Sala de Sincronia</h2>
-        <button onclick="fecharModal()" style="background:none; border:none; color:rgba(255,255,255,0.3); font-size:18px; cursor:pointer; line-height:1; padding:4px 6px; border-radius:6px; transition:0.2s;" onmouseover="this.style.color='#fff'" onmouseout="this.style.color='rgba(255,255,255,0.3)'">✕</button>
+        <button onclick="fecharModal()" ontouchend="event.preventDefault();fecharModal();" style="background:none; border:none; color:rgba(255,255,255,0.3); font-size:18px; cursor:pointer; line-height:1; padding:4px 6px; border-radius:6px; transition:0.2s;" onmouseover="this.style.color='#fff'" onmouseout="this.style.color='rgba(255,255,255,0.3)'">✕</button>
       </div>
       <p style="font-size:11px; color:var(--text-secondary); line-height:1.6; margin:0;" id="sala-subtitulo">Sincronize cifras e andamento com outros músicos em tempo real.</p>
     </div>
@@ -2747,7 +2747,7 @@ body.viewer-mode input[type="text"] { pointer-events: none; }
     <div id="sala-escolha" style="display:block; padding:24px 28px 28px;">
       <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-bottom:16px;">
 
-        <button onclick="confirmarCriarSala()" style="
+        <button onclick="confirmarCriarSala()" ontouchend="event.preventDefault();confirmarCriarSala();" style="
           display:flex; flex-direction:column; align-items:flex-start; gap:6px;
           padding:18px 16px; border-radius:14px; cursor:pointer; text-align:left;
           background:rgba(29,185,84,0.07); border:1px solid rgba(29,185,84,0.25);
@@ -2763,7 +2763,7 @@ body.viewer-mode input[type="text"] { pointer-events: none; }
           </div>
         </button>
 
-        <button onclick="confirmarEntrarSala()" style="
+        <button onclick="confirmarEntrarSala()" ontouchend="event.preventDefault();confirmarEntrarSala();" style="
           display:flex; flex-direction:column; align-items:flex-start; gap:6px;
           padding:18px 16px; border-radius:14px; cursor:pointer; text-align:left;
           background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.09);
@@ -2788,8 +2788,8 @@ body.viewer-mode input[type="text"] { pointer-events: none; }
       <p style="font-size:11px; color:var(--text-secondary); margin-bottom:12px;">O teu código de sala:</p>
       <div class="room-code-display loading" id="my-room-code">···</div>
       <p style="font-size:10px; color:var(--text-secondary); margin-bottom:20px;" id="criar-status">A criar sala...</p>
-      <button class="modal-btn primary" id="btn-copiar-codigo" onclick="copiarCodigo()" disabled>Copiar Código</button>
-      <button class="modal-btn secondary" onclick="voltarEscolhaSala()">Voltar</button>
+      <button class="modal-btn primary" id="btn-copiar-codigo" onclick="copiarCodigo()" ontouchend="event.preventDefault();copiarCodigo();" disabled>Copiar Código</button>
+      <button class="modal-btn secondary" onclick="voltarEscolhaSala()" ontouchend="event.preventDefault();voltarEscolhaSala();">Voltar</button>
     </div>
 
     <!-- ECRÃ 3: entrar na sala -->
@@ -2802,8 +2802,8 @@ body.viewer-mode input[type="text"] { pointer-events: none; }
         <input class="code-input" maxlength="1" id="d3" inputmode="numeric" pattern="[0-9]*" type="tel" oninput="nextDigit(this,-1)" onkeydown="prevDigit(event,3)">
       </div>
       <div class="connect-status" id="connect-status"></div>
-      <button class="modal-btn primary" id="btn-entrar" onclick="entrarNaSala()">Entrar na Sala</button>
-      <button class="modal-btn secondary" style="margin-top:10px;" onclick="voltarEscolhaSala()">Voltar</button>
+      <button class="modal-btn primary" id="btn-entrar" onclick="entrarNaSala()" ontouchend="event.preventDefault();entrarNaSala();">Entrar na Sala</button>
+      <button class="modal-btn secondary" style="margin-top:10px;" onclick="voltarEscolhaSala()" ontouchend="event.preventDefault();voltarEscolhaSala();">Voltar</button>
     </div>
 
   </div>
