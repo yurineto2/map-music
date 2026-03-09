@@ -2683,7 +2683,7 @@ body.viewer-mode input[type="text"] { pointer-events: none; }
     <span style="display:inline-block; width:6px; height:6px; border-radius:50%; background:currentColor; animation:pulse 1.4s infinite;"></span>
     <span id="sync-guests-count"></span>
   </span>
-  <button onclick="desconectar()" style="margin-left:8px; background:none; border:none; color:inherit; cursor:pointer; font-size:10px; opacity:0.6; font-weight:700;">✕ SAIR</button>
+  <button onclick="desconectar()" style="margin-left:8px; background:rgba(255,255,255,0.08); border:1px solid rgba(255,255,255,0.15); color:inherit; cursor:pointer; font-size:11px; font-weight:800; padding:6px 14px; border-radius:20px; min-width:60px; min-height:34px; letter-spacing:0.5px;">SAIR</button>
 </div>
 
 <header class="app-header">
@@ -2789,8 +2789,8 @@ body.viewer-mode input[type="text"] { pointer-events: none; }
       <div class="room-code-display loading" id="my-room-code">···</div>
       <p style="font-size:10px; color:var(--text-secondary); margin-bottom:20px;" id="criar-status">A criar sala...</p>
       <button class="modal-btn primary" id="btn-copiar-codigo" onclick="copiarCodigo()" disabled>Copiar Código</button>
-      <button class="modal-btn secondary" onclick="fecharModal()" style="margin-top:8px;">Fechar</button>
-      <button class="modal-btn danger" onclick="desconectar()" style="margin-top:8px;background:rgba(255,60,60,0.1);border:1px solid rgba(255,60,60,0.25);color:rgba(255,100,100,0.9);">Encerrar Sala</button>
+      <button class="modal-btn secondary" style="margin-top:8px;" onclick="fecharModal()">Fechar</button>
+      <button class="modal-btn danger" style="margin-top:8px;background:rgba(255,60,60,0.12);border:1px solid rgba(255,60,60,0.3);color:rgba(255,100,100,0.95);font-weight:900;" onclick="if(confirm('Encerrar a sala?'))desconectar()">Encerrar Sala</button>
     </div>
 
     <!-- ECRÃ 3: entrar na sala -->
@@ -4072,28 +4072,38 @@ document.addEventListener('click', function(e) {
 
 
 function desconectar() {
-  const code = myRoomCode;
-  const uid = _getUid();
-  // Para listeners
-  if (_salaListener) { try { _salaListener(); } catch(e){} _salaListener = null; }
-  if (_mensagensListener) { try { _mensagensListener(); } catch(e){} _mensagensListener = null; }
-  clearInterval(_salaOnlineTimer);
-  // Firebase: encerra sala (host) ou sai (viewer)
-  if (code && window._fb) {
-    if (isHost) {
-      window._fb.encerrarSala(code).catch(() => {});
-    } else if (isViewer) {
-      window._fb.sairSalaFb(code, uid).catch(() => {});
-      window._fb.enviarMensagemSala(code, { tipo: 'leave', uid, nome: (_getPerfilLocal().nome || 'Músico'), _t: Date.now() }).catch(() => {});
-    }
+  try {
+    const code = myRoomCode;
+    const uid = _getUid();
+    // Para listeners
+    try { if (_salaListener) { _salaListener(); _salaListener = null; } } catch(e){}
+    try { if (_mensagensListener) { _mensagensListener(); _mensagensListener = null; } } catch(e){}
+    try { clearInterval(_salaOnlineTimer); } catch(e){}
+    // Firebase: encerra sala (host) ou sai (viewer)
+    try {
+      if (code && window._fb && window._fbReady) {
+        if (isHost) {
+          window._fb.encerrarSala(code).catch(() => {});
+        } else if (isViewer) {
+          window._fb.sairSalaFb(code, uid).catch(() => {});
+          window._fb.enviarMensagemSala(code, { tipo: 'leave', uid, nome: (_getPerfilLocal().nome || 'Músico'), _t: Date.now() }).catch(() => {});
+        }
+      }
+    } catch(e) { console.warn('desconectar FB:', e); }
+    // Reset estado
+    isHost = false; isViewer = false;
+    myRoomCode = null;
+    try { _viewersOnline = {}; } catch(e){}
+    try { document.getElementById('app-body').classList.remove('viewer-mode'); } catch(e){}
+    try { document.getElementById('sync-bar').classList.remove('visible', 'viewer'); } catch(e){}
+    // Fecha modal e mostra toast
+    try { document.getElementById('modal-sala').classList.remove('show'); } catch(e){}
+    try { mostrarEscolhaSala(); } catch(e){}
+    showToast('Sala encerrada.');
+  } catch(e) {
+    console.error('desconectar erro:', e);
+    showToast('Sala encerrada.');
   }
-  isHost = false; isViewer = false;
-  myRoomCode = null;
-  _viewersOnline = {};
-  document.getElementById('app-body').classList.remove('viewer-mode');
-  document.getElementById('sync-bar').classList.remove('visible', 'viewer');
-  fecharModal();
-  showToast('Sala encerrada.');
 }
 
 // ─── TELEPROMPTER ──────────────────────────────────────────────────────────
@@ -6558,36 +6568,18 @@ function aplicarEstado(estado) {
 // voltarEscolhaSala deduplicated
 
 // ─── BLOQUEADOR DE GHOST CLICKS (iOS Safari) ──────────────────────────────
-// Usa um div físico transparente que cobre toda a tela após fechar qualquer
-// modal/overlay, absorvendo o ghost click do iOS Safari por 400ms
+// Bloqueia ghost clicks aplicando pointer-events:none ao conteúdo principal
+// Botões, header e sync-bar ficam sempre acessíveis
 let _shieldEl = null;
+let _ghostTs = 0;
 function _bloquearFantasma() {
-  // Remove shield anterior se existir
-  if (_shieldEl) { try { _shieldEl.remove(); } catch(e){} }
-  _shieldEl = document.createElement('div');
-  _shieldEl.style.cssText = 'position:fixed;inset:0;z-index:99999;background:transparent;pointer-events:auto;';
-  // Captura e cancela ghost clicks — mas NÃO bloqueia botões ou elementos interativos
-  const _absorb = function(e) {
-    // Deixa passar se o alvo for um botão, input, ou elemento dentro de modal/overlay
-    const t = e.target;
-    if (t && (t.tagName === 'BUTTON' || t.tagName === 'INPUT' || t.tagName === 'TEXTAREA'
-        || t.tagName === 'SELECT' || t.closest('button') || t.closest('.modal-box')
-        || t.closest('.amigos-sheet') || t.closest('.modal-overlay')
-        || t.closest('[id$="-overlay"]'))) {
-      if (_shieldEl) { try { _shieldEl.remove(); } catch(e){} _shieldEl = null; }
-      return; // deixa o evento passar normalmente
-    }
-    e.stopImmediatePropagation();
-    e.preventDefault();
-  };
-  _shieldEl.addEventListener('touchstart', _absorb, { passive: false, capture: true });
-  _shieldEl.addEventListener('touchend',   _absorb, { passive: false, capture: true });
-  _shieldEl.addEventListener('click',      _absorb, { passive: false, capture: true });
-  document.body.appendChild(_shieldEl);
-  // Remove após 250ms
-  setTimeout(() => {
-    if (_shieldEl) { try { _shieldEl.remove(); } catch(e){} _shieldEl = null; }
-  }, 250);
+  _ghostTs = Date.now();
+  // Bloqueia apenas cliques no main content por 220ms via CSS
+  const main = document.getElementById('notes-grid') || document.querySelector('main');
+  if (main) {
+    main.style.pointerEvents = 'none';
+    setTimeout(() => { main.style.pointerEvents = ''; }, 220);
+  }
 }
 
 renderSetlist();
