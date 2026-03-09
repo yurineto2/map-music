@@ -293,11 +293,15 @@ window.addEventListener('unhandledrejection', function(e) {
       try {
         await _set('salas/' + codigo, {
           estado: JSON.stringify(estado),
+          online: online || [],
           onlineCount: (online || []).length
         }, true);
       } catch(e) {}
     },
-    async encerrarSala(codigo) {
+    async getSala(codigo) {
+      try { return await _get('salas/' + codigo); } catch(e) { return null; }
+    },
+        async encerrarSala(codigo) {
       try { await _set('salas/' + codigo, { ativa: false }, true); } catch(e) {}
     },
     ouvirSala(codigo, callback) {
@@ -3215,11 +3219,20 @@ async function criarSala() {
   // Escuta mensagens dos viewers (join/leave/ping)
   _iniciarListenerMensagens(code, uid);
 
-  // Keepalive — atualiza sala a cada 20s para não expirar
-  _salaOnlineTimer = setInterval(() => {
+  // Keepalive — atualiza estado a cada 15s e lê onlineCount do Firestore
+  _salaOnlineTimer = setInterval(async () => {
     if (!isHost || !myRoomCode) { clearInterval(_salaOnlineTimer); return; }
     broadcastEstado();
-  }, 20000);
+    // Lê onlineCount atual do Firestore para o host ver viewers
+    try {
+      const salaData = await window._fb.getSala(myRoomCode);
+      if (salaData) {
+        const total = salaData.onlineCount || 1;
+        const sc = document.querySelector('#sync-guests-count');
+        if (sc) sc.innerText = total + ' online';
+      }
+    } catch(e) {}
+  }, 15000);
 }
 
 function copiarCodigo() {
@@ -3319,10 +3332,16 @@ async function entrarNaSala() {
     try {
       const estado = JSON.parse(data.estado || '{}');
       if (estado && estado.bpm) aplicarEstado(estado);
-      // Atualiza contagem online
-      const total = (data.online || []).length;
+      // Atualiza contagem online (lê onlineCount do Firestore)
+      const total = data.onlineCount || (data.online || []).length || 1;
       const sc = document.querySelector('#sync-guests-count');
       if (sc) sc.innerText = total + ' online';
+      // Também atualiza sync-bar do viewer
+      const guestsEl = document.getElementById('sync-guests');
+      if (guestsEl) {
+        const cnt = guestsEl.querySelector('#sync-guests-count');
+        if (cnt) cnt.innerText = total + ' online';
+      }
     } catch(e) {}
   });
 }
