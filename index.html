@@ -337,13 +337,21 @@ window.addEventListener('unhandledrejection', function(e) {
     ouvirMensagensSala(codigo, callback) {
       // Poll sala doc — deteta mudanças no campo 'viewers'
       let _lastViewers = null;
+      let _lastOnline = 1;
       return _poll('salas/' + codigo, function(data) {
         if (!data) return;
         const viewers = data.viewers || {};
         const viewersStr = JSON.stringify(viewers);
-        console.log('[FB] ouvirMensagens poll: viewers=', viewersStr, 'last=', _lastViewers);
-        if (_lastViewers === null) { _lastViewers = viewersStr; return; } // skip first
-        if (viewersStr === _lastViewers) return;
+        console.log('[FB] ouvirMensagens poll: viewers=', viewersStr, 'onlineCount=', data.onlineCount);
+        if (_lastViewers === null) { _lastViewers = viewersStr; _lastOnline = data.onlineCount || 1; return; } // skip first
+        // Atualiza host com novo onlineCount mesmo sem mudança de viewers
+        if (viewersStr === _lastViewers) {
+          if ((data.onlineCount || 1) !== _lastOnline) {
+            _lastOnline = data.onlineCount || 1;
+            callback([], data); // sem msgs mas passa salaData para atualizar contador
+          }
+          return;
+        }
         // Detetou mudança — descobre quem entrou/saiu
         const oldV = JSON.parse(_lastViewers || '{}');
         const newV = viewers;
@@ -357,7 +365,7 @@ window.addEventListener('unhandledrejection', function(e) {
           if (!newV[uid]) msgs.push({ tipo: 'leave', uid, nome: oldV[uid], _t: Date.now() });
         });
         _lastViewers = viewersStr;
-        if (msgs.length) callback(msgs);
+        if (msgs.length) callback(msgs, data); // passa salaData para o host atualizar onlineCount
       }, 3000);
     },
 
@@ -3250,7 +3258,7 @@ async function criarSala() {
         if (sc) sc.innerText = total + ' online';
       }
     } catch(e) {}
-  }, 15000);
+  }, 5000);
 }
 
 function copiarCodigo() {
@@ -3272,9 +3280,14 @@ let _viewersOnline = {}; // uid → nome
 
 function _iniciarListenerMensagens(code, hostUid) {
   if (_mensagensListener) { _mensagensListener(); _mensagensListener = null; }
-  _mensagensListener = window._fb.ouvirMensagensSala(code, function(msgs) {
+  _mensagensListener = window._fb.ouvirMensagensSala(code, function(msgs, salaData) {
+    // Atualiza contagem diretamente do onlineCount do Firestore (fonte de verdade)
+    if (salaData && salaData.onlineCount) {
+      const sc = document.querySelector('#sync-guests-count');
+      if (sc) sc.innerText = salaData.onlineCount + ' online';
+    }
     msgs.forEach(msg => {
-      if (msg.uid === hostUid) return; // ignora próprias msgs
+      if (msg.uid === hostUid) return;
       if (msg.tipo === 'join') {
         const jaEntrou = !!_viewersOnline[msg.uid];
         _viewersOnline[msg.uid] = msg.nome;
@@ -3283,7 +3296,7 @@ function _iniciarListenerMensagens(code, hostUid) {
           adicionarNotif('event', msg.nome + ' entrou na sala',
             'Código ' + myRoomCode, 'join_' + msg.uid);
         }
-        broadcastEstado(); // envia estado atual ao novo viewer
+        broadcastEstado();
         atualizarSyncBar(myRoomCode);
       } else if (msg.tipo === 'leave') {
         const nome = _viewersOnline[msg.uid] || 'Músico';
