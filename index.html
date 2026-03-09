@@ -315,7 +315,9 @@ window.addEventListener('unhandledrejection', function(e) {
         const viewers = Object.assign({}, data.viewers || {});
         viewers[viewerUid] = viewerNome;
         const onlineCount = Object.keys(viewers).length + 1; // +1 for host
+        console.log('[FB] entrarSalaFb: writing viewers=', JSON.stringify(viewers), 'onlineCount=', onlineCount);
         await _set('salas/' + codigo, { viewers, onlineCount }, true);
+        console.log('[FB] entrarSalaFb: write done');
         return data;
       } catch(e) { return null; }
     },
@@ -339,6 +341,7 @@ window.addEventListener('unhandledrejection', function(e) {
         if (!data) return;
         const viewers = data.viewers || {};
         const viewersStr = JSON.stringify(viewers);
+        console.log('[FB] ouvirMensagens poll: viewers=', viewersStr, 'last=', _lastViewers);
         if (_lastViewers === null) { _lastViewers = viewersStr; return; } // skip first
         if (viewersStr === _lastViewers) return;
         // Detetou mudança — descobre quem entrou/saiu
