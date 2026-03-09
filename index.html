@@ -2428,20 +2428,53 @@ function gerarCodigo4() {
   return String(Math.floor(1000 + Math.random() * 9000));
 }
 
-function iniciarPeer(id, onReady) {
+const _PEER_CFG = {
+      debug: 0,
+      config: {
+        iceServers: [
+          { urls: 'stun:stun.l.google.com:19302' },
+          { urls: 'stun:stun1.l.google.com:19302' },
+          { urls: 'stun:stun2.l.google.com:19302' },
+          { urls: 'stun:stun.cloudflare.com:3478' }
+        ]
+      }
+    };
+
+function iniciarPeer(id, onReady, onError) {
   try {
     if (peer) { try { peer.destroy(); } catch(e){} peer = null; }
-    peer = new Peer(id, { debug: 0 });
-    peer.on('open', () => { try { onReady(); } catch(e){ console.error('onReady error:', e); } });
+    peer = new Peer(id, _PEER_CFG);
+
+    // Timeout de 15s para abrir conexão com servidor
+    const _openTimer = setTimeout(() => {
+      if (!peer || peer.open) return;
+      try { peer.destroy(); } catch(e) {}
+      peer = null;
+      if (onError) onError('timeout');
+      else { setConnStatus('Servidor demorou. Tenta novamente.', 'error'); document.getElementById('btn-entrar') && (document.getElementById('btn-entrar').disabled = false); }
+    }, 15000);
+
+    peer.on('open', () => {
+      clearTimeout(_openTimer);
+      try { onReady(); } catch(e) { console.error('onReady error:', e); }
+    });
     peer.on('error', err => {
+      clearTimeout(_openTimer);
       try {
         if (err.type === 'unavailable-id') {
-          iniciarPeer(codeToId(gerarCodigo4()), onReady);
-        } else if (err.type === 'network' || err.type === 'server-error') {
-          document.getElementById('criar-status') && (document.getElementById('criar-status').innerText = 'Erro de rede. Verifica a ligação.');
-          setConnStatus('Erro de rede.', 'error');
+          if (onError) onError('unavailable-id');
+          else iniciarPeer(codeToId(gerarCodigo4()), onReady);
+        } else if (err.type === 'network' || err.type === 'server-error' || err.type === 'socket-error' || err.type === 'socket-closed') {
+          const msg = 'Sem ligação ao servidor. Verifica a rede.';
+          document.getElementById('criar-status') && (document.getElementById('criar-status').innerText = msg);
+          setConnStatus(msg, 'error');
+          document.getElementById('btn-entrar') && (document.getElementById('btn-entrar').disabled = false);
+          if (onError) onError(err.type);
         } else {
-          showToast('Erro: ' + (err.type || err.message || 'desconhecido'));
+          const msg = 'Erro: ' + (err.type || err.message || 'desconhecido');
+          setConnStatus(msg, 'error');
+          document.getElementById('btn-entrar') && (document.getElementById('btn-entrar').disabled = false);
+          if (onError) onError(err.type);
         }
       } catch(e) {}
     });
@@ -2449,13 +2482,11 @@ function iniciarPeer(id, onReady) {
       try { if (peer && !peer.destroyed) peer.reconnect(); } catch(e) {}
     });
     peer.on('close', () => {
-      // Peer destruído — agenda reconexão se ainda somos host/viewer
-      if (isHost || isViewer) {
-        setTimeout(_tentarReconexao, 1500);
-      }
+      if (isHost || isViewer) setTimeout(_tentarReconexao, 2000);
     });
   } catch(e) {
-    showToast('PeerJS não disponível. Verifica a ligação.');
+    setConnStatus('PeerJS não disponível.', 'error');
+    if (onError) onError('exception');
   }
 }
 
@@ -2510,6 +2541,11 @@ function entrarNaSala() {
       const _perfil = JSON.parse(localStorage.getItem('map_perfil_v1') || '{}');
       const _nome = _perfil.nome || 'Músico';
       hostConn.send({ type: 'join', nome: _nome });
+      // Heartbeat — mantém conexão viva em background
+      const _hb = setInterval(() => {
+        if (!isViewer || !hostConn || hostConn.open === false) { clearInterval(_hb); return; }
+        try { hostConn.send({ type: 'ping' }); } catch(e) {}
+      }, 10000);
     });
     hostConn.on('data', dados => {
       if (dados.type === 'state') aplicarEstado(dados.payload);
@@ -2542,6 +2578,10 @@ function entrarNaSala() {
     }, 20000);
     hostConn.on('open', () => clearTimeout(_connTimer));
     hostConn.on('error', () => clearTimeout(_connTimer));
+  }, (errType) => {
+    setConnStatus('Erro ao conectar: ' + errType + '. Tenta novamente.', 'error');
+    document.getElementById('btn-entrar').disabled = false;
+    try { if (peer) peer.destroy(); peer = null; } catch(e) {}
   });
 }
 
@@ -2731,7 +2771,17 @@ function _reconectarHostComCodigo(savedCode, el, st, tentativa) {
     peer = null;
 
     try {
-      peer = new Peer(codeToId(savedCode), { debug: 0 });
+      peer = new Peer(codeToId(savedCode), {
+      debug: 0,
+      config: {
+        iceServers: [
+          { urls: 'stun:stun.l.google.com:19302' },
+          { urls: 'stun:stun1.l.google.com:19302' },
+          { urls: 'stun:stun2.l.google.com:19302' },
+          { urls: 'stun:stun.cloudflare.com:3478' }
+        ]
+      }
+    });
       peer.on('open', () => {
         isHost = true;
         myRoomCode = savedCode;
