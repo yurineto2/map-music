@@ -837,6 +837,15 @@ function _pinVerificar() {
 document.addEventListener('DOMContentLoaded', function() {
   const perfil = JSON.parse(localStorage.getItem('map_perfil_v1') || '{}');
   const splash = document.getElementById('ob-splash');
+  const skipSplash = sessionStorage.getItem('map_skip_splash') === '1';
+
+  if (skipSplash) {
+    // Vem de um logout — pula splash, vai direto ao cadastro
+    sessionStorage.removeItem('map_skip_splash');
+    if (splash) splash.remove();
+    // onboarding-overlay já está no DOM e visível (perfil foi apagado)
+    return;
+  }
 
   // Mostra nome no splash se já registado
   if (perfil.nome) {
@@ -3515,8 +3524,9 @@ function sairDaConta() {
   localStorage.removeItem('map_notifs_v1');
   localStorage.removeItem('map_last_version');
   fecharModalPerfil();
-  // Recria o onboarding sem recarregar a página toda
-  _voltarAoCadastro();
+  // Sinaliza que deve pular splash e ir direto ao cadastro
+  sessionStorage.setItem('map_skip_splash', '1');
+  location.reload();
 }
 
 function _voltarAoCadastro() {
