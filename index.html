@@ -842,6 +842,78 @@ function _pinVerificar() {
     document.body.classList.remove('auth-pending');
   }
 
+
+// ── Abas ──────────────────────────────────────────────────────────────────────
+function obMostrarAba(aba) {
+  const isLogin = aba === 'login';
+  document.getElementById('tab-login').classList.toggle('active', isLogin);
+  document.getElementById('tab-cadastro').classList.toggle('active', !isLogin);
+  document.getElementById('ob-painel-login').style.display = isLogin ? 'block' : 'none';
+  document.getElementById('ob-painel-cadastro').style.display = isLogin ? 'none' : 'block';
+}
+
+// ── Login ─────────────────────────────────────────────────────────────────────
+function obLoginValidar() {
+  const email = (document.getElementById('login-email')?.value || '').trim();
+  const senha = document.getElementById('login-senha')?.value || '';
+  const btn = document.getElementById('btn-login');
+  const emailOk = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+  if (btn) btn.disabled = !(emailOk && senha.length >= 6);
+}
+
+async function obFazerLogin() {
+  const email = (document.getElementById('login-email')?.value || '').trim();
+  const senha = document.getElementById('login-senha')?.value || '';
+  const btn   = document.getElementById('btn-login');
+  const msg   = document.getElementById('login-msg');
+
+  if (msg) msg.textContent = '';
+  if (btn) { btn.disabled = true; btn.textContent = 'A entrar...'; }
+
+  if (!window._fb) {
+    if (msg) msg.textContent = 'Firebase não carregado. Tenta novamente.';
+    if (btn) { btn.disabled = false; btn.textContent = 'Entrar'; }
+    return;
+  }
+
+  const result = await window._fb.loginComEmail(email, senha);
+  if (!result.ok) {
+    if (msg) msg.textContent = result.msg || 'Email ou senha incorretos.';
+    if (btn) { btn.disabled = false; btn.textContent = 'Entrar'; }
+    return;
+  }
+
+  // Login OK — carregar perfil do Firestore
+  const uid = result.uid;
+  let perfil = null;
+  try { perfil = await window._fb.carregarPerfilPorUid(uid); } catch(e) {}
+
+  if (perfil && perfil.nome) {
+    localStorage.setItem('map_perfil_v1', JSON.stringify({ ...perfil, uid }));
+    localStorage.setItem('map_uid_v1', uid);
+    _mostrarApp();
+    const ov = document.getElementById('onboarding-overlay');
+    if (ov) ov.classList.add('done');
+    setTimeout(function() { if (ov) ov.remove(); }, 600);
+  } else {
+    // Conta Firebase existe mas sem perfil — vai pro cadastro
+    if (msg) msg.textContent = 'Conta encontrada mas sem perfil. Cria a tua conta.';
+    if (btn) { btn.disabled = false; btn.textContent = 'Entrar'; }
+    setTimeout(function() { obMostrarAba('cadastro'); }, 1500);
+  }
+}
+
+function obAbrirEsqueciSenha() {
+  // Reutiliza o modal de recuperação já existente no app
+  const emailInput = document.getElementById('login-email');
+  const email = emailInput ? emailInput.value.trim() : '';
+  // Pré-preenche o modal se existir
+  const modalEmail = document.getElementById('esqueci-email-input');
+  if (modalEmail && email) modalEmail.value = email;
+  const modal = document.getElementById('modal-esqueci-senha');
+  if (modal) modal.style.display = 'flex';
+}
+
 document.addEventListener('DOMContentLoaded', function() {
   // iOS touchend fix for verificar btn
   setTimeout(function() {
@@ -857,6 +929,13 @@ document.addEventListener('DOMContentLoaded', function() {
       btnCta.addEventListener('touchend', function(e) {
         e.preventDefault();
         if (!btnCta.disabled) terminarOnboarding();
+      });
+    }
+    const btnLogin = document.getElementById('btn-login');
+    if (btnLogin) {
+      btnLogin.addEventListener('touchend', function(e) {
+        e.preventDefault();
+        if (!btnLogin.disabled) obFazerLogin();
       });
     }
   }, 500);
@@ -2838,6 +2917,36 @@ body.auth-pending #toast {
   background: none;
   color: #1db954;
 }
+
+/* ── Abas Login / Criar conta ──────────────────────────────────────────────── */
+.ob-tabs {
+  display: flex;
+  gap: 0;
+  background: rgba(255,255,255,0.04);
+  border-radius: 12px;
+  padding: 4px;
+  margin-bottom: 24px;
+}
+.ob-tab {
+  flex: 1;
+  padding: 10px;
+  border: none;
+  border-radius: 9px;
+  background: transparent;
+  color: rgba(255,255,255,0.35);
+  font-size: 13px;
+  font-weight: 700;
+  font-family: inherit;
+  cursor: pointer;
+  transition: all 0.2s;
+  letter-spacing: 0.3px;
+  touch-action: manipulation;
+}
+.ob-tab.active {
+  background: rgba(29,185,84,0.15);
+  color: #1db954;
+  border: 1px solid rgba(29,185,84,0.25);
+}
 </style>
 
 </head>
@@ -2865,95 +2974,124 @@ body.auth-pending #toast {
     <p>A ferramenta profissional para músicos ao vivo</p>
   </div>
   <div class="ob-form">
-    <!-- ETAPA 1: Nome de usuário -->
-    <div id="ob-step-1">
-      <!-- ETAPA 1: Novo utilizador ou já tem conta -->
+
+    <!-- ── ABAS ─────────────────────────────────────────── -->
+    <div class="ob-tabs">
+      <button class="ob-tab active" id="tab-login" onclick="obMostrarAba('login')">Entrar</button>
+      <button class="ob-tab" id="tab-cadastro" onclick="obMostrarAba('cadastro')">Criar conta</button>
+    </div>
+
+    <!-- ══ ABA LOGIN ══════════════════════════════════════ -->
+    <div id="ob-painel-login">
       <div class="ob-field">
-        <label class="ob-label">Nome de utilizador</label>
-        <div style="position:relative;">
-          <input id="ob-nome" type="text" class="ob-input" placeholder="@nomeusuario" autocomplete="off" maxlength="24"
-            oninput="obNomeInput()" style="padding-right:44px;">
-          <div id="ob-nome-status" style="position:absolute;right:12px;top:50%;transform:translateY(-50%);font-size:14px;"></div>
-        </div>
-        <div id="ob-nome-msg" style="font-size:11px;color:rgba(255,255,255,0.3);margin-top:6px;min-height:16px;"></div>
-        <button id="ob-btn-verificar" onclick="obVerificarNomeEAvancar()" disabled
-          style="width:100%;margin-top:8px;padding:12px;border-radius:10px;background:rgba(29,185,84,0.12);border:1px solid rgba(29,185,84,0.25);color:rgba(29,185,84,0.8);font-size:12px;font-weight:800;cursor:pointer;font-family:inherit;letter-spacing:1px;transition:0.2s;">
-          Verificar disponibilidade
-        </button>
-      </div>
-      <div class="ob-field" style="margin-top:4px;">
         <label class="ob-label">Email</label>
-        <input id="ob-email" type="email" class="ob-input" placeholder="teu@email.com" autocomplete="email"
-          oninput="_obValidarCta()">
-        <div id="ob-email-msg" style="font-size:11px;color:rgba(255,255,255,0.3);margin-top:6px;min-height:16px;"></div>
+        <input id="login-email" type="email" class="ob-input" placeholder="teu@email.com" autocomplete="email" oninput="obLoginValidar()">
       </div>
-    </div><!-- /ob-step-1 -->
-
-    <div id="ob-step-2" style="display:none;flex-direction:column;gap:24px;">
-      <!-- Nome confirmado -->
-      <div id="ob-nome-confirmado" style="display:flex;align-items:center;gap:8px;background:rgba(29,185,84,0.08);border:1px solid rgba(29,185,84,0.2);border-radius:10px;padding:10px 14px;">
-        <span style="color:#1db954;font-size:16px;">✓</span>
-        <span style="font-size:13px;font-weight:700;color:#fff;" id="ob-nome-tag"></span>
-        <span style="font-size:11px;color:rgba(255,255,255,0.4);margin-left:auto;">disponível</span>
-      </div>
-
-      <!-- Senha -->
       <div class="ob-field">
-        <label class="ob-label">Criar senha (mín. 6 caracteres)</label>
+        <label class="ob-label">Senha</label>
         <div style="position:relative;">
-          <input id="ob-senha" type="password" class="ob-input" placeholder="••••••••" autocomplete="new-password" minlength="6"
-            oninput="_obValidarCta()" style="padding-right:44px;">
-          <button type="button" onclick="_obToggleSenha('ob-senha','ob-olho-1')"
+          <input id="login-senha" type="password" class="ob-input" placeholder="••••••••" autocomplete="current-password" oninput="obLoginValidar()" style="padding-right:44px;">
+          <button type="button" onclick="_obToggleSenha('login-senha','login-olho')"
             style="position:absolute;right:12px;top:50%;transform:translateY(-50%);background:none;border:none;color:rgba(255,255,255,0.3);cursor:pointer;padding:4px;">
-            <svg id="ob-olho-1" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
-          </button>
-        </div>
-        <div id="ob-senha-msg" style="font-size:11px;color:rgba(255,255,255,0.3);margin-top:6px;min-height:16px;"></div>
-      </div>
-
-      <!-- Confirmar senha -->
-      <div class="ob-field">
-        <label class="ob-label">Confirmar senha</label>
-        <div style="position:relative;">
-          <input id="ob-senha2" type="password" class="ob-input" placeholder="••••••••" autocomplete="new-password"
-            oninput="_obValidarCta()" style="padding-right:44px;">
-          <button type="button" onclick="_obToggleSenha('ob-senha2','ob-olho-2')"
-            style="position:absolute;right:12px;top:50%;transform:translateY(-50%);background:none;border:none;color:rgba(255,255,255,0.3);cursor:pointer;padding:4px;">
-            <svg id="ob-olho-2" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+            <svg id="login-olho" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
           </button>
         </div>
       </div>
+      <div id="login-msg" style="font-size:12px;color:#ff5555;min-height:18px;margin-top:-8px;text-align:center;"></div>
+      <button class="ob-cta" id="btn-login" onclick="obFazerLogin()" disabled style="margin-top:8px;">Entrar</button>
+      <button onclick="obMostrarAba('cadastro')"
+        style="width:100%;background:none;border:none;color:rgba(255,255,255,0.35);font-size:12px;font-family:inherit;cursor:pointer;padding:12px;margin-top:4px;">
+        Não tens conta? <span style="color:#1db954;font-weight:700;">Criar conta</span>
+      </button>
+      <button onclick="obAbrirEsqueciSenha()"
+        style="width:100%;background:none;border:none;color:rgba(255,255,255,0.25);font-size:11px;font-family:inherit;cursor:pointer;padding:4px;">
+        Esqueci a senha
+      </button>
+    </div><!-- /ob-painel-login -->
 
-      <!-- PIN -->
-      <div class="ob-field">
-        <label class="ob-label">PIN de acesso rápido (4 dígitos)</label>
-        <div style="display:flex;gap:12px;justify-content:center;margin-top:4px;">
-          <input id="ob-pin-0" type="tel" maxlength="1" class="ob-pin-input" oninput="obPinNext(0)" onkeydown="obPinKey(event,0)">
-          <input id="ob-pin-1" type="tel" maxlength="1" class="ob-pin-input" oninput="obPinNext(1)" onkeydown="obPinKey(event,1)">
-          <input id="ob-pin-2" type="tel" maxlength="1" class="ob-pin-input" oninput="obPinNext(2)" onkeydown="obPinKey(event,2)">
-          <input id="ob-pin-3" type="tel" maxlength="1" class="ob-pin-input" oninput="obPinNext(3)" onkeydown="obPinKey(event,3)">
+    <!-- ══ ABA CADASTRO ════════════════════════════════════ -->
+    <div id="ob-painel-cadastro" style="display:none;">
+
+      <!-- ETAPA 1: Nome + Email -->
+      <div id="ob-step-1">
+        <div class="ob-field">
+          <label class="ob-label">Nome de utilizador</label>
+          <div style="position:relative;">
+            <input id="ob-nome" type="text" class="ob-input" placeholder="@nomeusuario" autocomplete="off" maxlength="24"
+              oninput="obNomeInput()" style="padding-right:44px;">
+            <div id="ob-nome-status" style="position:absolute;right:12px;top:50%;transform:translateY(-50%);font-size:14px;"></div>
+          </div>
+          <div id="ob-nome-msg" style="font-size:11px;color:rgba(255,255,255,0.3);margin-top:6px;min-height:16px;"></div>
+          <button id="ob-btn-verificar" onclick="obVerificarNomeEAvancar()" disabled
+            style="width:100%;margin-top:8px;padding:12px;border-radius:10px;background:rgba(29,185,84,0.12);border:1px solid rgba(29,185,84,0.25);color:rgba(29,185,84,0.8);font-size:12px;font-weight:800;cursor:pointer;font-family:inherit;letter-spacing:1px;transition:0.2s;opacity:0.4;touch-action:manipulation;">
+            Verificar disponibilidade
+          </button>
         </div>
-        <div style="font-size:9px;color:rgba(255,255,255,0.2);text-align:center;margin-top:6px;">O PIN desbloqueia o app rapidamente</div>
-      </div>
-
-      <!-- Instrumento -->
-      <div class="ob-field">
-        <label class="ob-label">O que você vai usar</label>
-        <div class="ob-chips" id="ob-chips">
-          <button class="ob-chip" data-val="guitarra" onclick="obToggleChip(this)">Guitarra</button>
-          <button class="ob-chip" data-val="baixo" onclick="obToggleChip(this)">Baixo</button>
-          <button class="ob-chip" data-val="teclado" onclick="obToggleChip(this)">Teclado</button>
-          <button class="ob-chip" data-val="bateria" onclick="obToggleChip(this)">Bateria</button>
-          <button class="ob-chip" data-val="voz" onclick="obToggleChip(this)">Voz</button>
-          <button class="ob-chip" data-val="violao" onclick="obToggleChip(this)">Violão</button>
-          <button class="ob-chip" data-val="produtor" onclick="obToggleChip(this)">Produtor</button>
-          <button class="ob-chip" data-val="outro" onclick="obToggleChip(this)">Outro</button>
+        <div class="ob-field" style="margin-top:4px;">
+          <label class="ob-label">Email</label>
+          <input id="ob-email" type="email" class="ob-input" placeholder="teu@email.com" autocomplete="email" oninput="_obValidarCta()">
+          <div id="ob-email-msg" style="font-size:11px;color:rgba(255,255,255,0.3);margin-top:6px;min-height:16px;"></div>
         </div>
-      </div>
+      </div><!-- /ob-step-1 -->
 
-      <button class="ob-cta" id="ob-cta" onclick="terminarOnboarding()" disabled>Criar conta</button>
-      <p class="ob-terms">Os seus dados ficam seguros. A senha é gerida pelo Firebase.</p>
-    </div><!-- /ob-step-2 -->
+      <!-- ETAPA 2: Senha + PIN + Instrumento -->
+      <div id="ob-step-2" style="display:none;flex-direction:column;gap:24px;">
+        <div id="ob-nome-confirmado" style="display:flex;align-items:center;gap:8px;background:rgba(29,185,84,0.08);border:1px solid rgba(29,185,84,0.2);border-radius:10px;padding:10px 14px;">
+          <span style="color:#1db954;font-size:16px;">✓</span>
+          <span style="font-size:13px;font-weight:700;color:#fff;" id="ob-nome-tag"></span>
+          <span style="font-size:11px;color:rgba(255,255,255,0.4);margin-left:auto;">disponível</span>
+        </div>
+        <div class="ob-field">
+          <label class="ob-label">Criar senha (mín. 6 caracteres)</label>
+          <div style="position:relative;">
+            <input id="ob-senha" type="password" class="ob-input" placeholder="••••••••" autocomplete="new-password" minlength="6"
+              oninput="_obValidarCta()" style="padding-right:44px;">
+            <button type="button" onclick="_obToggleSenha('ob-senha','ob-olho-1')"
+              style="position:absolute;right:12px;top:50%;transform:translateY(-50%);background:none;border:none;color:rgba(255,255,255,0.3);cursor:pointer;padding:4px;">
+              <svg id="ob-olho-1" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+            </button>
+          </div>
+          <div id="ob-senha-msg" style="font-size:11px;color:rgba(255,255,255,0.3);margin-top:6px;min-height:16px;"></div>
+        </div>
+        <div class="ob-field">
+          <label class="ob-label">Confirmar senha</label>
+          <div style="position:relative;">
+            <input id="ob-senha2" type="password" class="ob-input" placeholder="••••••••" autocomplete="new-password"
+              oninput="_obValidarCta()" style="padding-right:44px;">
+            <button type="button" onclick="_obToggleSenha('ob-senha2','ob-olho-2')"
+              style="position:absolute;right:12px;top:50%;transform:translateY(-50%);background:none;border:none;color:rgba(255,255,255,0.3);cursor:pointer;padding:4px;">
+              <svg id="ob-olho-2" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+            </button>
+          </div>
+        </div>
+        <div class="ob-field">
+          <label class="ob-label">PIN de acesso rápido (4 dígitos)</label>
+          <div style="display:flex;gap:12px;justify-content:center;margin-top:4px;">
+            <input id="ob-pin-0" type="tel" maxlength="1" class="ob-pin-input" oninput="obPinNext(0)" onkeydown="obPinKey(event,0)">
+            <input id="ob-pin-1" type="tel" maxlength="1" class="ob-pin-input" oninput="obPinNext(1)" onkeydown="obPinKey(event,1)">
+            <input id="ob-pin-2" type="tel" maxlength="1" class="ob-pin-input" oninput="obPinNext(2)" onkeydown="obPinKey(event,2)">
+            <input id="ob-pin-3" type="tel" maxlength="1" class="ob-pin-input" oninput="obPinNext(3)" onkeydown="obPinKey(event,3)">
+          </div>
+          <div style="font-size:9px;color:rgba(255,255,255,0.2);text-align:center;margin-top:6px;">O PIN desbloqueia o app rapidamente</div>
+        </div>
+        <div class="ob-field">
+          <label class="ob-label">O que você vai usar</label>
+          <div class="ob-chips" id="ob-chips">
+            <button class="ob-chip" data-val="guitarra" onclick="obToggleChip(this)">Guitarra</button>
+            <button class="ob-chip" data-val="baixo" onclick="obToggleChip(this)">Baixo</button>
+            <button class="ob-chip" data-val="teclado" onclick="obToggleChip(this)">Teclado</button>
+            <button class="ob-chip" data-val="bateria" onclick="obToggleChip(this)">Bateria</button>
+            <button class="ob-chip" data-val="voz" onclick="obToggleChip(this)">Voz</button>
+            <button class="ob-chip" data-val="violao" onclick="obToggleChip(this)">Violão</button>
+            <button class="ob-chip" data-val="produtor" onclick="obToggleChip(this)">Produtor</button>
+            <button class="ob-chip" data-val="outro" onclick="obToggleChip(this)">Outro</button>
+          </div>
+        </div>
+        <button class="ob-cta" id="ob-cta" onclick="terminarOnboarding()" disabled>Criar conta</button>
+        <p class="ob-terms">Os seus dados ficam seguros. A senha é gerida pelo Firebase.</p>
+      </div><!-- /ob-step-2 -->
+
+    </div><!-- /ob-painel-cadastro -->
   </div><!-- /ob-form -->
 </div><!-- /onboarding-overlay -->
 
