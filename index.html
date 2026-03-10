@@ -2878,7 +2878,7 @@ body.viewer-mode input[type="text"] { pointer-events: none; }
 .ob-pin-input:focus { border-color: rgba(29,185,84,0.5); }
 
 /* ── Auth pending: esconde app até login confirmado ── */
-body.auth-pending > *:not(#ob-splash):not(#onboarding-overlay):not(#toast):not(script):not(style) {
+body.auth-pending > *:not(#ob-splash):not(#onboarding-overlay):not(#toast):not(#modal-formalizar-conta):not(#modal-alterar-senha):not(script):not(style) {
   visibility: hidden !important;
   pointer-events: none !important;
 }
@@ -3256,8 +3256,8 @@ body.auth-pending #toast {
           </button>
           <div style="font-size:9px;color:rgba(255,255,255,0.18);text-align:center;margin-top:5px;padding:0 4px;">Os teus dados locais ficam intactos</div>
         </div>
-        <button onclick="abrirAlterarSenha()" style="width:100%;padding:11px;border-radius:12px;background:rgba(29,185,84,0.06);border:1px solid rgba(29,185,84,0.15);color:rgba(29,185,84,0.7);font-size:11px;font-weight:800;cursor:pointer;letter-spacing:1px;text-transform:uppercase;font-family:inherit;transition:0.2s;margin-bottom:6px;" onmouseenter="this.style.background='rgba(29,185,84,0.12)'" onmouseleave="this.style.background='rgba(29,185,84,0.06)'">Alterar Senha</button>
-        <button onclick="sairDaConta()" style="width:100%;padding:11px;border-radius:12px;background:rgba(255,60,60,0.07);border:1px solid rgba(255,60,60,0.18);color:rgba(255,100,100,0.8);font-size:11px;font-weight:800;cursor:pointer;letter-spacing:1px;text-transform:uppercase;font-family:inherit;transition:0.2s;" onmouseenter="this.style.background='rgba(255,60,60,0.14)'" onmouseleave="this.style.background='rgba(255,60,60,0.07)'">Sair do Perfil</button>
+        <button id="perfil-btn-alterar-senha" onclick="abrirAlterarSenha()" style="width:100%;padding:11px;border-radius:12px;background:rgba(29,185,84,0.06);border:1px solid rgba(29,185,84,0.15);color:rgba(29,185,84,0.7);font-size:11px;font-weight:800;cursor:pointer;letter-spacing:1px;text-transform:uppercase;font-family:inherit;transition:0.2s;margin-bottom:6px;" onmouseenter="this.style.background='rgba(29,185,84,0.12)'" onmouseleave="this.style.background='rgba(29,185,84,0.06)'">Alterar Senha</button>
+        <button id="perfil-btn-sair" onclick="sairDaConta()" style="width:100%;padding:11px;border-radius:12px;background:rgba(255,60,60,0.07);border:1px solid rgba(255,60,60,0.18);color:rgba(255,100,100,0.8);font-size:11px;font-weight:800;cursor:pointer;letter-spacing:1px;text-transform:uppercase;font-family:inherit;transition:0.2s;" onmouseenter="this.style.background='rgba(255,60,60,0.14)'" onmouseleave="this.style.background='rgba(255,60,60,0.07)'">Sair do Perfil</button>
       </div>
 
       <!-- Botões ação -->
@@ -3960,18 +3960,19 @@ async function confirmarAlterarSenha() {
 // Detecta se o utilizador tem dados locais mas sem conta Firebase real
 function _temContaFormal() {
   const perfil = _getPerfilLocal();
-  // Tem conta formal se tem uid Firebase (não começa com 'u_') e tem email
-  return perfil.uid && !perfil.uid.startsWith('u_') && !!perfil.email;
+  // Tem conta formal: uid Firebase real (não começa com 'u_', não é null) E tem email registado
+  if (!perfil.uid || perfil.uid.startsWith('u_')) return false;
+  if (!perfil.email) return false;
+  return true;
 }
 
 function _mostrarBotaoFormalizar() {
-  const wrap = document.getElementById('perfil-formalizar-wrap');
-  const btnAlterar = document.querySelector('#modal-perfil button[onclick="abrirAlterarSenha()"]');
-  const btnSair    = document.querySelector('#modal-perfil button[onclick="sairDaConta()"]');
+  const wrap       = document.getElementById('perfil-formalizar-wrap');
+  const btnAlterar = document.getElementById('perfil-btn-alterar-senha');
+  const btnSair    = document.getElementById('perfil-btn-sair');
   if (!wrap) return;
   const semConta = !_temContaFormal();
   wrap.style.display = semConta ? 'block' : 'none';
-  // Oculta "Alterar Senha" e "Sair do Perfil" se sem conta formal
   if (btnAlterar) btnAlterar.style.display = semConta ? 'none' : 'block';
   if (btnSair)    btnSair.style.display    = semConta ? 'none' : 'block';
 }
@@ -3993,6 +3994,8 @@ function abrirFormalizarConta() {
   const emailEl = document.getElementById('formalizar-email');
   if (emailEl && perfil.email) emailEl.value = perfil.email;
   modal.style.display = 'flex';
+  // Re-valida depois de pré-preencher email
+  setTimeout(_formalizarValidar, 50);
 }
 
 function fecharFormalizarConta() {
