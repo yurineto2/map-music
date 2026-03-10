@@ -822,6 +822,7 @@ function _pinVerificar() {
   const screen = document.getElementById('pin-lock-screen');
   const errEl  = document.getElementById('pin-lock-error');
   if (_pinBuffer === saved) {
+    _mostrarApp();
     if (screen) { screen.style.animation = 'pinShake 0s'; screen.style.opacity = '0'; screen.style.transition = 'opacity 0.3s'; setTimeout(() => { screen.style.display = 'none'; screen.style.opacity = ''; screen.style.transition = ''; }, 300); }
   } else {
     if (errEl) { errEl.textContent = 'PIN incorreto'; errEl.style.display = 'block'; }
@@ -850,6 +851,9 @@ function obMostrarAba(aba) {
   document.getElementById('tab-cadastro').classList.toggle('active', !isLogin);
   document.getElementById('ob-painel-login').style.display = isLogin ? 'block' : 'none';
   document.getElementById('ob-painel-cadastro').style.display = isLogin ? 'none' : 'block';
+  // Limpa mensagens de erro ao trocar aba
+  const lm = document.getElementById('login-msg');
+  if (lm) lm.textContent = '';
 }
 
 // ── Login ─────────────────────────────────────────────────────────────────────
@@ -892,6 +896,11 @@ async function obFazerLogin() {
     localStorage.setItem('map_perfil_v1', JSON.stringify({ ...perfil, uid }));
     localStorage.setItem('map_uid_v1', uid);
     _mostrarApp();
+    // Inicializa app após login
+    if (typeof renderNotifPanel === 'function') renderNotifPanel();
+    if (typeof atualizarBadge === 'function') atualizarBadge();
+    if (typeof atualizarPreviewPerfil === 'function') atualizarPreviewPerfil();
+    if (typeof renderSongs === 'function') renderSongs();
     const ov = document.getElementById('onboarding-overlay');
     if (ov) ov.classList.add('done');
     setTimeout(function() { if (ov) ov.remove(); }, 600);
@@ -3205,20 +3214,7 @@ body.auth-pending #toast {
         </div>
       </div>
 
-      <!-- Instrumento -->
-      <div style="display:flex;flex-direction:column;gap:10px;">
-        <label style="font-size:9px;font-weight:800;letter-spacing:2px;color:rgba(255,255,255,0.3);text-transform:uppercase;">Instrumento</label>
-        <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;" id="perfil-chips">
-          <button class="ob-chip" data-val="guitarra" onclick="perfilToggleChip(this)" style="justify-content:center;padding:10px 6px;font-size:10px;">Guitarra</button>
-          <button class="ob-chip" data-val="baixo" onclick="perfilToggleChip(this)" style="justify-content:center;padding:10px 6px;font-size:10px;">Baixo</button>
-          <button class="ob-chip" data-val="teclado" onclick="perfilToggleChip(this)" style="justify-content:center;padding:10px 6px;font-size:10px;">Teclado</button>
-          <button class="ob-chip" data-val="bateria" onclick="perfilToggleChip(this)" style="justify-content:center;padding:10px 6px;font-size:10px;">Bateria</button>
-          <button class="ob-chip" data-val="voz" onclick="perfilToggleChip(this)" style="justify-content:center;padding:10px 6px;font-size:10px;">Voz</button>
-          <button class="ob-chip" data-val="violao" onclick="perfilToggleChip(this)" style="justify-content:center;padding:10px 6px;font-size:10px;">Violão</button>
-          <button class="ob-chip" data-val="produtor" onclick="perfilToggleChip(this)" style="justify-content:center;padding:10px 6px;font-size:10px;">Produtor</button>
-          <button class="ob-chip" data-val="outro" onclick="perfilToggleChip(this)" style="justify-content:center;padding:10px 6px;font-size:10px;">Outro</button>
-        </div>
-      </div>
+      
 
       <!-- Sair da conta -->
       <div style="padding-top:8px;padding-bottom:2px;">
@@ -3733,7 +3729,6 @@ body.auth-pending #toast {
 
 <script>
 // ─── PERFIL ─────────────────────────────────────────────────────────────────
-let perfilInstrumentoSelecionado = null;
 let perfilFotoBase64 = null; // foto atual em edição
 
 function abrirModalPerfil() {
@@ -3742,13 +3737,7 @@ function abrirModalPerfil() {
   const inst = perfil.instrumento || null;
 
   document.getElementById('perfil-nome-input').value = nome;
-  perfilInstrumentoSelecionado = inst;
-  perfilFotoBase64 = perfil.foto || null;
-
-  // Chips
-  document.querySelectorAll('#perfil-chips .ob-chip').forEach(c => {
-    c.classList.toggle('selected', c.dataset.val === inst);
-  });
+    perfilFotoBase64 = perfil.foto || null;
 
   // Stats
   document.getElementById('perfil-stat-musicas').textContent = songs.length;
@@ -3842,12 +3831,7 @@ function fecharModalPerfil() {
   document.getElementById('modal-perfil').style.display = 'none';
 }
 
-function perfilToggleChip(btn) {
-  document.querySelectorAll('#perfil-chips .ob-chip').forEach(c => c.classList.remove('selected'));
-  btn.classList.add('selected');
-  perfilInstrumentoSelecionado = btn.dataset.val;
-  atualizarPreviewPerfil();
-}
+
 
 
 
@@ -7937,7 +7921,7 @@ function salvarPerfil() {
 
   const perfil = JSON.parse(localStorage.getItem('map_perfil_v1') || '{}');
   perfil.nome = nome;
-  perfil.instrumento = perfilInstrumentoSelecionado || perfil.instrumento || null;
+  // instrumento definido no cadastro, não alterado aqui
   if (perfilFotoBase64) perfil.foto = perfilFotoBase64;
   localStorage.setItem('map_perfil_v1', JSON.stringify(perfil));
 
