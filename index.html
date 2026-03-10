@@ -324,6 +324,22 @@ window.addEventListener('unhandledrejection', function(e) { e.preventDefault(); 
         return amigos;
       } catch(e) { return []; }
     },
+    async removerAmigo(meuUid, amigoUid) {
+      try {
+        await Promise.allSettled([
+          _delete('solicitacoes/' + meuUid + '_' + amigoUid),
+          _delete('solicitacoes/' + amigoUid + '_' + meuUid)
+        ]);
+        return true;
+      } catch(e) { return false; }
+    },
+    async enviarNotifParaUsuario(paraUid, dados) {
+      try {
+        const id = Date.now() + '_' + Math.random().toString(36).slice(2,7);
+        await _set('notificacoes/' + paraUid + '_' + id, { ...dados, id, lida: false });
+        return true;
+      } catch(e) { return false; }
+    },
     async sugestoes(uid) {
       try {
         const rows = await _query('usuarios', [], 'atualizadoEm', 20);
@@ -607,7 +623,7 @@ async function obVerificarNome() {
   }
   const disponivel = await window._fb.verificarNomeDisponivel(val);
   _obNomeDisponivel = disponivel;
-  if (st) st.textContent = disponivel ? '✅' : '❌';
+  if (st) st.textContent = disponivel ? '✔' : '✖';
   if (msg) msg.textContent = disponivel ? 'Nome disponível!' : 'Nome já em uso. Escolhe outro.';
   if (btn) { btn.disabled = false; btn.textContent = 'Verificar disponibilidade'; }
   if (disponivel) {
@@ -2956,6 +2972,19 @@ body.auth-pending #toast {
   color: #1db954;
   border: 1px solid rgba(29,185,84,0.25);
 }
+
+.amigo-btn-remover {
+  padding: 6px 12px;
+  border-radius: 20px;
+  border: 1px solid rgba(255,60,60,0.3);
+  background: rgba(255,60,60,0.08);
+  color: rgba(255,100,100,0.8);
+  font-size: 11px; font-weight: 700;
+  cursor: pointer; font-family: inherit;
+  touch-action: manipulation;
+  transition: all 0.15s;
+}
+.amigo-btn-remover:active { background: rgba(255,60,60,0.2); }
 </style>
 
 </head>
@@ -3046,7 +3075,7 @@ body.auth-pending #toast {
       <!-- ETAPA 2: Senha + PIN + Instrumento -->
       <div id="ob-step-2" style="display:none;flex-direction:column;gap:24px;">
         <div id="ob-nome-confirmado" style="display:flex;align-items:center;gap:8px;background:rgba(29,185,84,0.08);border:1px solid rgba(29,185,84,0.2);border-radius:10px;padding:10px 14px;">
-          <span style="color:#1db954;font-size:16px;">✓</span>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#1db954" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
           <span style="font-size:13px;font-weight:700;color:#fff;" id="ob-nome-tag"></span>
           <span style="font-size:11px;color:rgba(255,255,255,0.4);margin-left:auto;">disponível</span>
         </div>
@@ -3105,7 +3134,7 @@ body.auth-pending #toast {
 </div><!-- /onboarding-overlay -->
 
 <!-- MODAL PERFIL -->
-<div id="modal-perfil" style="position:fixed;inset:0;z-index:99998;background:rgba(0,0,0,0.92);display:none;align-items:flex-end;justify-content:center;padding:0;">
+<div id="modal-perfil" style="position:fixed;inset:0;z-index:99998;background:rgba(0,0,0,0.92);display:none;align-items:flex-end;justify-content:center;padding:0;" onclick="if(event.target===this)fecharModalPerfil()" ontouchend="if(event.target===this){event.preventDefault();fecharModalPerfil();}">
   <div style="background:#0c0c14;border:1px solid rgba(255,255,255,0.08);border-radius:24px 24px 0 0;width:100%;max-width:480px;display:flex;flex-direction:column;overflow:hidden;max-height:95vh;animation:slideUpModal 0.3s cubic-bezier(0.34,1.56,0.64,1);">
 
     <!-- Hero banner -->
@@ -3133,8 +3162,7 @@ body.auth-pending #toast {
       </div>
       <!-- Glow rings -->
       <div style="position:absolute;top:-40px;left:50%;z-index:2;transform:translateX(-50%);width:220px;height:220px;border-radius:50%;background:radial-gradient(circle,rgba(29,185,84,0.12) 0%,transparent 70%);pointer-events:none;"></div>
-      <!-- Close btn -->
-      <button onclick="fecharModalPerfil()" style="z-index:2; style="position:absolute;top:14px;right:16px;background:rgba(255,255,255,0.07);border:1px solid rgba(255,255,255,0.1);color:rgba(255,255,255,0.5);width:30px;height:30px;border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:14px;line-height:1;transition:0.2s;" onmouseenter="this.style.background='rgba(255,255,255,0.14)'" onmouseleave="this.style.background='rgba(255,255,255,0.07)'">✕</button>
+      
       <!-- Label -->
       <div style="position:absolute;top:16px;left:20px;z-index:2;font-size:9px;font-weight:900;letter-spacing:3px;color:rgba(29,185,84,0.6);text-transform:uppercase;">Perfil</div>
       <!-- Stats row inside hero -->
@@ -3218,6 +3246,16 @@ body.auth-pending #toast {
 
       <!-- Sair da conta -->
       <div style="padding-top:8px;padding-bottom:2px;">
+        <!-- Formalizar conta — só aparece se utilizador sem conta Firebase -->
+        <div id="perfil-formalizar-wrap" style="display:none;margin-bottom:2px;">
+          <button onclick="abrirFormalizarConta()"
+            style="width:100%;padding:10px 14px;border-radius:12px;background:rgba(255,200,50,0.06);border:1px dashed rgba(255,200,50,0.25);color:rgba(255,200,50,0.65);font-size:10px;font-weight:700;cursor:pointer;font-family:inherit;letter-spacing:0.8px;display:flex;align-items:center;justify-content:center;gap:8px;transition:0.2s;touch-action:manipulation;"
+            onmouseenter="this.style.background='rgba(255,200,50,0.11)'" onmouseleave="this.style.background='rgba(255,200,50,0.06)'">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/><polyline points="16 11 18 13 22 9"/></svg>
+            Guardar conta na nuvem
+          </button>
+          <div style="font-size:9px;color:rgba(255,255,255,0.18);text-align:center;margin-top:5px;padding:0 4px;">Os teus dados locais ficam intactos</div>
+        </div>
         <button onclick="abrirAlterarSenha()" style="width:100%;padding:11px;border-radius:12px;background:rgba(29,185,84,0.06);border:1px solid rgba(29,185,84,0.15);color:rgba(29,185,84,0.7);font-size:11px;font-weight:800;cursor:pointer;letter-spacing:1px;text-transform:uppercase;font-family:inherit;transition:0.2s;margin-bottom:6px;" onmouseenter="this.style.background='rgba(29,185,84,0.12)'" onmouseleave="this.style.background='rgba(29,185,84,0.06)'">Alterar Senha</button>
         <button onclick="sairDaConta()" style="width:100%;padding:11px;border-radius:12px;background:rgba(255,60,60,0.07);border:1px solid rgba(255,60,60,0.18);color:rgba(255,100,100,0.8);font-size:11px;font-weight:800;cursor:pointer;letter-spacing:1px;text-transform:uppercase;font-family:inherit;transition:0.2s;" onmouseenter="this.style.background='rgba(255,60,60,0.14)'" onmouseleave="this.style.background='rgba(255,60,60,0.07)'">Sair do Perfil</button>
       </div>
@@ -3261,7 +3299,8 @@ body.auth-pending #toast {
     <div class="amigos-add-bar">
       <div class="amigos-add-row">
         <input class="amigos-add-input" id="amigos-add-input"
-          placeholder="Buscar por nome ou ID (ex: 47382910)..." autocomplete="off"
+          placeholder="Buscar por ID numérico (ex: 47382910)..." autocomplete="off"
+          inputmode="numeric" pattern="[0-9]*"
           oninput="buscarAmigosInput(this.value)"
           onkeydown="if(event.key==='Enter') buscarAmigosInput(this.value)">
       </div>
@@ -3313,6 +3352,13 @@ body.auth-pending #toast {
       <button onclick="abrirModalSala()" id="btn-sala" style="background:rgba(29,185,84,0.12); border:1px solid rgba(29,185,84,0.3); color:var(--accent-primary); padding:8px 16px; border-radius:var(--radius-full); font-size:10px; font-weight:800; cursor:pointer; letter-spacing:1px; text-transform:uppercase; transition:0.2s;">
         SALA
       </button>
+      <!-- Botão Amigos -->
+      <button onclick="abrirModalAmigos()" id="btn-amigos-header" title="Amigos"
+        style="position:relative;background:none;border:none;color:rgba(255,255,255,0.55);cursor:pointer;padding:8px;border-radius:10px;transition:0.2s;display:flex;align-items:center;justify-content:center;">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+        <span id="menu-amigos-badge" style="display:none;position:absolute;top:4px;right:4px;background:#1db954;color:#000;font-size:9px;font-weight:900;border-radius:50%;width:14px;height:14px;display:flex;align-items:center;justify-content:center;line-height:1;"></span>
+      </button>
+
       <!-- Botão de Notificações -->
       <button class="notif-btn" id="notif-btn" onclick="toggleNotifPanel(event)" title="Notificações">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
@@ -3325,10 +3371,7 @@ body.auth-pending #toast {
         </button>
         <div id="m-drop" class="dropdown-menu">
           <div class="menu-item" onclick="abrirModalPerfil()">Meu Perfil</div>
-          <div class="menu-item" onclick="abrirModalAmigos()" id="menu-amigos">
-            Amigos
-            <span id="menu-amigos-badge" style="display:none;background:#1db954;color:#000;font-size:8px;font-weight:900;padding:2px 6px;border-radius:20px;margin-left:auto;">0</span>
-          </div>
+          
           <div class="menu-item" onclick="abrirBiblioteca()">Biblioteca</div>
           <div class="menu-item" onclick="abrirDrumCam()">Drum Cam</div>
           <div class="menu-item" onclick="abrirPads()">Pads</div>
@@ -3737,7 +3780,19 @@ function abrirModalPerfil() {
   const inst = perfil.instrumento || null;
 
   document.getElementById('perfil-nome-input').value = nome;
-    perfilFotoBase64 = perfil.foto || null;
+  perfilFotoBase64 = perfil.foto || null;
+
+  // Mostra instrumento escolhido no cadastro (read-only)
+  const instEl = document.getElementById('perfil-inst-display');
+  if (instEl) {
+    const instMap = {
+      guitarra:'Guitarra', baixo:'Baixo', teclado:'Teclado',
+      bateria:'Bateria', voz:'Voz', violao:'Violão',
+      produtor:'Produtor', outro:'Outro'
+    };
+    instEl.textContent = inst ? (instMap[inst] || inst) : '';
+    instEl.style.display = inst ? 'block' : 'none';
+  }
 
   // Stats
   document.getElementById('perfil-stat-musicas').textContent = songs.length;
@@ -3762,6 +3817,7 @@ function abrirModalPerfil() {
 
 
   atualizarPreviewPerfil();
+  _mostrarBotaoFormalizar();
   document.getElementById('modal-perfil').style.display = 'flex';
   document.getElementById('m-drop').classList.remove('show');
   // Se nome vazio, foca o campo para o utilizador preencher
@@ -3825,6 +3881,195 @@ function _voltarAoCadastro() {
   if (typeof _obNomeDisponivel !== 'undefined') window._obNomeDisponivel = false;
   if (typeof obInstrumentoSelecionado !== 'undefined') window.obInstrumentoSelecionado = null;
   if (typeof _obEmail !== 'undefined') window._obEmail = '';
+}
+
+
+// ── Toggle visibilidade campo senha ──────────────────────────────────────────
+function _toggleSenhaField(id) {
+  const inp = document.getElementById(id);
+  if (!inp) return;
+  inp.type = inp.type === 'password' ? 'text' : 'password';
+}
+
+// ── Modal Alterar Senha ───────────────────────────────────────────────────────
+function abrirAlterarSenha() {
+  fecharModalPerfil();
+  const modal = document.getElementById('modal-alterar-senha');
+  if (!modal) return;
+  // Limpa campos
+  ['alterar-senha-atual','alterar-senha-nova','alterar-senha-conf'].forEach(function(id) {
+    const el = document.getElementById(id);
+    if (el) { el.value = ''; el.type = 'password'; }
+  });
+  const msg = document.getElementById('alterar-senha-msg');
+  if (msg) { msg.textContent = ''; msg.style.color = 'rgba(255,255,255,0.4)'; }
+  modal.style.display = 'flex';
+}
+
+function fecharAlterarSenha() {
+  const modal = document.getElementById('modal-alterar-senha');
+  if (modal) modal.style.display = 'none';
+}
+
+async function confirmarAlterarSenha() {
+  const senhaAtual = (document.getElementById('alterar-senha-atual')?.value || '').trim();
+  const senhaNova  = (document.getElementById('alterar-senha-nova')?.value  || '').trim();
+  const senhaConf  = (document.getElementById('alterar-senha-conf')?.value  || '').trim();
+  const msg        = document.getElementById('alterar-senha-msg');
+  const btn        = document.querySelector('#modal-alterar-senha button:last-child');
+
+  function setMsg(txt, cor) {
+    if (msg) { msg.textContent = txt; msg.style.color = cor || 'rgba(255,255,255,0.4)'; }
+  }
+
+  if (!senhaAtual) { setMsg('Preenche a senha actual.', '#ff5555'); return; }
+  if (senhaNova.length < 6) { setMsg('Nova senha deve ter mínimo 6 caracteres.', '#ff5555'); return; }
+  if (senhaNova !== senhaConf) { setMsg('As senhas não coincidem.', '#ff5555'); return; }
+
+  if (btn) { btn.disabled = true; btn.textContent = 'A alterar...'; }
+  setMsg('', null);
+
+  if (!window._fb) { setMsg('Firebase não disponível.', '#ff5555'); if (btn) { btn.disabled = false; btn.textContent = 'Alterar senha'; } return; }
+
+  // Re-autentica com a senha actual para obter idToken fresco
+  const perfil = _getPerfilLocal();
+  const email = perfil.email || '';
+  if (!email) { setMsg('Email não encontrado no perfil.', '#ff5555'); if (btn) { btn.disabled = false; btn.textContent = 'Alterar senha'; } return; }
+
+  const loginResult = await window._fb.loginComEmail(email, senhaAtual);
+  if (!loginResult.ok) {
+    setMsg('Senha actual incorrecta.', '#ff5555');
+    if (btn) { btn.disabled = false; btn.textContent = 'Alterar senha'; }
+    return;
+  }
+
+  const result = await window._fb.alterarSenha(loginResult.idToken, senhaNova);
+  if (!result || !result.ok) {
+    setMsg((result && result.msg) || 'Erro ao alterar senha.', '#ff5555');
+    if (btn) { btn.disabled = false; btn.textContent = 'Alterar senha'; }
+    return;
+  }
+
+  setMsg('Senha alterada com sucesso!', '#1db954');
+  if (btn) { btn.disabled = false; btn.textContent = 'Alterar senha'; }
+  setTimeout(fecharAlterarSenha, 1500);
+}
+
+
+// ── Formalizar Conta ──────────────────────────────────────────────────────────
+// Detecta se o utilizador tem dados locais mas sem conta Firebase real
+function _temContaFormal() {
+  const perfil = _getPerfilLocal();
+  // Tem conta formal se tem uid Firebase (não começa com 'u_') e tem email
+  return perfil.uid && !perfil.uid.startsWith('u_') && !!perfil.email;
+}
+
+function _mostrarBotaoFormalizar() {
+  const wrap = document.getElementById('perfil-formalizar-wrap');
+  const btnAlterar = document.querySelector('#modal-perfil button[onclick="abrirAlterarSenha()"]');
+  const btnSair    = document.querySelector('#modal-perfil button[onclick="sairDaConta()"]');
+  if (!wrap) return;
+  const semConta = !_temContaFormal();
+  wrap.style.display = semConta ? 'block' : 'none';
+  // Oculta "Alterar Senha" e "Sair do Perfil" se sem conta formal
+  if (btnAlterar) btnAlterar.style.display = semConta ? 'none' : 'block';
+  if (btnSair)    btnSair.style.display    = semConta ? 'none' : 'block';
+}
+
+function abrirFormalizarConta() {
+  fecharModalPerfil();
+  const modal = document.getElementById('modal-formalizar-conta');
+  if (!modal) return;
+  ['formalizar-email','formalizar-senha','formalizar-senha2'].forEach(function(id) {
+    const el = document.getElementById(id);
+    if (el) { el.value = ''; el.type = id === 'formalizar-email' ? 'email' : 'password'; }
+  });
+  const msg = document.getElementById('formalizar-msg');
+  if (msg) { msg.textContent = ''; msg.style.color = 'rgba(255,255,255,0.35)'; }
+  const btn = document.getElementById('btn-formalizar-confirmar');
+  if (btn) btn.disabled = true;
+  // Pré-preenche email se existir no perfil local
+  const perfil = _getPerfilLocal();
+  const emailEl = document.getElementById('formalizar-email');
+  if (emailEl && perfil.email) emailEl.value = perfil.email;
+  modal.style.display = 'flex';
+}
+
+function fecharFormalizarConta() {
+  const modal = document.getElementById('modal-formalizar-conta');
+  if (modal) modal.style.display = 'none';
+}
+
+function _formalizarValidar() {
+  const email  = (document.getElementById('formalizar-email')?.value  || '').trim();
+  const senha  =  document.getElementById('formalizar-senha')?.value  || '';
+  const senha2 =  document.getElementById('formalizar-senha2')?.value || '';
+  const btn    = document.getElementById('btn-formalizar-confirmar');
+  const emailOk = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+  if (btn) btn.disabled = !(emailOk && senha.length >= 6 && senha === senha2);
+}
+
+async function confirmarFormalizarConta() {
+  const email  = (document.getElementById('formalizar-email')?.value  || '').trim();
+  const senha  =  document.getElementById('formalizar-senha')?.value  || '';
+  const senha2 =  document.getElementById('formalizar-senha2')?.value || '';
+  const msg    = document.getElementById('formalizar-msg');
+  const btn    = document.getElementById('btn-formalizar-confirmar');
+
+  function setMsg(txt, cor) {
+    if (msg) { msg.textContent = txt; msg.style.color = cor || 'rgba(255,255,255,0.35)'; }
+  }
+
+  if (senha !== senha2) { setMsg('As senhas não coincidem.', '#ff5555'); return; }
+  if (senha.length < 6)  { setMsg('Senha deve ter mínimo 6 caracteres.', '#ff5555'); return; }
+
+  if (!window._fb) { setMsg('Firebase não disponível. Tenta novamente.', '#ff5555'); return; }
+
+  if (btn) { btn.disabled = true; btn.textContent = 'A criar conta...'; }
+  setMsg('', null);
+
+  // 1. Regista no Firebase Auth
+  const authResult = await window._fb.registarComEmail(email, senha);
+  if (!authResult.ok) {
+    setMsg(authResult.msg || 'Erro ao criar conta.', '#ff5555');
+    if (btn) { btn.disabled = false; btn.textContent = 'Criar conta e guardar dados'; }
+    return;
+  }
+
+  const novoUid = authResult.uid;
+
+  // 2. Atualiza perfil local com o novo UID e email
+  const perfil = _getPerfilLocal();
+  const oldUid = perfil.uid;
+  perfil.uid   = novoUid;
+  perfil.email = email;
+  localStorage.setItem('map_perfil_v1', JSON.stringify(perfil));
+  localStorage.setItem('map_uid_v1', novoUid);
+
+  // 3. Sincroniza músicas e eventos para o novo UID no Firebase
+  setMsg('A guardar dados na nuvem…', 'rgba(255,200,50,0.7)');
+  try {
+    await window._fb.salvarPerfilCompleto(novoUid, {
+      nome:        perfil.nome        || '',
+      nomeUsuario: perfil.nomeUsuario || perfil.nome || '',
+      email:       email,
+      instrumento: perfil.instrumento || null,
+      profileId:   perfil.profileId   || '',
+      criadoEm:    perfil.criadoEm    || Date.now()
+    });
+  } catch(e) {}
+
+  try { await window._fb.backupMusicas(novoUid); } catch(e) {}
+  try { await window._fb.backupEventos(novoUid); } catch(e) {}
+
+  setMsg('Conta criada! Os teus dados estão seguros.', '#1db954');
+  if (btn) { btn.textContent = 'Conta criada ✓'; }
+
+  setTimeout(function() {
+    fecharFormalizarConta();
+    if (typeof showToast === 'function') showToast('Conta formalizada com sucesso!');
+    if (typeof atualizarPreviewPerfil === 'function') atualizarPreviewPerfil();
+  }, 1800);
 }
 
 function fecharModalPerfil() {
@@ -4152,7 +4397,7 @@ function togglePerf() {
   setTimeout(atualizarLetreiroDrumCam, 50);
   const isPerf = document.getElementById('app-body').classList.toggle('performance-mode');
   document.getElementById('mode-text').innerText = isPerf ? "SAIR DO SHOW" : "MODO SHOW";
-  if (!isPerf) { stopScroll(); window.scrollTo(0,0); liberarWakeLock(); limparShowEvento(); }
+  if (!isPerf) { stopScroll(); window.scrollTo(0,0); liberarWakeLock(); limparShowEvento(); const _b = document.getElementById('perf-evento-badge'); if (_b) _b.style.display='none'; }
   else {
     atualizarIndicador();
     ativarWakeLock();
@@ -4193,7 +4438,7 @@ function _atualizarBadgeEvento() {
   if (!badge) {
     badge = document.createElement('div');
     badge.id = 'perf-evento-badge';
-    badge.style.cssText = 'position:fixed;top:14px;left:50%;transform:translateX(-50%);z-index:9999;background:rgba(29,185,84,0.18);border:1px solid rgba(29,185,84,0.4);border-radius:20px;padding:3px 10px;font-size:9px;font-weight:800;color:#1db954;letter-spacing:1.5px;pointer-events:none;white-space:nowrap;display:none;';
+    badge.style.cssText = 'position:fixed;top:60px;left:50%;transform:translateX(-50%);z-index:200;background:rgba(29,185,84,0.18);border:1px solid rgba(29,185,84,0.4);border-radius:20px;padding:3px 12px;font-size:9px;font-weight:800;color:#1db954;letter-spacing:1.5px;pointer-events:none;white-space:nowrap;display:none;transition:opacity 0.3s;';
     document.body.appendChild(badge);
   }
   if (showSetlistEventoNome) {
@@ -4253,6 +4498,9 @@ function limparShowEvento() {
   showSetlistEventoId = null;
   showSetlistEventoNome = null;
   showSetlistPos = 0;
+  // Esconde o badge do evento imediatamente
+  const badge = document.getElementById('perf-evento-badge');
+  if (badge) badge.style.display = 'none';
 }
 
 function _getShowSongs() {
@@ -6539,7 +6787,7 @@ async function _fbBackupMusicas() {
     if (ok) {
       // Atualiza estatísticas
       _fbAtualizarStats();
-      console.log('☁ Backup músicas OK —', songs.length, 'músicas');
+      console.log('Backup musicas OK -', songs.length, 'músicas');
     }
   }, 2000);
 }
@@ -6578,7 +6826,7 @@ async function _fbRestaurarBackup() {
     eventos = backup.eventos;
     localStorage.setItem('map_pro_eventos_v1', JSON.stringify(eventos));
   }
-  showToast('✓ ' + totalMusicas + ' músicas e ' + totalEventos + ' eventos restaurados!');
+  showToast('' + totalMusicas + ' músicas e ' + totalEventos + ' eventos restaurados!');
   adicionarNotif('update', 'Backup restaurado!',
     totalMusicas + ' músicas e ' + totalEventos + ' eventos carregados da nuvem.',
     'restore_v1');
@@ -7039,7 +7287,7 @@ async function buscarAmigosInput(val) {
 
       let btn = '';
       if (jaAmigo) {
-        btn = '<span style="font-size:10px;color:#1db954;font-weight:700;">Amigo ✓</span>';
+        btn = '<span style="font-size:10px;color:#1db954;font-weight:700;">Amigo</span>';
       } else if (solEnviada) {
         btn = '<span style="font-size:10px;color:rgba(255,255,255,0.3);font-weight:700;">Enviada</span>';
       } else {
@@ -7098,14 +7346,36 @@ async function recusarSolicitacaoFb(solId, deNome) {
 }
 
 // ── Convidar para sala ───────────────────────────────────────────────────────
-function convidarAmigo(nome) {
+async function convidarAmigo(nome, amigoUid) {
   if (!isHost || !myRoomCode) { showToast('Cria uma sala primeiro'); return; }
   const perfil = _getPerfilLocal();
-  const msg = (perfil.nome || 'Músico') + ' convidou você para a sala ' + myRoomCode + ' no Map Music Pro!\n\nCódigo: ' + myRoomCode + '\n\n' + window.location.href.split('?')[0];
+  const meuNome = perfil.nome || 'Músico';
+  const msg = meuNome + ' convidou você para a sala ' + myRoomCode + ' no Map Music Pro!\n\nCódigo: ' + myRoomCode;
+
+  // 1. Envia notificação no app para o amigo via Firebase
+  if (_isFbReady() && amigoUid) {
+    try {
+      await window._fb.enviarNotifParaUsuario(amigoUid, {
+        tipo: 'convite_sala',
+        titulo: meuNome + ' te convidou',
+        desc: 'Entre na sala ' + myRoomCode + ' no Map Music Pro',
+        codigo: myRoomCode,
+        de: _getUid(),
+        deNome: meuNome,
+        criadoEm: Date.now()
+      });
+      showToast('Convite enviado para ' + nome + '.');
+    } catch(e) {
+      showToast('Convite enviado (offline)');
+    }
+  }
+
+  // 2. Também partilha externamente se disponível
+  const linkMsg = msg + '\n\n' + window.location.href.split('?')[0];
   if (navigator.share) {
-    navigator.share({ title: 'Sala ' + myRoomCode + ' — Map Music Pro', text: msg }).catch(() => {});
+    navigator.share({ title: 'Sala ' + myRoomCode + ' — Map Music Pro', text: linkMsg }).catch(() => {});
   } else {
-    navigator.clipboard.writeText(msg).then(() => showToast('Convite copiado para ' + nome));
+    navigator.clipboard.writeText(linkMsg).then(() => {});
   }
 }
 
@@ -7412,23 +7682,33 @@ function ativarWakeLock() {
 }
 
 function _ativarFallbackWakeLock() {
-  // Técnica: vídeo HTML5 em loop com dimensão 0 mantém o ecrã acordado em iOS/Safari
+  // NoSleep technique: tiny looping video keeps screen awake on iOS/Safari
   try {
-    if (_noSleepVideo) return; // já ativo
+    if (_noSleepVideo) return;
     _noSleepVideo = document.createElement('video');
-    _noSleepVideo.setAttribute('loop', '');
+    _noSleepVideo.loop = true;
     _noSleepVideo.setAttribute('playsinline', '');
-    _noSleepVideo.setAttribute('muted', '');
-    _noSleepVideo.style.cssText = 'position:fixed;width:1px;height:1px;opacity:0;pointer-events:none;z-index:-1;';
-    // Base64 de um vídeo mp4 de 1 frame — mínimo válido
-    _noSleepVideo.src = 'data:video/mp4;base64,AAAAIGZ0eXBtcDQyAAACAGlzb21tcDQyAAAAAQAAADhtZGF0AAAC' +
-      'rGxhdmM1OC4xMzQuMTAwAEIAABtAh3jYAAAADUGaAeT/hAAAfkAAAAAMQZoB5P+EAAB+QAAAA' +
-      'BNBmiHk/4QAADJAAAAACkGaQeT/hAAAMUAAAAA=';
+    _noSleepVideo.muted = true;
+    _noSleepVideo.style.cssText = 'position:fixed;top:-2px;left:-2px;width:1px;height:1px;opacity:0.01;pointer-events:none;';
+    // Valid tiny MP4 (NoSleep.js technique)
+    _noSleepVideo.src = 'data:video/mp4;base64,AAAAIGZ0eXBtcDQyAAACAGlzb21tcDQyAAAAAQAAADhtZGF0AAAACmdhdmMxAAAbEGxhdmM1OC4xMzQuMTAwAEIAABtAh3jYAAAAA0GaAeT/hAAAfkAAAAMMQZoB5P+EAAEiAAAABkGaQuT/hAAB6AAAAARBmmNk/4QAAXQAAAAERBmnGT/hAABrgAAAAARBmqeT/hAAB1AAAAARBmseT/hAAB6AAAAAA=';
     document.body.appendChild(_noSleepVideo);
-    _noSleepVideo.play().catch(function() {
-      // Autoplay bloqueado — usa timer como último recurso
-      _ativarTimerWakeLock();
-    });
+    var playPromise = _noSleepVideo.play();
+    if (playPromise !== undefined) {
+      playPromise.catch(function() {
+        // iOS requires user gesture — set up one-time listener
+        var unlock = function() {
+          _noSleepVideo.play().then(function() {
+            document.removeEventListener('touchstart', unlock);
+            document.removeEventListener('click', unlock);
+          }).catch(function() { _ativarTimerWakeLock(); });
+        };
+        document.addEventListener('touchstart', unlock, { once: true });
+        document.addEventListener('click', unlock, { once: true });
+        // Also start timer as backup
+        _ativarTimerWakeLock();
+      });
+    }
   } catch(e) { _ativarTimerWakeLock(); }
 }
 
@@ -8156,5 +8436,58 @@ function _aplicarBannerFoto(base64) {
     </div>
   </div>
 </div>
+
+<!-- ══ Modal Formalizar Conta ════════════════════════════════════════════════ -->
+<div id="modal-formalizar-conta" style="display:none;position:fixed;inset:0;z-index:99999;background:rgba(0,0,0,0.88);align-items:center;justify-content:center;padding:24px;box-sizing:border-box;">
+  <div style="background:#111118;border:1px solid rgba(255,200,50,0.18);border-radius:20px;padding:28px 24px;width:100%;max-width:360px;display:flex;flex-direction:column;gap:18px;">
+    <div style="display:flex;align-items:center;gap:10px;">
+      <div style="width:36px;height:36px;border-radius:10px;background:rgba(255,200,50,0.1);border:1px solid rgba(255,200,50,0.2);display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="rgba(255,200,50,0.8)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/><polyline points="16 11 18 13 22 9"/></svg>
+      </div>
+      <div>
+        <div style="font-size:15px;font-weight:900;color:#fff;line-height:1.2;">Guardar conta na nuvem</div>
+        <div style="font-size:11px;color:rgba(255,255,255,0.3);margin-top:2px;">Os teus dados locais ficam intactos</div>
+      </div>
+    </div>
+    <div style="font-size:12px;color:rgba(255,255,255,0.4);line-height:1.6;background:rgba(255,255,255,0.03);border-radius:10px;padding:12px 14px;border:1px solid rgba(255,255,255,0.06);">
+      Cria um email e senha para aceder aos teus dados em qualquer dispositivo. As tuas músicas, eventos e configurações <strong style="color:rgba(255,255,255,0.65);">não serão apagados</strong>.
+    </div>
+    <div style="display:flex;flex-direction:column;gap:10px;">
+      <input id="formalizar-email" type="email" placeholder="O teu email" autocomplete="email"
+        style="background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.1);border-radius:12px;color:#fff;font-size:14px;padding:12px 16px;outline:none;font-family:inherit;width:100%;box-sizing:border-box;"
+        onfocus="this.style.borderColor='rgba(255,200,50,0.4)'" onblur="this.style.borderColor='rgba(255,255,255,0.1)'"
+        oninput="_formalizarValidar()">
+      <div style="position:relative;">
+        <input id="formalizar-senha" type="password" placeholder="Criar senha (mín. 6)" autocomplete="new-password"
+          style="background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.1);border-radius:12px;color:#fff;font-size:14px;padding:12px 44px 12px 16px;outline:none;font-family:inherit;width:100%;box-sizing:border-box;"
+          onfocus="this.style.borderColor='rgba(255,200,50,0.4)'" onblur="this.style.borderColor='rgba(255,255,255,0.1)'"
+          oninput="_formalizarValidar()">
+        <button type="button" onclick="_toggleSenhaField('formalizar-senha')"
+          style="position:absolute;right:12px;top:50%;transform:translateY(-50%);background:none;border:none;color:rgba(255,255,255,0.3);cursor:pointer;padding:4px;">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+        </button>
+      </div>
+      <div style="position:relative;">
+        <input id="formalizar-senha2" type="password" placeholder="Confirmar senha" autocomplete="new-password"
+          style="background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.1);border-radius:12px;color:#fff;font-size:14px;padding:12px 44px 12px 16px;outline:none;font-family:inherit;width:100%;box-sizing:border-box;"
+          onfocus="this.style.borderColor='rgba(255,200,50,0.4)'" onblur="this.style.borderColor='rgba(255,255,255,0.1)'"
+          oninput="_formalizarValidar()">
+        <button type="button" onclick="_toggleSenhaField('formalizar-senha2')"
+          style="position:absolute;right:12px;top:50%;transform:translateY(-50%);background:none;border:none;color:rgba(255,255,255,0.3);cursor:pointer;padding:4px;">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+        </button>
+      </div>
+    </div>
+    <div id="formalizar-msg" style="font-size:12px;color:rgba(255,255,255,0.35);min-height:16px;text-align:center;"></div>
+    <div style="display:flex;gap:10px;">
+      <button onclick="fecharFormalizarConta()" style="flex:1;padding:12px;border-radius:12px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);color:rgba(255,255,255,0.4);font-size:11px;font-weight:700;cursor:pointer;font-family:inherit;touch-action:manipulation;">Cancelar</button>
+      <button id="btn-formalizar-confirmar" onclick="confirmarFormalizarConta()" disabled
+        style="flex:2;padding:12px;border-radius:12px;background:rgba(255,200,50,0.15);border:1px solid rgba(255,200,50,0.3);color:rgba(255,200,50,0.8);font-size:11px;font-weight:900;cursor:pointer;font-family:inherit;letter-spacing:0.5px;transition:0.2s;touch-action:manipulation;">
+        Criar conta e guardar dados
+      </button>
+    </div>
+  </div>
+</div>
+
 </body>
 </html>
