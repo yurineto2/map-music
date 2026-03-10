@@ -916,7 +916,7 @@ async function obFazerLogin() {
     if (typeof renderNotifPanel === 'function') renderNotifPanel();
     if (typeof atualizarBadge === 'function') atualizarBadge();
     if (typeof atualizarPreviewPerfil === 'function') atualizarPreviewPerfil();
-    if (typeof renderSongs === 'function') renderSongs();
+    if (typeof renderBiblioteca === 'function') renderBiblioteca();
     const ov = document.getElementById('onboarding-overlay');
     if (ov) ov.classList.add('done');
     setTimeout(function() { if (ov) ov.remove(); }, 600);
@@ -929,14 +929,19 @@ async function obFazerLogin() {
 }
 
 function obAbrirEsqueciSenha() {
-  // Reutiliza o modal de recuperação já existente no app
-  const emailInput = document.getElementById('login-email');
-  const email = emailInput ? emailInput.value.trim() : '';
-  // Pré-preenche o modal se existir
+  // Pré-preenche com email do campo de login se existir
+  const loginEmail = document.getElementById('login-email');
+  const email = loginEmail ? loginEmail.value.trim() : '';
+  // Limpa e reseta o modal
   const modalEmail = document.getElementById('esqueci-email-input');
-  if (modalEmail && email) modalEmail.value = email;
+  if (modalEmail) modalEmail.value = email;
+  const msg = document.getElementById('esqueci-msg');
+  if (msg) { msg.textContent = ''; msg.style.color = 'rgba(255,255,255,0.4)'; }
+  const btn = document.getElementById('btn-enviar-recuperacao');
+  if (btn) { btn.disabled = false; btn.textContent = 'Enviar email'; }
   const modal = document.getElementById('modal-esqueci-senha');
   if (modal) modal.style.display = 'flex';
+  if (typeof _esqueciValidar === 'function') _esqueciValidar();
 }
 
 document.addEventListener('DOMContentLoaded', function() {
@@ -1028,6 +1033,94 @@ document.addEventListener('DOMContentLoaded', function() {
     }, 800);
   }, 3500);
 });
+
+// ─── ADMIN ACCESS ─────────────────────────────────────────────────────────────
+var _adminBuf = '';
+var _ADMIN_PIN = '5061';
+
+function _adminTrigger() {
+  _adminBuf = '';
+  _adminAtualizarDots();
+  const err = document.getElementById('admin-err');
+  if (err) err.textContent = '';
+  const modal = document.getElementById('modal-admin');
+  if (modal) modal.style.display = 'flex';
+}
+
+function _fecharAdmin() {
+  _adminBuf = '';
+  _adminAtualizarDots();
+  const modal = document.getElementById('modal-admin');
+  if (modal) modal.style.display = 'none';
+}
+
+function _adminTecla(d) {
+  if (_adminBuf.length >= 4) return;
+  _adminBuf += d;
+  _adminAtualizarDots();
+  if (_adminBuf.length === 4) _adminVerificar();
+}
+
+function _adminApagar() {
+  _adminBuf = _adminBuf.slice(0, -1);
+  _adminAtualizarDots();
+  const err = document.getElementById('admin-err');
+  if (err) err.textContent = '';
+}
+
+function _adminAtualizarDots() {
+  for (let i = 0; i < 4; i++) {
+    const d = document.getElementById('adot-' + i);
+    if (!d) continue;
+    d.style.background = i < _adminBuf.length
+      ? 'rgba(255,255,255,0.7)'
+      : 'rgba(255,255,255,0.1)';
+    d.style.transform = i < _adminBuf.length ? 'scale(1.15)' : 'scale(1)';
+  }
+}
+
+function _adminVerificar() {
+  if (_adminBuf === _ADMIN_PIN) {
+    _fecharAdmin();
+    _adminEntrar();
+  } else {
+    const err = document.getElementById('admin-err');
+    if (err) err.textContent = 'Código incorreto';
+    // shake dots
+    for (let i = 0; i < 4; i++) {
+      const d = document.getElementById('adot-' + i);
+      if (d) { d.style.background = '#ff5555'; d.style.transform = 'scale(1)'; }
+    }
+    setTimeout(function() {
+      _adminBuf = '';
+      _adminAtualizarDots();
+      const err2 = document.getElementById('admin-err');
+      if (err2) err2.textContent = '';
+    }, 700);
+  }
+}
+
+function _adminEntrar() {
+  // Define perfil de admin no localStorage e entra no app directamente
+  const adminPerfil = {
+    nome: 'Admin',
+    nomeUsuario: 'admin',
+    email: 'admin@mapmusic.app',
+    instrumento: null,
+    criadoEm: Date.now(),
+    uid: 'admin_local',
+    profileId: '00000000',
+    pin: _ADMIN_PIN,
+    isAdmin: true
+  };
+  localStorage.setItem('map_perfil_v1', JSON.stringify(adminPerfil));
+  localStorage.setItem('map_uid_v1', 'admin_local');
+  _mostrarApp();
+  const ov = document.getElementById('onboarding-overlay');
+  if (ov) { ov.classList.add('done'); setTimeout(function() { ov.remove(); }, 500); }
+  if (typeof showToast === 'function') showToast('Bem-vindo, Admin 👑');
+}
+
 </script>
 
 
@@ -2878,7 +2971,7 @@ body.viewer-mode input[type="text"] { pointer-events: none; }
 .ob-pin-input:focus { border-color: rgba(29,185,84,0.5); }
 
 /* ── Auth pending: esconde app até login confirmado ── */
-body.auth-pending > *:not(#ob-splash):not(#onboarding-overlay):not(#toast):not(#modal-formalizar-conta):not(#modal-alterar-senha):not(script):not(style) {
+body.auth-pending > *:not(#ob-splash):not(#onboarding-overlay):not(#toast):not(#modal-esqueci-senha):not(#modal-formalizar-conta):not(#modal-alterar-senha):not(#pin-lock-screen):not(#modal-admin):not(script):not(style) {
   visibility: hidden !important;
   pointer-events: none !important;
 }
@@ -3013,6 +3106,14 @@ body.auth-pending #toast {
   </div>
   <div class="ob-form">
 
+    <!-- ── ACESSO ADMIN (discreto) ──────────────────── -->
+    <div style="display:flex;justify-content:flex-end;padding:0 4px 2px;height:10px;">
+      <div id="admin-trigger" onclick="_adminTrigger()"
+        style="width:6px;height:6px;border-radius:50%;background:rgba(255,255,255,0.07);cursor:pointer;touch-action:manipulation;"
+        title="">
+      </div>
+    </div>
+
     <!-- ── ABAS ─────────────────────────────────────────── -->
     <div class="ob-tabs">
       <button class="ob-tab active" id="tab-login" onclick="obMostrarAba('login')">Entrar</button>
@@ -3115,14 +3216,14 @@ body.auth-pending #toast {
         <div class="ob-field">
           <label class="ob-label">O que você vai usar</label>
           <div class="ob-chips" id="ob-chips">
-            <button class="ob-chip" data-val="guitarra" onclick="obToggleChip(this)">Guitarra</button>
-            <button class="ob-chip" data-val="baixo" onclick="obToggleChip(this)">Baixo</button>
-            <button class="ob-chip" data-val="teclado" onclick="obToggleChip(this)">Teclado</button>
-            <button class="ob-chip" data-val="bateria" onclick="obToggleChip(this)">Bateria</button>
-            <button class="ob-chip" data-val="voz" onclick="obToggleChip(this)">Voz</button>
-            <button class="ob-chip" data-val="violao" onclick="obToggleChip(this)">Violão</button>
-            <button class="ob-chip" data-val="produtor" onclick="obToggleChip(this)">Produtor</button>
-            <button class="ob-chip" data-val="outro" onclick="obToggleChip(this)">Outro</button>
+            <button class="ob-chip" data-val="guitarra" onclick="obToggleChip(this)" style="touch-action:manipulation;">Guitarra</button>
+            <button class="ob-chip" data-val="baixo" onclick="obToggleChip(this)" style="touch-action:manipulation;">Baixo</button>
+            <button class="ob-chip" data-val="teclado" onclick="obToggleChip(this)" style="touch-action:manipulation;">Teclado</button>
+            <button class="ob-chip" data-val="bateria" onclick="obToggleChip(this)" style="touch-action:manipulation;">Bateria</button>
+            <button class="ob-chip" data-val="voz" onclick="obToggleChip(this)" style="touch-action:manipulation;">Voz</button>
+            <button class="ob-chip" data-val="violao" onclick="obToggleChip(this)" style="touch-action:manipulation;">Violão</button>
+            <button class="ob-chip" data-val="produtor" onclick="obToggleChip(this)" style="touch-action:manipulation;">Produtor</button>
+            <button class="ob-chip" data-val="outro" onclick="obToggleChip(this)" style="touch-action:manipulation;">Outro</button>
           </div>
         </div>
         <button class="ob-cta" id="ob-cta" onclick="terminarOnboarding()" disabled>Criar conta</button>
@@ -3377,6 +3478,7 @@ body.auth-pending #toast {
           <div class="menu-item" onclick="abrirPads()">Pads</div>
           <div class="menu-item" onclick="abrirModalStats()">Estatísticas</div>
           <div class="menu-item" onclick="abrirModalCifra()">Importar Cifra</div>
+          <div class="menu-item" onclick="abrirConfigAudio()">⚙ Configurações de Áudio</div>
           <div class="menu-item danger" onclick="resetSection()">Limpar Seção</div>
         </div>
       </div>
@@ -3602,7 +3704,19 @@ body.auth-pending #toast {
   </main>
 
   <aside>
-    <div class="metronome-card">
+    <div class="metronome-card" style="position:relative;">
+      <!-- Botão microfone BPM — canto superior direito -->
+      <button id="bpm-mic-btn" onclick="bpmMicSearch()" title="Pesquisar BPM da música"
+        style="position:absolute;top:12px;right:12px;width:34px;height:34px;border-radius:50%;background:rgba(29,185,84,0.1);border:1.5px solid rgba(29,185,84,0.3);color:rgba(29,185,84,0.7);cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all 0.2s;touch-action:manipulation;"
+        onmouseover="this.style.background='rgba(29,185,84,0.2)';this.style.borderColor='rgba(29,185,84,0.6)'"
+        onmouseout="this.style.background='rgba(29,185,84,0.1)';this.style.borderColor='rgba(29,185,84,0.3)'">
+        <svg id="bpm-mic-icon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/>
+          <path d="M19 10v2a7 7 0 0 1-14 0v-2"/>
+          <line x1="12" y1="19" x2="12" y2="23"/>
+          <line x1="8" y1="23" x2="16" y2="23"/>
+        </svg>
+      </button>
       <div class="bpm-val" id="bpm-display">120</div>
       <div style="font-size:10px; font-weight:900; opacity:0.5;">BPM</div>
       <button id="tap-btn" style="border:2px solid var(--accent-primary); background:none; color:var(--accent-primary); width:70px; height:70px; border-radius:50%; font-weight:900; margin:15px 0; cursor:pointer;">TAP</button>
@@ -4046,6 +4160,14 @@ async function confirmarFormalizarConta() {
   const oldUid = perfil.uid;
   perfil.uid   = novoUid;
   perfil.email = email;
+  // Garante que tem profileId e nome mínimo
+  if (!perfil.profileId) {
+    let pid = '';
+    for (let k = 0; k < 8; k++) pid += Math.floor(Math.random() * 10);
+    perfil.profileId = pid;
+  }
+  if (!perfil.nome) perfil.nome = email.split('@')[0];
+  if (!perfil.nomeUsuario) perfil.nomeUsuario = perfil.nome;
   localStorage.setItem('map_perfil_v1', JSON.stringify(perfil));
   localStorage.setItem('map_uid_v1', novoUid);
 
@@ -4062,17 +4184,84 @@ async function confirmarFormalizarConta() {
     });
   } catch(e) {}
 
-  try { await window._fb.backupMusicas(novoUid); } catch(e) {}
-  try { await window._fb.backupEventos(novoUid); } catch(e) {}
+  try {
+    const _musParaBackup = typeof songs !== 'undefined' ? songs : JSON.parse(localStorage.getItem('map_pro_elite_v1') || '[]');
+    await window._fb.backupMusicas(novoUid, _musParaBackup);
+  } catch(e) {}
+  try {
+    const _evParaBackup = JSON.parse(localStorage.getItem('map_pro_eventos_v1') || '[]');
+    await window._fb.backupEventos(novoUid, _evParaBackup);
+  } catch(e) {}
 
   setMsg('Conta criada! Os teus dados estão seguros.', '#1db954');
   if (btn) { btn.textContent = 'Conta criada ✓'; }
 
   setTimeout(function() {
     fecharFormalizarConta();
-    if (typeof showToast === 'function') showToast('Conta formalizada com sucesso!');
+    if (typeof showToast === 'function') showToast('Conta formalizada com sucesso! 🎉');
     if (typeof atualizarPreviewPerfil === 'function') atualizarPreviewPerfil();
+    // Atualiza visibilidade do botão no perfil
+    _mostrarBotaoFormalizar();
   }, 1800);
+}
+
+
+// ── Modal Esqueci Senha ───────────────────────────────────────────────────────
+function abrirEsqueciSenha() {
+  const modal = document.getElementById('modal-esqueci-senha');
+  if (!modal) return;
+  const emailEl = document.getElementById('esqueci-email-input');
+  if (emailEl) emailEl.value = '';
+  const msg = document.getElementById('esqueci-msg');
+  if (msg) { msg.textContent = ''; msg.style.color = 'rgba(255,255,255,0.4)'; }
+  const btn = document.getElementById('btn-enviar-recuperacao');
+  if (btn) { btn.disabled = false; btn.textContent = 'Enviar email'; }
+  // Fecha pin-lock-screen se estiver aberto
+  const pinScreen = document.getElementById('pin-lock-screen');
+  if (pinScreen) pinScreen.style.display = 'none';
+  modal.style.display = 'flex';
+  _esqueciValidar();
+}
+
+function fecharEsqueciSenha() {
+  const modal = document.getElementById('modal-esqueci-senha');
+  if (modal) modal.style.display = 'none';
+}
+
+function _esqueciValidar() {
+  const email = (document.getElementById('esqueci-email-input')?.value || '').trim();
+  const btn = document.getElementById('btn-enviar-recuperacao');
+  const ok = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+  if (btn) { btn.disabled = !ok; btn.style.opacity = ok ? '1' : '0.4'; }
+}
+
+async function enviarRecuperacaoSenha() {
+  const emailEl = document.getElementById('esqueci-email-input');
+  const msg     = document.getElementById('esqueci-msg');
+  const btn     = document.getElementById('btn-enviar-recuperacao');
+  const email   = (emailEl?.value || '').trim();
+
+  function setMsg(txt, cor) {
+    if (msg) { msg.textContent = txt; msg.style.color = cor || 'rgba(255,255,255,0.4)'; }
+  }
+
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    setMsg('Introduz um email válido.', '#ff5555'); return;
+  }
+  if (!window._fb) { setMsg('Firebase não disponível.', '#ff5555'); return; }
+
+  if (btn) { btn.disabled = true; btn.textContent = 'A enviar...'; }
+  setMsg('', null);
+
+  const result = await window._fb.enviarEmailRecuperacao(email);
+  if (result && result.ok) {
+    setMsg('Email enviado! Verifica a tua caixa de entrada.', '#1db954');
+    if (btn) btn.textContent = 'Enviado ✓';
+    setTimeout(fecharEsqueciSenha, 2500);
+  } else {
+    setMsg((result && result.msg) || 'Erro ao enviar. Verifica o email.', '#ff5555');
+    if (btn) { btn.disabled = false; btn.textContent = 'Enviar email'; }
+  }
 }
 
 function fecharModalPerfil() {
@@ -4755,10 +4944,10 @@ function playClick() {
   if (!ctx) return;
   const osc = ctx.createOscillator();
   const env = ctx.createGain();
-  osc.frequency.value = 1000;
+  osc.frequency.value = (window._metroFreq || 1000);
   env.gain.value = 0.8;
   env.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.08);
-  osc.connect(env); env.connect(ctx.destination);
+  osc.connect(env); env.connect(_getAudioChain(ctx));
   osc.start(); osc.stop(ctx.currentTime + 0.08);
 }
 function scheduler() {
@@ -5147,7 +5336,6 @@ function abrirCtxMenu(e, songId, modo) {
 
   // Mostra/esconde opções conforme contexto
   document.getElementById('ctx-fav').style.display     = modo === 'biblioteca' ? 'flex' : 'none';
-  document.getElementById('ctx-editar').style.display  = 'flex'; // visível em ambos
   document.getElementById('ctx-deletar').style.display = modo === 'biblioteca' ? 'flex' : 'none';
   document.getElementById('ctx-show').style.display    = modo === 'evento'     ? 'flex' : 'none';
   document.getElementById('ctx-remover').style.display = modo === 'evento'     ? 'flex' : 'none';
@@ -5178,7 +5366,6 @@ function ctxAcao(acao) {
   const id = ctxSongId;
   if (acao === 'abrir')   { loadSongBiblioteca(id); }
   if (acao === 'fav')     { favoritarBiblioteca(id, null); }
-  if (acao === 'editar')  { abrirEditarMusica(id, null); }
   if (acao === 'deletar') { deleteSongBiblioteca(id, null); }
   if (acao === 'remover') { removerDoEvento(id, null); }
   if (acao === 'show')    { ativarShowEvento(eventoAbertoId, id); }
@@ -7383,6 +7570,21 @@ async function convidarAmigo(nome, amigoUid) {
 }
 
 // ── Render principal ─────────────────────────────────────────────────────────
+
+async function removerAmigo(uid, nome) {
+  if (!confirm('Remover ' + nome + ' dos amigos?')) return;
+  if (!_isFbReady()) { showToast('Firebase não disponível'); return; }
+  try {
+    await window._fb.removerAmigo(_getUid(), uid);
+    adicionarNotif('info', 'Amigo removido', nome + ' foi removido da tua lista.', 'rm_' + uid);
+    showToast(nome + ' removido');
+    _amigosCache = _amigosCache.filter(function(a) { return a.uid !== uid; });
+    _renderAmigos();
+  } catch(e) {
+    showToast('Erro ao remover amigo');
+  }
+}
+
 async function _renderAmigos() {
   const lista = document.getElementById('amigos-list');
   if (!lista) return;
@@ -8267,6 +8469,434 @@ function _aplicarBannerFoto(base64) {
   }
 }
 
+// ─── BPM MIC SEARCH ──────────────────────────────────────────────────────────
+
+function bpmMicSearch() {
+  // Abre modal e pré-preenche com nome da música atual se existir
+  const modal = document.getElementById('modal-bpm-mic');
+  if (!modal) return;
+  const input = document.getElementById('bpm-mic-input');
+  const results = document.getElementById('bpm-mic-results');
+  const status = document.getElementById('bpm-mic-status');
+  if (input) {
+    // Pré-preenche com nome da música carregada
+    let nome = '';
+    if (typeof currentSongIndex !== 'undefined' && typeof songs !== 'undefined' && songs[currentSongIndex]) {
+      nome = songs[currentSongIndex].name || '';
+    } else {
+      const el = document.getElementById('dc-song-name');
+      nome = el ? (el.textContent || '').replace('—','').trim() : '';
+    }
+    input.value = nome;
+  }
+  if (results) { results.innerHTML = ''; results.style.display = 'none'; }
+  if (status) status.textContent = '';
+  _bpmMicValidar();
+  modal.style.display = 'flex';
+  setTimeout(() => { if (input) input.focus(); }, 200);
+}
+
+function fecharBpmMic() {
+  const modal = document.getElementById('modal-bpm-mic');
+  if (modal) modal.style.display = 'none';
+  _bpmMicPararVoz();
+}
+
+function _bpmMicValidar() {
+  const val = (document.getElementById('bpm-mic-input')?.value || '').trim();
+  const btn = document.getElementById('bpm-mic-buscar-btn');
+  if (btn) { btn.disabled = val.length < 2; btn.style.opacity = val.length >= 2 ? '1' : '0.4'; }
+}
+
+var _bpmSpeechRecog = null;
+var _bpmVozAtiva = false;
+
+function _bpmMicVoz() {
+  const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+  const status = document.getElementById('bpm-mic-status');
+  if (!SpeechRecognition) {
+    if (status) { status.textContent = 'Reconhecimento de voz não suportado neste browser.'; status.style.color = '#ff5555'; }
+    return;
+  }
+  if (_bpmVozAtiva) { _bpmMicPararVoz(); return; }
+  _bpmVozAtiva = true;
+  const btn = document.getElementById('bpm-mic-voice-btn');
+  if (btn) { btn.style.background = 'rgba(255,80,80,0.2)'; btn.style.borderColor = '#ff5050'; btn.style.color = '#ff5050'; }
+  if (status) { status.textContent = '🎙 A ouvir... diz o nome da música'; status.style.color = 'rgba(29,185,84,0.9)'; }
+  _bpmSpeechRecog = new SpeechRecognition();
+  _bpmSpeechRecog.lang = 'pt-BR';
+  _bpmSpeechRecog.interimResults = false;
+  _bpmSpeechRecog.maxAlternatives = 1;
+  _bpmSpeechRecog.onresult = function(e) {
+    const texto = e.results[0][0].transcript;
+    const input = document.getElementById('bpm-mic-input');
+    if (input) { input.value = texto; _bpmMicValidar(); }
+    if (status) { status.textContent = '✔ Captado: ' + texto; status.style.color = '#1db954'; }
+    _bpmMicPararVoz();
+    setTimeout(_bpmMicBuscar, 400);
+  };
+  _bpmSpeechRecog.onerror = function(e) {
+    if (status) { status.textContent = 'Erro no microfone: ' + (e.error || 'desconhecido'); status.style.color = '#ff5555'; }
+    _bpmMicPararVoz();
+  };
+  _bpmSpeechRecog.onend = function() { _bpmMicPararVoz(); };
+  _bpmSpeechRecog.start();
+}
+
+function _bpmMicPararVoz() {
+  _bpmVozAtiva = false;
+  if (_bpmSpeechRecog) { try { _bpmSpeechRecog.stop(); } catch(e) {} _bpmSpeechRecog = null; }
+  const btn = document.getElementById('bpm-mic-voice-btn');
+  if (btn) { btn.style.background = 'rgba(29,185,84,0.1)'; btn.style.borderColor = 'rgba(29,185,84,0.3)'; btn.style.color = 'rgba(29,185,84,0.8)'; }
+}
+
+async function _bpmMicBuscar() {
+  const termo = (document.getElementById('bpm-mic-input')?.value || '').trim();
+  if (termo.length < 2) return;
+  const status    = document.getElementById('bpm-mic-status');
+  const results   = document.getElementById('bpm-mic-results');
+  const buscarBtn = document.getElementById('bpm-mic-buscar-btn');
+
+  if (status)  { status.textContent = '🔍 A buscar BPM...'; status.style.color = 'rgba(255,255,255,0.5)'; }
+  if (results) { results.innerHTML = ''; results.style.display = 'none'; }
+  if (buscarBtn) buscarBtn.disabled = true;
+
+  try {
+    // ── Passo 1: iTunes para identificar a música (CORS ok, gratuito) ──────────
+    const itunesRes = await fetch(
+      'https://itunes.apple.com/search?term=' + encodeURIComponent(termo) + '&entity=song&limit=5&country=BR'
+    );
+    const itunesData = await itunesRes.json();
+    const tracks = (itunesData && itunesData.results) ? itunesData.results : [];
+
+    // ── Passo 2: Claude API — pergunta o BPM ──────────────────────────────────
+    // Monta lista de músicas encontradas para dar contexto ao Claude
+    let contexto = '';
+    if (tracks.length > 0) {
+      contexto = tracks.slice(0, 5).map((t, i) =>
+        (i+1) + '. "' + t.trackName + '" — ' + t.artistName
+      ).join('\n');
+    }
+
+    const prompt = tracks.length > 0
+      ? 'O utilizador procurou: "' + termo + '".\nResultados encontrados:\n' + contexto + '\n\nPara cada música acima, indica o BPM (tempo) aproximado. Responde APENAS com JSON válido neste formato exato, sem texto extra:\n{"resultados":[{"titulo":"nome","artista":"artista","bpm":120},...]}'
+      : 'Qual o BPM (tempo em batidas por minuto) da música "' + termo + '"? Responde APENAS com JSON válido neste formato exato, sem texto extra:\n{"resultados":[{"titulo":"nome","artista":"artista","bpm":120}]}';
+
+    const claudeRes = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 400,
+        messages: [{ role: 'user', content: prompt }]
+      })
+    });
+    const claudeData = await claudeRes.json();
+    const rawText = (claudeData.content && claudeData.content[0] && claudeData.content[0].text) || '';
+
+    // Parse JSON do Claude
+    let claudeJson = null;
+    try {
+      const clean = rawText.replace(/```json|```/g, '').trim();
+      claudeJson = JSON.parse(clean);
+    } catch(e) {
+      // Tenta extrair JSON do meio do texto
+      const m = rawText.match(/\{[\s\S]*\}/);
+      if (m) { try { claudeJson = JSON.parse(m[0]); } catch(e2) {} }
+    }
+
+    const bpmResults = (claudeJson && claudeJson.resultados) ? claudeJson.resultados : [];
+
+    if (bpmResults.length === 0) {
+      if (status) { status.textContent = 'Não encontrei BPM. Tenta com nome + artista.'; status.style.color = '#ff9944'; }
+      _bpmMicMostrarLinkMultitracks(termo);
+      if (results) results.style.display = 'flex';
+      if (buscarBtn) { buscarBtn.disabled = false; _bpmMicValidar(); }
+      return;
+    }
+
+    // ── Auto-aplicar se há apenas 1 resultado ────────────────────────────────
+    if (bpmResults.length === 1 && bpmResults[0].bpm) {
+      _bpmMicAplicar(bpmResults[0].bpm, bpmResults[0].titulo || termo);
+      if (buscarBtn) { buscarBtn.disabled = false; _bpmMicValidar(); }
+      return;
+    }
+
+    // ── Auto-aplicar se todos concordam no mesmo BPM ─────────────────────────
+    const valores = [...new Set(bpmResults.filter(r => r.bpm).map(r => r.bpm))];
+    if (valores.length === 1) {
+      _bpmMicAplicar(valores[0], bpmResults[0].titulo || termo);
+      if (buscarBtn) { buscarBtn.disabled = false; _bpmMicValidar(); }
+      return;
+    }
+
+    // ── Mostrar lista para escolher ───────────────────────────────────────────
+    if (results) results.style.display = 'flex';
+    if (status) {
+      status.textContent = bpmResults.length + ' resultado(s) — clica para aplicar';
+      status.style.color = 'rgba(255,255,255,0.4)';
+    }
+
+    bpmResults.forEach(r => {
+      if (!r.bpm) return;
+      const card = document.createElement('div');
+      card.style.cssText = 'background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);border-radius:10px;padding:10px 14px;cursor:pointer;display:flex;align-items:center;gap:12px;transition:background 0.15s;';
+      card.onmouseover = function() { this.style.background = 'rgba(29,185,84,0.1)'; };
+      card.onmouseout  = function() { this.style.background = 'rgba(255,255,255,0.04)'; };
+      card.onclick     = function() { _bpmMicAplicar(r.bpm, r.titulo || termo); };
+      card.innerHTML   = '<div style="flex:1;min-width:0;">'
+        + '<div style="font-size:13px;font-weight:700;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + (r.titulo || termo) + '</div>'
+        + '<div style="font-size:11px;color:rgba(255,255,255,0.35);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + (r.artista || '') + '</div>'
+        + '</div><span style="background:#1db954;color:#000;font-size:11px;font-weight:900;padding:3px 9px;border-radius:6px;flex-shrink:0;">' + r.bpm + ' BPM</span>';
+      results.appendChild(card);
+    });
+
+    _bpmMicMostrarLinkMultitracks(termo);
+
+  } catch(err) {
+    if (status) { status.textContent = 'Erro: ' + (err.message || 'verifique a conexão.'); status.style.color = '#ff5555'; }
+    if (results) results.style.display = 'flex';
+    _bpmMicMostrarLinkMultitracks(termo);
+  }
+  if (buscarBtn) { buscarBtn.disabled = false; _bpmMicValidar(); }
+}
+
+
+function _bpmMicMostrarLinkMultitracks(termo) {
+  const results = document.getElementById('bpm-mic-results');
+  if (!results) return;
+  results.style.display = 'flex';
+  const link = document.createElement('a');
+  link.href = 'https://www.multitracks.com/search/?q=' + encodeURIComponent(termo);
+  link.target = '_blank';
+  link.rel = 'noopener';
+  link.style.cssText = 'display:flex;align-items:center;gap:10px;background:rgba(29,185,84,0.06);border:1px solid rgba(29,185,84,0.2);border-radius:10px;padding:11px 14px;text-decoration:none;transition:background 0.15s;';
+  link.onmouseover = function() { this.style.background = 'rgba(29,185,84,0.12)'; };
+  link.onmouseout  = function() { this.style.background = 'rgba(29,185,84,0.06)'; };
+  link.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#1db954" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>'
+    + '<div style="flex:1;"><div style="font-size:12px;font-weight:800;color:#1db954;">Buscar no Multitracks.com</div>'
+    + '<div style="font-size:10px;color:rgba(255,255,255,0.3);margin-top:1px;">Abre o site para ver BPM, tom e mais</div></div>'
+    + '<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="rgba(29,185,84,0.5)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>';
+  results.appendChild(link);
+}
+
+function _bpmMicAplicar(bpmVal, titulo) {
+  // Aplica BPM globalmente
+  bpm = bpmVal;
+  const disp = document.getElementById('bpm-display');
+  if (disp) disp.innerText = bpmVal;
+  // Atualiza também na música carregada se existir
+  if (typeof currentSongIndex !== 'undefined' && typeof songs !== 'undefined' && songs[currentSongIndex]) {
+    songs[currentSongIndex].bpm = bpmVal;
+  }
+  // Reinicia metrônomo se estiver a tocar
+  if (typeof isPlaying !== 'undefined' && isPlaying && typeof togglePlay === 'function') {
+    togglePlay();
+    setTimeout(togglePlay, 80);
+  }
+  fecharBpmMic();
+  if (typeof showToast === 'function') showToast('✓ ' + bpmVal + ' BPM — ' + titulo);
+}
+
+// ─── CONFIGURAÇÕES DE ÁUDIO ───────────────────────────────────────────────────
+
+// Audio chain nodes (created lazily)
+var _audioChain = null;
+
+function _getAudioChain(ctx) {
+  if (!ctx) return ctx ? ctx.destination : null;
+  // Build chain once
+  if (!_audioChain || _audioChain.ctx !== ctx) {
+    const master   = ctx.createGain();          // volume master
+    const panner   = ctx.createStereoPanner();  // L/R balance
+    const eqLow    = ctx.createBiquadFilter();  // EQ grave
+    const eqMid    = ctx.createBiquadFilter();  // EQ médio
+    const eqHi     = ctx.createBiquadFilter();  // EQ agudo
+    const comp     = ctx.createDynamicsCompressor(); // compressor
+
+    // Config EQ bands
+    eqLow.type = 'lowshelf';  eqLow.frequency.value = 200;  eqLow.gain.value = 0;
+    eqMid.type = 'peaking';   eqMid.frequency.value = 1000; eqMid.gain.value = 0; eqMid.Q.value = 1;
+    eqHi.type  = 'highshelf'; eqHi.frequency.value  = 8000; eqHi.gain.value = 0;
+
+    // Compressor defaults (bypassed initially)
+    comp.threshold.value = -24; comp.ratio.value = 4;
+    comp.attack.value = 0.003; comp.release.value = 0.25;
+
+    // Wire: master → panner → eqLow → eqMid → eqHi → comp → destination
+    master.connect(panner);
+    panner.connect(eqLow);
+    eqLow.connect(eqMid);
+    eqMid.connect(eqHi);
+    eqHi.connect(comp);
+    comp.connect(ctx.destination);
+
+    _audioChain = { ctx, master, panner, eqLow, eqMid, eqHi, comp, compOn: false };
+    _audioAplicarChain(); // apply saved settings
+  }
+  return _audioChain.master;
+}
+
+function abrirConfigAudio() {
+  fecharMenu();
+  _getAudioChain(_getAudioCtx()); // ensure chain exists
+  _audioSincronizarUI();
+  const m = document.getElementById('modal-config-audio');
+  if (m) m.style.display = 'flex';
+}
+
+function fecharConfigAudio() {
+  const m = document.getElementById('modal-config-audio');
+  if (m) m.style.display = 'none';
+}
+
+function _audioSincronizarUI() {
+  // Sync sliders to current chain state
+  const s = _audioGetState();
+  _setVal('audio-vol-master', s.vol);
+  _setVal('audio-pan', s.pan);
+  _setVal('audio-eq-low', s.eqLow);
+  _setVal('audio-eq-mid', s.eqMid);
+  _setVal('audio-eq-hi', s.eqHi);
+  _setVal('audio-comp-threshold', s.compThr);
+  _setVal('audio-comp-ratio', s.compRatio);
+  _setVal('audio-metro-freq', s.metroFreq);
+  const compEl = document.getElementById('audio-comp-on');
+  if (compEl) compEl.checked = s.compOn;
+  _audioAtualizarLabels();
+}
+
+function _setVal(id, val) {
+  const el = document.getElementById(id);
+  if (el) el.value = val;
+}
+
+function _audioGetState() {
+  return {
+    vol:       parseFloat(localStorage.getItem('audio_vol') || '100'),
+    pan:       parseFloat(localStorage.getItem('audio_pan') || '0'),
+    eqLow:     parseFloat(localStorage.getItem('audio_eq_low') || '0'),
+    eqMid:     parseFloat(localStorage.getItem('audio_eq_mid') || '0'),
+    eqHi:      parseFloat(localStorage.getItem('audio_eq_hi') || '0'),
+    compOn:    localStorage.getItem('audio_comp_on') === '1',
+    compThr:   parseFloat(localStorage.getItem('audio_comp_thr') || '-24'),
+    compRatio: parseFloat(localStorage.getItem('audio_comp_ratio') || '4'),
+    metroFreq: parseFloat(localStorage.getItem('audio_metro_freq') || '1000'),
+  };
+}
+
+function _audioAplicar() {
+  // Read UI → save → apply to chain
+  const vol       = parseFloat(document.getElementById('audio-vol-master')?.value || 100);
+  const pan       = parseFloat(document.getElementById('audio-pan')?.value || 0);
+  const eqLow     = parseFloat(document.getElementById('audio-eq-low')?.value || 0);
+  const eqMid     = parseFloat(document.getElementById('audio-eq-mid')?.value || 0);
+  const eqHi      = parseFloat(document.getElementById('audio-eq-hi')?.value || 0);
+  const compOn    = document.getElementById('audio-comp-on')?.checked || false;
+  const compThr   = parseFloat(document.getElementById('audio-comp-threshold')?.value || -24);
+  const compRatio = parseFloat(document.getElementById('audio-comp-ratio')?.value || 4);
+  const metroFreq = parseFloat(document.getElementById('audio-metro-freq')?.value || 1000);
+
+  // Persist
+  localStorage.setItem('audio_vol', vol);
+  localStorage.setItem('audio_pan', pan);
+  localStorage.setItem('audio_eq_low', eqLow);
+  localStorage.setItem('audio_eq_mid', eqMid);
+  localStorage.setItem('audio_eq_hi', eqHi);
+  localStorage.setItem('audio_comp_on', compOn ? '1' : '0');
+  localStorage.setItem('audio_comp_thr', compThr);
+  localStorage.setItem('audio_comp_ratio', compRatio);
+  localStorage.setItem('audio_metro_freq', metroFreq);
+
+  _audioAplicarChain();
+  _audioAtualizarLabels();
+}
+
+function _audioAplicarChain() {
+  const c = _audioChain;
+  if (!c) return;
+  const s = _audioGetState();
+  c.master.gain.value  = s.vol / 100;
+  c.panner.pan.value   = s.pan / 100;
+  c.eqLow.gain.value   = s.eqLow;
+  c.eqMid.gain.value   = s.eqMid;
+  c.eqHi.gain.value    = s.eqHi;
+  c.comp.threshold.value = s.compThr;
+  c.comp.ratio.value     = s.compRatio;
+  // Bypass compressor: disconnect/reconnect
+  if (s.compOn !== c.compOn) {
+    try {
+      if (s.compOn) {
+        c.eqHi.disconnect();
+        c.eqHi.connect(c.comp);
+        c.comp.connect(c.ctx.destination);
+      } else {
+        c.eqHi.disconnect();
+        c.eqHi.connect(c.ctx.destination);
+      }
+      c.compOn = s.compOn;
+    } catch(e) {}
+  }
+  // metroFreq: applied live in playClick via global
+  window._metroFreq = s.metroFreq;
+}
+
+function _audioAtualizarLabels() {
+  const vol  = parseFloat(document.getElementById('audio-vol-master')?.value || 100);
+  const pan  = parseFloat(document.getElementById('audio-pan')?.value || 0);
+  const eqL  = parseFloat(document.getElementById('audio-eq-low')?.value || 0);
+  const eqM  = parseFloat(document.getElementById('audio-eq-mid')?.value || 0);
+  const eqH  = parseFloat(document.getElementById('audio-eq-hi')?.value || 0);
+  const thr  = parseFloat(document.getElementById('audio-comp-threshold')?.value || -24);
+  const rat  = parseFloat(document.getElementById('audio-comp-ratio')?.value || 4);
+  const freq = parseFloat(document.getElementById('audio-metro-freq')?.value || 1000);
+
+  const el = (id, txt) => { const e = document.getElementById(id); if (e) e.textContent = txt; };
+  el('audio-vol-master-val', vol + '%');
+  el('audio-pan-val', pan === 0 ? 'Centro' : (pan < 0 ? Math.abs(pan) + '% L' : pan + '% R'));
+  el('audio-eq-low-val',  (eqL >= 0 ? '+' : '') + eqL + ' dB');
+  el('audio-eq-mid-val',  (eqM >= 0 ? '+' : '') + eqM + ' dB');
+  el('audio-eq-hi-val',   (eqH >= 0 ? '+' : '') + eqH + ' dB');
+  el('audio-comp-thr-val',  thr + ' dB');
+  el('audio-comp-ratio-val', rat + ':1');
+  el('audio-metro-freq-val', freq >= 1000 ? (freq/1000).toFixed(1) + ' kHz' : freq + ' Hz');
+}
+
+function _audioResetPan() {
+  const el = document.getElementById('audio-pan');
+  if (el) { el.value = 0; _audioAplicar(); }
+}
+
+function _audioResetEQ() {
+  ['audio-eq-low','audio-eq-mid','audio-eq-hi'].forEach(id => {
+    const el = document.getElementById(id); if (el) el.value = 0;
+  });
+  _audioAplicar();
+}
+
+function _audioPreset(tipo) {
+  const presets = {
+    flat:    { vol:100, pan:0, eqLow:0,   eqMid:0,  eqHi:0,   compOn:false, compThr:-24, compRatio:4,  metroFreq:1000 },
+    worship: { vol:100, pan:0, eqLow:2,   eqMid:-1, eqHi:3,   compOn:true,  compThr:-18, compRatio:3,  metroFreq:900  },
+    rock:    { vol:100, pan:0, eqLow:4,   eqMid:2,  eqHi:1,   compOn:true,  compThr:-20, compRatio:6,  metroFreq:1100 },
+    jazz:    { vol:100, pan:0, eqLow:-1,  eqMid:2,  eqHi:-2,  compOn:false, compThr:-24, compRatio:2,  metroFreq:800  },
+    reset:   { vol:100, pan:0, eqLow:0,   eqMid:0,  eqHi:0,   compOn:false, compThr:-24, compRatio:4,  metroFreq:1000 },
+  };
+  const p = presets[tipo];
+  if (!p) return;
+  _setVal('audio-vol-master', p.vol);
+  _setVal('audio-pan', p.pan);
+  _setVal('audio-eq-low', p.eqLow);
+  _setVal('audio-eq-mid', p.eqMid);
+  _setVal('audio-eq-hi', p.eqHi);
+  _setVal('audio-comp-threshold', p.compThr);
+  _setVal('audio-comp-ratio', p.compRatio);
+  _setVal('audio-metro-freq', p.metroFreq);
+  const compEl = document.getElementById('audio-comp-on');
+  if (compEl) compEl.checked = p.compOn;
+  _audioAplicar();
+  if (typeof showToast === 'function') showToast('Preset ' + tipo.charAt(0).toUpperCase() + tipo.slice(1) + ' aplicado');
+}
 
 </script>
 
@@ -8292,10 +8922,7 @@ function _aplicarBannerFoto(base64) {
     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
     <span id="ctx-fav-label">Favoritar</span>
   </div>
-  <div class="ctx-item" id="ctx-editar" onclick="ctxAcao('editar')">
-    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
-    Editar
-  </div>
+
   <div class="ctx-item" id="ctx-show" onclick="ctxAcao('show')" style="display:none;">
     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#1db954" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polygon points="5 3 19 12 5 21 5 3" fill="#1db954" stroke="none"/></svg>
     <span style="color:#1db954;">Tocar no Show</span>
@@ -8391,13 +9018,14 @@ function _aplicarBannerFoto(base64) {
     <div style="position:relative;">
       <input id="esqueci-email-input" type="email" placeholder="teu@email.com"
         style="width:100%;box-sizing:border-box;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.1);border-radius:12px;color:#fff;font-size:14px;padding:13px 16px;outline:none;font-family:inherit;"
+        oninput="_esqueciValidar()" onkeydown="if(event.key==='Enter')enviarRecuperacaoSenha()"
         onfocus="this.style.borderColor='rgba(29,185,84,0.5)'" onblur="this.style.borderColor='rgba(255,255,255,0.1)'">
     </div>
     <div id="esqueci-msg" style="font-size:12px;color:rgba(255,255,255,0.4);min-height:16px;text-align:center;"></div>
     <div style="display:flex;gap:10px;">
-      <button onclick="fecharEsqueciSenha()" style="flex:1;padding:13px;border-radius:12px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);color:rgba(255,255,255,0.4);font-size:11px;font-weight:700;cursor:pointer;font-family:inherit;">Cancelar</button>
-      <button onclick="enviarRecuperacaoSenha()" id="btn-enviar-recuperacao"
-        style="flex:2;padding:13px;border-radius:12px;background:#1db954;border:none;color:#000;font-size:12px;font-weight:900;cursor:pointer;font-family:inherit;">Enviar email</button>
+      <button onclick="fecharEsqueciSenha()" style="flex:1;padding:13px;border-radius:12px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);color:rgba(255,255,255,0.4);font-size:11px;font-weight:700;cursor:pointer;font-family:inherit;touch-action:manipulation;">Cancelar</button>
+      <button onclick="enviarRecuperacaoSenha()" id="btn-enviar-recuperacao" disabled
+        style="flex:2;padding:13px;border-radius:12px;background:#1db954;border:none;color:#000;font-size:12px;font-weight:900;cursor:pointer;font-family:inherit;touch-action:manipulation;opacity:0.4;transition:opacity 0.2s;">Enviar email</button>
     </div>
   </div>
 </div>
@@ -8492,5 +9120,205 @@ function _aplicarBannerFoto(base64) {
   </div>
 </div>
 
+
+<!-- MODAL BPM MIC SEARCH -->
+<div id="modal-bpm-mic" style="display:none;position:fixed;inset:0;z-index:98000;background:rgba(0,0,0,0.88);align-items:center;justify-content:center;">
+  <div style="background:#111118;border:1px solid rgba(255,255,255,0.1);border-radius:20px;padding:28px 24px;width:calc(100% - 48px);max-width:360px;display:flex;flex-direction:column;gap:16px;">
+    <div style="display:flex;align-items:center;justify-content:space-between;">
+      <h3 style="margin:0;font-size:17px;font-weight:800;color:#fff;">Pesquisar BPM</h3>
+      <button onclick="fecharBpmMic()" style="background:none;border:none;color:rgba(255,255,255,0.4);cursor:pointer;font-size:20px;line-height:1;touch-action:manipulation;">✕</button>
+    </div>
+    <!-- Input manual -->
+    <div style="display:flex;gap:8px;">
+      <input id="bpm-mic-input" type="text" placeholder="Nome da música ou artista..."
+        style="flex:1;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);border-radius:10px;color:#fff;font-size:13px;padding:11px 14px;outline:none;font-family:inherit;"
+        oninput="_bpmMicValidar()" onkeydown="if(event.key==='Enter')_bpmMicBuscar()"
+        onfocus="this.style.borderColor='rgba(29,185,84,0.5)'" onblur="this.style.borderColor='rgba(255,255,255,0.1)'">
+      <button id="bpm-mic-voice-btn" onclick="_bpmMicVoz()" title="Usar microfone"
+        style="width:42px;height:42px;border-radius:10px;background:rgba(29,185,84,0.1);border:1.5px solid rgba(29,185,84,0.3);color:rgba(29,185,84,0.8);cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;touch-action:manipulation;">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/>
+          <path d="M19 10v2a7 7 0 0 1-14 0v-2"/>
+          <line x1="12" y1="19" x2="12" y2="23"/>
+          <line x1="8" y1="23" x2="16" y2="23"/>
+        </svg>
+      </button>
+    </div>
+    <!-- Status -->
+    <div id="bpm-mic-status" style="font-size:12px;color:rgba(255,255,255,0.4);min-height:16px;text-align:center;"></div>
+    <!-- Botão buscar -->
+    <button id="bpm-mic-buscar-btn" onclick="_bpmMicBuscar()" disabled
+      style="width:100%;padding:13px;border-radius:12px;background:#1db954;border:none;color:#000;font-size:12px;font-weight:900;cursor:pointer;font-family:inherit;touch-action:manipulation;opacity:0.4;transition:opacity 0.2s;">
+      Buscar BPM
+    </button>
+    <!-- Resultados -->
+    <div id="bpm-mic-results" style="display:none;flex-direction:column;gap:8px;max-height:220px;overflow-y:auto;"></div>
+  </div>
+</div>
+
+
+<!-- MODAL ADMIN -->
+<div id="modal-admin" style="display:none;position:fixed;inset:0;z-index:99999;background:rgba(0,0,0,0.92);align-items:center;justify-content:center;">
+  <div style="background:#0e0e15;border:1px solid rgba(255,255,255,0.07);border-radius:20px;padding:32px 28px;width:calc(100% - 64px);max-width:300px;display:flex;flex-direction:column;align-items:center;gap:20px;">
+    <div style="font-size:11px;font-weight:900;letter-spacing:3px;color:rgba(255,255,255,0.2);text-transform:uppercase;">Acesso restrito</div>
+    <!-- Dots indicadores -->
+    <div style="display:flex;gap:14px;margin:4px 0;">
+      <div class="admin-dot" id="adot-0" style="width:12px;height:12px;border-radius:50%;background:rgba(255,255,255,0.1);transition:background 0.15s;"></div>
+      <div class="admin-dot" id="adot-1" style="width:12px;height:12px;border-radius:50%;background:rgba(255,255,255,0.1);transition:background 0.15s;"></div>
+      <div class="admin-dot" id="adot-2" style="width:12px;height:12px;border-radius:50%;background:rgba(255,255,255,0.1);transition:background 0.15s;"></div>
+      <div class="admin-dot" id="adot-3" style="width:12px;height:12px;border-radius:50%;background:rgba(255,255,255,0.1);transition:background 0.15s;"></div>
+    </div>
+    <!-- Teclado numérico -->
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;width:100%;">
+      <button onclick="_adminTecla('1')" style="padding:16px;border-radius:12px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.07);color:#fff;font-size:18px;font-weight:700;cursor:pointer;font-family:inherit;touch-action:manipulation;">1</button>
+      <button onclick="_adminTecla('2')" style="padding:16px;border-radius:12px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.07);color:#fff;font-size:18px;font-weight:700;cursor:pointer;font-family:inherit;touch-action:manipulation;">2</button>
+      <button onclick="_adminTecla('3')" style="padding:16px;border-radius:12px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.07);color:#fff;font-size:18px;font-weight:700;cursor:pointer;font-family:inherit;touch-action:manipulation;">3</button>
+      <button onclick="_adminTecla('4')" style="padding:16px;border-radius:12px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.07);color:#fff;font-size:18px;font-weight:700;cursor:pointer;font-family:inherit;touch-action:manipulation;">4</button>
+      <button onclick="_adminTecla('5')" style="padding:16px;border-radius:12px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.07);color:#fff;font-size:18px;font-weight:700;cursor:pointer;font-family:inherit;touch-action:manipulation;">5</button>
+      <button onclick="_adminTecla('6')" style="padding:16px;border-radius:12px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.07);color:#fff;font-size:18px;font-weight:700;cursor:pointer;font-family:inherit;touch-action:manipulation;">6</button>
+      <button onclick="_adminTecla('7')" style="padding:16px;border-radius:12px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.07);color:#fff;font-size:18px;font-weight:700;cursor:pointer;font-family:inherit;touch-action:manipulation;">7</button>
+      <button onclick="_adminTecla('8')" style="padding:16px;border-radius:12px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.07);color:#fff;font-size:18px;font-weight:700;cursor:pointer;font-family:inherit;touch-action:manipulation;">8</button>
+      <button onclick="_adminTecla('9')" style="padding:16px;border-radius:12px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.07);color:#fff;font-size:18px;font-weight:700;cursor:pointer;font-family:inherit;touch-action:manipulation;">9</button>
+      <button onclick="_adminApagar()" style="padding:16px;border-radius:12px;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.05);color:rgba(255,255,255,0.3);font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;touch-action:manipulation;">⌫</button>
+      <button onclick="_adminTecla('0')" style="padding:16px;border-radius:12px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.07);color:#fff;font-size:18px;font-weight:700;cursor:pointer;font-family:inherit;touch-action:manipulation;">0</button>
+      <button onclick="_fecharAdmin()" style="padding:16px;border-radius:12px;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.05);color:rgba(255,255,255,0.2);font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;touch-action:manipulation;">✕</button>
+    </div>
+    <div id="admin-err" style="font-size:11px;color:#ff5555;min-height:14px;"></div>
+  </div>
+</div>
+
+<!-- MODAL CONFIGURAÇÕES DE ÁUDIO -->
+<div id="modal-config-audio" style="display:none;position:fixed;inset:0;z-index:9500;background:rgba(0,0,0,0.88);align-items:flex-end;justify-content:center;padding-bottom:0;">
+  <div style="background:#111118;border:1px solid rgba(255,255,255,0.08);border-radius:24px 24px 0 0;padding:28px 24px 40px;width:100%;max-width:520px;max-height:92vh;overflow-y:auto;display:flex;flex-direction:column;gap:0;">
+
+    <!-- Header -->
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:24px;">
+      <div>
+        <div style="font-size:16px;font-weight:900;color:#fff;letter-spacing:0.5px;">Configurações de Áudio</div>
+        <div style="font-size:11px;color:rgba(255,255,255,0.3);margin-top:2px;">Metrônomo · Pads · Saída</div>
+      </div>
+      <button onclick="fecharConfigAudio()" style="background:rgba(255,255,255,0.06);border:none;color:rgba(255,255,255,0.5);width:32px;height:32px;border-radius:50%;cursor:pointer;font-size:16px;touch-action:manipulation;">✕</button>
+    </div>
+
+    <!-- ── VOLUME MASTER ── -->
+    <div style="margin-bottom:24px;">
+      <div style="font-size:10px;font-weight:900;letter-spacing:2px;color:rgba(255,255,255,0.35);text-transform:uppercase;margin-bottom:12px;">Volume Master</div>
+      <div style="display:flex;align-items:center;gap:14px;">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.4)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/></svg>
+        <input type="range" id="audio-vol-master" min="0" max="200" value="100" step="1"
+          oninput="_audioAplicar()"
+          style="flex:1;accent-color:#1db954;height:4px;cursor:pointer;">
+        <span id="audio-vol-master-val" style="font-size:12px;font-weight:800;color:#1db954;min-width:38px;text-align:right;">100%</span>
+      </div>
+    </div>
+
+    <!-- ── BALANÇO L / R ── -->
+    <div style="margin-bottom:24px;">
+      <div style="font-size:10px;font-weight:900;letter-spacing:2px;color:rgba(255,255,255,0.35);text-transform:uppercase;margin-bottom:12px;">Balanço Estéreo (L / R)</div>
+      <div style="display:flex;align-items:center;gap:14px;">
+        <span style="font-size:11px;font-weight:800;color:rgba(255,255,255,0.4);min-width:16px;">L</span>
+        <input type="range" id="audio-pan" min="-100" max="100" value="0" step="1"
+          oninput="_audioAplicar()"
+          style="flex:1;accent-color:#1db954;height:4px;cursor:pointer;">
+        <span style="font-size:11px;font-weight:800;color:rgba(255,255,255,0.4);min-width:16px;text-align:right;">R</span>
+        <span id="audio-pan-val" style="font-size:12px;font-weight:800;color:#1db954;min-width:38px;text-align:right;">Centro</span>
+      </div>
+      <button onclick="_audioResetPan()" style="margin-top:8px;background:none;border:1px solid rgba(255,255,255,0.08);border-radius:8px;color:rgba(255,255,255,0.3);font-size:10px;font-weight:700;padding:5px 12px;cursor:pointer;touch-action:manipulation;">Centralizar</button>
+    </div>
+
+    <!-- ── EQUALIZER ── -->
+    <div style="margin-bottom:24px;">
+      <div style="font-size:10px;font-weight:900;letter-spacing:2px;color:rgba(255,255,255,0.35);text-transform:uppercase;margin-bottom:12px;">Equalizer (3 bandas)</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;">
+        <!-- Grave -->
+        <div style="display:flex;flex-direction:column;align-items:center;gap:8px;">
+          <span style="font-size:10px;color:rgba(255,255,255,0.4);font-weight:700;">GRAVE</span>
+          <div style="height:120px;display:flex;align-items:center;justify-content:center;">
+            <input type="range" id="audio-eq-low" min="-12" max="12" value="0" step="0.5"
+              oninput="_audioAplicar()"
+              style="accent-color:#1db954;cursor:pointer;writing-mode:vertical-lr;direction:rtl;height:110px;width:28px;">
+          </div>
+          <span id="audio-eq-low-val" style="font-size:11px;font-weight:800;color:#1db954;">0 dB</span>
+          <span style="font-size:9px;color:rgba(255,255,255,0.25);">200 Hz</span>
+        </div>
+        <!-- Médio -->
+        <div style="display:flex;flex-direction:column;align-items:center;gap:8px;">
+          <span style="font-size:10px;color:rgba(255,255,255,0.4);font-weight:700;">MÉDIO</span>
+          <div style="height:120px;display:flex;align-items:center;justify-content:center;">
+            <input type="range" id="audio-eq-mid" min="-12" max="12" value="0" step="0.5"
+              oninput="_audioAplicar()"
+              style="accent-color:#1db954;cursor:pointer;writing-mode:vertical-lr;direction:rtl;height:110px;width:28px;">
+          </div>
+          <span id="audio-eq-mid-val" style="font-size:11px;font-weight:800;color:#1db954;">0 dB</span>
+          <span style="font-size:9px;color:rgba(255,255,255,0.25);">1 kHz</span>
+        </div>
+        <!-- Agudo -->
+        <div style="display:flex;flex-direction:column;align-items:center;gap:8px;">
+          <span style="font-size:10px;color:rgba(255,255,255,0.4);font-weight:700;">AGUDO</span>
+          <div style="height:120px;display:flex;align-items:center;justify-content:center;">
+            <input type="range" id="audio-eq-hi" min="-12" max="12" value="0" step="0.5"
+              oninput="_audioAplicar()"
+              style="accent-color:#1db954;cursor:pointer;writing-mode:vertical-lr;direction:rtl;height:110px;width:28px;">
+          </div>
+          <span id="audio-eq-hi-val" style="font-size:11px;font-weight:800;color:#1db954;">0 dB</span>
+          <span style="font-size:9px;color:rgba(255,255,255,0.25);">8 kHz</span>
+        </div>
+      </div>
+      <button onclick="_audioResetEQ()" style="margin-top:10px;background:none;border:1px solid rgba(255,255,255,0.08);border-radius:8px;color:rgba(255,255,255,0.3);font-size:10px;font-weight:700;padding:5px 12px;cursor:pointer;touch-action:manipulation;">Zerar EQ</button>
+    </div>
+
+    <!-- ── COMPRESSOR ── -->
+    <div style="margin-bottom:24px;">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
+        <div style="font-size:10px;font-weight:900;letter-spacing:2px;color:rgba(255,255,255,0.35);text-transform:uppercase;">Compressor</div>
+        <label style="display:flex;align-items:center;gap:8px;cursor:pointer;">
+          <span style="font-size:11px;color:rgba(255,255,255,0.4);">Ativo</span>
+          <input type="checkbox" id="audio-comp-on" onchange="_audioAplicar()"
+            style="width:16px;height:16px;accent-color:#1db954;cursor:pointer;">
+        </label>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;">
+        <div>
+          <div style="font-size:10px;color:rgba(255,255,255,0.3);margin-bottom:6px;">Threshold</div>
+          <input type="range" id="audio-comp-threshold" min="-60" max="0" value="-24" step="1"
+            oninput="_audioAplicar()" style="width:100%;accent-color:#1db954;height:4px;cursor:pointer;">
+          <span id="audio-comp-thr-val" style="font-size:11px;color:#1db954;font-weight:700;">-24 dB</span>
+        </div>
+        <div>
+          <div style="font-size:10px;color:rgba(255,255,255,0.3);margin-bottom:6px;">Ratio</div>
+          <input type="range" id="audio-comp-ratio" min="1" max="20" value="4" step="0.5"
+            oninput="_audioAplicar()" style="width:100%;accent-color:#1db954;height:4px;cursor:pointer;">
+          <span id="audio-comp-ratio-val" style="font-size:11px;color:#1db954;font-weight:700;">4:1</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── TOM DO METRÔNOMO ── -->
+    <div style="margin-bottom:24px;">
+      <div style="font-size:10px;font-weight:900;letter-spacing:2px;color:rgba(255,255,255,0.35);text-transform:uppercase;margin-bottom:12px;">Tom do Metrônomo</div>
+      <div style="display:flex;align-items:center;gap:14px;">
+        <span style="font-size:10px;color:rgba(255,255,255,0.3);">Grave</span>
+        <input type="range" id="audio-metro-freq" min="200" max="2000" value="1000" step="50"
+          oninput="_audioAplicar()"
+          style="flex:1;accent-color:#1db954;height:4px;cursor:pointer;">
+        <span style="font-size:10px;color:rgba(255,255,255,0.3);">Agudo</span>
+        <span id="audio-metro-freq-val" style="font-size:12px;font-weight:800;color:#1db954;min-width:54px;text-align:right;">1000 Hz</span>
+      </div>
+    </div>
+
+    <!-- ── PRESET RÁPIDO ── -->
+    <div style="margin-bottom:8px;">
+      <div style="font-size:10px;font-weight:900;letter-spacing:2px;color:rgba(255,255,255,0.35);text-transform:uppercase;margin-bottom:12px;">Presets</div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;">
+        <button onclick="_audioPreset('flat')"   style="padding:8px 14px;border-radius:20px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);color:rgba(255,255,255,0.6);font-size:11px;font-weight:700;cursor:pointer;touch-action:manipulation;">Plano</button>
+        <button onclick="_audioPreset('worship')" style="padding:8px 14px;border-radius:20px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);color:rgba(255,255,255,0.6);font-size:11px;font-weight:700;cursor:pointer;touch-action:manipulation;">Worship</button>
+        <button onclick="_audioPreset('rock')"   style="padding:8px 14px;border-radius:20px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);color:rgba(255,255,255,0.6);font-size:11px;font-weight:700;cursor:pointer;touch-action:manipulation;">Rock</button>
+        <button onclick="_audioPreset('jazz')"   style="padding:8px 14px;border-radius:20px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);color:rgba(255,255,255,0.6);font-size:11px;font-weight:700;cursor:pointer;touch-action:manipulation;">Jazz</button>
+        <button onclick="_audioPreset('reset')"  style="padding:8px 14px;border-radius:20px;background:rgba(255,80,80,0.08);border:1px solid rgba(255,80,80,0.2);color:rgba(255,100,100,0.7);font-size:11px;font-weight:700;cursor:pointer;touch-action:manipulation;">Reset</button>
+      </div>
+    </div>
+
+  </div>
+</div>
 </body>
 </html>
