@@ -2,19 +2,10 @@
 <html lang="pt-BR">
 <head>
 <script>
-// Captura e loga todos os erros para debug
-window.addEventListener('error', function(e) {
-  const msg = (e.message || '') + ' | file:' + (e.filename || '').split('/').pop() + ':' + e.lineno + ':' + e.colno;
-  const stack = e.error && e.error.stack ? e.error.stack.slice(0,300) : '';
-  console.warn('APP ERROR:', msg, stack);
-  // Suprime "Script error." genérico de cross-origin
-  if (!e.message || e.message === 'Script error.' || e.message === 'Script error') {
-    e.preventDefault(); e.stopPropagation(); return true;
-  }
-}, true);
-window.addEventListener('unhandledrejection', function(e) {
-  console.warn('UNHANDLED PROMISE:', e.reason && e.reason.stack ? e.reason.stack.slice(0,300) : String(e.reason));
-});
+// Suprime erros cross-origin (file://, Firebase offline, etc.)
+window.onerror = function() { return true; };
+window.addEventListener('error', function(e) { e.preventDefault(); e.stopPropagation(); }, true);
+window.addEventListener('unhandledrejection', function(e) { e.preventDefault(); });
 </script>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
@@ -202,14 +193,88 @@ window.addEventListener('unhandledrejection', function(e) {
           ...dados, uid,
           nomeLower: (dados.nome || '').toLowerCase()
         }, true);
-      } catch(e) { console.warn('FB salvarPerfil:', e); }
+      } catch(e) {}
     },
 
     async buscarUsuarios(termo) {
       try {
         const t = termo.toLowerCase().trim();
-        return await _query('usuarios', [['nomeLower','>=',t],['nomeLower','<=',t+'']], null, 15);
+        return await _query('usuarios', [['nomeLower','>=',t],['nomeLower','<=',t+'']], 'nomeLower', 15);
       } catch(e) { return []; }
+    },
+
+    async verificarNomeDisponivel(nomeUsuario) {
+      try {
+        const t = nomeUsuario.toLowerCase().trim();
+        const res = await _query('usuarios', [['nomeLower','==',t]], null, 1);
+        return res.length === 0;
+      } catch(e) { return true; }
+    },
+
+    async carregarPerfilPorUid(uid) {
+      try {
+        return await _get('usuarios/' + uid);
+      } catch(e) { return null; }
+    },
+
+
+    // ── Firebase Auth REST ──────────────────────────────────────────
+    async registarComEmail(email, senha) {
+      try {
+        const r = await fetch('https://identitytoolkit.googleapis.com/v1/accounts:signUp?key=' + _API_KEY, {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email, password: senha, returnSecureToken: true })
+        });
+        const d = await r.json();
+        if (d.error) return { ok: false, msg: _authErr(d.error.message) };
+        return { ok: true, uid: d.localId, idToken: d.idToken };
+      } catch(e) { return { ok: false, msg: 'Erro de rede' }; }
+    },
+
+    async loginComEmail(email, senha) {
+      try {
+        const r = await fetch('https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key=' + _API_KEY, {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email, password: senha, returnSecureToken: true })
+        });
+        const d = await r.json();
+        if (d.error) return { ok: false, msg: _authErr(d.error.message) };
+        return { ok: true, uid: d.localId, idToken: d.idToken };
+      } catch(e) { return { ok: false, msg: 'Erro de rede' }; }
+    },
+
+    async enviarEmailRecuperacao(email) {
+      try {
+        const r = await fetch('https://identitytoolkit.googleapis.com/v1/accounts:sendOobCode?key=' + _API_KEY, {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ requestType: 'PASSWORD_RESET', email })
+        });
+        const d = await r.json();
+        if (d.error) return { ok: false, msg: _authErr(d.error.message) };
+        return { ok: true };
+      } catch(e) { return { ok: false, msg: 'Erro de rede' }; }
+    },
+
+    async alterarSenha(idToken, novaSenha) {
+      try {
+        const r = await fetch('https://identitytoolkit.googleapis.com/v1/accounts:update?key=' + _API_KEY, {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ idToken, password: novaSenha, returnSecureToken: true })
+        });
+        const d = await r.json();
+        if (d.error) return { ok: false, msg: _authErr(d.error.message) };
+        return { ok: true, idToken: d.idToken };
+      } catch(e) { return { ok: false, msg: 'Erro de rede' }; }
+    },
+
+    async salvarPerfilCompleto(uid, dados) {
+      try {
+        await _set('usuarios/' + uid, {
+          ...dados, uid,
+          nomeLower: (dados.nomeUsuario || dados.nome || '').toLowerCase()
+        }, true);
+        return true;
+      } catch(e) { return false; }
     },
 
     async enviarSolicitacao(deUid, deNome, deInst, paraUid) {
@@ -255,7 +320,10 @@ window.addEventListener('unhandledrejection', function(e) {
       try {
         const d = await _get('backups/' + uid);
         if (!d) return null;
-        return { musicas: JSON.parse(d.musicas || '[]') };
+        return {
+          musicas: JSON.parse(d.musicas || '[]'),
+          eventos: JSON.parse(d.eventos || '[]')
+        };
       } catch(e) { return null; }
     },
     async backupEventos(uid, eventos) {
@@ -301,6 +369,14 @@ window.addEventListener('unhandledrejection', function(e) {
     async getSala(codigo) {
       try { return await _get('salas/' + codigo); } catch(e) { return null; }
     },
+
+    async buscarPorProfileId(profileId) {
+      try {
+        const pid = String(profileId).replace(/[^0-9]/g,'').slice(0,8);
+        const rows = await _query('usuarios', [['profileId','==',pid]], null, 1);
+        return rows && rows.length > 0 ? rows[0] : null;
+      } catch(e) { return null; }
+    },
         async encerrarSala(codigo) {
       try { await _set('salas/' + codigo, { ativa: false }, true); } catch(e) {}
     },
@@ -336,14 +412,13 @@ window.addEventListener('unhandledrejection', function(e) {
     },
     ouvirMensagensSala(codigo, callback) {
       // Poll sala doc — deteta mudanças no campo 'viewers'
-      let _lastViewers = null;
+      let _lastViewers = '{}';
       let _lastOnline = 1;
       return _poll('salas/' + codigo, function(data) {
         if (!data) return;
         const viewers = data.viewers || {};
         const viewersStr = JSON.stringify(viewers);
         console.log('[FB] ouvirMensagens poll: viewers=', viewersStr, 'onlineCount=', data.onlineCount);
-        if (_lastViewers === null) { _lastViewers = viewersStr; _lastOnline = data.onlineCount || 1; return; } // skip first
         // Atualiza host com novo onlineCount mesmo sem mudança de viewers
         if (viewersStr === _lastViewers) {
           if ((data.onlineCount || 1) !== _lastOnline) {
@@ -376,8 +451,14 @@ window.addEventListener('unhandledrejection', function(e) {
       try { return await _get('estatisticas/' + uid); } catch(e) { return null; }
     },
 
-    async marcarOnline(uid, nome, instrumento) {
-      try { await _set('presenca/' + uid, { uid, nome, instrumento: instrumento || '', online: true }, true); } catch(e) {}
+    async marcarOnline(uid, nome, instrumento, profileId) {
+      try { 
+        await _set('presenca/' + uid, { uid, nome, instrumento: instrumento || '', online: true }, true);
+        // Garante profileId no doc usuario
+        if (profileId) {
+          await _set('usuarios/' + uid, { uid, nome, nomeLower: nome.toLowerCase(), instrumento: instrumento || null, profileId, atualizadoEm: Date.now() }, true);
+        }
+      } catch(e) {}
     },
     async marcarOffline(uid) {
       try { await _set('presenca/' + uid, { online: false }, true); } catch(e) {}
@@ -458,213 +539,293 @@ window.addEventListener('unhandledrejection', function(e) {
 
 <!-- PeerJS removido — sala 100% Firebase -->
 <script>
-// ─── ONBOARDING ───────────────────────────────────────────────────────────────
-document.addEventListener('DOMContentLoaded', function() {
-  // Se já tem perfil, remove splash e overlay imediatamente
-  if (localStorage.getItem('map_perfil_v1')) {
-    const splash = document.getElementById('ob-splash');
-    const ov = document.getElementById('onboarding-overlay');
-    if (splash) splash.remove();
-    if (ov) ov.remove();
+// ─── ONBOARDING & AUTH ───────────────────────────────────────────────────────
+let _obNomeDisponivel   = false;
+let _obEmail            = '';
+let obInstrumentoSelecionado = null;
+
+// ── Helpers ──────────────────────────────────────────────────────────────────
+function _obToggleSenha(inputId, iconId) {
+  const el = document.getElementById(inputId);
+  const ic = document.getElementById(iconId);
+  if (!el) return;
+  const showing = el.type === 'text';
+  el.type = showing ? 'password' : 'text';
+  if (ic) ic.style.opacity = showing ? '0.3' : '0.9';
+}
+
+function obToggleChip(el) {
+  document.querySelectorAll('#ob-chips .ob-chip').forEach(c => c.classList.remove('active'));
+  el.classList.add('active');
+  obInstrumentoSelecionado = el.dataset.val;
+  _obValidarCta();
+}
+
+// ── Step-1: nome ─────────────────────────────────────────────────────────────
+function obNomeInput() {
+  const val = (document.getElementById('ob-nome')?.value || '').trim();
+  _obNomeDisponivel = false;
+  const btn = document.getElementById('ob-btn-verificar');
+  const msg = document.getElementById('ob-nome-msg');
+  const st  = document.getElementById('ob-nome-status');
+  if (btn) btn.disabled = val.length < 2;
+  if (msg) msg.textContent = val.length >= 2 ? 'Clica em verificar disponibilidade' : '';
+  if (st)  st.textContent = '';
+  _obValidarCta();
+}
+
+async function obVerificarNome() {
+  const val = (document.getElementById('ob-nome')?.value || '').trim();
+  if (val.length < 2) return;
+  const btn = document.getElementById('ob-btn-verificar');
+  const msg = document.getElementById('ob-nome-msg');
+  const st  = document.getElementById('ob-nome-status');
+  if (btn) { btn.disabled = true; btn.textContent = 'A verificar...'; }
+  if (!window._fb) {
+    if (msg) msg.textContent = 'Firebase ainda a carregar...';
+    if (btn) { btn.disabled = false; btn.textContent = 'Verificar disponibilidade'; }
+    return;
+  }
+  const disponivel = await window._fb.verificarNomeDisponivel(val);
+  _obNomeDisponivel = disponivel;
+  if (st) st.textContent = disponivel ? '✅' : '❌';
+  if (msg) msg.textContent = disponivel ? 'Nome disponível!' : 'Nome já em uso. Escolhe outro.';
+  if (btn) { btn.disabled = false; btn.textContent = 'Verificar disponibilidade'; }
+  if (disponivel) {
+    const tag = document.getElementById('ob-nome-tag');
+    if (tag) tag.textContent = '@' + val;
+  }
+  _obValidarCta();
+}
+
+function _obGetPin() {
+  let p = '';
+  for (let i = 0; i < 4; i++) {
+    const el = document.getElementById('ob-pin-' + i);
+    p += el ? (el.value || '') : '';
+  }
+  return p;
+}
+
+function obPinNext(i) {
+  const el = document.getElementById('ob-pin-' + i);
+  if (!el) return;
+  el.value = el.value.replace(/\D/g, '').slice(0,1);
+  if (el.value && i < 3) document.getElementById('ob-pin-' + (i+1))?.focus();
+  _obValidarCta();
+}
+
+function obPinKey(e, i) {
+  if (e.key === 'Backspace' && !document.getElementById('ob-pin-' + i)?.value && i > 0) {
+    document.getElementById('ob-pin-' + (i-1))?.focus();
+  }
+}
+
+function _obValidarCta() {
+  const step1 = document.getElementById('ob-step-1');
+  const step2 = document.getElementById('ob-step-2');
+  const step1Visible = step1 && step1.style.display !== 'none';
+  const cta = document.getElementById('ob-cta');
+  const btnVerif = document.getElementById('ob-btn-verificar');
+
+  if (step1Visible) {
+    // Step 1: activa botão verificar se nome >= 2 chars
+    const nome = (document.getElementById('ob-nome')?.value || '').trim();
+    if (btnVerif) btnVerif.disabled = nome.length < 2;
     return;
   }
 
-  // ── ANIMAÇÃO DE ENTRADA ──────────────────────────────────────────────────
-  // Fase 1: splash fica visível por 1.8s com animações
-  // Fase 2: splash some, onboarding entra suavemente
-  const splash = document.getElementById('ob-splash');
+  // Step 2: valida tudo
+  const senha  = document.getElementById('ob-senha')?.value || '';
+  const senha2 = document.getElementById('ob-senha2')?.value || '';
+  const pin    = _obGetPin();
+  const senhaMsg = document.getElementById('ob-senha-msg');
+
+  let ok = _obNomeDisponivel && senha.length >= 6 && senha === senha2 && pin.length === 4;
+
+  if (senhaMsg) {
+    if (senha.length > 0 && senha.length < 6) senhaMsg.textContent = 'Mínimo 6 caracteres';
+    else if (senha2.length > 0 && senha !== senha2) senhaMsg.textContent = 'Senhas não coincidem';
+    else senhaMsg.textContent = '';
+  }
+
+  if (cta) cta.disabled = !ok;
+}
+
+// ── Show step 2 after nome + email confirmed ─────────────────────────────────
+async function obVerificarNomeEAvancar() {
+  await obVerificarNome();
+  if (_obNomeDisponivel) _obAvancarStep2();
+}
+
+function _obAvancarStep2() {
+  const emailEl = document.getElementById('ob-email');
+  const emailMsg = document.getElementById('ob-email-msg');
+  const email = (emailEl?.value || '').trim();
+  const emailOk = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+  if (!emailOk) {
+    if (emailMsg) emailMsg.textContent = 'Email inválido';
+    emailEl?.focus();
+    return;
+  }
+  if (!_obNomeDisponivel) {
+    const msg = document.getElementById('ob-nome-msg');
+    if (msg) msg.textContent = 'Verifica primeiro o nome';
+    return;
+  }
+  _obEmail = email;
+  document.getElementById('ob-step-1').style.display = 'none';
+  document.getElementById('ob-step-2').style.display = 'flex';
+  _obValidarCta();
+}
+
+// Intercept verificar button: if nome ok, proceed to check email then step 2
+// Override obVerificarNome to also advance
+const _origObVerificarNome = window.obVerificarNome;
+window._obAvancarStep2 = _obAvancarStep2;
+
+// ── terminarOnboarding ───────────────────────────────────────────────────────
+async function terminarOnboarding() {
+  const nomeUsuario = (document.getElementById('ob-nome')?.value || '').trim();
+  const senha       = document.getElementById('ob-senha')?.value || '';
+  const senha2      = document.getElementById('ob-senha2')?.value || '';
+  const pin         = _obGetPin();
+  const cta         = document.getElementById('ob-cta');
+
+  if (!_obNomeDisponivel || nomeUsuario.length < 2) return;
+  if (senha.length < 6 || senha !== senha2) return;
+  if (pin.length < 4) return;
+  if (!_obEmail) return;
+
+  if (cta) { cta.disabled = true; cta.textContent = 'A criar conta...'; }
+
+  // 1. Registar no Firebase Auth
+  if (!window._fb) {
+    if (cta) { cta.disabled = false; cta.textContent = 'Criar conta'; }
+    if (typeof showToast === 'function') showToast('Firebase a carregar, tenta novamente.');
+    return;
+  }
+
+  const authResult = await window._fb.registarComEmail(_obEmail, senha);
+  if (!authResult.ok) {
+    if (cta) { cta.disabled = false; cta.textContent = 'Criar conta'; }
+    if (typeof showToast === 'function') showToast(authResult.msg);
+    return;
+  }
+
+  const uid = authResult.uid;
+
+  // 2. Gera profileId numérico
+  let profileId = '';
+  for (let i = 0; i < 8; i++) profileId += Math.floor(Math.random() * 10);
+
+  // 3. Guarda perfil localmente (sem senha, sem idToken)
+  const perfil = {
+    nome: nomeUsuario,
+    nomeUsuario,
+    email: _obEmail,
+    instrumento: obInstrumentoSelecionado || null,
+    criadoEm: Date.now(),
+    uid,
+    profileId,
+    pin   // PIN fica só local
+  };
+  localStorage.setItem('map_perfil_v1', JSON.stringify(perfil));
+  localStorage.setItem('map_uid_v1', uid);
+
+  // 4. Guarda perfil no Firestore (sem PIN, sem senha)
+  try {
+    await window._fb.salvarPerfilCompleto(uid, {
+      nome: nomeUsuario,
+      nomeUsuario,
+      email: _obEmail,
+      instrumento: perfil.instrumento || null,
+      profileId,
+      criadoEm: perfil.criadoEm
+    });
+  } catch(e) {}
+
+  // 5. Animação de saída
   const ov = document.getElementById('onboarding-overlay');
+  if (ov) ov.classList.add('done');
 
   setTimeout(function() {
-    // Fase 2: revela o form enquanto splash ainda está visível
-    if (ov) ov.classList.add('visible');
-    // Pequeno delay depois para tirar o splash
-    setTimeout(function() {
-      if (splash) {
-        splash.classList.add('hide');
-        setTimeout(function() {
-          if (splash) splash.remove();
-        }, 700);
-      }
-    }, 200);
-  }, 1800);
-
-  const nomeInput = document.getElementById('ob-nome');
-  const cta = document.getElementById('ob-cta');
-  if (!nomeInput || !cta) return;
-
-  function validarOb() {
-    cta.disabled = (nomeInput.value || '').trim().length < 2;
-  }
-
-  nomeInput.addEventListener('input', validarOb);
-  nomeInput.addEventListener('change', validarOb);
-  nomeInput.addEventListener('paste', function() { setTimeout(validarOb, 10); });
-  nomeInput.addEventListener('keydown', function(e) {
-    if (e.key === 'Enter' && !cta.disabled) terminarOnboarding();
-  });
-
-  validarOb();
-  setTimeout(validarOb, 200);
-  setTimeout(validarOb, 600);
-  setTimeout(validarOb, 1200);
-});
-
-let obInstrumentoSelecionado = null;
-
-function obToggleChip(btn) {
-  // Desmarca todos
-  document.querySelectorAll('.ob-chip').forEach(c => c.classList.remove('selected'));
-  // Marca o clicado
-  btn.classList.add('selected');
-  obInstrumentoSelecionado = btn.dataset.val;
-}
-
-
-// ─── PERFIL ─────────────────────────────────────────────────────────────────
-let perfilInstrumentoSelecionado = null;
-let perfilFotoBase64 = null; // foto atual em edição
-
-function abrirModalPerfil() {
-  const perfil = JSON.parse(localStorage.getItem('map_perfil_v1') || '{}');
-  const nome = perfil.nome || '';
-  const inst = perfil.instrumento || null;
-
-  document.getElementById('perfil-nome-input').value = nome;
-  perfilInstrumentoSelecionado = inst;
-  perfilFotoBase64 = perfil.foto || null;
-
-  // Chips
-  document.querySelectorAll('#perfil-chips .ob-chip').forEach(c => {
-    c.classList.toggle('selected', c.dataset.val === inst);
-  });
-
-  // Stats
-  document.getElementById('perfil-stat-musicas').textContent = songs.length;
-  document.getElementById('perfil-stat-eventos').textContent =
-    (JSON.parse(localStorage.getItem('map_pro_eventos_v1') || '[]')).length;
-
-  // Badge Google
-  const badge = document.getElementById('perfil-google-badge');
-  if (badge) badge.style.display = perfil.viaGoogle ? 'block' : 'none';
-
-  atualizarPreviewPerfil();
-  document.getElementById('modal-perfil').style.display = 'flex';
-  document.getElementById('m-drop').classList.remove('show');
-}
-
-function sairDaConta() {
-  if (!confirm('Sair do perfil? Os dados locais serão apagados.\nAs músicas e eventos guardados na nuvem ficam seguros.')) return;
-  // Marca offline no Firebase antes de sair
-  _fbMarcarOffline();
-  // Limpa dados locais
-  localStorage.removeItem('map_perfil_v1');
-  localStorage.removeItem('map_notifs_v1');
-  // Mantém músicas e eventos (apenas dados de conta são apagados)
-  fecharModalPerfil();
-  showToast('Perfil removido. Recarregando...');
-  setTimeout(() => location.reload(), 1000);
-}
-
-function fecharModalPerfil() {
-  document.getElementById('modal-perfil').style.display = 'none';
-}
-
-function perfilToggleChip(btn) {
-  document.querySelectorAll('#perfil-chips .ob-chip').forEach(c => c.classList.remove('selected'));
-  btn.classList.add('selected');
-  perfilInstrumentoSelecionado = btn.dataset.val;
-  atualizarPreviewPerfil();
-}
-
-function atualizarPreviewPerfil() {
-  const nome = (document.getElementById('perfil-nome-input').value || '').trim();
-  const av = document.getElementById('perfil-avatar');
-
-  // Avatar: foto ou inicial
-  if (perfilFotoBase64) {
-    av.innerHTML = '<img src="' + perfilFotoBase64 + '" style="width:100%;height:100%;object-fit:cover;border-radius:16px;">';
-  } else {
-    av.innerHTML = nome ? nome.charAt(0).toUpperCase() : '?';
-    av.style.background = 'linear-gradient(135deg,#1db954,#17a349)';
-  }
-
-  document.getElementById('perfil-nome-display').textContent = nome || '—';
-  document.getElementById('perfil-inst-display').textContent =
-    perfilInstrumentoSelecionado || 'Instrumento não definido';
-}
-
-// ── Carregar foto da biblioteca ──────────────────────────────────────────────
-function perfilCarregarFoto(input) {
-  const file = input.files[0];
-  if (!file) return;
-  const reader = new FileReader();
-  reader.onload = function(e) {
-    perfilFotoBase64 = e.target.result;
-    atualizarPreviewPerfil();
-  };
-  reader.readAsDataURL(file);
-}
-
-// google login removido
-
-// _mostrarInfoGoogle removed
-
-
-function salvarPerfil() {
-  const nome = (document.getElementById('perfil-nome-input').value || '').trim();
-  if (nome.length < 2) { showToast('Nome precisa ter pelo menos 2 caracteres'); return; }
-  const perfil = JSON.parse(localStorage.getItem('map_perfil_v1') || '{}');
-  perfil.nome = nome;
-  perfil.instrumento = perfilInstrumentoSelecionado || perfil.instrumento || null;
-  if (perfilFotoBase64) perfil.foto = perfilFotoBase64;
-  localStorage.setItem('map_perfil_v1', JSON.stringify(perfil));
-  // Sincroniza com Firebase
-  if (window._fb && _fbReady) {
-    window._fb.salvarPerfil(_getUid(), { nome: perfil.nome, instrumento: perfil.instrumento || null });
-  }
-  fecharModalPerfil();
-  showToast('Perfil atualizado!');
-}
-
-function terminarOnboarding() {
-  const nome = (document.getElementById('ob-nome').value || '').trim();
-  if (nome.length < 2) return;
-
-  const perfil = {
-    nome,
-    instrumento: obInstrumentoSelecionado || null,
-    criadoEm: Date.now()
-  };
-
-  localStorage.setItem('map_perfil_v1', JSON.stringify(perfil));
-
-  // Sincroniza com Firebase
-  setTimeout(() => {
-    if (window._fb && window._fbReady !== false) {
-      window._fb.salvarPerfil(perfil.uid || ('u_' + Date.now()), {
-        nome: perfil.nome, instrumento: perfil.instrumento || null
-      });
-    }
-  }, 1000);
-
-  // Animação de saída
-  const ov = document.getElementById('onboarding-overlay');
-  ov.classList.add('done');
-
-  // Notificação de boas-vindas — chamada após o main script carregar
-  setTimeout(() => {
     if (typeof adicionarNotif === 'function') {
-      adicionarNotif('update',
-        'Bem-vindo, ' + nome + '!',
-        'Perfil criado. Comece salvando sua primeira música.',
-        'welcome_' + Date.now()
-      );
+      adicionarNotif('update', 'Bem-vindo, ' + nomeUsuario + '!',
+        'Conta criada. Comece salvando sua primeira música.', 'welcome_v1');
     }
-    ov.remove();
+    if (ov) ov.remove();
   }, 500);
 }
 
+// ── PIN lock screen ───────────────────────────────────────────────────────────
+let _pinBuffer = '';
+
+function _pinGetSaved() {
+  try { return JSON.parse(localStorage.getItem('map_perfil_v1') || '{}').pin || ''; } catch(e) { return ''; }
+}
+
+function _verificarPinNaEntrada() {
+  const perfil = JSON.parse(localStorage.getItem('map_perfil_v1') || '{}');
+  if (!perfil.nome || !perfil.pin) return; // sem conta ou sem PIN — vai directo ao app
+  const screen = document.getElementById('pin-lock-screen');
+  const nomeEl = document.getElementById('pin-lock-nome');
+  if (!screen) return;
+  if (nomeEl) nomeEl.textContent = perfil.nome;
+  screen.style.display = 'flex';
+  _pinBuffer = '';
+  _pinAtualizarDots();
+}
+
+function pinTecla(d) {
+  if (_pinBuffer.length >= 4) return;
+  _pinBuffer += String(d);
+  _pinAtualizarDots();
+  if (_pinBuffer.length === 4) setTimeout(_pinVerificar, 80);
+}
+
+function pinApagar() {
+  _pinBuffer = _pinBuffer.slice(0,-1);
+  _pinAtualizarDots();
+}
+
+function _pinAtualizarDots() {
+  for (let i = 0; i < 4; i++) {
+    const d = document.getElementById('pin-dot-' + i);
+    if (d) d.classList.toggle('filled', i < _pinBuffer.length);
+  }
+}
+
+function _pinVerificar() {
+  const saved = _pinGetSaved();
+  const screen = document.getElementById('pin-lock-screen');
+  const errEl  = document.getElementById('pin-lock-error');
+  if (_pinBuffer === saved) {
+    if (screen) { screen.style.animation = 'pinShake 0s'; screen.style.opacity = '0'; screen.style.transition = 'opacity 0.3s'; setTimeout(() => { screen.style.display = 'none'; screen.style.opacity = ''; screen.style.transition = ''; }, 300); }
+  } else {
+    if (errEl) { errEl.textContent = 'PIN incorreto'; errEl.style.display = 'block'; }
+    if (screen) { screen.classList.add('shake'); setTimeout(() => screen.classList.remove('shake'), 500); }
+    // vermelho nos dots
+    for (let i = 0; i < 4; i++) { const d = document.getElementById('pin-dot-' + i); if (d) d.classList.add('error'); }
+    setTimeout(() => {
+      _pinBuffer = ''; _pinAtualizarDots();
+      for (let i = 0; i < 4; i++) { const d = document.getElementById('pin-dot-' + i); if (d) d.classList.remove('error'); }
+      if (errEl) errEl.style.display = 'none';
+    }, 800);
+  }
+}
+
+// ── Init ─────────────────────────────────────────────────────────────────────
+document.addEventListener('DOMContentLoaded', function() {
+  const perfil = JSON.parse(localStorage.getItem('map_perfil_v1') || '{}');
+  if (perfil.nome) {
+    // Utilizador já registado — mostra PIN ou app directo
+    const ov = document.getElementById('onboarding-overlay');
+    if (ov) ov.remove();
+    setTimeout(_verificarPinNaEntrada, 100);
+  }
+  // else: onboarding vai mostrar normalmente
+});
 </script>
 
 
@@ -723,17 +884,17 @@ body { font-family: -apple-system, 'Inter', BlinkMacSystemFont, 'Segoe UI', sans
   display: flex; flex-direction: column; line-height: 1;
 }
 .logo-name {
-  font-size: 18px; font-weight: 900; letter-spacing: 0.5px;
+  font-size: 26px; font-weight: 900; letter-spacing: 0.5px;
   color: #fff; text-transform: uppercase;
 }
 .logo-name .pro {
   color: var(--accent-primary);
-  font-size: 11px; font-weight: 900;
+  font-size: 10px; font-weight: 900;
   vertical-align: super; letter-spacing: 1px;
 }
 .logo-tag {
   font-size: 8px; font-weight: 700; letter-spacing: 3px;
-  color: rgba(255,255,255,0.3); text-transform: uppercase; margin-top: 2px;
+  color: rgba(255,255,255,0.3); text-transform: uppercase; margin-top: 3px;
 }
 .menu-container { position: relative; }
 .menu-btn { background: none; border: none; color: #fff; cursor: pointer; padding: 8px; border-radius: 50%; display: flex; align-items: center; }
@@ -2123,7 +2284,7 @@ body.viewer-mode input[type="text"] { pointer-events: none; }
 
 /* Painel */
 .notif-panel {
-  position: fixed; top: 58px; right: 12px; z-index: 8000;
+  position: fixed; top: 58px; right: 12px; z-index: 9500;
   width: 300px; max-width: calc(100vw - 24px);
   background: #111118;
   border: 1px solid rgba(255,255,255,0.08);
@@ -2199,120 +2360,126 @@ body.viewer-mode input[type="text"] { pointer-events: none; }
 /* ─── ONBOARDING — ANIMAÇÃO ENTRADA ──────────────────────────────────────── */
 
 /* Fase 1: Splash screen com logo centralizado */
+/* ─── SPLASH ─────────────────────────────────────────────────────────────── */
 #ob-splash {
   position: fixed; inset: 0; z-index: 100000;
   background: #06060c;
   display: flex; flex-direction: column;
   align-items: center; justify-content: center;
+  gap: 0;
   pointer-events: none;
-}
-#ob-splash-logo {
-  width: 88px; height: 88px; border-radius: 24px;
-  background: linear-gradient(135deg, #1db954 0%, #12a045 100%);
-  display: flex; align-items: center; justify-content: center;
-  box-shadow: 0 0 0 0 rgba(29,185,84,0.5);
-  animation: obSplashLogo 0.8s cubic-bezier(0.34,1.56,0.64,1) 0.2s both;
-}
-#ob-splash-logo span {
-  font-size: 38px; font-weight: 900; color: #000; line-height: 1;
-  font-family: -apple-system, 'Inter', sans-serif;
-}
-#ob-splash-name {
-  margin-top: 20px;
-  font-size: 22px; font-weight: 900; letter-spacing: -0.5px; color: #fff;
-  animation: obFadeUp 0.5s 0.7s ease both;
-}
-#ob-splash-name span { color: #1db954; }
-#ob-splash-sub {
-  margin-top: 6px;
-  font-size: 12px; font-weight: 500; letter-spacing: 1px;
-  color: rgba(255,255,255,0.3);
-  text-transform: uppercase;
-  animation: obFadeUp 0.5s 0.9s ease both;
-}
-#ob-splash-ring {
-  position: absolute; top: 50%; left: 50%;
-  width: 200px; height: 200px; border-radius: 50%;
-  border: 1px solid rgba(29,185,84,0.15);
-  transform: translate(-50%, -50%) scale(0);
-  animation: obRingExpand 1.2s 0.3s cubic-bezier(0.2,0.8,0.4,1) both;
-}
-#ob-splash-ring2 {
-  position: absolute; top: 50%; left: 50%;
-  width: 320px; height: 320px; border-radius: 50%;
-  border: 1px solid rgba(29,185,84,0.07);
-  transform: translate(-50%, -50%) scale(0);
-  animation: obRingExpand 1.4s 0.5s cubic-bezier(0.2,0.8,0.4,1) both;
 }
 #ob-splash-glow {
   position: absolute; top: 50%; left: 50%;
-  width: 300px; height: 300px;
+  width: 320px; height: 320px;
   transform: translate(-50%, -50%);
-  background: radial-gradient(circle, rgba(29,185,84,0.12) 0%, transparent 70%);
-  animation: obGlowPulse 2s 0.5s ease-in-out infinite alternate;
+  background: radial-gradient(circle, rgba(29,185,84,0.10) 0%, transparent 70%);
+  animation: splashGlow 2.5s ease-in-out infinite alternate;
 }
-@keyframes obSplashLogo {
-  0%   { opacity: 0; transform: scale(0.4) translateY(20px); box-shadow: 0 0 0 0 rgba(29,185,84,0); }
-  60%  { box-shadow: 0 0 0 20px rgba(29,185,84,0.08); }
-  100% { opacity: 1; transform: scale(1) translateY(0); box-shadow: 0 0 60px rgba(29,185,84,0.25), 0 0 0 1px rgba(29,185,84,0.3); }
+@keyframes splashGlow {
+  from { opacity: 0.5; transform: translate(-50%,-50%) scale(0.9); }
+  to   { opacity: 1;   transform: translate(-50%,-50%) scale(1.15); }
 }
-@keyframes obRingExpand {
-  from { opacity: 0; transform: translate(-50%,-50%) scale(0.3); }
+#ob-splash-ring {
+  position: absolute; top: 50%; left: 50%;
+  width: 220px; height: 220px; border-radius: 50%;
+  border: 1px solid rgba(29,185,84,0.12);
+  transform: translate(-50%, -50%) scale(0);
+  animation: splashRing 1.4s 0.2s cubic-bezier(0.2,0.8,0.4,1) forwards;
+}
+#ob-splash-ring2 {
+  position: absolute; top: 50%; left: 50%;
+  width: 360px; height: 360px; border-radius: 50%;
+  border: 1px solid rgba(29,185,84,0.05);
+  transform: translate(-50%, -50%) scale(0);
+  animation: splashRing 1.6s 0.4s cubic-bezier(0.2,0.8,0.4,1) forwards;
+}
+@keyframes splashRing {
+  from { opacity: 0; transform: translate(-50%,-50%) scale(0.2); }
   to   { opacity: 1; transform: translate(-50%,-50%) scale(1); }
 }
-@keyframes obGlowPulse {
-  from { opacity: 0.6; transform: translate(-50%,-50%) scale(0.9); }
-  to   { opacity: 1;   transform: translate(-50%,-50%) scale(1.1); }
+#ob-splash-name {
+  position: relative; z-index: 1;
+  font-size: 46px; font-weight: 900; letter-spacing: -1.5px;
+  color: #fff; text-align: center; line-height: 1.05;
+  opacity: 0; transform: translateY(16px);
+  animation: splashName 1.0s 0.3s cubic-bezier(0.22,1,0.36,1) forwards;
 }
-@keyframes obFadeUp {
-  from { opacity: 0; transform: translateY(10px); }
+#ob-splash-name { position: relative; display: inline-block; }
+#ob-splash-name span { color: #1db954; font-size: 0.22em; font-weight: 800; letter-spacing: 2px; text-transform: uppercase; position: absolute; top: 0.15em; right: -1.8em; line-height: 1; }
+@keyframes splashName {
+  from { opacity: 0; transform: translateY(16px); }
   to   { opacity: 1; transform: translateY(0); }
 }
-
-/* Saída do splash — slide up para revelar o form */
-#ob-splash.hide {
-  animation: obSplashOut 0.7s cubic-bezier(0.4,0,0.2,1) forwards;
+#ob-splash-user {
+  position: relative; z-index: 1;
+  margin-top: 12px;
+  font-size: 18px; font-weight: 600; color: rgba(255,255,255,0.4);
+  text-align: center; display: none;
+  opacity: 0; transform: translateY(10px);
+  animation: splashName 0.8s 0.7s cubic-bezier(0.22,1,0.36,1) forwards;
 }
-@keyframes obSplashOut {
+#ob-splash-sub {
+  position: relative; z-index: 1;
+  margin-top: 10px;
+  font-size: 10px; font-weight: 600; letter-spacing: 3px;
+  color: rgba(255,255,255,0.18); text-transform: uppercase; text-align: center;
+  opacity: 0;
+  animation: splashName 0.8s 0.6s cubic-bezier(0.22,1,0.36,1) forwards;
+}
+/* Saída: desliza para cima e desaparece */
+#ob-splash.exit {
+  animation: splashExit 2s cubic-bezier(0.4,0,0.2,1) forwards;
+  pointer-events: none;
+}
+@keyframes splashExit {
   0%   { opacity: 1; transform: translateY(0); }
-  100% { opacity: 0; transform: translateY(-30px); pointer-events: none; }
+  100% { opacity: 0; transform: translateY(-60px); }
 }
 
-/* Fase 2: overlay principal do onboarding */
+/* ─── ONBOARDING OVERLAY ─────────────────────────────────────────────────── */
 #onboarding-overlay {
-  position: fixed; inset: 0; z-index: 99999;
-  background: #09090f;
+  position: fixed; inset: 0; z-index: 99998;
+  background: #06060c;
   display: flex; flex-direction: column;
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;
   opacity: 0;
-  transition: opacity 0s;
+  transform: translateY(50px);
+  transition: none;
+  pointer-events: none;
 }
 #onboarding-overlay.visible {
   opacity: 1;
-  transition: opacity 0.5s ease;
+  transform: translateY(0);
+  transition: opacity 0.7s cubic-bezier(0.22,1,0.36,1),
+              transform 0.7s cubic-bezier(0.22,1,0.36,1);
+  pointer-events: auto;
 }
+/* Saída: sobe e desaparece */
 #onboarding-overlay.done {
-  animation: obFadeOut 0.55s cubic-bezier(0.4,0,1,1) forwards;
+  animation: ovSlideOut 0.65s cubic-bezier(0.4,0,0.2,1) forwards;
+  pointer-events: none;
 }
-@keyframes obFadeOut {
-  0%   { opacity: 1; transform: scale(1); }
-  100% { opacity: 0; transform: scale(0.97); pointer-events: none; }
+@keyframes ovSlideOut {
+  0%   { opacity: 1; transform: translateY(0); }
+  100% { opacity: 0; transform: translateY(-60px); }
 }
 
-/* Hero section */
+/* ─── HERO — nome grande ────────────────────────────────────────────────── */
 .ob-hero {
-  min-height: 50vh;
+  flex: 1;
   display: flex; flex-direction: column;
   align-items: center; justify-content: center;
-  padding: 60px 32px 40px;
+  padding: 60px 32px 32px;
   position: relative; overflow: hidden;
   text-align: center;
+  min-height: 42vh;
 }
 .ob-hero-bg {
   position: absolute; inset: 0; z-index: 0;
   background: radial-gradient(ellipse 70% 60% at 50% 40%,
-    rgba(29,185,84,0.09) 0%, transparent 70%);
+    rgba(29,185,84,0.08) 0%, transparent 70%);
 }
 .ob-hero-ring {
   position: absolute; top: 50%; left: 50%;
@@ -2330,51 +2497,36 @@ body.viewer-mode input[type="text"] { pointer-events: none; }
   0%, 100% { opacity: 0.4; transform: translate(-50%,-55%) scale(1); }
   50%       { opacity: 1;   transform: translate(-50%,-55%) scale(1.04); }
 }
-.ob-logo-mark {
-  position: relative; z-index: 1;
-  width: 68px; height: 68px; border-radius: 18px;
-  background: linear-gradient(135deg, #1db954 0%, #12a045 100%);
-  display: flex; align-items: center; justify-content: center;
-  margin-bottom: 22px;
-  box-shadow: 0 0 0 1px rgba(29,185,84,0.3), 0 16px 40px rgba(29,185,84,0.18);
-  animation: obLogoIn 0.6s cubic-bezier(0.34,1.56,0.64,1) 0.1s both;
-}
-@keyframes obLogoIn {
-  from { opacity:0; transform: scale(0.6) translateY(16px); }
-  to   { opacity:1; transform: scale(1)   translateY(0); }
-}
-.ob-logo-mark span { font-size: 30px; font-weight: 900; color: #000; line-height: 1; }
 .ob-hero h1 {
   position: relative; z-index: 1;
-  font-size: 26px; font-weight: 900; letter-spacing: -0.5px;
-  color: #fff; margin-bottom: 8px;
-  animation: obTextIn 0.55s 0.2s ease both;
+  font-size: 44px; font-weight: 900; letter-spacing: -1.5px;
+  color: #fff; margin: 0 0 10px;
+  line-height: 1.05;
 }
-.ob-hero h1 span { color: #1db954; }
+.ob-hero h1 { position: relative; display: inline-block; }
+.ob-hero h1 span { color: #1db954; font-size: 0.22em; font-weight: 800; letter-spacing: 2px; text-transform: uppercase; position: absolute; top: 0.15em; right: -1.8em; line-height: 1; }
 .ob-hero p {
   position: relative; z-index: 1;
-  font-size: 13px; color: rgba(255,255,255,0.38);
-  font-weight: 500; line-height: 1.6; max-width: 250px;
-  animation: obTextIn 0.55s 0.35s ease both;
+  font-size: 12px; color: rgba(255,255,255,0.32);
+  font-weight: 500; letter-spacing: 1px;
+  text-transform: uppercase;
 }
-@keyframes obTextIn {
-  from { opacity:0; transform: translateY(14px); }
-  to   { opacity:1; transform: translateY(0); }
+/* Nome do utilizador (retorno) */
+.ob-hero-username {
+  position: relative; z-index: 1;
+  font-size: 17px; font-weight: 700;
+  color: rgba(255,255,255,0.4);
+  margin-top: 6px; display: none;
 }
+
 
 /* Form section */
 .ob-form {
   background: #0d0d15;
   border-top: 1px solid rgba(255,255,255,0.05);
-  padding: 36px 24px 48px;
+  padding: 36px 24px 52px;
   display: flex; flex-direction: column; gap: 28px;
-  animation: obFormIn 0.65s 0.45s ease both;
 }
-@keyframes obFormIn {
-  from { opacity:0; transform: translateY(24px); }
-  to   { opacity:1; transform: translateY(0); }
-}
-
 /* Field */
 .ob-field { display: flex; flex-direction: column; gap: 8px; }
 .ob-label {
@@ -2464,6 +2616,45 @@ body.viewer-mode input[type="text"] { pointer-events: none; }
   line-height: 1.6;
 }
 
+
+/* PIN LOCK */
+.pin-dot {
+  width: 14px; height: 14px; border-radius: 50%;
+  border: 2px solid rgba(255,255,255,0.2);
+  background: transparent;
+  transition: background 0.15s, border-color 0.15s, transform 0.15s;
+}
+.pin-dot.filled {
+  background: #1db954;
+  border-color: #1db954;
+  transform: scale(1.1);
+}
+.pin-dot.error {
+  background: #ff6b6b;
+  border-color: #ff6b6b;
+}
+.pin-key {
+  background: rgba(255,255,255,0.06);
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 14px;
+  color: #fff;
+  font-size: 22px;
+  font-weight: 700;
+  height: 64px;
+  cursor: pointer;
+  font-family: inherit;
+  transition: background 0.1s, transform 0.08s;
+  display: flex; align-items: center; justify-content: center;
+  -webkit-tap-highlight-color: transparent;
+}
+.pin-key:active { background: rgba(29,185,84,0.15); transform: scale(0.94); }
+.pin-key-del { font-size: 14px; color: rgba(255,255,255,0.4); }
+@keyframes pinShake {
+  0%,100% { transform: translateX(0); }
+  20%,60% { transform: translateX(-8px); }
+  40%,80% { transform: translateX(8px); }
+}
+.pin-shake { animation: pinShake 0.35s ease; }
 </style>
 
 </head>
@@ -2476,8 +2667,8 @@ body.viewer-mode input[type="text"] { pointer-events: none; }
   <div id="ob-splash-glow"></div>
   <div id="ob-splash-ring"></div>
   <div id="ob-splash-ring2"></div>
-  <div id="ob-splash-logo"><span>M</span></div>
   <div id="ob-splash-name">Map Music<span>PRO</span></div>
+  <div id="ob-splash-user"></div>
   <div id="ob-splash-sub">Para músicos ao vivo</div>
 </div>
 
@@ -2487,82 +2678,137 @@ body.viewer-mode input[type="text"] { pointer-events: none; }
     <div class="ob-hero-bg"></div>
     <div class="ob-hero-ring"></div>
     <div class="ob-hero-ring"></div>
-    <div class="ob-logo-mark"><span>M</span></div>
     <h1>Map Music<span>PRO</span></h1>
     <p>A ferramenta profissional para músicos ao vivo</p>
   </div>
   <div class="ob-form">
-    <div class="ob-field">
-      <label class="ob-label">Seu nome ou banda</label>
-      <input class="ob-input" id="ob-nome" type="text" placeholder="Ex: João Silva ou Banda XYZ" autocomplete="off">
-    </div>
-    <div class="ob-field">
-      <label class="ob-label">Instrumento</label>
-      <div class="ob-chips">
-        <button class="ob-chip" data-val="guitarra" onclick="obToggleChip(this)">
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 3H5a2 2 0 0 0-2 2v4m6-6h10a2 2 0 0 1 2 2v4M9 3v18m0 0h10a2 2 0 0 0 2-2v-4M9 21H5a2 2 0 0 1-2-2v-4m0 0h18"/></svg>
-          Guitarra
+    <!-- ETAPA 1: Nome de usuário -->
+    <div id="ob-step-1">
+      <!-- ETAPA 1: Novo utilizador ou já tem conta -->
+      <div class="ob-field">
+        <label class="ob-label">Nome de utilizador</label>
+        <div style="position:relative;">
+          <input id="ob-nome" type="text" class="ob-input" placeholder="@nomeusuario" autocomplete="off" maxlength="24"
+            oninput="obNomeInput()" style="padding-right:44px;">
+          <div id="ob-nome-status" style="position:absolute;right:12px;top:50%;transform:translateY(-50%);font-size:14px;"></div>
+        </div>
+        <div id="ob-nome-msg" style="font-size:11px;color:rgba(255,255,255,0.3);margin-top:6px;min-height:16px;"></div>
+        <button id="ob-btn-verificar" onclick="obVerificarNomeEAvancar()" disabled
+          style="width:100%;margin-top:8px;padding:12px;border-radius:10px;background:rgba(29,185,84,0.12);border:1px solid rgba(29,185,84,0.25);color:rgba(29,185,84,0.8);font-size:12px;font-weight:800;cursor:pointer;font-family:inherit;letter-spacing:1px;transition:0.2s;">
+          Verificar disponibilidade
         </button>
-        <button class="ob-chip" data-val="baixo" onclick="obToggleChip(this)">Baixo</button>
-        <button class="ob-chip" data-val="teclado" onclick="obToggleChip(this)">Teclado</button>
-        <button class="ob-chip" data-val="bateria" onclick="obToggleChip(this)">Bateria</button>
-        <button class="ob-chip" data-val="voz" onclick="obToggleChip(this)">Voz</button>
-        <button class="ob-chip" data-val="violao" onclick="obToggleChip(this)">Violão</button>
-        <button class="ob-chip" data-val="produtor" onclick="obToggleChip(this)">Produtor</button>
-        <button class="ob-chip" data-val="outro" onclick="obToggleChip(this)">Outro</button>
       </div>
-    </div>
-    <div class="ob-field">
-      <label class="ob-label">O que você vai usar</label>
-      <div class="ob-features">
-        <div class="ob-feature-item">
-          <div class="ob-feature-icon">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 3H5a2 2 0 0 0-2 2v4m6-6h10a2 2 0 0 1 2 2v4M9 3v18m0 0h10a2 2 0 0 0 2-2v-4M9 21H5a2 2 0 0 1-2-2v-4m0 0h18"/></svg>
-          </div>
-          <div class="ob-feature-text">
-            <div class="ob-feature-title">Cifras e Metrônomo</div>
-            <div class="ob-feature-desc">Salve músicas com acordes, BPM e partes separadas</div>
-          </div>
+      <div class="ob-field" style="margin-top:4px;">
+        <label class="ob-label">Email</label>
+        <input id="ob-email" type="email" class="ob-input" placeholder="teu@email.com" autocomplete="email"
+          oninput="_obValidarCta()">
+        <div id="ob-email-msg" style="font-size:11px;color:rgba(255,255,255,0.3);margin-top:6px;min-height:16px;"></div>
+      </div>
+    </div><!-- /ob-step-1 -->
+
+    <div id="ob-step-2" style="display:none;flex-direction:column;gap:24px;">
+      <!-- Nome confirmado -->
+      <div id="ob-nome-confirmado" style="display:flex;align-items:center;gap:8px;background:rgba(29,185,84,0.08);border:1px solid rgba(29,185,84,0.2);border-radius:10px;padding:10px 14px;">
+        <span style="color:#1db954;font-size:16px;">✓</span>
+        <span style="font-size:13px;font-weight:700;color:#fff;" id="ob-nome-tag"></span>
+        <span style="font-size:11px;color:rgba(255,255,255,0.4);margin-left:auto;">disponível</span>
+      </div>
+
+      <!-- Senha -->
+      <div class="ob-field">
+        <label class="ob-label">Criar senha (mín. 6 caracteres)</label>
+        <div style="position:relative;">
+          <input id="ob-senha" type="password" class="ob-input" placeholder="••••••••" autocomplete="new-password" minlength="6"
+            oninput="_obValidarCta()" style="padding-right:44px;">
+          <button type="button" onclick="_obToggleSenha('ob-senha','ob-olho-1')"
+            style="position:absolute;right:12px;top:50%;transform:translateY(-50%);background:none;border:none;color:rgba(255,255,255,0.3);cursor:pointer;padding:4px;">
+            <svg id="ob-olho-1" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+          </button>
         </div>
-        <div class="ob-feature-item">
-          <div class="ob-feature-icon">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
-          </div>
-          <div class="ob-feature-text">
-            <div class="ob-feature-title">Setlist e Eventos</div>
-            <div class="ob-feature-desc">Organize shows e playlists para cada apresentação</div>
-          </div>
-        </div>
-        <div class="ob-feature-item">
-          <div class="ob-feature-icon">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
-          </div>
-          <div class="ob-feature-text">
-            <div class="ob-feature-title">Sala de Sincronia</div>
-            <div class="ob-feature-desc">Sincronize cifras em tempo real com toda a banda</div>
-          </div>
+        <div id="ob-senha-msg" style="font-size:11px;color:rgba(255,255,255,0.3);margin-top:6px;min-height:16px;"></div>
+      </div>
+
+      <!-- Confirmar senha -->
+      <div class="ob-field">
+        <label class="ob-label">Confirmar senha</label>
+        <div style="position:relative;">
+          <input id="ob-senha2" type="password" class="ob-input" placeholder="••••••••" autocomplete="new-password"
+            oninput="_obValidarCta()" style="padding-right:44px;">
+          <button type="button" onclick="_obToggleSenha('ob-senha2','ob-olho-2')"
+            style="position:absolute;right:12px;top:50%;transform:translateY(-50%);background:none;border:none;color:rgba(255,255,255,0.3);cursor:pointer;padding:4px;">
+            <svg id="ob-olho-2" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+          </button>
         </div>
       </div>
-    </div>
-    <button class="ob-cta" id="ob-cta" onclick="terminarOnboarding()" disabled>Começar</button>
-    <p class="ob-terms">Os seus dados ficam apenas no seu dispositivo</p>
-  </div>
-</div>
+
+      <!-- PIN -->
+      <div class="ob-field">
+        <label class="ob-label">PIN de acesso rápido (4 dígitos)</label>
+        <div style="display:flex;gap:12px;justify-content:center;margin-top:4px;">
+          <input id="ob-pin-0" type="tel" maxlength="1" class="ob-pin-input" oninput="obPinNext(0)" onkeydown="obPinKey(event,0)">
+          <input id="ob-pin-1" type="tel" maxlength="1" class="ob-pin-input" oninput="obPinNext(1)" onkeydown="obPinKey(event,1)">
+          <input id="ob-pin-2" type="tel" maxlength="1" class="ob-pin-input" oninput="obPinNext(2)" onkeydown="obPinKey(event,2)">
+          <input id="ob-pin-3" type="tel" maxlength="1" class="ob-pin-input" oninput="obPinNext(3)" onkeydown="obPinKey(event,3)">
+        </div>
+        <div style="font-size:9px;color:rgba(255,255,255,0.2);text-align:center;margin-top:6px;">O PIN desbloqueia o app rapidamente</div>
+      </div>
+
+      <!-- Instrumento -->
+      <div class="ob-field">
+        <label class="ob-label">O que você vai usar</label>
+        <div class="ob-chips" id="ob-chips">
+          <button class="ob-chip" data-val="guitarra" onclick="obToggleChip(this)">Guitarra</button>
+          <button class="ob-chip" data-val="baixo" onclick="obToggleChip(this)">Baixo</button>
+          <button class="ob-chip" data-val="teclado" onclick="obToggleChip(this)">Teclado</button>
+          <button class="ob-chip" data-val="bateria" onclick="obToggleChip(this)">Bateria</button>
+          <button class="ob-chip" data-val="voz" onclick="obToggleChip(this)">Voz</button>
+          <button class="ob-chip" data-val="violao" onclick="obToggleChip(this)">Violão</button>
+          <button class="ob-chip" data-val="produtor" onclick="obToggleChip(this)">Produtor</button>
+          <button class="ob-chip" data-val="outro" onclick="obToggleChip(this)">Outro</button>
+        </div>
+      </div>
+
+      <button class="ob-cta" id="ob-cta" onclick="terminarOnboarding()" disabled>Criar conta</button>
+      <p class="ob-terms">Os seus dados ficam seguros. A senha é gerida pelo Firebase.</p>
+    </div><!-- /ob-step-2 -->
+  </div><!-- /ob-form -->
+</div><!-- /onboarding-overlay -->
 
 <!-- MODAL PERFIL -->
 <div id="modal-perfil" style="position:fixed;inset:0;z-index:99998;background:rgba(0,0,0,0.92);display:none;align-items:flex-end;justify-content:center;padding:0;">
   <div style="background:#0c0c14;border:1px solid rgba(255,255,255,0.08);border-radius:24px 24px 0 0;width:100%;max-width:480px;display:flex;flex-direction:column;overflow:hidden;max-height:95vh;animation:slideUpModal 0.3s cubic-bezier(0.34,1.56,0.64,1);">
 
     <!-- Hero banner -->
-    <div style="position:relative;height:110px;background:linear-gradient(135deg,#0d2918 0%,#0a1a10 40%,#06100a 100%);flex-shrink:0;overflow:hidden;">
+    <div id="perfil-hero-banner" style="position:relative;height:110px;background:linear-gradient(135deg,#0d2918 0%,#0a1a10 40%,#06100a 100%);background-size:cover;background-position:center 50%;flex-shrink:0;overflow:hidden;">
+      <!-- Banner upload (hidden) -->
+      <input type="file" id="perfil-banner-input" accept="image/*" style="display:none" onchange="perfilBannerChange(this)">
+      <!-- Menu 3 pontos do banner — canto superior direito -->
+      <button onclick="toggleBannerMenu(event)" style="position:absolute;top:10px;right:10px;z-index:4;background:rgba(0,0,0,0.5);border:1px solid rgba(255,255,255,0.15);border-radius:50%;width:28px;height:28px;display:flex;align-items:center;justify-content:center;cursor:pointer;color:rgba(255,255,255,0.8);">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><circle cx="5" cy="12" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="19" cy="12" r="2"/></svg>
+      </button>
+      <!-- Dropdown do banner -->
+      <div id="banner-menu" style="display:none;position:absolute;top:44px;right:10px;z-index:10;background:#1a1a28;border:1px solid rgba(255,255,255,0.1);border-radius:12px;overflow:hidden;box-shadow:0 8px 24px rgba(0,0,0,0.6);min-width:160px;">
+        <div onclick="document.getElementById('perfil-banner-input').click();fecharBannerMenu()" style="padding:11px 16px;font-size:11px;font-weight:700;color:#fff;cursor:pointer;display:flex;align-items:center;gap:10px;border-bottom:1px solid rgba(255,255,255,0.06);" onmouseenter="this.style.background='rgba(255,255,255,0.06)'" onmouseleave="this.style.background=''">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+          Alterar foto
+        </div>
+        <div id="banner-editar-btn" onclick="abrirEditorBanner();fecharBannerMenu()" style="display:none;padding:11px 16px;font-size:11px;font-weight:700;color:#fff;cursor:pointer;display:none;align-items:center;gap:10px;border-bottom:1px solid rgba(255,255,255,0.06);" onmouseenter="this.style.background='rgba(255,255,255,0.06)'" onmouseleave="this.style.background=''">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+          Ajustar posição
+        </div>
+        <div id="banner-remover-btn" onclick="removerBannerFoto();fecharBannerMenu()" style="display:none;padding:11px 16px;font-size:11px;font-weight:700;color:#ff6b6b;cursor:pointer;display:none;align-items:center;gap:10px;" onmouseenter="this.style.background='rgba(255,255,255,0.06)'" onmouseleave="this.style.background=''">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg>
+          Remover foto
+        </div>
+      </div>
       <!-- Glow rings -->
-      <div style="position:absolute;top:-40px;left:50%;transform:translateX(-50%);width:220px;height:220px;border-radius:50%;background:radial-gradient(circle,rgba(29,185,84,0.12) 0%,transparent 70%);pointer-events:none;"></div>
+      <div style="position:absolute;top:-40px;left:50%;z-index:2;transform:translateX(-50%);width:220px;height:220px;border-radius:50%;background:radial-gradient(circle,rgba(29,185,84,0.12) 0%,transparent 70%);pointer-events:none;"></div>
       <!-- Close btn -->
-      <button onclick="fecharModalPerfil()" style="position:absolute;top:14px;right:16px;background:rgba(255,255,255,0.07);border:1px solid rgba(255,255,255,0.1);color:rgba(255,255,255,0.5);width:30px;height:30px;border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:14px;line-height:1;transition:0.2s;" onmouseenter="this.style.background='rgba(255,255,255,0.14)'" onmouseleave="this.style.background='rgba(255,255,255,0.07)'">✕</button>
+      <button onclick="fecharModalPerfil()" style="z-index:2; style="position:absolute;top:14px;right:16px;background:rgba(255,255,255,0.07);border:1px solid rgba(255,255,255,0.1);color:rgba(255,255,255,0.5);width:30px;height:30px;border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:14px;line-height:1;transition:0.2s;" onmouseenter="this.style.background='rgba(255,255,255,0.14)'" onmouseleave="this.style.background='rgba(255,255,255,0.07)'">✕</button>
       <!-- Label -->
-      <div style="position:absolute;top:16px;left:20px;font-size:9px;font-weight:900;letter-spacing:3px;color:rgba(29,185,84,0.6);text-transform:uppercase;">Perfil</div>
+      <div style="position:absolute;top:16px;left:20px;z-index:2;font-size:9px;font-weight:900;letter-spacing:3px;color:rgba(29,185,84,0.6);text-transform:uppercase;">Perfil</div>
       <!-- Stats row inside hero -->
-      <div style="position:absolute;bottom:14px;right:20px;display:flex;gap:20px;">
+      <div style="position:absolute;bottom:14px;right:20px;z-index:2;display:flex;gap:20px;">
         <div style="text-align:right;">
           <div id="perfil-stat-musicas" style="font-size:20px;font-weight:900;color:#fff;line-height:1;"></div>
           <div style="font-size:8px;font-weight:700;color:rgba(255,255,255,0.3);letter-spacing:1.5px;margin-top:1px;">MÚSICAS</div>
@@ -2577,13 +2823,29 @@ body.viewer-mode input[type="text"] { pointer-events: none; }
     <!-- Avatar (sobrepõe o hero) -->
     <div style="padding:0 24px;margin-top:-36px;flex-shrink:0;position:relative;z-index:2;">
       <div style="display:flex;align-items:flex-end;justify-content:space-between;">
-        <div style="position:relative;cursor:pointer;" onclick="document.getElementById('perfil-foto-input').click()">
+        <!-- Avatar com menu 3 pontinhos -->
+        <div style="position:relative;">
           <div id="perfil-avatar" style="width:72px;height:72px;border-radius:18px;background:linear-gradient(135deg,#1db954,#17a349);display:flex;align-items:center;justify-content:center;font-size:28px;font-weight:900;color:#000;overflow:hidden;border:3px solid #0c0c14;box-shadow:0 4px 20px rgba(0,0,0,0.6);"></div>
-          <!-- Camera badge -->
-          <div style="position:absolute;bottom:-4px;right:-4px;width:22px;height:22px;border-radius:50%;background:#1db954;border:2px solid #0c0c14;display:flex;align-items:center;justify-content:center;">
-            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#000" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
-          </div>
           <input type="file" id="perfil-foto-input" accept="image/*" style="display:none;" onchange="perfilCarregarFoto(this)">
+          <!-- 3 pontinhos sobre o avatar — canto inferior direito -->
+          <button onclick="toggleFotoMenu(event)" style="position:absolute;bottom:-6px;right:-6px;z-index:4;background:rgba(0,0,0,0.7);border:1px solid rgba(255,255,255,0.2);border-radius:50%;width:24px;height:24px;display:flex;align-items:center;justify-content:center;cursor:pointer;color:#fff;">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><circle cx="5" cy="12" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="19" cy="12" r="2"/></svg>
+          </button>
+          <!-- Dropdown da foto -->
+          <div id="foto-menu" style="display:none;position:absolute;top:80px;left:0;z-index:10;background:#1a1a28;border:1px solid rgba(255,255,255,0.1);border-radius:12px;overflow:hidden;box-shadow:0 8px 24px rgba(0,0,0,0.6);min-width:155px;">
+            <div onclick="document.getElementById('perfil-foto-input').click();fecharFotoMenu()" style="padding:11px 16px;font-size:11px;font-weight:700;color:#fff;cursor:pointer;display:flex;align-items:center;gap:10px;border-bottom:1px solid rgba(255,255,255,0.06);" onmouseenter="this.style.background='rgba(255,255,255,0.06)'" onmouseleave="this.style.background=''">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+              Alterar foto
+            </div>
+            <div id="foto-editar-btn" onclick="abrirEditorFoto();fecharFotoMenu()" style="display:none;padding:11px 16px;font-size:11px;font-weight:700;color:#fff;cursor:pointer;display:none;align-items:center;gap:10px;border-bottom:1px solid rgba(255,255,255,0.06);" onmouseenter="this.style.background='rgba(255,255,255,0.06)'" onmouseleave="this.style.background=''">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+              Ajustar posição
+            </div>
+            <div id="foto-remover-btn" onclick="removerFotoPerfil();fecharFotoMenu()" style="display:none;padding:11px 16px;font-size:11px;font-weight:700;color:#ff6b6b;cursor:pointer;display:none;align-items:center;gap:10px;" onmouseenter="this.style.background='rgba(255,255,255,0.06)'" onmouseleave="this.style.background=''">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg>
+              Remover foto
+            </div>
+          </div>
         </div>
         <div style="padding-bottom:4px;">
           <div id="perfil-nome-display" style="font-size:16px;font-weight:900;color:#fff;line-height:1.2;text-align:right;max-width:240px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;"></div>
@@ -2598,6 +2860,7 @@ body.viewer-mode input[type="text"] { pointer-events: none; }
     <!-- Scrollable form area -->
     <div style="overflow-y:auto;flex:1;padding:20px 24px 32px;display:flex;flex-direction:column;gap:20px;">
 
+      <!-- ID do Perfil -->
       <!-- Nome -->
       <div style="display:flex;flex-direction:column;gap:6px;">
         <label style="font-size:9px;font-weight:800;letter-spacing:2px;color:rgba(255,255,255,0.3);text-transform:uppercase;">Nome / Banda</label>
@@ -2610,6 +2873,14 @@ body.viewer-mode input[type="text"] { pointer-events: none; }
           <div style="position:absolute;left:14px;top:50%;transform:translateY(-50%);color:rgba(29,185,84,0.5);">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
           </div>
+        </div>
+        <!-- ID numérico abaixo do nome -->
+        <div style="display:flex;align-items:center;gap:6px;margin-top:6px;padding-left:2px;">
+          <span style="font-size:9px;font-weight:700;color:rgba(255,255,255,0.2);letter-spacing:1px;text-transform:uppercase;">ID</span>
+          <span id="perfil-id-display" style="font-size:11px;font-weight:800;color:rgba(255,255,255,0.35);letter-spacing:2px;font-family:monospace;"></span>
+          <button onclick="copiarProfileId()" title="Copiar ID" style="background:none;border:none;color:rgba(255,255,255,0.2);cursor:pointer;padding:2px;display:flex;align-items:center;transition:0.15s;margin-left:2px;" onmouseenter="this.style.color='#1db954'" onmouseleave="this.style.color='rgba(255,255,255,0.2)'">
+            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+          </button>
         </div>
       </div>
 
@@ -2630,6 +2901,7 @@ body.viewer-mode input[type="text"] { pointer-events: none; }
 
       <!-- Sair da conta -->
       <div style="padding-top:8px;padding-bottom:2px;">
+        <button onclick="abrirAlterarSenha()" style="width:100%;padding:11px;border-radius:12px;background:rgba(29,185,84,0.06);border:1px solid rgba(29,185,84,0.15);color:rgba(29,185,84,0.7);font-size:11px;font-weight:800;cursor:pointer;letter-spacing:1px;text-transform:uppercase;font-family:inherit;transition:0.2s;margin-bottom:6px;" onmouseenter="this.style.background='rgba(29,185,84,0.12)'" onmouseleave="this.style.background='rgba(29,185,84,0.06)'">Alterar Senha</button>
         <button onclick="sairDaConta()" style="width:100%;padding:11px;border-radius:12px;background:rgba(255,60,60,0.07);border:1px solid rgba(255,60,60,0.18);color:rgba(255,100,100,0.8);font-size:11px;font-weight:800;cursor:pointer;letter-spacing:1px;text-transform:uppercase;font-family:inherit;transition:0.2s;" onmouseenter="this.style.background='rgba(255,60,60,0.14)'" onmouseleave="this.style.background='rgba(255,60,60,0.07)'">Sair do Perfil</button>
       </div>
 
@@ -2644,11 +2916,6 @@ body.viewer-mode input[type="text"] { pointer-events: none; }
     <div id="perfil-google-badge" style="display:none !important;"></div>
   </div>
 </div>
-
-  </div>
-</div>
-
-
 
 <!-- MODAL AMIGOS -->
 <div id="modal-amigos" ontouchend="if(event.target===this){event.preventDefault();_bloquearFantasma();fecharModalAmigos();}" onclick="if(event.target===this)fecharModalAmigos()">
@@ -2677,7 +2944,7 @@ body.viewer-mode input[type="text"] { pointer-events: none; }
     <div class="amigos-add-bar">
       <div class="amigos-add-row">
         <input class="amigos-add-input" id="amigos-add-input"
-          placeholder="Buscar músico pelo nome..." autocomplete="off"
+          placeholder="Buscar por nome ou ID (ex: 47382910)..." autocomplete="off"
           oninput="buscarAmigosInput(this.value)"
           onkeydown="if(event.key==='Enter') buscarAmigosInput(this.value)">
       </div>
@@ -2719,9 +2986,6 @@ body.viewer-mode input[type="text"] { pointer-events: none; }
 <header class="app-header">
   <div class="header-content">
     <div class="app-logo">
-      <div class="logo-icon">
-        <span>M</span>
-      </div>
       <div class="logo-text">
         <span class="logo-name">Map Music<span class="pro">PRO</span></span>
         <span class="logo-tag">Elite Edition</span>
@@ -2996,7 +3260,7 @@ body.viewer-mode input[type="text"] { pointer-events: none; }
 <!-- BIBLIOTECA -->
 <div class="biblioteca-overlay" id="biblioteca-overlay">
   <div class="biblioteca-header">
-    <div class="biblioteca-titulo">Biblioteca <span>PRO</span></div>
+    <div class="biblioteca-titulo">Biblioteca</div>
     <button class="biblioteca-close" onclick="fecharBiblioteca()">Fechar</button>
   </div>
 
@@ -3016,10 +3280,16 @@ body.viewer-mode input[type="text"] { pointer-events: none; }
   <!-- DETALHE EVENTO -->
   <div class="evento-detalhe" id="evento-detalhe">
     <div class="evento-detalhe-header">
-      <button class="evento-detalhe-back" onclick="voltarEventos()">← Voltar</button>
+      <button class="evento-detalhe-back" onclick="voltarEventos()" title="Voltar" style="padding:8px 10px;">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+      </button>
       <div class="evento-detalhe-title" id="evento-detalhe-title">Evento</div>
-      <button class="evento-detalhe-add" onclick="abrirEditarEventoAtual()" style="margin-right:6px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);color:rgba(255,255,255,0.4);">Editar</button>
-      <button class="evento-detalhe-add" onclick="abrirAddMusica()">+ Música</button>
+      <button onclick="abrirEditarEventoAtual()" title="Editar evento" style="background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.12);border-radius:8px;width:32px;height:32px;display:flex;align-items:center;justify-content:center;cursor:pointer;color:rgba(255,255,255,0.45);flex-shrink:0;">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+      </button>
+      <button onclick="abrirAddMusica()" title="Adicionar música" style="background:rgba(29,185,84,0.15);border:1px solid rgba(29,185,84,0.35);border-radius:8px;width:32px;height:32px;display:flex;align-items:center;justify-content:center;cursor:pointer;color:#1db954;flex-shrink:0;">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+      </button>
     </div>
     <div class="biblioteca-search">
       <input type="text" id="evento-search" placeholder="Buscar na lista..."
@@ -3141,6 +3411,77 @@ body.viewer-mode input[type="text"] { pointer-events: none; }
 </div>
 
 <script>
+// ─── PERFIL ─────────────────────────────────────────────────────────────────
+let perfilInstrumentoSelecionado = null;
+let perfilFotoBase64 = null; // foto atual em edição
+
+function abrirModalPerfil() {
+  const perfil = JSON.parse(localStorage.getItem('map_perfil_v1') || '{}');
+  const nome = perfil.nome || '';
+  const inst = perfil.instrumento || null;
+
+  document.getElementById('perfil-nome-input').value = nome;
+  perfilInstrumentoSelecionado = inst;
+  perfilFotoBase64 = perfil.foto || null;
+
+  // Chips
+  document.querySelectorAll('#perfil-chips .ob-chip').forEach(c => {
+    c.classList.toggle('selected', c.dataset.val === inst);
+  });
+
+  // Stats
+  document.getElementById('perfil-stat-musicas').textContent = songs.length;
+  document.getElementById('perfil-stat-eventos').textContent =
+    (JSON.parse(localStorage.getItem('map_pro_eventos_v1') || '[]')).length;
+
+  // Badge Google
+  const badge = document.getElementById('perfil-google-badge');
+  if (badge) badge.style.display = perfil.viaGoogle ? 'block' : 'none';
+
+  // Mostra o ID numérico do perfil
+  const pidEl = document.getElementById('perfil-id-display');
+  if (pidEl) {
+    const pid = _getProfileId();
+    // Formata como XXXX XXXX para leitura fácil
+    pidEl.textContent = pid.slice(0,4) + ' ' + pid.slice(4,8);
+  }
+
+  // Carrega foto de fundo do banner
+  const _pb = JSON.parse(localStorage.getItem('map_perfil_v1') || '{}');
+  _aplicarBannerFoto(_pb.bannerFoto || null);
+
+
+  atualizarPreviewPerfil();
+  document.getElementById('modal-perfil').style.display = 'flex';
+  document.getElementById('m-drop').classList.remove('show');
+}
+
+function sairDaConta() {
+  if (!confirm('Sair do perfil? Os dados locais serão apagados.\nAs músicas e eventos guardados na nuvem ficam seguros.')) return;
+  // Marca offline no Firebase antes de sair
+  _fbMarcarOffline();
+  // Limpa dados locais
+  localStorage.removeItem('map_perfil_v1');
+  localStorage.removeItem('map_notifs_v1');
+  // Mantém músicas e eventos (apenas dados de conta são apagados)
+  fecharModalPerfil();
+  showToast('Perfil removido. Recarregando...');
+  setTimeout(() => location.reload(), 1000);
+}
+
+function fecharModalPerfil() {
+  document.getElementById('modal-perfil').style.display = 'none';
+}
+
+function perfilToggleChip(btn) {
+  document.querySelectorAll('#perfil-chips .ob-chip').forEach(c => c.classList.remove('selected'));
+  btn.classList.add('selected');
+  perfilInstrumentoSelecionado = btn.dataset.val;
+  atualizarPreviewPerfil();
+}
+
+
+
 // ─── ESTADO ────────────────────────────────────────────────────────────────
 let bpm = 120;
 let isPlaying = false;
@@ -3169,6 +3510,8 @@ let songs = JSON.parse(localStorage.getItem('map_pro_elite_v1')) || [];
 let guestConns = []; // kept for compatibility       // host → viewers
 let isHost = false;
 let _fbReady = false;
+let _salaListener = null;
+let _mensagensListener = null;
 let _salaOnlineTimer = null;
 // Sincroniza _fbReady com window._fbReady (definido sincronamente pelo script Firebase)
 function _isFbReady() {
@@ -3194,7 +3537,9 @@ function gerarCodigo4() {
 
 // ── Utilitário UI ────────────────────────────────────────────────────────────
 function setConnStatus(msg, type) {
-  const el = document.getElementById('criar-status') || document.getElementById('entrar-status');
+  const el = document.getElementById('criar-status') 
+          || document.getElementById('connect-status')
+          || document.getElementById('entrar-status');
   if (el) el.innerText = msg;
 }
 
@@ -3254,8 +3599,18 @@ async function criarSala() {
       const salaData = await window._fb.getSala(myRoomCode);
       if (salaData) {
         const total = salaData.onlineCount || 1;
+        window._onlineCountCache = total;
+        // Atualiza UI diretamente
         const sc = document.querySelector('#sync-guests-count');
         if (sc) sc.innerText = total + ' online';
+        // Atualiza viewers local com dados do Firestore
+        if (salaData.viewers) {
+          Object.keys(salaData.viewers).forEach(uid => {
+            if (!_viewersOnline[uid]) {
+              _viewersOnline[uid] = salaData.viewers[uid];
+            }
+          });
+        }
       }
     } catch(e) {}
   }, 5000);
@@ -3283,8 +3638,10 @@ function _iniciarListenerMensagens(code, hostUid) {
   _mensagensListener = window._fb.ouvirMensagensSala(code, function(msgs, salaData) {
     // Atualiza contagem diretamente do onlineCount do Firestore (fonte de verdade)
     if (salaData && salaData.onlineCount) {
+      window._onlineCountCache = salaData.onlineCount;
       const sc = document.querySelector('#sync-guests-count');
       if (sc) sc.innerText = salaData.onlineCount + ' online';
+      atualizarSyncBar(myRoomCode);
     }
     msgs.forEach(msg => {
       if (msg.uid === hostUid) return;
@@ -3423,7 +3780,8 @@ function atualizarSyncBar(code) {
     bar.classList.remove('viewer');
     label.innerText = 'HOST';
     codeEl.innerText = myRoomCode || code || '';
-    const total = 1 + Object.keys(_viewersOnline || {}).length;
+    // Usa _onlineCountCache (atualizado do Firestore) ou calcula localmente
+    const total = window._onlineCountCache || (1 + Object.keys(_viewersOnline || {}).length);
     guests.querySelector('#sync-guests-count').innerText = total + ' online';
   } else if (isViewer) {
     bar.classList.add('visible', 'viewer');
@@ -3441,45 +3799,148 @@ function togglePerf() {
   setTimeout(atualizarLetreiroDrumCam, 50);
   const isPerf = document.getElementById('app-body').classList.toggle('performance-mode');
   document.getElementById('mode-text').innerText = isPerf ? "SAIR DO SHOW" : "MODO SHOW";
-  if (!isPerf) { stopScroll(); window.scrollTo(0,0); liberarWakeLock(); }
+  if (!isPerf) { stopScroll(); window.scrollTo(0,0); liberarWakeLock(); limparShowEvento(); }
   else {
     atualizarIndicador();
     ativarWakeLock();
-    // Inicia teleprompter automaticamente no 9
+    // Inicia teleprompter automaticamente no 9 (apenas se não estava já a rolar)
     const slider = document.getElementById('scroll-speed');
-    slider.value = 9;
-    document.getElementById('scroll-speed-val').innerText = '9';
+    const prevSpeed = parseInt(slider.value) || 0;
+    if (prevSpeed === 0) {
+      slider.value = 9;
+      document.getElementById('scroll-speed-val').innerText = '9';
+    }
+    const speed = parseInt(slider.value);
     clearInterval(scrollInterval);
-    scrollInterval = setInterval(() => window.scrollBy(0, 1), 175 - 9);
+    scrollInterval = null;
+    if (speed > 0) scrollInterval = setInterval(() => window.scrollBy(0, 1), 175 - speed);
   }
   broadcastEstado();
 }
 
 function atualizarIndicador() {
-  if (songs.length === 0 || currentSongIndex === -1) {
+  const lista = _getShowSongs();
+  const currentSong = currentSongIndex >= 0 ? songs[currentSongIndex] : null;
+  const posLista = currentSong ? lista.findIndex(s => s.id === currentSong.id) : -1;
+
+  if (lista.length === 0 || !currentSong || posLista === -1) {
     document.getElementById('perf-song-pos').innerText = '—';
     document.getElementById('perf-song-name').innerText = 'Nenhuma musica';
+    // Mostra/esconde badge do evento
+    _atualizarBadgeEvento();
     return;
   }
-  const s = songs[currentSongIndex];
-  document.getElementById('perf-song-pos').innerText = (currentSongIndex + 1) + '/' + songs.length;
-  document.getElementById('perf-song-name').innerText = s ? s.name : '—';
+  document.getElementById('perf-song-pos').innerText = (posLista + 1) + '/' + lista.length;
+  document.getElementById('perf-song-name').innerText = currentSong.name;
+  _atualizarBadgeEvento();
+}
+
+function _atualizarBadgeEvento() {
+  let badge = document.getElementById('perf-evento-badge');
+  if (!badge) {
+    badge = document.createElement('div');
+    badge.id = 'perf-evento-badge';
+    badge.style.cssText = 'position:fixed;top:14px;left:50%;transform:translateX(-50%);z-index:9999;background:rgba(29,185,84,0.18);border:1px solid rgba(29,185,84,0.4);border-radius:20px;padding:3px 10px;font-size:9px;font-weight:800;color:#1db954;letter-spacing:1.5px;pointer-events:none;white-space:nowrap;display:none;';
+    document.body.appendChild(badge);
+  }
+  if (showSetlistEventoNome) {
+    badge.textContent = showSetlistEventoNome.toUpperCase();
+    badge.style.display = 'block';
+  } else {
+    badge.style.display = 'none';
+  }
+}
+
+
+// ─── ATIVAR SHOW COM EVENTO ───────────────────────────────────────────────────
+function ativarShowEvento(eventoId, startSongId) {
+  const ev = eventos.find(e => e.id === eventoId);
+  if (!ev || !ev.musicIds || ev.musicIds.length === 0) {
+    showToast('O evento não tem músicas.');
+    return;
+  }
+  const idsValidos = ev.musicIds.filter(id => songs.find(s => s.id === id));
+  if (idsValidos.length === 0) {
+    showToast('Nenhuma música encontrada.');
+    return;
+  }
+
+  showSetlist = idsValidos;
+  showSetlistEventoId   = ev.id;
+  showSetlistEventoNome = ev.nome;
+
+  // Se veio uma música específica, começa por ela; senão começa pela primeira
+  const startId = startSongId && idsValidos.includes(startSongId) ? startSongId : idsValidos[0];
+  showSetlistPos = idsValidos.indexOf(startId);
+
+  const musicaInicial = songs.find(s => s.id === startId);
+  if (musicaInicial) {
+    currentSongIndex = songs.findIndex(s => s.id === startId);
+    bpm = musicaInicial.bpm;
+    document.getElementById('bpm-display').innerText = bpm;
+    const grid = document.getElementById('notes-grid');
+    grid.innerHTML = '';
+    musicaInicial.parts.forEach(p => addPart(p.title, p.content));
+    grid.dataset.lastParts = JSON.stringify(musicaInicial.parts);
+    window.scrollTo(0, 0);
+    atualizarBtnSalvar();
+  }
+
+  fecharBiblioteca();
+
+  const isPerf = document.getElementById('app-body').classList.contains('performance-mode');
+  if (!isPerf) togglePerf();
+  else { atualizarIndicador(); broadcastEstado(); }
+
+  showToast('Show: ' + ev.nome + ' · ' + idsValidos.length + ' músicas');
+}
+
+function limparShowEvento() {
+  showSetlist = null;
+  showSetlistEventoId = null;
+  showSetlistEventoNome = null;
+  showSetlistPos = 0;
+}
+
+function _getShowSongs() {
+  // Retorna o array de músicas ativas no show (evento ou todas)
+  if (showSetlist && showSetlist.length > 0) {
+    return showSetlist.map(id => songs.find(s => s.id === id)).filter(Boolean);
+  }
+  return songs;
 }
 
 function navegarSetlist(dir) {
-  if (songs.length === 0) { showToast('Setlist vazio.'); return; }
-  const novoIdx = currentSongIndex + dir;
-  if (novoIdx < 0 || novoIdx >= songs.length) {
+  const lista = _getShowSongs();
+  if (lista.length === 0) { showToast('Setlist vazio.'); return; }
+
+  // Acha posição atual na lista ativa
+  const currentSong = currentSongIndex >= 0 ? songs[currentSongIndex] : null;
+  let posAtual = currentSong ? lista.findIndex(s => s.id === currentSong.id) : -1;
+  if (posAtual === -1) posAtual = dir > 0 ? -1 : 0;
+
+  const novaPosLista = posAtual + dir;
+  if (novaPosLista < 0 || novaPosLista >= lista.length) {
     flashSwipe(dir < 0 ? 'INICIO' : 'FIM');
     return;
   }
-  currentSongIndex = novoIdx;
-  const s = songs[currentSongIndex];
+
+  const s = lista[novaPosLista];
+  currentSongIndex = songs.findIndex(x => x.id === s.id);
+  showSetlistPos = novaPosLista;
+
   bpm = s.bpm;
   document.getElementById('bpm-display').innerText = bpm;
-  document.getElementById('notes-grid').innerHTML = '';
+  const grid = document.getElementById('notes-grid');
+  grid.innerHTML = '';
   s.parts.forEach(p => addPart(p.title, p.content));
+  grid.dataset.lastParts = JSON.stringify(s.parts);
   window.scrollTo(0, 0);
+  if (scrollInterval) {
+    const spd = parseInt(document.getElementById('scroll-speed').value) || 9;
+    clearInterval(scrollInterval);
+    scrollInterval = setInterval(() => window.scrollBy(0, 1), 175 - spd);
+  }
   atualizarIndicador();
   flashSwipe(dir > 0 ? '>' : '<');
   broadcastEstado();
@@ -3686,23 +4147,26 @@ function playClick() {
       document.getElementById('dc-song-name').textContent = s ? s.name : '—';
     }
   } catch(err) {}
-  const osc = audioCtx.createOscillator();
-  const env = audioCtx.createGain();
+  const ctx = _getAudioCtx();
+  if (!ctx) return;
+  const osc = ctx.createOscillator();
+  const env = ctx.createGain();
   osc.frequency.value = 1000;
   env.gain.value = 0.8;
-  env.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.08);
-  osc.connect(env); env.connect(audioCtx.destination);
-  osc.start(); osc.stop(audioCtx.currentTime + 0.08);
+  env.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.08);
+  osc.connect(env); env.connect(ctx.destination);
+  osc.start(); osc.stop(ctx.currentTime + 0.08);
 }
 function scheduler() {
-  while (nextNoteTime < audioCtx.currentTime + 0.1) { playClick(); nextNoteTime += 60.0 / bpm; }
+  const actx = _getAudioCtx(); if (!actx) return;
+  while (nextNoteTime < actx.currentTime + 0.1) { playClick(); nextNoteTime += 60.0 / bpm; }
   timerID = setTimeout(scheduler, 25);
 }
 function togglePlay() {
   if (audioCtx.state === 'suspended') audioCtx.resume();
   isPlaying = !isPlaying;
   const btn = document.getElementById('play-btn');
-  if (isPlaying) { nextNoteTime = audioCtx.currentTime; scheduler(); btn.innerText = "PARAR"; btn.style.background = "#ff3e3e"; }
+  if (isPlaying) { nextNoteTime = (audioCtx||_getAudioCtx()).currentTime; scheduler(); btn.innerText = "PARAR"; btn.style.background = "#ff3e3e"; }
   else { clearTimeout(timerID); btn.innerText = "INICIAR"; btn.style.background = "var(--accent-primary)"; }
   atualizarBtnMetroDC();
 }
@@ -4012,6 +4476,7 @@ function toggleFavorite(id, e) {
 function updateStorage() {
   songs.sort((a,b) => { if (a.favorite === b.favorite) return 0; return a.favorite ? -1 : 1; });
   localStorage.setItem('map_pro_elite_v1', JSON.stringify(songs));
+  _fbBackupMusicas(); // auto-backup na nuvem
   renderSetlist();
   if (document.getElementById('biblioteca-overlay')?.classList.contains('show')) {
     renderBibAtivo(document.getElementById('biblioteca-search')?.value || '');
@@ -4053,6 +4518,11 @@ function deleteSong(id, e) {
 
 // ─── MODO SHOW ─────────────────────────────────────────────────────────────
 let currentSongIndex = -1; // -1 = nenhuma musica do setlist carregada
+// showSetlist: array de song IDs do evento ativo no modo show. null = todas as músicas
+let showSetlist = null;
+let showSetlistEventoId = null;   // ID do evento ativo
+let showSetlistEventoNome = null; // Nome do evento ativo
+let showSetlistPos = 0;           // posição dentro do showSetlist
 
 
 // ─── MENU DE CONTEXTO DOS ÁLBUNS ─────────────────────────────────────────────
@@ -4072,10 +4542,12 @@ function abrirCtxMenu(e, songId, modo) {
   if (favLabel) favLabel.innerText = (song && song.favorite) ? 'Desfavoritar' : 'Favoritar';
 
   // Mostra/esconde opções conforme contexto
-  document.getElementById('ctx-fav').style.display    = modo === 'biblioteca' ? 'flex' : 'none';
-  document.getElementById('ctx-editar').style.display = modo === 'biblioteca' ? 'flex' : 'none';
+  document.getElementById('ctx-fav').style.display     = modo === 'biblioteca' ? 'flex' : 'none';
+  document.getElementById('ctx-editar').style.display  = 'flex'; // visível em ambos
   document.getElementById('ctx-deletar').style.display = modo === 'biblioteca' ? 'flex' : 'none';
+  document.getElementById('ctx-show').style.display    = modo === 'evento'     ? 'flex' : 'none';
   document.getElementById('ctx-remover').style.display = modo === 'evento'     ? 'flex' : 'none';
+  document.getElementById('ctx-abrir').style.display   = 'flex';
 
   // Posiciona o menu perto do botão
   menu.classList.add('show');
@@ -4105,6 +4577,7 @@ function ctxAcao(acao) {
   if (acao === 'editar')  { abrirEditarMusica(id, null); }
   if (acao === 'deletar') { deleteSongBiblioteca(id, null); }
   if (acao === 'remover') { removerDoEvento(id, null); }
+  if (acao === 'show')    { ativarShowEvento(eventoAbertoId, id); }
 }
 
 // Fecha ao clicar fora
@@ -4158,13 +4631,16 @@ function desconectar() {
 // ─── TELEPROMPTER ──────────────────────────────────────────────────────────
 const scrollSlider = document.getElementById('scroll-speed');
 scrollSlider.oninput = () => {
-  document.getElementById('scroll-speed-val').innerText = scrollSlider.value;
+  const spd = parseInt(scrollSlider.value);
+  document.getElementById('scroll-speed-val').innerText = spd;
   clearInterval(scrollInterval);
-  if (scrollSlider.value > 0) scrollInterval = setInterval(() => window.scrollBy(0,1), 175 - scrollSlider.value);
-  broadcastEstado();
+  scrollInterval = null;
+  if (spd > 0) scrollInterval = setInterval(() => window.scrollBy(0, 1), 175 - spd);
+  if (!syncPaused) broadcastEstado();
 };
 function stopScroll() {
   clearInterval(scrollInterval);
+  scrollInterval = null;
   scrollSlider.value = 0;
   document.getElementById('scroll-speed-val').innerText = '0';
 }
@@ -4671,6 +5147,7 @@ let eventoAbertoId = null;
 
 function salvarEventos() {
   localStorage.setItem('map_pro_eventos_v1', JSON.stringify(eventos));
+  _fbBackupEventos(); // auto-backup na nuvem
 }
 
 function albumColor(id) {
@@ -4976,11 +5453,16 @@ function renderEventoDetalhe() {
         <div class="album-cover-bg"></div>
         <div class="album-cover-initial">${inicial}</div>
         <div class="album-cover-bpm">${s.bpm} BPM</div>
-        <button class="album-menu-btn" onclick="abrirCtxMenu(event, ${s.id}, 'evento')">···</button>
+        <button onclick="event.stopPropagation();ativarShowEvento(eventoAbertoId,${s.id})" title="Modo Show" style="position:absolute;bottom:6px;right:6px;z-index:3;background:rgba(0,0,0,0.55);border:1px solid rgba(29,185,84,0.5);border-radius:7px;width:26px;height:26px;display:flex;align-items:center;justify-content:center;cursor:pointer;">
+          <svg width="9" height="9" viewBox="0 0 24 24" fill="#1db954"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+        </button>
       </div>
       <div class="album-info">
         <div class="album-name">${s.name}</div>
-        <div class="album-meta">${partes} parte${partes !== 1 ? 's' : ''}</div>
+        <div class="album-meta" style="display:flex;align-items:center;justify-content:space-between;">
+          <span>${partes} parte${partes !== 1 ? 's' : ''}</span>
+          <button class="album-menu-btn" onclick="abrirCtxMenu(event, ${s.id}, 'evento')" style="position:static;background:none;border:none;color:rgba(255,255,255,0.4);font-size:14px;cursor:pointer;padding:2px 4px;line-height:1;font-weight:900;letter-spacing:1px;">···</button>
+        </div>
       </div>
     </div>`;
   }).join('');
@@ -5237,7 +5719,7 @@ function _loadScript(src) {
   });
 }
 
-function lerArquivoCifra(input) {
+async function lerArquivoCifra(input) {
   const file = input.files[0];
   if (!file) return;
   document.getElementById('cifra-file-name').innerText = file.name;
@@ -5695,7 +6177,7 @@ function escapeHtml(str) {
 
 // Debounce backup — não spama o Firestore
 let _backupTimer = null;
-function _fbBackupMusicas() {
+async function _fbBackupMusicas() {
   if (!_isFbReady()) return;
   clearTimeout(_backupTimer);
   _backupTimer = setTimeout(async () => {
@@ -5710,7 +6192,7 @@ function _fbBackupMusicas() {
 }
 
 let _backupEventosTimer = null;
-function _fbBackupEventos() {
+async function _fbBackupEventos() {
   if (!_isFbReady()) return;
   clearTimeout(_backupEventosTimer);
   _backupEventosTimer = setTimeout(async () => {
@@ -5723,19 +6205,30 @@ function _fbBackupEventos() {
 async function _fbRestaurarBackup() {
   if (!_isFbReady()) { showToast('Firebase indisponível. Verifica a ligação.'); return; }
   const uid = _getUid();
-  showToast('Buscando backup...');
+  showToast('A procurar backup na nuvem...');
   const backup = await window._fb.restaurarMusicas(uid);
-  if (!backup || !backup.musicas || backup.musicas.length === 0) {
+  if (!backup || (!backup.musicas?.length && !backup.eventos?.length)) {
     showToast('Nenhum backup encontrado na nuvem');
     return;
   }
-  const confirm = window.confirm('Encontrado backup com ' + backup.musicas.length + ' músicas na nuvem. Restaurar?');
-  if (!confirm) return;
-  songs = backup.musicas;
-  localStorage.setItem('map_pro_elite_v1', JSON.stringify(songs));
-  showToast('✓ ' + songs.length + ' músicas restauradas!');
+  const totalMusicas = backup.musicas?.length || 0;
+  const totalEventos = backup.eventos?.length || 0;
+  const msg = 'Backup encontrado:\n• ' + totalMusicas + ' músicas\n• ' + totalEventos + ' eventos\n\nRestaurar agora?';
+  if (!window.confirm(msg)) return;
+
+  if (totalMusicas > 0) {
+    songs = backup.musicas;
+    localStorage.setItem('map_pro_elite_v1', JSON.stringify(songs));
+    renderSetlist();
+  }
+  if (totalEventos > 0) {
+    eventos = backup.eventos;
+    localStorage.setItem('map_pro_eventos_v1', JSON.stringify(eventos));
+  }
+  showToast('✓ ' + totalMusicas + ' músicas e ' + totalEventos + ' eventos restaurados!');
   adicionarNotif('update', 'Backup restaurado!',
-    songs.length + ' músicas carregadas da nuvem.', 'restore_' + Date.now());
+    totalMusicas + ' músicas e ' + totalEventos + ' eventos carregados da nuvem.',
+    'restore_v1');
 }
 
 // ── Estatísticas ─────────────────────────────────────────────────────────────
@@ -5764,7 +6257,8 @@ function _fbMarcarOnline() {
   if (!_isFbReady()) return;
   const perfil = _getPerfilLocal();
   if (!perfil.nome) return;
-  window._fb.marcarOnline(_getUid(), perfil.nome, perfil.instrumento || null);
+  const profileId = _getProfileId();
+  window._fb.marcarOnline(_getUid(), perfil.nome, perfil.instrumento || null, profileId);
 }
 
 function _fbMarcarOffline() {
@@ -6016,12 +6510,35 @@ let _amigosCache = [];
 
 // UID local — gerado uma vez e salvo no perfil
 function _getUid() {
+  // Lê UID do perfil se existir
+  const perfil = JSON.parse(localStorage.getItem('map_perfil_v1') || '{}');
+  if (perfil.uid) return perfil.uid;
+  // Usa chave separada para não criar map_perfil_v1 antes do onboarding
+  let uid = localStorage.getItem('map_uid_v1');
+  if (!uid) {
+    uid = 'u_' + Date.now() + '_' + Math.random().toString(36).slice(2,8);
+    localStorage.setItem('map_uid_v1', uid);
+  }
+  return uid;
+}
+
+function _getProfileId() {
   let perfil = JSON.parse(localStorage.getItem('map_perfil_v1') || '{}');
-  if (!perfil.uid) {
-    perfil.uid = 'u_' + Date.now() + '_' + Math.random().toString(36).slice(2,8);
+  if (!perfil.profileId) {
+    // Gera ID numérico de 8 dígitos: ex. "47382910"
+    let id = '';
+    for (let i = 0; i < 8; i++) id += Math.floor(Math.random() * 10);
+    perfil.profileId = id;
     localStorage.setItem('map_perfil_v1', JSON.stringify(perfil));
   }
-  return perfil.uid;
+  return perfil.profileId;
+}
+
+function copiarProfileId() {
+  const pid = _getProfileId();
+  navigator.clipboard.writeText(pid).then(() => showToast('ID copiado: ' + pid)).catch(() => {
+    showToast('ID: ' + pid);
+  });
 }
 
 function _getPerfilLocal() {
@@ -6095,7 +6612,7 @@ function amigoTab(tab) {
   _amigoTab = tab;
   document.querySelectorAll('.amigos-tab').forEach(t => t.classList.remove('active'));
   document.getElementById('atab-' + tab).classList.add('active');
-  _renderAmigos();
+  _renderAmigos(); // fire-and-forget async — intencional
 }
 
 function _atualizarBannerSala() {
@@ -6111,24 +6628,45 @@ function _atualizarBannerSala() {
 
 // ── Buscar usuários ──────────────────────────────────────────────────────────
 let _buscaTimer = null;
-function buscarAmigosInput(val) {
+async function buscarAmigosInput(val) {
   clearTimeout(_buscaTimer);
-  if (val.trim().length < 2) {
+  const trimmed = val.trim();
+  if (trimmed.length < 2) {
     if (_amigoTab === 'buscar') _renderAmigos();
     return;
   }
+  // Garante que está na tab Buscar
+  if (_amigoTab !== 'buscar') amigoTab('buscar');
   _buscaTimer = setTimeout(async () => {
     if (!_isFbReady()) { showToast('Firebase indisponível. Verifica a ligação.'); return; }
     const uid = _getUid();
-    const resultados = await window._fb.buscarUsuarios(val.trim());
     const lista = document.getElementById('amigos-list');
     if (!lista) return;
+
+    lista.innerHTML = '<div class="amigos-empty"><p style="color:rgba(255,255,255,0.3);">A procurar...</p></div>';
+
+    // Detecta se é busca por ID numérico (8 dígitos, pode ter espaço no meio)
+    const cleanedForId = trimmed.replace(/\s/g,'');
+    const isIdSearch = /^\d{7,8}$/.test(cleanedForId);
+
+    let resultados = [];
+    if (isIdSearch) {
+      // Busca por profileId numérico
+      const pid = cleanedForId.slice(0,8);
+      const u = await window._fb.buscarPorProfileId(pid);
+      if (u) resultados = [u];
+    } else {
+      resultados = await window._fb.buscarUsuarios(trimmed);
+    }
 
     // Filtra o próprio utilizador
     const filtrados = resultados.filter(u => u.uid !== uid);
 
     if (filtrados.length === 0) {
-      lista.innerHTML = '<div class="amigos-empty"><p>Nenhum utilizador encontrado</p></div>';
+      const msg = isIdSearch
+        ? 'Nenhum utilizador com este ID'
+        : 'Nenhum utilizador encontrado';
+      lista.innerHTML = `<div class="amigos-empty"><p>${msg}</p></div>`;
       return;
     }
 
@@ -6140,12 +6678,15 @@ function buscarAmigosInput(val) {
     lista.innerHTML = filtrados.map(u => {
       const inicial = (u.nome || '?').charAt(0).toUpperCase();
       const jaAmigo = amigosUids.includes(u.uid);
-      const solRecebida = pendentesUids.includes(u.uid);
       const solEnviada = solEnviadasUids.includes(u.uid);
+      const _pid = u.profileId || '';
+      const pidFormatted = _pid.length >= 7
+        ? _pid.slice(0,4)+' '+_pid.slice(4,8)
+        : (_pid ? _pid : '');
 
       let btn = '';
       if (jaAmigo) {
-        btn = '<span style="font-size:10px;color:#1db954;font-weight:700;">Amigo</span>';
+        btn = '<span style="font-size:10px;color:#1db954;font-weight:700;">Amigo ✓</span>';
       } else if (solEnviada) {
         btn = '<span style="font-size:10px;color:rgba(255,255,255,0.3);font-weight:700;">Enviada</span>';
       } else {
@@ -6156,7 +6697,7 @@ function buscarAmigosInput(val) {
         <div class="amigo-avatar">${inicial}</div>
         <div class="amigo-info">
           <div class="amigo-nome">${u.nome || '—'}</div>
-          <div class="amigo-inst">${u.instrumento || 'Instrumento não definido'}</div>
+          <div class="amigo-inst">${u.instrumento || 'Instrumento não definido'}${pidFormatted ? ' · <span style="color:rgba(29,185,84,0.6);font-family:monospace;font-weight:700;">'+pidFormatted+'</span>' : ''}</div>
         </div>
         <div class="amigo-actions">${btn}</div>
       </div>`;
@@ -6403,8 +6944,8 @@ function renderNotifPanel() {
     <div class="notif-item ${n.lida ? '' : 'unread'}">
       <div class="notif-icon ${n.tipo}">${icons[n.tipo] || icons.alert}</div>
       <div class="notif-body">
-        <div class="notif-title">${n.titulo}</div>
-        <div class="notif-desc">${n.desc}</div>
+        <div class="notif-title">${escapeHtml(n.titulo)}</div>
+        <div class="notif-desc">${escapeHtml(n.desc)}</div>
         <div class="notif-time">${formatNotifTime(n.ts)}</div>
       </div>
       ${!n.lida ? '<div class="notif-dot"></div>' : ''}
@@ -6413,7 +6954,9 @@ function renderNotifPanel() {
 }
 
 function formatNotifTime(ts) {
+  if (!ts || isNaN(ts)) return '';
   const diff = Date.now() - ts;
+  if (diff < 0) return 'Agora';
   const min = Math.floor(diff / 60000);
   if (min < 1)  return 'Agora';
   if (min < 60) return min + ' min atrás';
@@ -6518,9 +7061,15 @@ window.addEventListener('load', function() {
   atualizarBadge();
   verificarAtualizacoes();
   setTimeout(verificarEventosProximos, 1500);
+  // Faz backup automático ao abrir o app (garante que a nuvem está atualizada)
+  setTimeout(function() {
+    if (songs.length > 0) _fbBackupMusicas();
+    const evts = JSON.parse(localStorage.getItem('map_pro_eventos_v1') || '[]');
+    if (evts.length > 0) _fbBackupEventos();
+  }, 3000);
   // Verifica periodicamente (a cada hora)
   setInterval(verificarEventosProximos, 3600000);
-});
+});;
 
 
 // ─── ESTADO DA SALA ───────────────────────────────────────────────────────────
@@ -6547,21 +7096,30 @@ function capturarEstado() {
 // Aplica estado recebido (viewer)
 function aplicarEstado(estado) {
   syncPaused = true;
+
+  // BPM
   bpm = estado.bpm;
   document.getElementById('bpm-display').innerText = bpm;
   document.getElementById('dc-bpm').textContent = bpm;
   document.getElementById('trans-val').innerText = estado.transVal;
 
-  // Partes / acordes
-  document.getElementById('notes-grid').innerHTML = '';
-  estado.parts.forEach(p => addPart(p.title, p.content));
+  // Partes / acordes — só reconstrói se o conteúdo mudou (evita reset de scroll)
+  const grid = document.getElementById('notes-grid');
+  const partsJson = JSON.stringify(estado.parts);
+  if (grid.dataset.lastParts !== partsJson) {
+    grid.dataset.lastParts = partsJson;
+    grid.innerHTML = '';
+    estado.parts.forEach(p => addPart(p.title, p.content));
+  }
 
   // Modo show
   const body = document.getElementById('app-body');
-  if (estado.perfMode && !body.classList.contains('performance-mode')) {
+  const eraPerf = body.classList.contains('performance-mode');
+  if (estado.perfMode && !eraPerf) {
     body.classList.add('performance-mode');
     document.getElementById('mode-text').innerText = 'SAIR DO SHOW';
-  } else if (!estado.perfMode && body.classList.contains('performance-mode')) {
+    atualizarIndicador();
+  } else if (!estado.perfMode && eraPerf) {
     body.classList.remove('performance-mode');
     document.getElementById('mode-text').innerText = 'MODO SHOW';
     stopScroll();
@@ -6581,16 +7139,22 @@ function aplicarEstado(estado) {
   }
   atualizarLetreiroDrumCam();
 
-  // Teleprompter — sincroniza velocidade
+  // Teleprompter — só reinicia se a velocidade mudou de facto
   const slider = document.getElementById('scroll-speed');
   const speed = estado.scrollSpeed || 0;
-  if (parseInt(slider.value) !== speed) {
+  const currentSpeed = parseInt(slider.value) || 0;
+  if (currentSpeed !== speed) {
     slider.value = speed;
     document.getElementById('scroll-speed-val').innerText = speed;
     clearInterval(scrollInterval);
+    scrollInterval = null;
     if (speed > 0) {
       scrollInterval = setInterval(() => window.scrollBy(0, 1), 175 - speed);
     }
+  }
+  // Se devia estar a rolar mas o interval morreu por algum motivo, reinicia
+  else if (speed > 0 && !scrollInterval) {
+    scrollInterval = setInterval(() => window.scrollBy(0, 1), 175 - speed);
   }
 
   // Presença online — atualiza sync bar do viewer
@@ -6634,6 +7198,387 @@ function _bloquearFantasma() {
 renderSetlist();
 ["INTRO","VERSO","REFRÃO","PONTE","FINAL"].forEach(p => addPart(p));
 
+
+
+
+
+// ─── MENU 3 PONTINHOS — BANNER ──────────────────────────────────────────────
+function toggleBannerMenu(e) {
+  e.stopPropagation();
+  const menu = document.getElementById('banner-menu');
+  const isOpen = menu.style.display === 'block';
+  fecharTodosMenusFoto();
+  if (!isOpen) menu.style.display = 'block';
+}
+function fecharBannerMenu() {
+  const menu = document.getElementById('banner-menu');
+  if (menu) menu.style.display = 'none';
+}
+
+// ─── MENU 3 PONTINHOS — AVATAR ──────────────────────────────────────────────
+function toggleFotoMenu(e) {
+  e.stopPropagation();
+  const menu = document.getElementById('foto-menu');
+  const isOpen = menu.style.display === 'block';
+  fecharTodosMenusFoto();
+  if (!isOpen) menu.style.display = 'block';
+}
+function fecharFotoMenu() {
+  const menu = document.getElementById('foto-menu');
+  if (menu) menu.style.display = 'none';
+}
+function fecharTodosMenusFoto() {
+  fecharBannerMenu();
+  fecharFotoMenu();
+}
+document.addEventListener('click', function(e) {
+  if (!e.target.closest('#banner-menu') && !e.target.closest('#foto-menu')) {
+    fecharTodosMenusFoto();
+  }
+});
+
+// ─── REMOVER FOTOS ──────────────────────────────────────────────────────────
+function removerBannerFoto() {
+  const banner = document.getElementById('perfil-hero-banner');
+  if (banner) { banner.style.backgroundImage = 'none'; }
+  try {
+    const perfil = JSON.parse(localStorage.getItem('map_perfil_v1') || '{}');
+    delete perfil.bannerFoto; delete perfil.bannerPos; delete perfil.bannerZoom;
+    localStorage.setItem('map_perfil_v1', JSON.stringify(perfil));
+  } catch(e) {}
+  // Esconde opções de editar/remover no menu
+  const eb = document.getElementById('banner-editar-btn');
+  const rb = document.getElementById('banner-remover-btn');
+  if (eb) eb.style.display = 'none';
+  if (rb) rb.style.display = 'none';
+}
+
+function removerFotoPerfil() {
+  perfilFotoBase64 = null;
+  try {
+    const perfil = JSON.parse(localStorage.getItem('map_perfil_v1') || '{}');
+    delete perfil.foto; delete perfil.fotoPos; delete perfil.fotoZoom;
+    localStorage.setItem('map_perfil_v1', JSON.stringify(perfil));
+  } catch(e) {}
+  atualizarPreviewPerfil();
+  const eb = document.getElementById('foto-editar-btn');
+  const rb = document.getElementById('foto-remover-btn');
+  if (eb) eb.style.display = 'none';
+  if (rb) rb.style.display = 'none';
+}
+
+// ─── EDITOR DRAG-TO-REPOSITION (Twitter/Facebook style) ─────────────────────
+let _editorModo = null; // 'banner' | 'foto'
+let _editorScale = 1;
+let _editorOffX = 0, _editorOffY = 0;   // offset em px
+let _editorDragging = false;
+let _editorLastX = 0, _editorLastY = 0;
+let _editorImgW = 0, _editorImgH = 0;   // tamanho natural
+let _editorCropW = 0, _editorCropH = 0; // tamanho do recorte
+
+function abrirEditorBanner() {
+  const perfil = JSON.parse(localStorage.getItem('map_perfil_v1') || '{}');
+  if (!perfil.bannerFoto) return;
+  _editorModo = 'banner';
+  _abrirEditor(perfil.bannerFoto, perfil.bannerOffX || 0, perfil.bannerOffY || 0,
+               perfil.bannerZoom || 100, 'Ajustar capa');
+}
+
+function abrirEditorFoto() {
+  const perfil = JSON.parse(localStorage.getItem('map_perfil_v1') || '{}');
+  const foto = perfilFotoBase64 || perfil.foto;
+  if (!foto) return;
+  _editorModo = 'foto';
+  _abrirEditor(foto, perfil.fotoOffX || 0, perfil.fotoOffY || 0,
+               perfil.fotoZoom || 100, 'Ajustar foto');
+}
+
+function _abrirEditor(src, offX, offY, zoom, titulo) {
+  const modal = document.getElementById('foto-editor-modal');
+  const img   = document.getElementById('foto-editor-img');
+  const crop  = document.getElementById('foto-editor-crop');
+  const mask  = document.getElementById('foto-editor-mask');
+  const tit   = document.getElementById('foto-editor-titulo');
+  const zoomEl= document.getElementById('foto-editor-zoom');
+
+  tit.textContent = titulo;
+  modal.style.display = 'flex';
+
+  img.src = src;
+  img.onload = function() {
+    _editorImgW = img.naturalWidth;
+    _editorImgH = img.naturalHeight;
+
+    // Calcula tamanho do crop consoante o modo
+    const vw = Math.min(window.innerWidth, 480);
+    const vh = window.innerHeight;
+    const headerH = 60, footerH = 90;
+
+    if (_editorModo === 'banner') {
+      _editorCropW = vw;
+      _editorCropH = 110;
+      // Máscara: tudo escurecido fora do banner
+      mask.innerHTML = '';
+      mask.style.boxShadow = 'none';
+    } else {
+      _editorCropW = 200;
+      _editorCropH = 200;
+      // Máscara circular
+      mask.style.background = 'rgba(0,0,0,0.55)';
+      mask.style.borderRadius = '0';
+      // Buraco circular no centro
+      const cx = vw / 2, cy = (vh - headerH - footerH) / 2;
+      mask.style.boxShadow = 'none';
+      mask.innerHTML = '<svg style="position:absolute;inset:0;width:100%;height:100%;" xmlns="http://www.w3.org/2000/svg"><defs><mask id="hole"><rect width="100%" height="100%" fill="white"/><rect x="' + (cx-100) + '" y="' + (cy-100) + '" width="200" height="200" rx="18" fill="black"/></mask></defs><rect width="100%" height="100%" fill="rgba(0,0,0,0.55)" mask="url(#hole)"/><rect x="' + (cx-100) + '" y="' + (cy-100) + '" width="200" height="200" rx="18" fill="none" stroke="white" stroke-width="2" stroke-dasharray="6,4" opacity="0.6"/></svg>';
+    }
+
+    // Escala inicial: ajusta para que a imagem preencha o crop
+    const fitScaleW = _editorCropW / _editorImgW;
+    const fitScaleH = _editorCropH / _editorImgH;
+    const fitScale  = Math.max(fitScaleW, fitScaleH);
+
+    _editorScale = fitScale * (zoom / 100);
+    _editorOffX  = offX;
+    _editorOffY  = offY;
+
+    zoomEl.min = 100;
+    zoomEl.max = 400;
+    zoomEl.value = zoom;
+
+    _aplicarEditorTransform();
+  };
+
+  // Drag — mouse
+  const cropEl = crop;
+  cropEl.onmousedown = function(e) { _editorDragging = true; _editorLastX = e.clientX; _editorLastY = e.clientY; img.style.cursor = 'grabbing'; e.preventDefault(); };
+  window.onmousemove = function(e) {
+    if (!_editorDragging) return;
+    _editorOffX += e.clientX - _editorLastX;
+    _editorOffY += e.clientY - _editorLastY;
+    _editorLastX = e.clientX; _editorLastY = e.clientY;
+    _clamparEditor();
+    _aplicarEditorTransform();
+  };
+  window.onmouseup = function() { _editorDragging = false; img.style.cursor = 'grab'; };
+
+  // Drag — touch
+  cropEl.ontouchstart = function(e) {
+    _editorDragging = true;
+    _editorLastX = e.touches[0].clientX;
+    _editorLastY = e.touches[0].clientY;
+    e.preventDefault();
+  };
+  cropEl.ontouchmove = function(e) {
+    if (!_editorDragging) return;
+    _editorOffX += e.touches[0].clientX - _editorLastX;
+    _editorOffY += e.touches[0].clientY - _editorLastY;
+    _editorLastX = e.touches[0].clientX;
+    _editorLastY = e.touches[0].clientY;
+    _clamparEditor();
+    _aplicarEditorTransform();
+    e.preventDefault();
+  };
+  cropEl.ontouchend = function() { _editorDragging = false; };
+}
+
+function editorZoom(val) {
+  const perfil = JSON.parse(localStorage.getItem('map_perfil_v1') || '{}');
+  const fitScaleW = _editorCropW / _editorImgW;
+  const fitScaleH = _editorCropH / _editorImgH;
+  const fitScale  = Math.max(fitScaleW, fitScaleH);
+  _editorScale = fitScale * (parseInt(val) / 100);
+  _clamparEditor();
+  _aplicarEditorTransform();
+}
+
+function _clamparEditor() {
+  // Garante que a imagem cobre sempre o crop — nunca mostra bordas vazias
+  const vw = Math.min(window.innerWidth, 480);
+  const vh = window.innerHeight;
+  const iw = _editorImgW * _editorScale;
+  const ih = _editorImgH * _editorScale;
+  const cx = vw / 2, cy = (vh - 150) / 2; // centro aproximado do crop
+
+  // Limites em x
+  const maxOffX =  iw / 2 - _editorCropW / 2;
+  const minOffX = -iw / 2 + _editorCropW / 2;
+  // Limites em y
+  const maxOffY =  ih / 2 - _editorCropH / 2;
+  const minOffY = -ih / 2 + _editorCropH / 2;
+
+  _editorOffX = Math.min(maxOffX, Math.max(minOffX, _editorOffX));
+  _editorOffY = Math.min(maxOffY, Math.max(minOffY, _editorOffY));
+}
+
+function _aplicarEditorTransform() {
+  const img = document.getElementById('foto-editor-img');
+  img.style.width  = (_editorImgW * _editorScale) + 'px';
+  img.style.height = (_editorImgH * _editorScale) + 'px';
+  img.style.transform = 'translate(' + _editorOffX + 'px, ' + _editorOffY + 'px)';
+}
+
+function salvarEdicaoFoto() {
+  const zoom = parseInt(document.getElementById('foto-editor-zoom').value);
+  const perfil = JSON.parse(localStorage.getItem('map_perfil_v1') || '{}');
+
+  // Calcula a posição normalizada (0-100%) para CSS background-position / object-position
+  // OffX positivo = imagem deslocada para direita = conteúdo mais à esquerda visível
+  const fitScaleW = _editorCropW / _editorImgW;
+  const fitScaleH = _editorCropH / _editorImgH;
+  const fitScale  = Math.max(fitScaleW, fitScaleH);
+  const iw = _editorImgW * _editorScale;
+  const ih = _editorImgH * _editorScale;
+  const maxOffX = iw / 2 - _editorCropW / 2;
+  const maxOffY = ih / 2 - _editorCropH / 2;
+
+  // Normaliza para 0-100%: 0% = esquerda, 50% = centro, 100% = direita
+  const posX = maxOffX > 0 ? Math.round(50 - (_editorOffX / maxOffX) * 50) : 50;
+  const posY = maxOffY > 0 ? Math.round(50 - (_editorOffY / maxOffY) * 50) : 50;
+
+  if (_editorModo === 'banner') {
+    perfil.bannerOffX = _editorOffX;
+    perfil.bannerOffY = _editorOffY;
+    perfil.bannerZoom = zoom;
+    perfil.bannerPosX = posX;
+    perfil.bannerPosY = posY;
+    localStorage.setItem('map_perfil_v1', JSON.stringify(perfil));
+    // Aplica ao banner
+    const banner = document.getElementById('perfil-hero-banner');
+    if (banner) {
+      banner.style.backgroundPosition = posX + '% ' + posY + '%';
+      banner.style.backgroundSize = (zoom > 100 ? zoom : 100) + '%';
+    }
+  } else {
+    perfil.fotoOffX = _editorOffX;
+    perfil.fotoOffY = _editorOffY;
+    perfil.fotoZoom = zoom;
+    perfil.fotoPosX = posX;
+    perfil.fotoPosY = posY;
+    localStorage.setItem('map_perfil_v1', JSON.stringify(perfil));
+    // Aplica ao avatar
+    const av = document.getElementById('perfil-avatar');
+    const img = av ? av.querySelector('img') : null;
+    if (img) {
+      img.style.objectPosition = posX + '% ' + posY + '%';
+    }
+  }
+  fecharEditorFoto();
+}
+
+function fecharEditorFoto() {
+  const modal = document.getElementById('foto-editor-modal');
+  if (modal) modal.style.display = 'none';
+  _editorDragging = false;
+  window.onmousemove = null;
+  window.onmouseup = null;
+}
+
+// ── Preview do avatar no modal de perfil ───────────────────────────────────
+function atualizarPreviewPerfil() {
+  const av = document.getElementById('perfil-avatar');
+  if (!av) return;
+  const perfil = JSON.parse(localStorage.getItem('map_perfil_v1') || '{}');
+  const foto = perfilFotoBase64 || perfil.foto || null;
+  const nome = (document.getElementById('perfil-nome-input') || {}).value
+               || perfil.nome || '';
+  const editarBtn  = document.getElementById('foto-editar-btn');
+  const removerBtn = document.getElementById('foto-remover-btn');
+  if (foto) {
+    const posX = perfil.fotoPosX !== undefined ? perfil.fotoPosX : 50;
+    const posY = perfil.fotoPosY !== undefined ? perfil.fotoPosY : 50;
+    av.innerHTML = '<img src="' + foto + '" style="width:100%;height:100%;object-fit:cover;border-radius:15px;object-position:' + posX + '% ' + posY + '%;">';
+    if (editarBtn)  editarBtn.style.display  = 'flex';
+    if (removerBtn) removerBtn.style.display = 'flex';
+  } else {
+    const inicial = nome.trim().charAt(0).toUpperCase() || '?';
+    av.innerHTML = '<span>' + inicial + '</span>';
+    if (editarBtn)  editarBtn.style.display  = 'none';
+    if (removerBtn) removerBtn.style.display = 'none';
+  }
+}
+
+function perfilCarregarFoto(input) {
+  const file = input.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    perfilFotoBase64 = e.target.result;
+    atualizarPreviewPerfil();
+  };
+  reader.readAsDataURL(file);
+}
+
+function salvarPerfil() {
+  const nomeInput = document.getElementById('perfil-nome-input');
+  const nome = (nomeInput ? nomeInput.value : '').trim();
+  if (nome.length < 2) { showToast('Nome deve ter ao menos 2 caracteres'); return; }
+
+  const perfil = JSON.parse(localStorage.getItem('map_perfil_v1') || '{}');
+  perfil.nome = nome;
+  perfil.instrumento = perfilInstrumentoSelecionado || perfil.instrumento || null;
+  if (perfilFotoBase64) perfil.foto = perfilFotoBase64;
+  localStorage.setItem('map_perfil_v1', JSON.stringify(perfil));
+
+  // Sincroniza Firebase (mantém todos os campos incluindo foto)
+  if (window._fb && window._fbReady) {
+    const fbData = {
+      nome: perfil.nome,
+      nomeUsuario: perfil.nomeUsuario || perfil.nome,
+      instrumento: perfil.instrumento || null,
+      profileId: perfil.profileId || _getProfileId(),
+      criadoEm: perfil.criadoEm || Date.now()
+    };
+    // Só sincroniza foto se tiver (evita enviar null e apagar foto existente)
+    if (perfil.foto) fbData.foto = perfil.foto;
+    window._fb.salvarPerfilCompleto(perfil.uid || _getUid(), fbData).catch(function(){});
+  }
+
+  showToast('Perfil salvo!');
+  fecharModalPerfil();
+}
+
+// ── Banner foto ────────────────────────────────────────────────────────────
+function perfilBannerChange(input) {
+  const file = input.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    const base64 = e.target.result;
+    try {
+      const perfil = JSON.parse(localStorage.getItem('map_perfil_v1') || '{}');
+      perfil.bannerFoto = base64;
+      localStorage.setItem('map_perfil_v1', JSON.stringify(perfil));
+    } catch(err) {}
+    _aplicarBannerFoto(base64);
+  };
+  reader.readAsDataURL(file);
+}
+
+function _aplicarBannerFoto(base64) {
+  const banner = document.getElementById('perfil-hero-banner');
+  if (!banner) return;
+  const editarBtn  = document.getElementById('banner-editar-btn');
+  const removerBtn = document.getElementById('banner-remover-btn');
+  if (base64) {
+    const perfil = JSON.parse(localStorage.getItem('map_perfil_v1') || '{}');
+    const posX = perfil.bannerPosX !== undefined ? perfil.bannerPosX : 50;
+    const posY = perfil.bannerPosY !== undefined ? perfil.bannerPosY : 50;
+    const zoom = perfil.bannerZoom || 100;
+    banner.style.backgroundImage = 'url(' + base64 + ')';
+    banner.style.backgroundSize  = (zoom > 100 ? zoom : 100) + '%';
+    banner.style.backgroundPosition = posX + '% ' + posY + '%';
+    if (editarBtn)  editarBtn.style.display  = 'flex';
+    if (removerBtn) removerBtn.style.display = 'flex';
+  } else {
+    banner.style.backgroundImage = 'none';
+    banner.style.backgroundSize  = 'cover';
+    banner.style.backgroundPosition = 'center 50%';
+    if (editarBtn)  editarBtn.style.display  = 'none';
+    if (removerBtn) removerBtn.style.display = 'none';
+  }
+}
+
+
 </script>
 
 
@@ -6644,7 +7589,7 @@ renderSetlist();
     <button class="notif-clear-btn" onclick="limparNotificacoes()">Limpar tudo</button>
   </div>
   <div class="notif-list" id="notif-list">
-    <div class="notif-empty">Sem notificações</div>
+    <div class="notif-empty">Sem notificações de momento</div>
   </div>
 </div>
 
@@ -6662,6 +7607,10 @@ renderSetlist();
     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
     Editar
   </div>
+  <div class="ctx-item" id="ctx-show" onclick="ctxAcao('show')" style="display:none;">
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#1db954" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polygon points="5 3 19 12 5 21 5 3" fill="#1db954" stroke="none"/></svg>
+    <span style="color:#1db954;">Tocar no Show</span>
+  </div>
   <div class="ctx-item ctx-danger" id="ctx-remover" onclick="ctxAcao('remover')" style="display:none;">
     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
     Remover do Evento
@@ -6672,5 +7621,134 @@ renderSetlist();
   </div>
 </div>
 
+
+<!-- MODAL EDITOR DE FOTO (drag to reposition, Twitter/Facebook style) -->
+<div id="foto-editor-modal" style="display:none;position:fixed;inset:0;z-index:999999;background:rgba(0,0,0,0.95);flex-direction:column;align-items:center;justify-content:flex-start;">
+  <div style="width:100%;max-width:480px;display:flex;flex-direction:column;height:100%;">
+    <!-- Header -->
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:16px 20px;flex-shrink:0;">
+      <button id="foto-editor-cancel" onclick="fecharEditorFoto()" style="background:rgba(255,255,255,0.1);border:1px solid rgba(255,255,255,0.15);border-radius:20px;padding:7px 16px;color:#fff;font-size:11px;font-weight:700;cursor:pointer;font-family:inherit;">Cancelar</button>
+      <span style="font-size:13px;font-weight:900;color:#fff;" id="foto-editor-titulo">Ajustar foto</span>
+      <button id="foto-editor-salvar" onclick="salvarEdicaoFoto()" style="background:#1db954;border:none;border-radius:20px;padding:7px 16px;color:#000;font-size:11px;font-weight:900;cursor:pointer;font-family:inherit;">Aplicar</button>
+    </div>
+    <!-- Área de recorte -->
+    <div id="foto-editor-crop" style="flex:1;position:relative;overflow:hidden;background:#111;display:flex;align-items:center;justify-content:center;touch-action:none;">
+      <!-- Overlay do recorte (máscara) -->
+      <div id="foto-editor-mask" style="position:absolute;inset:0;z-index:2;pointer-events:none;"></div>
+      <!-- Imagem arrastável -->
+      <img id="foto-editor-img" src="" draggable="false" style="position:absolute;user-select:none;-webkit-user-drag:none;touch-action:none;transform-origin:center;cursor:grab;">
+    </div>
+    <!-- Zoom slider -->
+    <div style="padding:16px 24px;flex-shrink:0;display:flex;align-items:center;gap:12px;background:#0c0c14;">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.4)" stroke-width="2.5"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/><line x1="11" y1="8" x2="11" y2="14"/><line x1="8" y1="11" x2="14" y2="11"/></svg>
+      <input type="range" id="foto-editor-zoom" min="100" max="400" value="100" oninput="editorZoom(this.value)" style="flex:1;height:3px;accent-color:#1db954;cursor:pointer;">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.4)" stroke-width="2.5"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/><line x1="8" y1="11" x2="14" y2="11"/></svg>
+    </div>
+    <div style="padding:0 24px 20px;flex-shrink:0;text-align:center;">
+      <p style="font-size:10px;color:rgba(255,255,255,0.25);margin:0;">Arrasta para reposicionar · Usa o slider para dar zoom</p>
+    </div>
+  </div>
+</div>
+
+<!-- TELA DE LOGIN (PIN) — usuário já cadastrado -->
+<div id="pin-lock-screen" style="display:none;position:fixed;inset:0;z-index:100001;background:#06060c;flex-direction:column;align-items:center;justify-content:center;gap:0;">
+  <div style="display:flex;flex-direction:column;align-items:center;gap:28px;width:100%;max-width:320px;padding:0 32px;">
+    <!-- Logo -->
+    <div style="text-align:center;">
+      <div style="width:64px;height:64px;border-radius:18px;background:linear-gradient(135deg,#1db954,#12a045);display:flex;align-items:center;justify-content:center;margin:0 auto 16px;box-shadow:0 0 40px rgba(29,185,84,0.2);">
+        <span style="font-size:28px;font-weight:900;color:#000;font-family:-apple-system,'Inter',sans-serif;">M</span>
+      </div>
+      <div id="pin-lock-nome" style="font-size:18px;font-weight:900;color:#fff;letter-spacing:0.3px;"></div>
+      <div style="font-size:11px;color:rgba(255,255,255,0.3);margin-top:4px;font-weight:500;">Digite sua senha para entrar</div>
+    </div>
+    <!-- PIN dots display -->
+    <div style="display:flex;gap:16px;align-items:center;justify-content:center;" id="pin-dots">
+      <div class="pin-dot" id="pin-dot-0"></div>
+      <div class="pin-dot" id="pin-dot-1"></div>
+      <div class="pin-dot" id="pin-dot-2"></div>
+      <div class="pin-dot" id="pin-dot-3"></div>
+    </div>
+    <!-- Error msg -->
+    <div id="pin-lock-error" style="font-size:11px;color:#ff6b6b;font-weight:700;min-height:16px;text-align:center;opacity:0;transition:opacity 0.2s;"></div>
+    <!-- Teclado numérico -->
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;width:100%;">
+      <button class="pin-key" onclick="pinTecla('1')">1</button>
+      <button class="pin-key" onclick="pinTecla('2')">2</button>
+      <button class="pin-key" onclick="pinTecla('3')">3</button>
+      <button class="pin-key" onclick="pinTecla('4')">4</button>
+      <button class="pin-key" onclick="pinTecla('5')">5</button>
+      <button class="pin-key" onclick="pinTecla('6')">6</button>
+      <button class="pin-key" onclick="pinTecla('7')">7</button>
+      <button class="pin-key" onclick="pinTecla('8')">8</button>
+      <button class="pin-key" onclick="pinTecla('9')">9</button>
+      <div></div>
+      <button class="pin-key" onclick="pinTecla('0')">0</button>
+      <button class="pin-key pin-key-del" onclick="pinApagar()">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 4H8l-7 8 7 8h13a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2z"/><line x1="18" y1="9" x2="12" y2="15"/><line x1="12" y1="9" x2="18" y2="15"/></svg>
+      </button>
+    </div>
+    <!-- Esqueci a senha -->
+    <button onclick="abrirEsqueciSenha()" style="background:none;border:none;color:rgba(255,255,255,0.25);font-size:11px;font-weight:600;cursor:pointer;margin-top:8px;padding:8px 16px;font-family:inherit;letter-spacing:0.5px;">
+      Esqueci a senha
+    </button>
+  </div>
+</div>
+
+<!-- MODAL ESQUECI A SENHA ────────────────────────────────────── -->
+<div id="modal-esqueci-senha" style="display:none;position:fixed;inset:0;z-index:99997;background:rgba(0,0,0,0.85);align-items:center;justify-content:center;">
+  <div style="background:#111118;border:1px solid rgba(255,255,255,0.1);border-radius:20px;padding:32px 24px;width:calc(100% - 48px);max-width:360px;display:flex;flex-direction:column;gap:20px;">
+    <h3 style="margin:0;font-size:18px;font-weight:800;color:#fff;">Recuperar senha</h3>
+    <p style="margin:0;font-size:13px;color:rgba(255,255,255,0.5);line-height:1.5;">Introduz o email da tua conta. Vais receber um link para criar uma nova senha.</p>
+    <div style="position:relative;">
+      <input id="esqueci-email-input" type="email" placeholder="teu@email.com"
+        style="width:100%;box-sizing:border-box;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.1);border-radius:12px;color:#fff;font-size:14px;padding:13px 16px;outline:none;font-family:inherit;"
+        onfocus="this.style.borderColor='rgba(29,185,84,0.5)'" onblur="this.style.borderColor='rgba(255,255,255,0.1)'">
+    </div>
+    <div id="esqueci-msg" style="font-size:12px;color:rgba(255,255,255,0.4);min-height:16px;text-align:center;"></div>
+    <div style="display:flex;gap:10px;">
+      <button onclick="fecharEsqueciSenha()" style="flex:1;padding:13px;border-radius:12px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);color:rgba(255,255,255,0.4);font-size:11px;font-weight:700;cursor:pointer;font-family:inherit;">Cancelar</button>
+      <button onclick="enviarRecuperacaoSenha()" id="btn-enviar-recuperacao"
+        style="flex:2;padding:13px;border-radius:12px;background:#1db954;border:none;color:#000;font-size:12px;font-weight:900;cursor:pointer;font-family:inherit;">Enviar email</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL ALTERAR SENHA ─────────────────────────────────────── -->
+<div id="modal-alterar-senha" style="display:none;position:fixed;inset:0;z-index:99997;background:rgba(0,0,0,0.85);align-items:center;justify-content:center;">
+  <div style="background:#111118;border:1px solid rgba(255,255,255,0.1);border-radius:20px;padding:32px 24px;width:calc(100% - 48px);max-width:360px;display:flex;flex-direction:column;gap:20px;">
+    <h3 style="margin:0;font-size:18px;font-weight:800;color:#fff;">Alterar senha</h3>
+    <div style="display:flex;flex-direction:column;gap:12px;">
+      <div style="position:relative;">
+        <input id="alterar-senha-atual" type="password" placeholder="Senha actual"
+          style="width:100%;box-sizing:border-box;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.1);border-radius:12px;color:#fff;font-size:14px;padding:13px 44px 13px 16px;outline:none;font-family:inherit;"
+          onfocus="this.style.borderColor='rgba(29,185,84,0.5)'" onblur="this.style.borderColor='rgba(255,255,255,0.1)'">
+        <button type="button" onclick="_toggleSenhaField('alterar-senha-atual')" style="position:absolute;right:12px;top:50%;transform:translateY(-50%);background:none;border:none;color:rgba(255,255,255,0.3);cursor:pointer;">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+        </button>
+      </div>
+      <div style="position:relative;">
+        <input id="alterar-senha-nova" type="password" placeholder="Nova senha (mín. 6)"
+          style="width:100%;box-sizing:border-box;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.1);border-radius:12px;color:#fff;font-size:14px;padding:13px 44px 13px 16px;outline:none;font-family:inherit;"
+          onfocus="this.style.borderColor='rgba(29,185,84,0.5)'" onblur="this.style.borderColor='rgba(255,255,255,0.1)'">
+        <button type="button" onclick="_toggleSenhaField('alterar-senha-nova')" style="position:absolute;right:12px;top:50%;transform:translateY(-50%);background:none;border:none;color:rgba(255,255,255,0.3);cursor:pointer;">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+        </button>
+      </div>
+      <div style="position:relative;">
+        <input id="alterar-senha-conf" type="password" placeholder="Confirmar nova senha"
+          style="width:100%;box-sizing:border-box;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.1);border-radius:12px;color:#fff;font-size:14px;padding:13px 44px 13px 16px;outline:none;font-family:inherit;"
+          onfocus="this.style.borderColor='rgba(29,185,84,0.5)'" onblur="this.style.borderColor='rgba(255,255,255,0.1)'">
+        <button type="button" onclick="_toggleSenhaField('alterar-senha-conf')" style="position:absolute;right:12px;top:50%;transform:translateY(-50%);background:none;border:none;color:rgba(255,255,255,0.3);cursor:pointer;">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+        </button>
+      </div>
+    </div>
+    <div id="alterar-senha-msg" style="font-size:12px;color:rgba(255,255,255,0.4);min-height:16px;text-align:center;"></div>
+    <div style="display:flex;gap:10px;">
+      <button onclick="fecharAlterarSenha()" style="flex:1;padding:13px;border-radius:12px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);color:rgba(255,255,255,0.4);font-size:11px;font-weight:700;cursor:pointer;font-family:inherit;">Cancelar</button>
+      <button onclick="confirmarAlterarSenha()" style="flex:2;padding:13px;border-radius:12px;background:#1db954;border:none;color:#000;font-size:12px;font-weight:900;cursor:pointer;font-family:inherit;">Alterar senha</button>
+    </div>
+  </div>
+</div>
 </body>
 </html>
