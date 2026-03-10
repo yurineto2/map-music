@@ -586,7 +586,7 @@ function obNomeInput() {
   const btn = document.getElementById('ob-btn-verificar');
   const msg = document.getElementById('ob-nome-msg');
   const st  = document.getElementById('ob-nome-status');
-  if (btn) btn.disabled = val.length < 2;
+  if (btn) { btn.disabled = val.length < 2; btn.style.opacity = val.length >= 2 ? '1' : '0.4'; }
   if (msg) msg.textContent = val.length >= 2 ? 'Clica em verificar disponibilidade' : '';
   if (st)  st.textContent = '';
   _obValidarCta();
@@ -600,8 +600,9 @@ async function obVerificarNome() {
   const st  = document.getElementById('ob-nome-status');
   if (btn) { btn.disabled = true; btn.textContent = 'A verificar...'; }
   if (!window._fb) {
-    if (msg) msg.textContent = 'Firebase ainda a carregar...';
+    if (msg) msg.textContent = 'A carregar... tenta em 1 segundo.';
     if (btn) { btn.disabled = false; btn.textContent = 'Verificar disponibilidade'; }
+    setTimeout(obVerificarNome, 1000);
     return;
   }
   const disponivel = await window._fb.verificarNomeDisponivel(val);
@@ -682,8 +683,9 @@ function _obAvancarStep2() {
   const email = (emailEl?.value || '').trim();
   const emailOk = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
   if (!emailOk) {
-    if (emailMsg) emailMsg.textContent = 'Email inválido';
+    if (emailMsg) { emailMsg.textContent = 'Email inválido — preenche o email antes de continuar'; emailMsg.style.color = '#ff4444'; }
     emailEl?.focus();
+    emailEl?.scrollIntoView({ behavior: 'smooth', block: 'center' });
     return;
   }
   if (!_obNomeDisponivel) {
@@ -764,6 +766,7 @@ async function terminarOnboarding() {
   } catch(e) {}
 
   // 5. Animação de saída
+  _mostrarApp();
   const ov = document.getElementById('onboarding-overlay');
   if (ov) ov.classList.add('done');
 
@@ -785,7 +788,7 @@ function _pinGetSaved() {
 
 function _verificarPinNaEntrada() {
   const perfil = JSON.parse(localStorage.getItem('map_perfil_v1') || '{}');
-  if (!perfil.nome || !perfil.pin) return; // sem conta ou sem PIN — vai directo ao app
+  if (!perfil.nome || !perfil.pin) { _mostrarApp(); return; } // sem PIN — mostra app directo
   const screen = document.getElementById('pin-lock-screen');
   const nomeEl = document.getElementById('pin-lock-nome');
   if (!screen) return;
@@ -834,16 +837,59 @@ function _pinVerificar() {
 }
 
 // ── Init ─────────────────────────────────────────────────────────────────────
+
+  function _mostrarApp() {
+    document.body.classList.remove('auth-pending');
+  }
+
 document.addEventListener('DOMContentLoaded', function() {
+  // iOS touchend fix for verificar btn
+  setTimeout(function() {
+    const btnV = document.getElementById('ob-btn-verificar');
+    if (btnV) {
+      btnV.addEventListener('touchend', function(e) {
+        e.preventDefault();
+        if (!btnV.disabled) obVerificarNomeEAvancar();
+      });
+    }
+    const btnCta = document.getElementById('ob-cta');
+    if (btnCta) {
+      btnCta.addEventListener('touchend', function(e) {
+        e.preventDefault();
+        if (!btnCta.disabled) terminarOnboarding();
+      });
+    }
+  }, 500);
+
   const perfil = JSON.parse(localStorage.getItem('map_perfil_v1') || '{}');
   const splash = document.getElementById('ob-splash');
   const skipSplash = sessionStorage.getItem('map_skip_splash') === '1';
+
+  // Helper: mostrar onboarding com animação
+  function _mostrarOnboarding() {
+    const ov = document.getElementById('onboarding-overlay');
+    if (!ov) return;
+    ov.style.pointerEvents = 'auto';
+    ov.style.opacity = '0';
+    ov.style.transform = 'translateY(20px)';
+    ov.style.transition = 'opacity 0.4s ease, transform 0.4s ease';
+    // Garante que todos os filhos são interativos (iOS Safari fix)
+    ov.querySelectorAll('button, input, select').forEach(function(el) {
+      el.style.pointerEvents = 'auto';
+    });
+    requestAnimationFrame(function() {
+      requestAnimationFrame(function() {
+        ov.style.opacity = '1';
+        ov.style.transform = 'translateY(0)';
+      });
+    });
+  }
 
   if (skipSplash) {
     // Vem de um logout — pula splash, vai direto ao cadastro
     sessionStorage.removeItem('map_skip_splash');
     if (splash) splash.remove();
-    // onboarding-overlay já está no DOM e visível (perfil foi apagado)
+    _mostrarOnboarding();
     return;
   }
 
@@ -853,23 +899,30 @@ document.addEventListener('DOMContentLoaded', function() {
     if (userEl) { userEl.style.display = 'block'; userEl.textContent = perfil.nome; }
   }
 
-  // Após 2.5s: inicia animação de saída do splash
+  // Após 1.8s: inicia saída do splash E entrada do próximo ecrã em simultâneo
   setTimeout(function() {
     if (splash) splash.classList.add('exit');
 
-    // Após animação (2s): remove splash e mostra o que for necessário
+    if (perfil.nome && perfil.nome.trim().length >= 2) {
+      // Utilizador registado — mostra PIN ou app logo ao iniciar saída do splash
+      _mostrarApp();
+      const ov = document.getElementById('onboarding-overlay');
+      if (ov) ov.remove();
+      _verificarPinNaEntrada();
+    } else {
+      // Novo utilizador ou perfil incompleto — onboarding entra junto com saída do splash
+      if (perfil.uid && !perfil.nome) {
+        localStorage.removeItem('map_perfil_v1');
+        localStorage.removeItem('map_uid_v1');
+      }
+      _mostrarOnboarding();
+    }
+
+    // Remove splash do DOM após animação terminar
     setTimeout(function() {
       if (splash) splash.remove();
-
-      if (perfil.nome) {
-        // Utilizador já registado — remove onboarding e mostra PIN ou app
-        const ov = document.getElementById('onboarding-overlay');
-        if (ov) ov.remove();
-        _verificarPinNaEntrada();
-      }
-      // else: onboarding já está visível por baixo
-    }, 2000);
-  }, 2500);
+    }, 800);
+  }, 3500);
 });
 </script>
 
@@ -920,7 +973,6 @@ body { font-family: -apple-system, 'Inter', BlinkMacSystemFont, 'Segoe UI', sans
 .logo-icon span {
   font-family: 'Georgia', serif;
   font-size: 19px; font-weight: 900;
-  color: #fff;
   letter-spacing: -1px;
   line-height: 1;
   text-shadow: 0 1px 3px rgba(0,0,0,0.8);
@@ -2446,11 +2498,10 @@ body.viewer-mode input[type="text"] { pointer-events: none; }
 #ob-splash-name {
   position: relative; z-index: 1;
   font-size: 46px; font-weight: 900; letter-spacing: -1.5px;
-  color: #fff; text-align: center; line-height: 1.05;
+  color: #E0E0E0; text-align: center; line-height: 1.05;
   opacity: 0; transform: translateY(16px);
   animation: splashName 1.0s 0.3s cubic-bezier(0.22,1,0.36,1) forwards;
 }
-#ob-splash-name { position: relative; display: inline-block; }
 #ob-splash-name span { color: #1db954; font-size: 0.22em; font-weight: 800; letter-spacing: 2px; text-transform: uppercase; position: absolute; top: 0.15em; right: -1.8em; line-height: 1; }
 @keyframes splashName {
   from { opacity: 0; transform: translateY(16px); }
@@ -2474,7 +2525,7 @@ body.viewer-mode input[type="text"] { pointer-events: none; }
 }
 /* Saída: desliza para cima e desaparece */
 #ob-splash.exit {
-  animation: splashExit 2s cubic-bezier(0.4,0,0.2,1) forwards;
+  animation: splashExit 0.7s cubic-bezier(0.4,0,0.2,1) forwards;
   pointer-events: none;
 }
 @keyframes splashExit {
@@ -2492,7 +2543,13 @@ body.viewer-mode input[type="text"] { pointer-events: none; }
   opacity: 0;
   transform: translateY(50px);
   transition: none;
-  pointer-events: none;
+  pointer-events: none; /* JS define auto via _mostrarOnboarding */
+}
+/* Garante que filhos do onboarding são sempre clicáveis quando visível */
+#onboarding-overlay button,
+#onboarding-overlay input,
+#onboarding-overlay select {
+  pointer-events: auto !important;
 }
 #onboarding-overlay.visible {
   opacity: 1;
@@ -2545,7 +2602,7 @@ body.viewer-mode input[type="text"] { pointer-events: none; }
 .ob-hero h1 {
   position: relative; z-index: 1;
   font-size: 44px; font-weight: 900; letter-spacing: -1.5px;
-  color: #fff; margin: 0 0 10px;
+  color: #E0E0E0; margin: 0 0 10px;
   line-height: 1.05;
 }
 .ob-hero h1 { position: relative; display: inline-block; }
@@ -2606,6 +2663,8 @@ body.viewer-mode input[type="text"] { pointer-events: none; }
   cursor: pointer; transition: all 0.15s; letter-spacing: 0.3px;
   -webkit-tap-highlight-color: transparent;
   display: flex; align-items: center; gap: 6px;
+  pointer-events: auto !important;
+  touch-action: manipulation;
 }
 .ob-chip.selected {
   background: rgba(29,185,84,0.1);
@@ -2713,10 +2772,76 @@ body.viewer-mode input[type="text"] { pointer-events: none; }
   caret-color: #1db954;
 }
 .ob-pin-input:focus { border-color: rgba(29,185,84,0.5); }
+
+/* ── Auth pending: esconde app até login confirmado ── */
+body.auth-pending > *:not(#ob-splash):not(#onboarding-overlay):not(#toast):not(script):not(style) {
+  visibility: hidden !important;
+  pointer-events: none !important;
+}
+body.auth-pending #ob-splash,
+body.auth-pending #onboarding-overlay,
+body.auth-pending #toast {
+  visibility: visible !important;
+  pointer-events: auto !important;
+}
+
+
+/* ── Logo Shimmer ──────────────────────────────────────────────────────────── */
+@keyframes logoBeam {
+  0%     { background-position: 160% center; }
+  37.5%  { background-position: -60% center; }  /* sweep 3s */
+  37.51% { background-position: 160% center; }  /* reset instantâneo */
+  100%   { background-position: 160% center; }  /* pausa 5s */
+}
+
+.logo-shimmer {
+  /* Reset total — não herda nada de span pai */
+  position: static !important;
+  font-size: inherit !important;
+  font-weight: inherit !important;
+  letter-spacing: inherit !important;
+  text-transform: inherit !important;
+  line-height: inherit !important;
+  top: auto !important;
+  right: auto !important;
+
+  /* Cor base: branco acinzentado */
+  color: #D8D8D8;
+
+  /* Feixe de luz estreito da esquerda pra direita */
+  background: linear-gradient(
+    90deg,
+    #888888 0%,
+    #888888 47%,
+    #cccccc 49%,
+    #ffffff 50%,
+    #cccccc 51%,
+    #888888 53%,
+    #888888 100%
+  );
+  background-size: 180% auto;
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+
+  /* 6s total: ~1.1s de sweep + 4.9s de pausa */
+  animation: logoBeam 8s linear infinite;
+  display: inline;
+}
+
+/* Garante que o PRO (sibling) não é afetado */
+#ob-splash-name > span:not(.logo-shimmer),
+.ob-hero h1 > span:not(.logo-shimmer),
+.logo-name > span:not(.logo-shimmer) {
+  position: absolute;
+  -webkit-text-fill-color: unset;
+  background: none;
+  color: #1db954;
+}
 </style>
 
 </head>
-<body id="app-body">
+<body id="app-body" class="auth-pending">
 
 <div class="toast" id="toast"></div>
 
@@ -2725,7 +2850,7 @@ body.viewer-mode input[type="text"] { pointer-events: none; }
   <div id="ob-splash-glow"></div>
   <div id="ob-splash-ring"></div>
   <div id="ob-splash-ring2"></div>
-  <div id="ob-splash-name">Map Music<span>PRO</span></div>
+  <div id="ob-splash-name"><span class="logo-shimmer">Map Music</span><span>PRO</span></div>
   <div id="ob-splash-user"></div>
   <div id="ob-splash-sub">Para músicos ao vivo</div>
 </div>
@@ -2736,7 +2861,7 @@ body.viewer-mode input[type="text"] { pointer-events: none; }
     <div class="ob-hero-bg"></div>
     <div class="ob-hero-ring"></div>
     <div class="ob-hero-ring"></div>
-    <h1>Map Music<span>PRO</span></h1>
+    <h1><span class="logo-shimmer">Map Music</span><span>PRO</span></h1>
     <p>A ferramenta profissional para músicos ao vivo</p>
   </div>
   <div class="ob-form">
@@ -2923,7 +3048,7 @@ body.viewer-mode input[type="text"] { pointer-events: none; }
       <div style="display:flex;flex-direction:column;gap:6px;">
         <label style="font-size:9px;font-weight:800;letter-spacing:2px;color:rgba(255,255,255,0.3);text-transform:uppercase;">Nome / Banda</label>
         <div style="position:relative;">
-          <input id="perfil-nome-input" type="text" autocomplete="off"
+          <input id="perfil-nome-input" type="text" autocomplete="off" placeholder="Seu nome ou banda"
             style="background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.09);border-radius:12px;color:#fff;font-size:14px;font-weight:600;padding:13px 16px 13px 44px;outline:none;width:100%;box-sizing:border-box;font-family:inherit;transition:border-color 0.2s,background 0.2s;"
             onfocus="this.style.borderColor='rgba(29,185,84,0.5)';this.style.background='rgba(29,185,84,0.04)'"
             onblur="this.style.borderColor='rgba(255,255,255,0.09)';this.style.background='rgba(255,255,255,0.04)'"
@@ -3045,7 +3170,7 @@ body.viewer-mode input[type="text"] { pointer-events: none; }
   <div class="header-content">
     <div class="app-logo">
       <div class="logo-text">
-        <span class="logo-name">Map Music<span class="pro">PRO</span></span>
+        <span class="logo-name"><span class="logo-shimmer">Map Music</span><span class="pro">PRO</span></span>
         <span class="logo-tag">Elite Edition</span>
       </div>
     </div>
@@ -3312,8 +3437,8 @@ body.viewer-mode input[type="text"] { pointer-events: none; }
     </div>
   </aside>
 </div>
-
 <button class="btn-save-vitro" id="btn-save-vitro" onclick="saveSong()">Salvar Música</button>
+
 
 <!-- BIBLIOTECA -->
 <div class="biblioteca-overlay" id="biblioteca-overlay">
@@ -3475,7 +3600,7 @@ let perfilFotoBase64 = null; // foto atual em edição
 
 function abrirModalPerfil() {
   const perfil = JSON.parse(localStorage.getItem('map_perfil_v1') || '{}');
-  const nome = perfil.nome || '';
+  const nome = perfil.nome || perfil.nomeUsuario || '';
   const inst = perfil.instrumento || null;
 
   document.getElementById('perfil-nome-input').value = nome;
@@ -3512,6 +3637,13 @@ function abrirModalPerfil() {
   atualizarPreviewPerfil();
   document.getElementById('modal-perfil').style.display = 'flex';
   document.getElementById('m-drop').classList.remove('show');
+  // Se nome vazio, foca o campo para o utilizador preencher
+  if (!nome) {
+    setTimeout(function() {
+      const inp = document.getElementById('perfil-nome-input');
+      if (inp) inp.focus();
+    }, 300);
+  }
 }
 
 function sairDaConta() {
@@ -7133,24 +7265,77 @@ document.addEventListener('touchend', function(e) {
 
 // ─── WAKE LOCK ──────────────────────────────────────────────────────────────
 let _wakeLock = null;
+let _wakeLockTimer = null;
+let _noSleepVideo = null; // fallback para Safari/iOS
 
 function ativarWakeLock() {
-  try {
-    if ('wakeLock' in navigator && navigator.wakeLock) {
+  // ── Método 1: Screen Wake Lock API (Chrome, Edge, Android) ──
+  if ('wakeLock' in navigator && navigator.wakeLock) {
+    try {
       navigator.wakeLock.request('screen')
-        .then(function(lock) { _wakeLock = lock; })
-        .catch(function() { /* não suportado ou página não visível */ });
+        .then(function(lock) {
+          _wakeLock = lock;
+          // Quando o sistema revoga o lock (ecrã bloqueou, tab ficou inativo)
+          // re-adquire automaticamente ao voltar
+          lock.addEventListener('release', function() {
+            _wakeLock = null;
+          });
+        })
+        .catch(function() { _ativarFallbackWakeLock(); });
+    } catch(e) { _ativarFallbackWakeLock(); }
+  } else {
+    // ── Método 2: Fallback via vídeo silencioso (Safari iOS, Firefox) ──
+    _ativarFallbackWakeLock();
+  }
+}
+
+function _ativarFallbackWakeLock() {
+  // Técnica: vídeo HTML5 em loop com dimensão 0 mantém o ecrã acordado em iOS/Safari
+  try {
+    if (_noSleepVideo) return; // já ativo
+    _noSleepVideo = document.createElement('video');
+    _noSleepVideo.setAttribute('loop', '');
+    _noSleepVideo.setAttribute('playsinline', '');
+    _noSleepVideo.setAttribute('muted', '');
+    _noSleepVideo.style.cssText = 'position:fixed;width:1px;height:1px;opacity:0;pointer-events:none;z-index:-1;';
+    // Base64 de um vídeo mp4 de 1 frame — mínimo válido
+    _noSleepVideo.src = 'data:video/mp4;base64,AAAAIGZ0eXBtcDQyAAACAGlzb21tcDQyAAAAAQAAADhtZGF0AAAC' +
+      'rGxhdmM1OC4xMzQuMTAwAEIAABtAh3jYAAAADUGaAeT/hAAAfkAAAAAMQZoB5P+EAAB+QAAAA' +
+      'BNBmiHk/4QAADJAAAAACkGaQeT/hAAAMUAAAAA=';
+    document.body.appendChild(_noSleepVideo);
+    _noSleepVideo.play().catch(function() {
+      // Autoplay bloqueado — usa timer como último recurso
+      _ativarTimerWakeLock();
+    });
+  } catch(e) { _ativarTimerWakeLock(); }
+}
+
+function _ativarTimerWakeLock() {
+  // Último recurso: faz algo mínimo a cada 20s para manter CPU ativo
+  if (_wakeLockTimer) return;
+  _wakeLockTimer = setInterval(function() {
+    // Pequena operação no DOM — suficiente para alguns browsers não dormirem
+    if (document.visibilityState === 'visible') {
+      var t = document.title;
+      document.title = t;
     }
-  } catch(e) { /* silencioso */ }
+  }, 20000);
 }
 
 function liberarWakeLock() {
-  if (_wakeLock) { _wakeLock.release().catch(() => {}); _wakeLock = null; }
+  if (_wakeLock) { try { _wakeLock.release(); } catch(e) {} _wakeLock = null; }
+  if (_noSleepVideo) { _noSleepVideo.pause(); _noSleepVideo.remove(); _noSleepVideo = null; }
+  if (_wakeLockTimer) { clearInterval(_wakeLockTimer); _wakeLockTimer = null; }
 }
 
-// Re-ativa WakeLock ao voltar ao tab
+// Re-ativa ao voltar ao tab ou desbloquear ecrã
 document.addEventListener('visibilitychange', function() {
-  if (document.visibilityState === 'visible') ativarWakeLock();
+  if (document.visibilityState === 'visible') {
+    // Re-adquire se foi perdido
+    if (!_wakeLock && 'wakeLock' in navigator && navigator.wakeLock) {
+      ativarWakeLock();
+    }
+  }
 });
 
 window.addEventListener('load', function() {
@@ -7579,7 +7764,7 @@ function atualizarPreviewPerfil() {
   const perfil = JSON.parse(localStorage.getItem('map_perfil_v1') || '{}');
   const foto = perfilFotoBase64 || perfil.foto || null;
   const nome = (document.getElementById('perfil-nome-input') || {}).value
-               || perfil.nome || '';
+               || perfil.nome || perfil.nomeUsuario || '';
   const editarBtn  = document.getElementById('foto-editar-btn');
   const removerBtn = document.getElementById('foto-remover-btn');
   if (foto) {
