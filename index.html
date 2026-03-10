@@ -217,56 +217,6 @@ window.addEventListener('unhandledrejection', function(e) { e.preventDefault(); 
       } catch(e) { return null; }
     },
 
-
-    // ── Firebase Auth REST ──────────────────────────────────────────
-    async registarComEmail(email, senha) {
-      try {
-        const r = await fetch('https://identitytoolkit.googleapis.com/v1/accounts:signUp?key=' + _API_KEY, {
-          method: 'POST', headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ email, password: senha, returnSecureToken: true })
-        });
-        const d = await r.json();
-        if (d.error) return { ok: false, msg: _authErr(d.error.message) };
-        return { ok: true, uid: d.localId, idToken: d.idToken };
-      } catch(e) { return { ok: false, msg: 'Erro de rede' }; }
-    },
-
-    async loginComEmail(email, senha) {
-      try {
-        const r = await fetch('https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key=' + _API_KEY, {
-          method: 'POST', headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ email, password: senha, returnSecureToken: true })
-        });
-        const d = await r.json();
-        if (d.error) return { ok: false, msg: _authErr(d.error.message) };
-        return { ok: true, uid: d.localId, idToken: d.idToken };
-      } catch(e) { return { ok: false, msg: 'Erro de rede' }; }
-    },
-
-    async enviarEmailRecuperacao(email) {
-      try {
-        const r = await fetch('https://identitytoolkit.googleapis.com/v1/accounts:sendOobCode?key=' + _API_KEY, {
-          method: 'POST', headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ requestType: 'PASSWORD_RESET', email })
-        });
-        const d = await r.json();
-        if (d.error) return { ok: false, msg: _authErr(d.error.message) };
-        return { ok: true };
-      } catch(e) { return { ok: false, msg: 'Erro de rede' }; }
-    },
-
-    async alterarSenha(idToken, novaSenha) {
-      try {
-        const r = await fetch('https://identitytoolkit.googleapis.com/v1/accounts:update?key=' + _API_KEY, {
-          method: 'POST', headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ idToken, password: novaSenha, returnSecureToken: true })
-        });
-        const d = await r.json();
-        if (d.error) return { ok: false, msg: _authErr(d.error.message) };
-        return { ok: true, idToken: d.idToken };
-      } catch(e) { return { ok: false, msg: 'Erro de rede' }; }
-    },
-
     async salvarPerfilCompleto(uid, dados) {
       try {
         await _set('usuarios/' + uid, {
@@ -539,238 +489,21 @@ window.addEventListener('unhandledrejection', function(e) { e.preventDefault(); 
 
 <!-- PeerJS removido — sala 100% Firebase -->
 <script>
-// ─── ONBOARDING & AUTH ───────────────────────────────────────────────────────
-let _obNomeDisponivel   = false;
-let _obEmail            = '';
-let obInstrumentoSelecionado = null;
-
-// ── Helpers ──────────────────────────────────────────────────────────────────
-function _obToggleSenha(inputId, iconId) {
-  const el = document.getElementById(inputId);
-  const ic = document.getElementById(iconId);
-  if (!el) return;
-  const showing = el.type === 'text';
-  el.type = showing ? 'password' : 'text';
-  if (ic) ic.style.opacity = showing ? '0.3' : '0.9';
-}
-
-function obToggleChip(el) {
-  document.querySelectorAll('#ob-chips .ob-chip').forEach(c => c.classList.remove('active'));
-  el.classList.add('active');
-  obInstrumentoSelecionado = el.dataset.val;
-  _obValidarCta();
-}
-
-// ── Step-1: nome ─────────────────────────────────────────────────────────────
-function obNomeInput() {
-  const val = (document.getElementById('ob-nome')?.value || '').trim();
-  _obNomeDisponivel = false;
-  const btn = document.getElementById('ob-btn-verificar');
-  const msg = document.getElementById('ob-nome-msg');
-  const st  = document.getElementById('ob-nome-status');
-  if (btn) btn.disabled = val.length < 2;
-  if (msg) msg.textContent = val.length >= 2 ? 'Clica em verificar disponibilidade' : '';
-  if (st)  st.textContent = '';
-  _obValidarCta();
-}
-
-async function obVerificarNome() {
-  const val = (document.getElementById('ob-nome')?.value || '').trim();
-  if (val.length < 2) return;
-  const btn = document.getElementById('ob-btn-verificar');
-  const msg = document.getElementById('ob-nome-msg');
-  const st  = document.getElementById('ob-nome-status');
-  if (btn) { btn.disabled = true; btn.textContent = 'A verificar...'; }
-  if (!window._fb) {
-    if (msg) msg.textContent = 'Firebase ainda a carregar...';
-    if (btn) { btn.disabled = false; btn.textContent = 'Verificar disponibilidade'; }
-    return;
-  }
-  const disponivel = await window._fb.verificarNomeDisponivel(val);
-  _obNomeDisponivel = disponivel;
-  if (st) st.textContent = disponivel ? '✅' : '❌';
-  if (msg) msg.textContent = disponivel ? 'Nome disponível!' : 'Nome já em uso. Escolhe outro.';
-  if (btn) { btn.disabled = false; btn.textContent = 'Verificar disponibilidade'; }
-  if (disponivel) {
-    const tag = document.getElementById('ob-nome-tag');
-    if (tag) tag.textContent = '@' + val;
-  }
-  _obValidarCta();
-}
-
-function _obGetPin() {
-  let p = '';
-  for (let i = 0; i < 4; i++) {
-    const el = document.getElementById('ob-pin-' + i);
-    p += el ? (el.value || '') : '';
-  }
-  return p;
-}
-
-function obPinNext(i) {
-  const el = document.getElementById('ob-pin-' + i);
-  if (!el) return;
-  el.value = el.value.replace(/\D/g, '').slice(0,1);
-  if (el.value && i < 3) document.getElementById('ob-pin-' + (i+1))?.focus();
-  _obValidarCta();
-}
-
-function obPinKey(e, i) {
-  if (e.key === 'Backspace' && !document.getElementById('ob-pin-' + i)?.value && i > 0) {
-    document.getElementById('ob-pin-' + (i-1))?.focus();
-  }
-}
-
-function _obValidarCta() {
-  const step1 = document.getElementById('ob-step-1');
-  const step2 = document.getElementById('ob-step-2');
-  const step1Visible = step1 && step1.style.display !== 'none';
-  const cta = document.getElementById('ob-cta');
-  const btnVerif = document.getElementById('ob-btn-verificar');
-
-  if (step1Visible) {
-    // Step 1: activa botão verificar se nome >= 2 chars
-    const nome = (document.getElementById('ob-nome')?.value || '').trim();
-    if (btnVerif) btnVerif.disabled = nome.length < 2;
-    return;
-  }
-
-  // Step 2: valida tudo
-  const senha  = document.getElementById('ob-senha')?.value || '';
-  const senha2 = document.getElementById('ob-senha2')?.value || '';
-  const pin    = _obGetPin();
-  const senhaMsg = document.getElementById('ob-senha-msg');
-
-  let ok = _obNomeDisponivel && senha.length >= 6 && senha === senha2 && pin.length === 4;
-
-  if (senhaMsg) {
-    if (senha.length > 0 && senha.length < 6) senhaMsg.textContent = 'Mínimo 6 caracteres';
-    else if (senha2.length > 0 && senha !== senha2) senhaMsg.textContent = 'Senhas não coincidem';
-    else senhaMsg.textContent = '';
-  }
-
-  if (cta) cta.disabled = !ok;
-}
-
-// ── Show step 2 after nome + email confirmed ─────────────────────────────────
-async function obVerificarNomeEAvancar() {
-  await obVerificarNome();
-  if (_obNomeDisponivel) _obAvancarStep2();
-}
-
-function _obAvancarStep2() {
-  const emailEl = document.getElementById('ob-email');
-  const emailMsg = document.getElementById('ob-email-msg');
-  const email = (emailEl?.value || '').trim();
-  const emailOk = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
-  if (!emailOk) {
-    if (emailMsg) emailMsg.textContent = 'Email inválido';
-    emailEl?.focus();
-    return;
-  }
-  if (!_obNomeDisponivel) {
-    const msg = document.getElementById('ob-nome-msg');
-    if (msg) msg.textContent = 'Verifica primeiro o nome';
-    return;
-  }
-  _obEmail = email;
-  document.getElementById('ob-step-1').style.display = 'none';
-  document.getElementById('ob-step-2').style.display = 'flex';
-  _obValidarCta();
-}
-
-// Intercept verificar button: if nome ok, proceed to check email then step 2
-// Override obVerificarNome to also advance
-const _origObVerificarNome = window.obVerificarNome;
-window._obAvancarStep2 = _obAvancarStep2;
-
-// ── terminarOnboarding ───────────────────────────────────────────────────────
-async function terminarOnboarding() {
-  const nomeUsuario = (document.getElementById('ob-nome')?.value || '').trim();
-  const senha       = document.getElementById('ob-senha')?.value || '';
-  const senha2      = document.getElementById('ob-senha2')?.value || '';
-  const pin         = _obGetPin();
-  const cta         = document.getElementById('ob-cta');
-
-  if (!_obNomeDisponivel || nomeUsuario.length < 2) return;
-  if (senha.length < 6 || senha !== senha2) return;
-  if (pin.length < 4) return;
-  if (!_obEmail) return;
-
-  if (cta) { cta.disabled = true; cta.textContent = 'A criar conta...'; }
-
-  // 1. Registar no Firebase Auth
-  if (!window._fb) {
-    if (cta) { cta.disabled = false; cta.textContent = 'Criar conta'; }
-    if (typeof showToast === 'function') showToast('Firebase a carregar, tenta novamente.');
-    return;
-  }
-
-  const authResult = await window._fb.registarComEmail(_obEmail, senha);
-  if (!authResult.ok) {
-    if (cta) { cta.disabled = false; cta.textContent = 'Criar conta'; }
-    if (typeof showToast === 'function') showToast(authResult.msg);
-    return;
-  }
-
-  const uid = authResult.uid;
-
-  // 2. Gera profileId numérico
-  let profileId = '';
-  for (let i = 0; i < 8; i++) profileId += Math.floor(Math.random() * 10);
-
-  // 3. Guarda perfil localmente (sem senha, sem idToken)
-  const perfil = {
-    nome: nomeUsuario,
-    nomeUsuario,
-    email: _obEmail,
-    instrumento: obInstrumentoSelecionado || null,
-    criadoEm: Date.now(),
-    uid,
-    profileId,
-    pin   // PIN fica só local
-  };
-  localStorage.setItem('map_perfil_v1', JSON.stringify(perfil));
-  localStorage.setItem('map_uid_v1', uid);
-
-  // 4. Guarda perfil no Firestore (sem PIN, sem senha)
-  try {
-    await window._fb.salvarPerfilCompleto(uid, {
-      nome: nomeUsuario,
-      nomeUsuario,
-      email: _obEmail,
-      instrumento: perfil.instrumento || null,
-      profileId,
-      criadoEm: perfil.criadoEm
-    });
-  } catch(e) {}
-
-  // 5. Animação de saída
-  const ov = document.getElementById('onboarding-overlay');
-  if (ov) ov.classList.add('done');
-
-  setTimeout(function() {
-    if (typeof adicionarNotif === 'function') {
-      adicionarNotif('update', 'Bem-vindo, ' + nomeUsuario + '!',
-        'Conta criada. Comece salvando sua primeira música.', 'welcome_v1');
-    }
-    if (ov) ov.remove();
-  }, 500);
-}
-
-// ── PIN lock screen ───────────────────────────────────────────────────────────
+// ─── PIN / SENHA ──────────────────────────────────────────────────────────────
 let _pinBuffer = '';
 
 function _pinGetSaved() {
-  try { return JSON.parse(localStorage.getItem('map_perfil_v1') || '{}').pin || ''; } catch(e) { return ''; }
+  try { return JSON.parse(localStorage.getItem('map_perfil_v1') || '{}').pin || null; } catch(e) { return null; }
 }
 
+// Mostra tela de PIN se já tem perfil com senha
 function _verificarPinNaEntrada() {
   const perfil = JSON.parse(localStorage.getItem('map_perfil_v1') || '{}');
-  if (!perfil.nome || !perfil.pin) return; // sem conta ou sem PIN — vai directo ao app
+  if (!perfil.nome || !perfil.pin) return; // sem cadastro ou sem PIN: deixa o onboarding/app correr normalmente
+  // Tem perfil e PIN — mostra tela de login
   const screen = document.getElementById('pin-lock-screen');
-  const nomeEl = document.getElementById('pin-lock-nome');
   if (!screen) return;
+  const nomeEl = document.getElementById('pin-lock-nome');
   if (nomeEl) nomeEl.textContent = perfil.nome;
   screen.style.display = 'flex';
   _pinBuffer = '';
@@ -779,53 +512,258 @@ function _verificarPinNaEntrada() {
 
 function pinTecla(d) {
   if (_pinBuffer.length >= 4) return;
-  _pinBuffer += String(d);
+  _pinBuffer += d;
   _pinAtualizarDots();
-  if (_pinBuffer.length === 4) setTimeout(_pinVerificar, 80);
+  if (_pinBuffer.length === 4) {
+    setTimeout(_pinVerificar, 80);
+  }
 }
 
 function pinApagar() {
-  _pinBuffer = _pinBuffer.slice(0,-1);
+  if (_pinBuffer.length === 0) return;
+  _pinBuffer = _pinBuffer.slice(0, -1);
   _pinAtualizarDots();
 }
 
 function _pinAtualizarDots() {
   for (let i = 0; i < 4; i++) {
-    const d = document.getElementById('pin-dot-' + i);
-    if (d) d.classList.toggle('filled', i < _pinBuffer.length);
+    const dot = document.getElementById('pin-dot-' + i);
+    if (!dot) continue;
+    dot.classList.toggle('filled', i < _pinBuffer.length);
+    dot.classList.remove('error');
   }
 }
 
 function _pinVerificar() {
   const saved = _pinGetSaved();
-  const screen = document.getElementById('pin-lock-screen');
-  const errEl  = document.getElementById('pin-lock-error');
   if (_pinBuffer === saved) {
-    if (screen) { screen.style.animation = 'pinShake 0s'; screen.style.opacity = '0'; screen.style.transition = 'opacity 0.3s'; setTimeout(() => { screen.style.display = 'none'; screen.style.opacity = ''; screen.style.transition = ''; }, 300); }
+    // Correto — fecha tela
+    const screen = document.getElementById('pin-lock-screen');
+    if (screen) {
+      screen.style.opacity = '0';
+      screen.style.transition = 'opacity 0.3s';
+      setTimeout(() => { screen.style.display = 'none'; screen.style.opacity = '1'; }, 300);
+    }
   } else {
-    if (errEl) { errEl.textContent = 'PIN incorreto'; errEl.style.display = 'block'; }
-    if (screen) { screen.classList.add('shake'); setTimeout(() => screen.classList.remove('shake'), 500); }
-    // vermelho nos dots
-    for (let i = 0; i < 4; i++) { const d = document.getElementById('pin-dot-' + i); if (d) d.classList.add('error'); }
-    setTimeout(() => {
-      _pinBuffer = ''; _pinAtualizarDots();
-      for (let i = 0; i < 4; i++) { const d = document.getElementById('pin-dot-' + i); if (d) d.classList.remove('error'); }
-      if (errEl) errEl.style.display = 'none';
-    }, 800);
+    // Errado — shake + vermelho
+    for (let i = 0; i < 4; i++) {
+      const dot = document.getElementById('pin-dot-' + i);
+      if (dot) { dot.classList.add('error'); dot.classList.remove('filled'); }
+    }
+    const dotsEl = document.getElementById('pin-dots');
+    if (dotsEl) { dotsEl.classList.add('pin-shake'); setTimeout(() => dotsEl.classList.remove('pin-shake'), 400); }
+    const errEl = document.getElementById('pin-lock-error');
+    if (errEl) { errEl.textContent = 'Senha incorreta'; errEl.style.opacity = '1'; setTimeout(() => { errEl.style.opacity = '0'; }, 1500); }
+    _pinBuffer = '';
+    setTimeout(_pinAtualizarDots, 350);
   }
 }
 
-// ── Init ─────────────────────────────────────────────────────────────────────
-document.addEventListener('DOMContentLoaded', function() {
-  const perfil = JSON.parse(localStorage.getItem('map_perfil_v1') || '{}');
-  if (perfil.nome) {
-    // Utilizador já registado — mostra PIN ou app directo
-    const ov = document.getElementById('onboarding-overlay');
-    if (ov) ov.remove();
-    setTimeout(_verificarPinNaEntrada, 100);
+// Helpers para onboarding — navegação entre campos PIN
+let _obNomeDisponivel = false;
+
+function obNomeInput(val) {
+  _obNomeDisponivel = false;
+  const btn = document.getElementById('ob-btn-verificar');
+  const msg = document.getElementById('ob-nome-msg');
+  const ico = document.getElementById('ob-nome-status');
+  const clean = val.replace(/[^a-zA-Z0-9_.-]/g,'');
+  // Normaliza: sem espaços
+  const input = document.getElementById('ob-nome');
+  if (input && input.value !== clean) input.value = clean;
+  if (btn) btn.disabled = clean.length < 2;
+  if (msg) { msg.textContent = ''; msg.style.color = ''; }
+  if (ico) ico.textContent = '';
+  _obValidarCta();
+}
+
+async function obVerificarNome() {
+  const input = document.getElementById('ob-nome');
+  const btn   = document.getElementById('ob-btn-verificar');
+  const msg   = document.getElementById('ob-nome-msg');
+  const ico   = document.getElementById('ob-nome-status');
+  if (!input) return;
+  const nome = input.value.trim();
+  if (nome.length < 2) return;
+
+  // Loading state
+  if (btn) { btn.disabled = true; btn.textContent = 'Verificando...'; }
+  if (msg) { msg.textContent = ''; }
+  if (ico) ico.textContent = '⏳';
+
+  let disponivel = true;
+  try {
+    if (window._fb && window._fbReady !== false) {
+      disponivel = await window._fb.verificarNomeDisponivel(nome);
+    }
+  } catch(e) { disponivel = true; }
+
+  if (btn) { btn.disabled = false; btn.textContent = 'Verificar disponibilidade'; }
+
+  if (disponivel) {
+    _obNomeDisponivel = true;
+    if (ico) ico.textContent = '✅';
+    if (msg) { msg.textContent = 'Nome disponível!'; msg.style.color = '#1db954'; }
+    // Mostra step 2
+    const step2 = document.getElementById('ob-step-2');
+    const nomeConf = document.getElementById('ob-nome-confirmado');
+    if (step2) { step2.style.display = 'flex'; setTimeout(() => { document.getElementById('ob-pin-0') && document.getElementById('ob-pin-0').focus(); }, 100); }
+    if (nomeConf) nomeConf.textContent = nome;
+    if (btn) btn.style.display = 'none';
+  } else {
+    _obNomeDisponivel = false;
+    if (ico) ico.textContent = '❌';
+    if (msg) { msg.textContent = 'Nome já em uso. Tente outro.'; msg.style.color = '#ff6b6b'; }
   }
-  // else: onboarding vai mostrar normalmente
+  _obValidarCta();
+}
+
+function obPinNext(input, nextIdx) {
+  input.value = input.value.replace(/[^0-9]/g,'').slice(-1);
+  if (input.value && nextIdx >= 0 && nextIdx <= 3) {
+    const next = document.getElementById('ob-pin-' + nextIdx);
+    if (next) next.focus();
+  }
+  _obValidarCta();
+}
+
+function obPinKey(e, idx) {
+  if (e.key === 'Backspace') {
+    const cur = document.getElementById('ob-pin-' + idx);
+    if (cur && cur.value === '' && idx > 0) {
+      const prev = document.getElementById('ob-pin-' + (idx-1));
+      if (prev) { prev.value = ''; prev.focus(); }
+    }
+  }
+}
+
+function _obGetPin() {
+  return ['ob-pin-0','ob-pin-1','ob-pin-2','ob-pin-3']
+    .map(id => (document.getElementById(id) || {}).value || '')
+    .join('');
+}
+
+function _obValidarCta() {
+  const pin = _obGetPin();
+  const cta = document.getElementById('ob-cta');
+  if (cta) cta.disabled = !_obNomeDisponivel || pin.length < 4;
+}
+
+
+// ─── ONBOARDING ───────────────────────────────────────────────────────────────
+document.addEventListener('DOMContentLoaded', function() {
+  const splash = document.getElementById('ob-splash');
+  const ov = document.getElementById('onboarding-overlay');
+  const _rawPerfil = JSON.parse(localStorage.getItem('map_perfil_v1') || '{}');
+
+  if (_rawPerfil.nome && _rawPerfil.nome.trim().length >= 2) {
+    // Utilizador com cadastro — mostra nome no splash, depois entra no app
+    const userEl = document.getElementById('ob-splash-user');
+    if (userEl) { userEl.style.display = 'block'; userEl.textContent = _rawPerfil.nome; }
+    if (ov) ov.remove();
+    // Mostra tela de PIN antes de mostrar o app
+    setTimeout(function() { _verificarPinNaEntrada(); }, 100);
+    setTimeout(function() {
+      if (splash) {
+        splash.classList.add('exit');
+        setTimeout(function() { if (splash) splash.remove(); }, 2050);
+      }
+    }, 4000);
+    return;
+  }
+
+  // Primeiro acesso — splash fica 2s, depois sai e onboarding sobe
+  if (ov) ov.classList.add('visible'); // começa a revelar por baixo do splash
+  setTimeout(function() {
+    if (splash) splash.classList.add('exit');
+    setTimeout(function() { if (splash) splash.remove(); }, 2050);
+  }, 4000);
+
+  const nomeInput = document.getElementById('ob-nome');
+  const cta = document.getElementById('ob-cta');
+  if (!nomeInput || !cta) return;
+
+  function validarOb() {
+    _obValidarCta();
+  }
+
+  nomeInput.addEventListener('input', validarOb);
+  nomeInput.addEventListener('change', validarOb);
+  nomeInput.addEventListener('paste', function() { setTimeout(validarOb, 10); });
+  nomeInput.addEventListener('keydown', function(e) {
+    if (e.key === 'Enter' && !cta.disabled) terminarOnboarding();
+  });
+
+  validarOb();
+  setTimeout(validarOb, 200);
+  setTimeout(validarOb, 600);
+  setTimeout(validarOb, 1200);
 });
+
+let obInstrumentoSelecionado = null;
+
+function obToggleChip(btn) {
+  // Desmarca todos
+  document.querySelectorAll('.ob-chip').forEach(c => c.classList.remove('selected'));
+  // Marca o clicado
+  btn.classList.add('selected');
+  obInstrumentoSelecionado = btn.dataset.val;
+}
+
+
+function terminarOnboarding() {
+  const nomeUsuario = (document.getElementById('ob-nome').value || '').trim();
+  if (!_obNomeDisponivel || nomeUsuario.length < 2) return;
+  const pin = _obGetPin();
+  if (pin.length < 4) return;
+
+  const uid = 'u_' + Date.now() + '_' + Math.random().toString(36).substr(2, 6);
+  // Gera profileId numérico de 8 dígitos
+  let profileId = '';
+  for (let i = 0; i < 8; i++) profileId += Math.floor(Math.random() * 10);
+  const perfil = {
+    nome: nomeUsuario,
+    nomeUsuario,
+    instrumento: obInstrumentoSelecionado || null,
+    criadoEm: Date.now(),
+    uid,
+    profileId,
+    pin
+  };
+
+  localStorage.setItem('map_perfil_v1', JSON.stringify(perfil));
+
+  // Sincroniza com Firebase
+  setTimeout(function() {
+    if (window._fb && window._fbReady !== false) {
+      try {
+        window._fb.salvarPerfilCompleto(uid, {
+          nome: nomeUsuario,
+          nomeUsuario,
+          instrumento: perfil.instrumento || null,
+          profileId,
+          criadoEm: perfil.criadoEm
+          // PIN NÃO vai para o Firebase por segurança
+        });
+      } catch(e) {}
+    }
+  }, 1000);
+
+  // Animação de saída
+  const ov = document.getElementById('onboarding-overlay');
+  if (ov) ov.classList.add('done');
+
+  setTimeout(function() {
+    if (typeof adicionarNotif === 'function') {
+      adicionarNotif('update',
+        'Bem-vindo, ' + nomeUsuario + '!',
+        'Perfil criado. Comece salvando sua primeira música.',
+        'welcome_v1'
+      );
+    }
+    if (ov) ov.remove();
+  }, 500);
+}
 </script>
 
 
@@ -2684,92 +2622,92 @@ body.viewer-mode input[type="text"] { pointer-events: none; }
   <div class="ob-form">
     <!-- ETAPA 1: Nome de usuário -->
     <div id="ob-step-1">
-      <!-- ETAPA 1: Novo utilizador ou já tem conta -->
       <div class="ob-field">
-        <label class="ob-label">Nome de utilizador</label>
+        <label class="ob-label">Nome de usuário</label>
         <div style="position:relative;">
-          <input id="ob-nome" type="text" class="ob-input" placeholder="@nomeusuario" autocomplete="off" maxlength="24"
-            oninput="obNomeInput()" style="padding-right:44px;">
-          <div id="ob-nome-status" style="position:absolute;right:12px;top:50%;transform:translateY(-50%);font-size:14px;"></div>
+          <input class="ob-input" id="ob-nome" type="text" placeholder="Ex: joaosilva (sem espaços)" autocomplete="off"
+            oninput="obNomeInput(this.value)"
+            style="padding-right:44px;"
+            onkeydown="if(event.key==='Enter')obVerificarNome()">
+          <!-- Status icon -->
+          <div id="ob-nome-status" style="position:absolute;right:14px;top:50%;transform:translateY(-50%);font-size:16px;"></div>
         </div>
-        <div id="ob-nome-msg" style="font-size:11px;color:rgba(255,255,255,0.3);margin-top:6px;min-height:16px;"></div>
-        <button id="ob-btn-verificar" onclick="obVerificarNomeEAvancar()" disabled
-          style="width:100%;margin-top:8px;padding:12px;border-radius:10px;background:rgba(29,185,84,0.12);border:1px solid rgba(29,185,84,0.25);color:rgba(29,185,84,0.8);font-size:12px;font-weight:800;cursor:pointer;font-family:inherit;letter-spacing:1px;transition:0.2s;">
-          Verificar disponibilidade
-        </button>
+        <div id="ob-nome-msg" style="font-size:10px;margin-top:5px;font-weight:700;min-height:14px;"></div>
       </div>
-      <div class="ob-field" style="margin-top:4px;">
-        <label class="ob-label">Email</label>
-        <input id="ob-email" type="email" class="ob-input" placeholder="teu@email.com" autocomplete="email"
-          oninput="_obValidarCta()">
-        <div id="ob-email-msg" style="font-size:11px;color:rgba(255,255,255,0.3);margin-top:6px;min-height:16px;"></div>
-      </div>
-    </div><!-- /ob-step-1 -->
+      <button id="ob-btn-verificar" onclick="obVerificarNome()" disabled
+        style="width:100%;padding:14px;border-radius:12px;background:rgba(29,185,84,0.12);border:1px solid rgba(29,185,84,0.25);color:rgba(29,185,84,0.5);font-size:12px;font-weight:900;letter-spacing:1.5px;text-transform:uppercase;cursor:pointer;font-family:inherit;transition:0.2s;">
+        Verificar disponibilidade
+      </button>
+    </div>
 
+    <!-- ETAPA 2: Senha + instrumento (oculto até nome ser confirmado) -->
     <div id="ob-step-2" style="display:none;flex-direction:column;gap:24px;">
       <!-- Nome confirmado -->
-      <div id="ob-nome-confirmado" style="display:flex;align-items:center;gap:8px;background:rgba(29,185,84,0.08);border:1px solid rgba(29,185,84,0.2);border-radius:10px;padding:10px 14px;">
-        <span style="color:#1db954;font-size:16px;">✓</span>
-        <span style="font-size:13px;font-weight:700;color:#fff;" id="ob-nome-tag"></span>
-        <span style="font-size:11px;color:rgba(255,255,255,0.4);margin-left:auto;">disponível</span>
+      <div style="display:flex;align-items:center;gap:10px;background:rgba(29,185,84,0.08);border:1px solid rgba(29,185,84,0.2);border-radius:12px;padding:12px 16px;">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#1db954" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+        <span id="ob-nome-confirmado" style="font-size:13px;font-weight:800;color:#1db954;"></span>
+        <span style="font-size:10px;color:rgba(255,255,255,0.3);margin-left:auto;">disponível</span>
       </div>
-
-      <!-- Senha -->
       <div class="ob-field">
-        <label class="ob-label">Criar senha (mín. 6 caracteres)</label>
-        <div style="position:relative;">
-          <input id="ob-senha" type="password" class="ob-input" placeholder="••••••••" autocomplete="new-password" minlength="6"
-            oninput="_obValidarCta()" style="padding-right:44px;">
-          <button type="button" onclick="_obToggleSenha('ob-senha','ob-olho-1')"
-            style="position:absolute;right:12px;top:50%;transform:translateY(-50%);background:none;border:none;color:rgba(255,255,255,0.3);cursor:pointer;padding:4px;">
-            <svg id="ob-olho-1" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
-          </button>
+        <label class="ob-label">Crie sua senha (4 dígitos)</label>
+        <div style="display:flex;gap:10px;justify-content:flex-start;">
+          <input class="ob-input" id="ob-pin-0" type="tel" inputmode="numeric" maxlength="1" pattern="[0-9]" placeholder="·" style="width:56px;text-align:center;font-size:22px;font-weight:900;padding:12px 0;letter-spacing:0;" oninput="obPinNext(this,1)" onkeydown="obPinKey(event,0)">
+          <input class="ob-input" id="ob-pin-1" type="tel" inputmode="numeric" maxlength="1" pattern="[0-9]" placeholder="·" style="width:56px;text-align:center;font-size:22px;font-weight:900;padding:12px 0;letter-spacing:0;" oninput="obPinNext(this,2)" onkeydown="obPinKey(event,1)">
+          <input class="ob-input" id="ob-pin-2" type="tel" inputmode="numeric" maxlength="1" pattern="[0-9]" placeholder="·" style="width:56px;text-align:center;font-size:22px;font-weight:900;padding:12px 0;letter-spacing:0;" oninput="obPinNext(this,3)" onkeydown="obPinKey(event,2)">
+          <input class="ob-input" id="ob-pin-3" type="tel" inputmode="numeric" maxlength="1" pattern="[0-9]" placeholder="·" style="width:56px;text-align:center;font-size:22px;font-weight:900;padding:12px 0;letter-spacing:0;" oninput="obPinNext(this,-1)" onkeydown="obPinKey(event,3)">
         </div>
-        <div id="ob-senha-msg" style="font-size:11px;color:rgba(255,255,255,0.3);margin-top:6px;min-height:16px;"></div>
+        <div style="font-size:9px;color:rgba(255,255,255,0.2);margin-top:4px;">Vai pedir essa senha toda vez que abrir o app</div>
       </div>
-
-      <!-- Confirmar senha -->
-      <div class="ob-field">
-        <label class="ob-label">Confirmar senha</label>
-        <div style="position:relative;">
-          <input id="ob-senha2" type="password" class="ob-input" placeholder="••••••••" autocomplete="new-password"
-            oninput="_obValidarCta()" style="padding-right:44px;">
-          <button type="button" onclick="_obToggleSenha('ob-senha2','ob-olho-2')"
-            style="position:absolute;right:12px;top:50%;transform:translateY(-50%);background:none;border:none;color:rgba(255,255,255,0.3);cursor:pointer;padding:4px;">
-            <svg id="ob-olho-2" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
-          </button>
+    <div class="ob-field">
+      <label class="ob-label">Instrumento</label>
+      <div class="ob-chips">
+        <button class="ob-chip" data-val="guitarra" onclick="obToggleChip(this)">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 3H5a2 2 0 0 0-2 2v4m6-6h10a2 2 0 0 1 2 2v4M9 3v18m0 0h10a2 2 0 0 0 2-2v-4M9 21H5a2 2 0 0 1-2-2v-4m0 0h18"/></svg>
+          Guitarra
+        </button>
+        <button class="ob-chip" data-val="baixo" onclick="obToggleChip(this)">Baixo</button>
+        <button class="ob-chip" data-val="teclado" onclick="obToggleChip(this)">Teclado</button>
+        <button class="ob-chip" data-val="bateria" onclick="obToggleChip(this)">Bateria</button>
+        <button class="ob-chip" data-val="voz" onclick="obToggleChip(this)">Voz</button>
+        <button class="ob-chip" data-val="violao" onclick="obToggleChip(this)">Violão</button>
+        <button class="ob-chip" data-val="produtor" onclick="obToggleChip(this)">Produtor</button>
+        <button class="ob-chip" data-val="outro" onclick="obToggleChip(this)">Outro</button>
+      </div>
+    </div>
+    <div class="ob-field">
+      <label class="ob-label">O que você vai usar</label>
+      <div class="ob-features">
+        <div class="ob-feature-item">
+          <div class="ob-feature-icon">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 3H5a2 2 0 0 0-2 2v4m6-6h10a2 2 0 0 1 2 2v4M9 3v18m0 0h10a2 2 0 0 0 2-2v-4M9 21H5a2 2 0 0 1-2-2v-4m0 0h18"/></svg>
+          </div>
+          <div class="ob-feature-text">
+            <div class="ob-feature-title">Cifras e Metrônomo</div>
+            <div class="ob-feature-desc">Salve músicas com acordes, BPM e partes separadas</div>
+          </div>
+        </div>
+        <div class="ob-feature-item">
+          <div class="ob-feature-icon">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+          </div>
+          <div class="ob-feature-text">
+            <div class="ob-feature-title">Setlist e Eventos</div>
+            <div class="ob-feature-desc">Organize shows e playlists para cada apresentação</div>
+          </div>
+        </div>
+        <div class="ob-feature-item">
+          <div class="ob-feature-icon">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+          </div>
+          <div class="ob-feature-text">
+            <div class="ob-feature-title">Sala de Sincronia</div>
+            <div class="ob-feature-desc">Sincronize cifras em tempo real com toda a banda</div>
+          </div>
         </div>
       </div>
-
-      <!-- PIN -->
-      <div class="ob-field">
-        <label class="ob-label">PIN de acesso rápido (4 dígitos)</label>
-        <div style="display:flex;gap:12px;justify-content:center;margin-top:4px;">
-          <input id="ob-pin-0" type="tel" maxlength="1" class="ob-pin-input" oninput="obPinNext(0)" onkeydown="obPinKey(event,0)">
-          <input id="ob-pin-1" type="tel" maxlength="1" class="ob-pin-input" oninput="obPinNext(1)" onkeydown="obPinKey(event,1)">
-          <input id="ob-pin-2" type="tel" maxlength="1" class="ob-pin-input" oninput="obPinNext(2)" onkeydown="obPinKey(event,2)">
-          <input id="ob-pin-3" type="tel" maxlength="1" class="ob-pin-input" oninput="obPinNext(3)" onkeydown="obPinKey(event,3)">
-        </div>
-        <div style="font-size:9px;color:rgba(255,255,255,0.2);text-align:center;margin-top:6px;">O PIN desbloqueia o app rapidamente</div>
-      </div>
-
-      <!-- Instrumento -->
-      <div class="ob-field">
-        <label class="ob-label">O que você vai usar</label>
-        <div class="ob-chips" id="ob-chips">
-          <button class="ob-chip" data-val="guitarra" onclick="obToggleChip(this)">Guitarra</button>
-          <button class="ob-chip" data-val="baixo" onclick="obToggleChip(this)">Baixo</button>
-          <button class="ob-chip" data-val="teclado" onclick="obToggleChip(this)">Teclado</button>
-          <button class="ob-chip" data-val="bateria" onclick="obToggleChip(this)">Bateria</button>
-          <button class="ob-chip" data-val="voz" onclick="obToggleChip(this)">Voz</button>
-          <button class="ob-chip" data-val="violao" onclick="obToggleChip(this)">Violão</button>
-          <button class="ob-chip" data-val="produtor" onclick="obToggleChip(this)">Produtor</button>
-          <button class="ob-chip" data-val="outro" onclick="obToggleChip(this)">Outro</button>
-        </div>
-      </div>
-
-      <button class="ob-cta" id="ob-cta" onclick="terminarOnboarding()" disabled>Criar conta</button>
-      <p class="ob-terms">Os seus dados ficam seguros. A senha é gerida pelo Firebase.</p>
+    </div>
+      <button class="ob-cta" id="ob-cta" onclick="terminarOnboarding()" disabled>Começar</button>
+      <p class="ob-terms">Os seus dados ficam apenas no seu dispositivo</p>
     </div><!-- /ob-step-2 -->
   </div><!-- /ob-form -->
 </div><!-- /onboarding-overlay -->
@@ -2901,7 +2839,6 @@ body.viewer-mode input[type="text"] { pointer-events: none; }
 
       <!-- Sair da conta -->
       <div style="padding-top:8px;padding-bottom:2px;">
-        <button onclick="abrirAlterarSenha()" style="width:100%;padding:11px;border-radius:12px;background:rgba(29,185,84,0.06);border:1px solid rgba(29,185,84,0.15);color:rgba(29,185,84,0.7);font-size:11px;font-weight:800;cursor:pointer;letter-spacing:1px;text-transform:uppercase;font-family:inherit;transition:0.2s;margin-bottom:6px;" onmouseenter="this.style.background='rgba(29,185,84,0.12)'" onmouseleave="this.style.background='rgba(29,185,84,0.06)'">Alterar Senha</button>
         <button onclick="sairDaConta()" style="width:100%;padding:11px;border-radius:12px;background:rgba(255,60,60,0.07);border:1px solid rgba(255,60,60,0.18);color:rgba(255,100,100,0.8);font-size:11px;font-weight:800;cursor:pointer;letter-spacing:1px;text-transform:uppercase;font-family:inherit;transition:0.2s;" onmouseenter="this.style.background='rgba(255,60,60,0.14)'" onmouseleave="this.style.background='rgba(255,60,60,0.07)'">Sair do Perfil</button>
       </div>
 
@@ -7686,67 +7623,6 @@ function _aplicarBannerFoto(base64) {
       <button class="pin-key pin-key-del" onclick="pinApagar()">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 4H8l-7 8 7 8h13a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2z"/><line x1="18" y1="9" x2="12" y2="15"/><line x1="12" y1="9" x2="18" y2="15"/></svg>
       </button>
-    </div>
-    <!-- Esqueci a senha -->
-    <button onclick="abrirEsqueciSenha()" style="background:none;border:none;color:rgba(255,255,255,0.25);font-size:11px;font-weight:600;cursor:pointer;margin-top:8px;padding:8px 16px;font-family:inherit;letter-spacing:0.5px;">
-      Esqueci a senha
-    </button>
-  </div>
-</div>
-
-<!-- MODAL ESQUECI A SENHA ────────────────────────────────────── -->
-<div id="modal-esqueci-senha" style="display:none;position:fixed;inset:0;z-index:99997;background:rgba(0,0,0,0.85);align-items:center;justify-content:center;">
-  <div style="background:#111118;border:1px solid rgba(255,255,255,0.1);border-radius:20px;padding:32px 24px;width:calc(100% - 48px);max-width:360px;display:flex;flex-direction:column;gap:20px;">
-    <h3 style="margin:0;font-size:18px;font-weight:800;color:#fff;">Recuperar senha</h3>
-    <p style="margin:0;font-size:13px;color:rgba(255,255,255,0.5);line-height:1.5;">Introduz o email da tua conta. Vais receber um link para criar uma nova senha.</p>
-    <div style="position:relative;">
-      <input id="esqueci-email-input" type="email" placeholder="teu@email.com"
-        style="width:100%;box-sizing:border-box;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.1);border-radius:12px;color:#fff;font-size:14px;padding:13px 16px;outline:none;font-family:inherit;"
-        onfocus="this.style.borderColor='rgba(29,185,84,0.5)'" onblur="this.style.borderColor='rgba(255,255,255,0.1)'">
-    </div>
-    <div id="esqueci-msg" style="font-size:12px;color:rgba(255,255,255,0.4);min-height:16px;text-align:center;"></div>
-    <div style="display:flex;gap:10px;">
-      <button onclick="fecharEsqueciSenha()" style="flex:1;padding:13px;border-radius:12px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);color:rgba(255,255,255,0.4);font-size:11px;font-weight:700;cursor:pointer;font-family:inherit;">Cancelar</button>
-      <button onclick="enviarRecuperacaoSenha()" id="btn-enviar-recuperacao"
-        style="flex:2;padding:13px;border-radius:12px;background:#1db954;border:none;color:#000;font-size:12px;font-weight:900;cursor:pointer;font-family:inherit;">Enviar email</button>
-    </div>
-  </div>
-</div>
-
-<!-- MODAL ALTERAR SENHA ─────────────────────────────────────── -->
-<div id="modal-alterar-senha" style="display:none;position:fixed;inset:0;z-index:99997;background:rgba(0,0,0,0.85);align-items:center;justify-content:center;">
-  <div style="background:#111118;border:1px solid rgba(255,255,255,0.1);border-radius:20px;padding:32px 24px;width:calc(100% - 48px);max-width:360px;display:flex;flex-direction:column;gap:20px;">
-    <h3 style="margin:0;font-size:18px;font-weight:800;color:#fff;">Alterar senha</h3>
-    <div style="display:flex;flex-direction:column;gap:12px;">
-      <div style="position:relative;">
-        <input id="alterar-senha-atual" type="password" placeholder="Senha actual"
-          style="width:100%;box-sizing:border-box;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.1);border-radius:12px;color:#fff;font-size:14px;padding:13px 44px 13px 16px;outline:none;font-family:inherit;"
-          onfocus="this.style.borderColor='rgba(29,185,84,0.5)'" onblur="this.style.borderColor='rgba(255,255,255,0.1)'">
-        <button type="button" onclick="_toggleSenhaField('alterar-senha-atual')" style="position:absolute;right:12px;top:50%;transform:translateY(-50%);background:none;border:none;color:rgba(255,255,255,0.3);cursor:pointer;">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
-        </button>
-      </div>
-      <div style="position:relative;">
-        <input id="alterar-senha-nova" type="password" placeholder="Nova senha (mín. 6)"
-          style="width:100%;box-sizing:border-box;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.1);border-radius:12px;color:#fff;font-size:14px;padding:13px 44px 13px 16px;outline:none;font-family:inherit;"
-          onfocus="this.style.borderColor='rgba(29,185,84,0.5)'" onblur="this.style.borderColor='rgba(255,255,255,0.1)'">
-        <button type="button" onclick="_toggleSenhaField('alterar-senha-nova')" style="position:absolute;right:12px;top:50%;transform:translateY(-50%);background:none;border:none;color:rgba(255,255,255,0.3);cursor:pointer;">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
-        </button>
-      </div>
-      <div style="position:relative;">
-        <input id="alterar-senha-conf" type="password" placeholder="Confirmar nova senha"
-          style="width:100%;box-sizing:border-box;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.1);border-radius:12px;color:#fff;font-size:14px;padding:13px 44px 13px 16px;outline:none;font-family:inherit;"
-          onfocus="this.style.borderColor='rgba(29,185,84,0.5)'" onblur="this.style.borderColor='rgba(255,255,255,0.1)'">
-        <button type="button" onclick="_toggleSenhaField('alterar-senha-conf')" style="position:absolute;right:12px;top:50%;transform:translateY(-50%);background:none;border:none;color:rgba(255,255,255,0.3);cursor:pointer;">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
-        </button>
-      </div>
-    </div>
-    <div id="alterar-senha-msg" style="font-size:12px;color:rgba(255,255,255,0.4);min-height:16px;text-align:center;"></div>
-    <div style="display:flex;gap:10px;">
-      <button onclick="fecharAlterarSenha()" style="flex:1;padding:13px;border-radius:12px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);color:rgba(255,255,255,0.4);font-size:11px;font-weight:700;cursor:pointer;font-family:inherit;">Cancelar</button>
-      <button onclick="confirmarAlterarSenha()" style="flex:2;padding:13px;border-radius:12px;background:#1db954;border:none;color:#000;font-size:12px;font-weight:900;cursor:pointer;font-family:inherit;">Alterar senha</button>
     </div>
   </div>
 </div>
