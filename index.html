@@ -3509,13 +3509,53 @@ function sairDaConta() {
   if (!confirm('Sair do perfil? Os dados locais serão apagados.\nAs músicas e eventos guardados na nuvem ficam seguros.')) return;
   // Marca offline no Firebase antes de sair
   _fbMarcarOffline();
-  // Limpa dados locais
+  // Limpa todos os dados de conta locais
   localStorage.removeItem('map_perfil_v1');
+  localStorage.removeItem('map_uid_v1');
   localStorage.removeItem('map_notifs_v1');
-  // Mantém músicas e eventos (apenas dados de conta são apagados)
+  localStorage.removeItem('map_last_version');
   fecharModalPerfil();
-  showToast('Perfil removido. Recarregando...');
-  setTimeout(() => location.reload(), 1000);
+  // Recria o onboarding sem recarregar a página toda
+  _voltarAoCadastro();
+}
+
+function _voltarAoCadastro() {
+  // Remove PIN lock se estiver visível
+  const pinScreen = document.getElementById('pin-lock-screen');
+  if (pinScreen) pinScreen.style.display = 'none';
+
+  // Reconstrói onboarding overlay se foi removido
+  let ov = document.getElementById('onboarding-overlay');
+  if (!ov) {
+    location.reload();
+    return;
+  }
+  ov.style.display = 'flex';
+
+  // Reseta step-1 visível, step-2 oculto
+  const s1 = document.getElementById('ob-step-1');
+  const s2 = document.getElementById('ob-step-2');
+  if (s1) s1.style.display = 'block';
+  if (s2) s2.style.display = 'none';
+
+  // Limpa campos
+  ['ob-nome','ob-email','ob-senha','ob-senha2'].forEach(id => {
+    const el = document.getElementById(id); if (el) el.value = '';
+  });
+  for (let i = 0; i < 4; i++) {
+    const el = document.getElementById('ob-pin-' + i); if (el) el.value = '';
+  }
+  const nomeSt = document.getElementById('ob-nome-status'); if (nomeSt) nomeSt.textContent = '';
+  const nomeMsg = document.getElementById('ob-nome-msg'); if (nomeMsg) nomeMsg.textContent = '';
+  const emailMsg = document.getElementById('ob-email-msg'); if (emailMsg) emailMsg.textContent = '';
+  const senhaMsg = document.getElementById('ob-senha-msg'); if (senhaMsg) senhaMsg.textContent = '';
+  const cta = document.getElementById('ob-cta'); if (cta) { cta.disabled = true; cta.textContent = 'Criar conta'; }
+  document.querySelectorAll('#ob-chips .ob-chip').forEach(c => c.classList.remove('active'));
+
+  // Reseta estado global
+  if (typeof _obNomeDisponivel !== 'undefined') window._obNomeDisponivel = false;
+  if (typeof obInstrumentoSelecionado !== 'undefined') window.obInstrumentoSelecionado = null;
+  if (typeof _obEmail !== 'undefined') window._obEmail = '';
 }
 
 function fecharModalPerfil() {
