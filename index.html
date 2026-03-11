@@ -9292,15 +9292,13 @@ async function _bpmMicBuscar() {
 
   var bpmResults = [];
 
-  // ── 1. GetSongBPM — API pública gratuita, CORS liberado ───────────────────
+  // ── 1. GetSongBPM — API pública, CORS liberado ───────────────────────────
   try {
-    setStatus('Consultando base de BPM...', 'rgba(255,255,255,0.45)');
-    var gsUrl = 'https://api.getsongbpm.com/search/?api_key=free&type=both&lookup='
-              + encodeURIComponent(termo);
+    setStatus('Consultando GetSongBPM...', 'rgba(255,255,255,0.45)');
+    var gsUrl  = 'https://api.getsongbpm.com/search/?api_key=free&type=both&lookup=' + encodeURIComponent(termo);
     var gsRes  = await fetch(gsUrl);
     var gsData = await gsRes.json();
     var gsHits = (gsData && Array.isArray(gsData.search)) ? gsData.search : [];
-
     gsHits.slice(0, 5).forEach(function(h) {
       var bpmVal = parseInt(h.tempo || h.bpm || 0);
       if (bpmVal > 20 && bpmVal < 300) {
@@ -9314,43 +9312,42 @@ async function _bpmMicBuscar() {
     });
   } catch(e1) { /* GetSongBPM offline */ }
 
-  // ── 2. Se não achou nada → tenta iTunes + estimativa de gênero ───────────
+  // ── 2. SongBPM.com via proxy CORS (fallback) ─────────────────────────────
   if (bpmResults.length === 0) {
     try {
-      setStatus('Consultando iTunes...', 'rgba(255,255,255,0.45)');
-      var itUrl  = 'https://itunes.apple.com/search?term=' + encodeURIComponent(termo) +
-                  '&entity=song&limit=5&country=BR';
-      var itRes  = await fetch(itUrl);
-      var itData = await itRes.json();
-      var tracks = (itData && Array.isArray(itData.results)) ? itData.results : [];
-
-      // iTunes não retorna BPM — mas ao menos confirma que a música existe
-      // e mostra capa. Informamos ao usuário que o BPM não foi encontrado.
-      if (tracks.length > 0) {
-        setStatus('Música encontrada no iTunes mas BPM não disponível. Tente no Multitracks.', '#ff9944');
-        if (resultsEl) {
-          resultsEl.style.display = 'flex';
-          tracks.slice(0, 3).forEach(function(t) {
-            var div = document.createElement('div');
-            div.style.cssText = 'background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.06);border-radius:12px;padding:10px 14px;display:flex;align-items:center;gap:10px;opacity:0.65;';
-            div.innerHTML =
-              (t.artworkUrl60 ? '<img src="'+t.artworkUrl60+'" style="width:40px;height:40px;border-radius:8px;flex-shrink:0;">' : '') +
-              '<div style="flex:1;min-width:0;">' +
-                '<div style="font-size:12px;font-weight:700;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + t.trackName + '</div>' +
-                '<div style="font-size:10px;color:rgba(255,255,255,0.3);">' + t.artistName + '</div>' +
-              '</div>' +
-              '<span style="font-size:10px;color:rgba(255,255,255,0.2);flex-shrink:0;font-weight:700;">BPM ?</span>';
-            resultsEl.appendChild(div);
-          });
+      setStatus('Consultando SongBPM.com...', 'rgba(255,255,255,0.45)');
+      var sbUrl = 'https://corsproxy.io/?' + encodeURIComponent('https://songbpm.com/searches?q=' + encodeURIComponent(termo));
+      var sbRes = await fetch(sbUrl, { headers: { 'X-Requested-With': 'XMLHttpRequest' } });
+      if (sbRes.ok) {
+        var sbHtml = await sbRes.text();
+        // Extrai BPM de atributo data-bpm ou JSON embutido
+        var bpmNums = [];
+        var rx1 = /data-bpm="(\d+)"/g; var mx;
+        while ((mx = rx1.exec(sbHtml)) !== null) { var n=parseInt(mx[1]); if(n>20&&n<300) bpmNums.push(n); }
+        if (bpmNums.length === 0) {
+          var rx2 = /"bpm"\s*:\s*(\d+)/g;
+          while ((mx = rx2.exec(sbHtml)) !== null) { var n=parseInt(mx[1]); if(n>20&&n<300) bpmNums.push(n); }
         }
-        _bpmMicMostrarLinkMultitracks(termo);
-        resetBtn(); return;
+        if (bpmNums.length === 0) {
+          var rx3 = /(\d{2,3})\s*(?:bpm|BPM)/g;
+          while ((mx = rx3.exec(sbHtml)) !== null) { var n=parseInt(mx[1]); if(n>40&&n<280) bpmNums.push(n); }
+        }
+        // Tenta extrair nomes de faixa para parear com BPM
+        var titleRx = /<(?:h2|h3|span)[^>]*class="[^"]*(?:title|song|track)[^"]*"[^>]*>\s*([^<]{2,60})\s*</gi;
+        var titles = []; var tm;
+        while ((tm = titleRx.exec(sbHtml)) !== null) titles.push(tm[1].trim());
+        bpmNums.slice(0, 5).forEach(function(bpmVal, i) {
+          bpmResults.push({ titulo: titles[i] || termo, artista: '', bpm: bpmVal, capa: '' });
+        });
       }
-    } catch(e2) { /* iTunes offline */ }
+    } catch(e2) { /* SongBPM offline */ }
+  }
 
-    // Nenhuma API respondeu
-    setStatus('Não encontrado. Verifique o nome ou tente "Música — Artista".', '#ff9944');
+  // ── 3. Sem resultado — link direto para SongBPM.com ──────────────────────
+  if (bpmResults.length === 0) {
+    setStatus('Nao encontrado automaticamente. Pesquise diretamente:', '#ff9944');
     if (resultsEl) resultsEl.style.display = 'flex';
+    _bpmMicMostrarLinkSongBPM(termo);
     _bpmMicMostrarLinkMultitracks(termo);
     resetBtn(); return;
   }
@@ -9374,11 +9371,35 @@ async function _bpmMicBuscar() {
   if (resultsEl) {
     resultsEl.style.display = 'flex';
     bpmResults.forEach(function(r) { mostrarCard(r); });
+    _bpmMicMostrarLinkSongBPM(termo);
     _bpmMicMostrarLinkMultitracks(termo);
   }
   resetBtn();
 }
 
+
+function _bpmMicMostrarLinkSongBPM(termo) {
+  const results = document.getElementById('bpm-mic-results');
+  if (!results) return;
+  results.style.display = 'flex';
+  const link = document.createElement('a');
+  link.href = 'https://songbpm.com/searches?q=' + encodeURIComponent(termo);
+  link.target = '_blank';
+  link.rel = 'noopener';
+  link.style.cssText = 'display:flex;align-items:center;gap:10px;background:rgba(29,185,84,0.1);border:1.5px solid rgba(29,185,84,0.35);border-radius:10px;padding:12px 14px;text-decoration:none;transition:background 0.15s;';
+  link.onmouseover = function() { this.style.background = 'rgba(29,185,84,0.18)'; };
+  link.onmouseout  = function() { this.style.background = 'rgba(29,185,84,0.1)'; };
+  link.innerHTML =
+    '<div style="width:34px;height:34px;border-radius:8px;background:rgba(29,185,84,0.15);display:flex;align-items:center;justify-content:center;flex-shrink:0;">'
+    + '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#1db954" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>'
+    + '</div>'
+    + '<div style="flex:1;">'
+    + '<div style="font-size:13px;font-weight:900;color:#1db954;">SongBPM.com</div>'
+    + '<div style="font-size:10px;color:rgba(255,255,255,0.35);margin-top:2px;">Base de dados de BPM — resultado exato</div>'
+    + '</div>'
+    + '<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="rgba(29,185,84,0.5)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>';
+  results.appendChild(link);
+}
 
 function _bpmMicMostrarLinkMultitracks(termo) {
   const results = document.getElementById('bpm-mic-results');
@@ -9429,70 +9450,46 @@ function _bpmMicAplicar(bpmVal, titulo) {
 // Audio chain nodes (created lazily)
 var _audioChain = null;
 
-// EQ 7 bandas: freq, tipo, Q
-var _EQ_BANDS = [
-  { freq: 60,    type: 'lowshelf',  Q: 0.7, label: '60Hz',  key: 'eq0' },
-  { freq: 200,   type: 'peaking',   Q: 1.0, label: '200Hz', key: 'eq1' },
-  { freq: 500,   type: 'peaking',   Q: 1.2, label: '500Hz', key: 'eq2' },
-  { freq: 1000,  type: 'peaking',   Q: 1.0, label: '1kHz',  key: 'eq3' },
-  { freq: 3000,  type: 'peaking',   Q: 1.2, label: '3kHz',  key: 'eq4' },
-  { freq: 8000,  type: 'peaking',   Q: 1.0, label: '8kHz',  key: 'eq5' },
-  { freq: 16000, type: 'highshelf', Q: 0.7, label: '16kHz', key: 'eq6' },
-];
-
-// panners por canal (preenchidos ao construir chain)
-var _chanPanners = {};
-
 function _getAudioChain(ctx) {
-  if (!ctx) return null;
+  if (!ctx) return ctx ? ctx.destination : null;
+  // Build chain once
   if (!_audioChain || _audioChain.ctx !== ctx) {
-    const master = ctx.createGain();
-    const panner = ctx.createStereoPanner();
+    const master   = ctx.createGain();          // volume master
+    const panner   = ctx.createStereoPanner();  // L/R balance
+    const eqLow    = ctx.createBiquadFilter();  // EQ grave
+    const eqMid    = ctx.createBiquadFilter();  // EQ médio
+    const eqHi     = ctx.createBiquadFilter();  // EQ agudo
+    const comp     = ctx.createDynamicsCompressor(); // compressor
 
-    // 7 filtros EQ
-    const eqNodes = _EQ_BANDS.map(b => {
-      const f = ctx.createBiquadFilter();
-      f.type = b.type;
-      f.frequency.value = b.freq;
-      f.Q.value = b.Q;
-      f.gain.value = parseFloat(localStorage.getItem('audio_' + b.key) || '0');
-      return f;
-    });
+    // Config EQ bands
+    eqLow.type = 'lowshelf';  eqLow.frequency.value = 200;  eqLow.gain.value = 0;
+    eqMid.type = 'peaking';   eqMid.frequency.value = 1000; eqMid.gain.value = 0; eqMid.Q.value = 1;
+    eqHi.type  = 'highshelf'; eqHi.frequency.value  = 8000; eqHi.gain.value = 0;
 
-    // Panners independentes por canal
-    const panMetro = ctx.createStereoPanner();
-    const panPad   = ctx.createStereoPanner();
-    const panClick = ctx.createStereoPanner();
+    // Compressor defaults (bypassed initially)
+    comp.threshold.value = -24; comp.ratio.value = 4;
+    comp.attack.value = 0.003; comp.release.value = 0.25;
 
-    master.gain.value  = parseFloat(localStorage.getItem('audio_vol') || '100') / 100;
-    panner.pan.value   = parseFloat(localStorage.getItem('audio_pan') || '0') / 100;
-    panMetro.pan.value = parseFloat(localStorage.getItem('audio_pan_metro') || '0') / 100;
-    panPad.pan.value   = parseFloat(localStorage.getItem('audio_pan_pad')   || '0') / 100;
-    panClick.pan.value = parseFloat(localStorage.getItem('audio_pan_click') || '0') / 100;
-
-    // Wire: master → panner → eq0..eq6 → destination
+    // Wire: master → panner → eqLow → eqMid → eqHi → comp → destination
     master.connect(panner);
-    let prev = panner;
-    eqNodes.forEach(n => { prev.connect(n); prev = n; });
-    prev.connect(ctx.destination);
+    panner.connect(eqLow);
+    eqLow.connect(eqMid);
+    eqMid.connect(eqHi);
+    eqHi.connect(comp);
+    comp.connect(ctx.destination);
 
-    _audioChain = { ctx, master, panner, eqNodes, panMetro, panPad, panClick };
-    _chanPanners = { metro: panMetro, pad: panPad, click: panClick };
+    _audioChain = { ctx, master, panner, eqLow, eqMid, eqHi, comp, compOn: false };
+    _audioAplicarChain(); // apply saved settings
   }
   return _audioChain.master;
 }
 
-function _getChanPanner(canal) {
-  return _chanPanners[canal] || null;
-}
-
 function abrirConfigAudio() {
   fecharMenu();
-  _getAudioChain(_getAudioCtx());
+  _getAudioChain(_getAudioCtx()); // ensure chain exists
   _audioSincronizarUI();
   const m = document.getElementById('modal-config-audio');
   if (m) m.style.display = 'flex';
-  setTimeout(_eqDesenharCurva, 80);
 }
 
 function fecharConfigAudio() {
@@ -9501,14 +9498,18 @@ function fecharConfigAudio() {
 }
 
 function _audioSincronizarUI() {
+  // Sync sliders to current chain state
   const s = _audioGetState();
   _setVal('audio-vol-master', s.vol);
-  _setVal('audio-pan',        s.pan);
-  _setVal('audio-pan-metro',  s.panMetro);
-  _setVal('audio-pan-pad',    s.panPad);
-  _setVal('audio-pan-click',  s.panClick);
+  _setVal('audio-pan', s.pan);
+  _setVal('audio-eq-low', s.eqLow);
+  _setVal('audio-eq-mid', s.eqMid);
+  _setVal('audio-eq-hi', s.eqHi);
+  _setVal('audio-comp-threshold', s.compThr);
+  _setVal('audio-comp-ratio', s.compRatio);
   _setVal('audio-metro-freq', s.metroFreq);
-  _EQ_BANDS.forEach((b, i) => _setVal('audio-eq-' + i, s.eq[i]));
+  const compEl = document.getElementById('audio-comp-on');
+  if (compEl) compEl.checked = s.compOn;
   _audioAtualizarLabels();
 }
 
@@ -9519,37 +9520,43 @@ function _setVal(id, val) {
 
 function _audioGetState() {
   return {
-    vol:       parseFloat(localStorage.getItem('audio_vol')        || '100'),
-    pan:       parseFloat(localStorage.getItem('audio_pan')        || '0'),
-    panMetro:  parseFloat(localStorage.getItem('audio_pan_metro')  || '0'),
-    panPad:    parseFloat(localStorage.getItem('audio_pan_pad')    || '0'),
-    panClick:  parseFloat(localStorage.getItem('audio_pan_click')  || '0'),
+    vol:       parseFloat(localStorage.getItem('audio_vol') || '100'),
+    pan:       parseFloat(localStorage.getItem('audio_pan') || '0'),
+    eqLow:     parseFloat(localStorage.getItem('audio_eq_low') || '0'),
+    eqMid:     parseFloat(localStorage.getItem('audio_eq_mid') || '0'),
+    eqHi:      parseFloat(localStorage.getItem('audio_eq_hi') || '0'),
+    compOn:    localStorage.getItem('audio_comp_on') === '1',
+    compThr:   parseFloat(localStorage.getItem('audio_comp_thr') || '-24'),
+    compRatio: parseFloat(localStorage.getItem('audio_comp_ratio') || '4'),
     metroFreq: parseFloat(localStorage.getItem('audio_metro_freq') || '1000'),
-    eq:        _EQ_BANDS.map(b => parseFloat(localStorage.getItem('audio_' + b.key) || '0')),
   };
 }
 
 function _audioAplicar() {
-  const g  = id => parseFloat(document.getElementById(id)?.value || 0);
-  const vol      = g('audio-vol-master');
-  const pan      = g('audio-pan');
-  const panMetro = g('audio-pan-metro');
-  const panPad   = g('audio-pan-pad');
-  const panClick = g('audio-pan-click');
-  const metroFreq= g('audio-metro-freq') || 1000;
-  const eqVals   = _EQ_BANDS.map((b, i) => g('audio-eq-' + i));
+  // Read UI → save → apply to chain
+  const vol       = parseFloat(document.getElementById('audio-vol-master')?.value || 100);
+  const pan       = parseFloat(document.getElementById('audio-pan')?.value || 0);
+  const eqLow     = parseFloat(document.getElementById('audio-eq-low')?.value || 0);
+  const eqMid     = parseFloat(document.getElementById('audio-eq-mid')?.value || 0);
+  const eqHi      = parseFloat(document.getElementById('audio-eq-hi')?.value || 0);
+  const compOn    = document.getElementById('audio-comp-on')?.checked || false;
+  const compThr   = parseFloat(document.getElementById('audio-comp-threshold')?.value || -24);
+  const compRatio = parseFloat(document.getElementById('audio-comp-ratio')?.value || 4);
+  const metroFreq = parseFloat(document.getElementById('audio-metro-freq')?.value || 1000);
 
-  localStorage.setItem('audio_vol',        vol);
-  localStorage.setItem('audio_pan',        pan);
-  localStorage.setItem('audio_pan_metro',  panMetro);
-  localStorage.setItem('audio_pan_pad',    panPad);
-  localStorage.setItem('audio_pan_click',  panClick);
+  // Persist
+  localStorage.setItem('audio_vol', vol);
+  localStorage.setItem('audio_pan', pan);
+  localStorage.setItem('audio_eq_low', eqLow);
+  localStorage.setItem('audio_eq_mid', eqMid);
+  localStorage.setItem('audio_eq_hi', eqHi);
+  localStorage.setItem('audio_comp_on', compOn ? '1' : '0');
+  localStorage.setItem('audio_comp_thr', compThr);
+  localStorage.setItem('audio_comp_ratio', compRatio);
   localStorage.setItem('audio_metro_freq', metroFreq);
-  _EQ_BANDS.forEach((b, i) => localStorage.setItem('audio_' + b.key, eqVals[i]));
 
   _audioAplicarChain();
   _audioAtualizarLabels();
-  _eqDesenharCurva();
 }
 
 function _audioAplicarChain() {
@@ -9558,186 +9565,84 @@ function _audioAplicarChain() {
   const s = _audioGetState();
   c.master.gain.value  = s.vol / 100;
   c.panner.pan.value   = s.pan / 100;
-  c.eqNodes.forEach((n, i) => { n.gain.value = s.eq[i]; });
-  if (c.panMetro) c.panMetro.pan.value = s.panMetro / 100;
-  if (c.panPad)   c.panPad.pan.value   = s.panPad   / 100;
-  if (c.panClick) c.panClick.pan.value = s.panClick  / 100;
+  c.eqLow.gain.value   = s.eqLow;
+  c.eqMid.gain.value   = s.eqMid;
+  c.eqHi.gain.value    = s.eqHi;
+  c.comp.threshold.value = s.compThr;
+  c.comp.ratio.value     = s.compRatio;
+  // Bypass compressor: disconnect/reconnect
+  if (s.compOn !== c.compOn) {
+    try {
+      if (s.compOn) {
+        c.eqHi.disconnect();
+        c.eqHi.connect(c.comp);
+        c.comp.connect(c.ctx.destination);
+      } else {
+        c.eqHi.disconnect();
+        c.eqHi.connect(c.ctx.destination);
+      }
+      c.compOn = s.compOn;
+    } catch(e) {}
+  }
+  // metroFreq: applied live in playClick via global
   window._metroFreq = s.metroFreq;
 }
 
 function _audioAtualizarLabels() {
-  const lbl = (id, txt) => { const e = document.getElementById(id); if (e) e.textContent = txt; };
-  const g   = id => parseFloat(document.getElementById(id)?.value || 0);
-  const panStr = v => v === 0 ? 'C' : (v < 0 ? Math.abs(v) + 'L' : v + 'R');
-  lbl('audio-vol-master-val', g('audio-vol-master') + '%');
-  lbl('audio-pan-val',        panStr(g('audio-pan')));
-  lbl('audio-pan-metro-val',  panStr(g('audio-pan-metro')));
-  lbl('audio-pan-pad-val',    panStr(g('audio-pan-pad')));
-  lbl('audio-pan-click-val',  panStr(g('audio-pan-click')));
-  const mf = g('audio-metro-freq') || 1000;
-  lbl('audio-metro-freq-val', mf >= 1000 ? (mf/1000).toFixed(1) + 'kHz' : mf + 'Hz');
-  _EQ_BANDS.forEach((b, i) => {
-    const v = g('audio-eq-' + i);
-    lbl('audio-eq-' + i + '-val', (v >= 0 ? '+' : '') + v.toFixed(1));
-  });
+  const vol  = parseFloat(document.getElementById('audio-vol-master')?.value || 100);
+  const pan  = parseFloat(document.getElementById('audio-pan')?.value || 0);
+  const eqL  = parseFloat(document.getElementById('audio-eq-low')?.value || 0);
+  const eqM  = parseFloat(document.getElementById('audio-eq-mid')?.value || 0);
+  const eqH  = parseFloat(document.getElementById('audio-eq-hi')?.value || 0);
+  const thr  = parseFloat(document.getElementById('audio-comp-threshold')?.value || -24);
+  const rat  = parseFloat(document.getElementById('audio-comp-ratio')?.value || 4);
+  const freq = parseFloat(document.getElementById('audio-metro-freq')?.value || 1000);
+
+  const el = (id, txt) => { const e = document.getElementById(id); if (e) e.textContent = txt; };
+  el('audio-vol-master-val', vol + '%');
+  el('audio-pan-val', pan === 0 ? 'Centro' : (pan < 0 ? Math.abs(pan) + '% L' : pan + '% R'));
+  el('audio-eq-low-val',  (eqL >= 0 ? '+' : '') + eqL + ' dB');
+  el('audio-eq-mid-val',  (eqM >= 0 ? '+' : '') + eqM + ' dB');
+  el('audio-eq-hi-val',   (eqH >= 0 ? '+' : '') + eqH + ' dB');
+  el('audio-comp-thr-val',  thr + ' dB');
+  el('audio-comp-ratio-val', rat + ':1');
+  el('audio-metro-freq-val', freq >= 1000 ? (freq/1000).toFixed(1) + ' kHz' : freq + ' Hz');
 }
 
 function _audioResetPan() {
-  ['audio-pan','audio-pan-metro','audio-pan-pad','audio-pan-click'].forEach(id => {
+  const el = document.getElementById('audio-pan');
+  if (el) { el.value = 0; _audioAplicar(); }
+}
+
+function _audioResetEQ() {
+  ['audio-eq-low','audio-eq-mid','audio-eq-hi'].forEach(id => {
     const el = document.getElementById(id); if (el) el.value = 0;
   });
   _audioAplicar();
 }
 
-function _audioResetEQ() {
-  _EQ_BANDS.forEach((b, i) => { const el = document.getElementById('audio-eq-' + i); if (el) el.value = 0; });
+function _audioPreset(tipo) {
+  const presets = {
+    flat:    { vol:100, pan:0, eqLow:0,   eqMid:0,  eqHi:0,   compOn:false, compThr:-24, compRatio:4,  metroFreq:1000 },
+    worship: { vol:100, pan:0, eqLow:2,   eqMid:-1, eqHi:3,   compOn:true,  compThr:-18, compRatio:3,  metroFreq:900  },
+    rock:    { vol:100, pan:0, eqLow:4,   eqMid:2,  eqHi:1,   compOn:true,  compThr:-20, compRatio:6,  metroFreq:1100 },
+    jazz:    { vol:100, pan:0, eqLow:-1,  eqMid:2,  eqHi:-2,  compOn:false, compThr:-24, compRatio:2,  metroFreq:800  },
+    reset:   { vol:100, pan:0, eqLow:0,   eqMid:0,  eqHi:0,   compOn:false, compThr:-24, compRatio:4,  metroFreq:1000 },
+  };
+  const p = presets[tipo];
+  if (!p) return;
+  _setVal('audio-vol-master', p.vol);
+  _setVal('audio-pan', p.pan);
+  _setVal('audio-eq-low', p.eqLow);
+  _setVal('audio-eq-mid', p.eqMid);
+  _setVal('audio-eq-hi', p.eqHi);
+  _setVal('audio-comp-threshold', p.compThr);
+  _setVal('audio-comp-ratio', p.compRatio);
+  _setVal('audio-metro-freq', p.metroFreq);
+  const compEl = document.getElementById('audio-comp-on');
+  if (compEl) compEl.checked = p.compOn;
   _audioAplicar();
-}
-
-// ═══ EQ CANVAS CURVE ════════════════════════════════════════════════════════
-function _eqDesenharCurva() {
-  const canvas = document.getElementById('eq-canvas');
-  if (!canvas) return;
-  const W = canvas.width  = canvas.offsetWidth  || 300;
-  const H = canvas.height = canvas.offsetHeight || 100;
-  const cx = canvas.getContext('2d');
-  cx.clearRect(0, 0, W, H);
-
-  const gains  = _EQ_BANDS.map((b, i) => parseFloat(document.getElementById('audio-eq-' + i)?.value || 0));
-  const logMin = Math.log10(20), logMax = Math.log10(22000);
-  const fToX   = f  => ((Math.log10(Math.max(f, 20)) - logMin) / (logMax - logMin)) * W;
-  const dBToY  = db => H / 2 - (db / 12) * (H / 2 - 10);
-
-  // grid linhas de frequência
-  cx.strokeStyle = 'rgba(255,255,255,0.04)'; cx.lineWidth = 1;
-  [30,60,120,250,500,1000,2000,4000,8000,16000].forEach(f => {
-    const x = fToX(f);
-    cx.beginPath(); cx.moveTo(x, 0); cx.lineTo(x, H); cx.stroke();
-  });
-  // grid dB
-  [-12,-6,0,6,12].forEach(db => {
-    const y = dBToY(db);
-    cx.strokeStyle = db === 0 ? 'rgba(255,255,255,0.12)' : 'rgba(255,255,255,0.04)';
-    cx.beginPath(); cx.moveTo(0, y); cx.lineTo(W, y); cx.stroke();
-  });
-
-  // pontos da curva
-  const pts = [];
-  for (let xi = 0; xi <= W; xi += 2) {
-    const f = Math.pow(10, logMin + (xi / W) * (logMax - logMin));
-    let db = 0;
-    _EQ_BANDS.forEach((b, i) => {
-      const g = gains[i]; if (g === 0) return;
-      const r = f / b.freq;
-      if (b.type === 'lowshelf')  db += g * (1 / (1 + Math.pow(r, 3.5)));
-      else if (b.type === 'highshelf') db += g * (1 / (1 + Math.pow(1/r, 3.5)));
-      else db += g / (1 + b.Q * Math.pow(r - 1/r, 2));
-    });
-    pts.push([xi, dBToY(Math.max(-13, Math.min(13, db)))]);
-  }
-
-  // fill gradiente
-  const grd = cx.createLinearGradient(0, 0, 0, H);
-  grd.addColorStop(0, 'rgba(29,185,84,0.22)');
-  grd.addColorStop(1, 'rgba(29,185,84,0.02)');
-  cx.beginPath();
-  cx.moveTo(pts[0][0], H);
-  cx.lineTo(pts[0][0], pts[0][1]);
-  pts.forEach(([x, y]) => cx.lineTo(x, y));
-  cx.lineTo(pts[pts.length-1][0], H);
-  cx.closePath();
-  cx.fillStyle = grd; cx.fill();
-
-  // linha da curva
-  cx.beginPath();
-  pts.forEach(([x, y], i) => i === 0 ? cx.moveTo(x, y) : cx.lineTo(x, y));
-  cx.strokeStyle = '#1db954'; cx.lineWidth = 2; cx.stroke();
-
-  // pontos por banda
-  _EQ_BANDS.forEach((b, i) => {
-    const x = fToX(b.freq);
-    const y = dBToY(gains[i]);
-    cx.beginPath(); cx.arc(x, y, 4.5, 0, Math.PI * 2);
-    cx.fillStyle = gains[i] !== 0 ? '#1db954' : 'rgba(255,255,255,0.18)';
-    cx.fill();
-    cx.strokeStyle = '#0d0d15'; cx.lineWidth = 1.5; cx.stroke();
-  });
-}
-
-// ═══ MIDI ════════════════════════════════════════════════════════════════════
-var _midiAccess      = null;
-var _midiLearnTarget = null;
-var _midiMap         = {};
-try { _midiMap = JSON.parse(localStorage.getItem('audio_midi_map') || '{}'); } catch(e) {}
-
-async function _midiInicializar() {
-  if (!navigator.requestMIDIAccess) {
-    if (typeof showToast === 'function') showToast('MIDI nao suportado neste navegador');
-    return;
-  }
-  try {
-    _midiAccess = await navigator.requestMIDIAccess({ sysex: false });
-    _midiAccess.inputs.forEach(port => { port.onmidimessage = _midiMsg; });
-    _midiAccess.onstatechange = e => {
-      if (e.port.type === 'input' && e.port.state === 'connected') e.port.onmidimessage = _midiMsg;
-      _midiRenderDevices();
-    };
-    localStorage.setItem('audio_midi_on', '1');
-    _midiRenderDevices();
-    if (typeof showToast === 'function') showToast('MIDI conectado');
-  } catch(e) {
-    if (typeof showToast === 'function') showToast('Erro MIDI: ' + e.message);
-  }
-}
-
-function _midiMsg(e) {
-  const [status, note, val] = e.data;
-  const type = status & 0xf0;
-  if (type !== 0xb0 && type !== 0x90) return;
-
-  // Learn mode
-  if (_midiLearnTarget) {
-    _midiMap[_midiLearnTarget] = { type: type === 0xb0 ? 'cc' : 'note', num: note };
-    localStorage.setItem('audio_midi_map', JSON.stringify(_midiMap));
-    const lbl = document.getElementById('midi-learn-lbl');
-    if (lbl) lbl.textContent = 'Mapeado: ' + (type === 0xb0 ? 'CC' : 'Note') + ' #' + note + ' -> ' + _midiLearnTarget;
-    _midiLearnTarget = null;
-    return;
-  }
-
-  // Aplicar mapeamentos existentes
-  Object.keys(_midiMap).forEach(param => {
-    const m = _midiMap[param];
-    const hit = (m.type === 'cc'   && type === 0xb0 && m.num === note) ||
-                (m.type === 'note' && type === 0x90 && m.num === note);
-    if (!hit) return;
-    const el = document.getElementById(param);
-    if (!el) return;
-    const mn = parseFloat(el.min), mx = parseFloat(el.max);
-    el.value = mn + (val / 127) * (mx - mn);
-    _audioAplicar();
-  });
-}
-
-function _midiLearn(param) {
-  _midiLearnTarget = param;
-  const lbl = document.getElementById('midi-learn-lbl');
-  if (lbl) lbl.textContent = 'Aguardando MIDI para: ' + param + '...';
-}
-
-function _midiClearMap() {
-  _midiMap = {};
-  localStorage.setItem('audio_midi_map', '{}');
-  const lbl = document.getElementById('midi-learn-lbl');
-  if (lbl) lbl.textContent = 'Mapeamentos removidos.';
-}
-
-function _midiRenderDevices() {
-  const el = document.getElementById('midi-devices');
-  if (!el || !_midiAccess) { if (el) el.textContent = 'Nao conectado'; return; }
-  const devs = [];
-  _midiAccess.inputs.forEach(i => devs.push(i.name));
-  el.textContent = devs.length ? devs.join(' · ') : 'Nenhum dispositivo';
+  if (typeof showToast === 'function') showToast('Preset ' + tipo.charAt(0).toUpperCase() + tipo.slice(1) + ' aplicado');
 }
 
 // ═══════════════════════════════════════════════════════════════════
@@ -10424,231 +10329,136 @@ async function _fbFazerBackupAgora(btn) {
 </div>
 
 <!-- MODAL CONFIGURAÇÕES DE ÁUDIO -->
-<div id="modal-config-audio" onclick="if(event.target===this)fecharConfigAudio()" style="display:none;position:fixed;inset:0;z-index:9500;background:rgba(0,0,0,0.92);align-items:flex-end;justify-content:center;">
-  <div style="background:#0d0d16;border:1px solid rgba(255,255,255,0.07);border-radius:24px 24px 0 0;width:100%;max-width:560px;max-height:93vh;overflow-y:auto;display:flex;flex-direction:column;">
+<div id="modal-config-audio" style="display:none;position:fixed;inset:0;z-index:9500;background:rgba(0,0,0,0.88);align-items:flex-end;justify-content:center;padding-bottom:0;">
+  <div style="background:#111118;border:1px solid rgba(255,255,255,0.08);border-radius:24px 24px 0 0;padding:28px 24px 40px;width:100%;max-width:520px;max-height:92vh;overflow-y:auto;display:flex;flex-direction:column;gap:0;">
 
-    <!-- Header fixo -->
-    <div style="position:sticky;top:0;z-index:2;background:#0d0d16;border-bottom:1px solid rgba(255,255,255,0.05);padding:18px 22px 14px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0;">
+    <!-- Header -->
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:24px;">
       <div>
-        <div style="font-size:15px;font-weight:900;color:#fff;letter-spacing:0.3px;">Audio Engine</div>
-        <div style="font-size:9px;color:rgba(255,255,255,0.22);margin-top:1px;letter-spacing:2px;text-transform:uppercase;">EQ 7 Bandas · Stereo · MIDI</div>
+        <div style="font-size:16px;font-weight:900;color:#fff;letter-spacing:0.5px;">Configurações de Áudio</div>
+        <div style="font-size:11px;color:rgba(255,255,255,0.3);margin-top:2px;">Metrônomo · Pads · Saída</div>
       </div>
-      <button onclick="fecharConfigAudio()" style="background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.08);color:rgba(255,255,255,0.4);width:30px;height:30px;border-radius:50%;cursor:pointer;font-size:16px;touch-action:manipulation;display:flex;align-items:center;justify-content:center;flex-shrink:0;">&times;</button>
+      <button onclick="fecharConfigAudio()" style="background:rgba(255,255,255,0.06);border:none;color:rgba(255,255,255,0.5);width:32px;height:32px;border-radius:50%;cursor:pointer;font-size:16px;touch-action:manipulation;">&times;</button>
     </div>
 
-    <div style="padding:20px 22px 40px;display:flex;flex-direction:column;gap:26px;">
-
-      <!-- VOLUME MASTER -->
-      <div>
-        <div style="font-size:9px;font-weight:900;letter-spacing:2px;color:rgba(255,255,255,0.2);text-transform:uppercase;margin-bottom:10px;">Volume Master</div>
-        <div style="display:flex;align-items:center;gap:10px;">
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.25)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/></svg>
-          <input type="range" id="audio-vol-master" min="0" max="200" value="100" step="1" oninput="_audioAplicar()" style="flex:1;accent-color:#1db954;height:3px;cursor:pointer;">
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.25)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><line x1="15" y1="9" x2="19" y2="12"/><line x1="19" y1="9" x2="15" y2="12"/></svg>
-          <span id="audio-vol-master-val" style="font-size:12px;font-weight:800;color:#1db954;min-width:38px;text-align:right;">100%</span>
-        </div>
+    <!-- ── VOLUME MASTER ── -->
+    <div style="margin-bottom:24px;">
+      <div style="font-size:10px;font-weight:900;letter-spacing:2px;color:rgba(255,255,255,0.35);text-transform:uppercase;margin-bottom:12px;">Volume Master</div>
+      <div style="display:flex;align-items:center;gap:14px;">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.4)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/></svg>
+        <input type="range" id="audio-vol-master" min="0" max="200" value="100" step="1"
+          oninput="_audioAplicar()"
+          style="flex:1;accent-color:#1db954;height:4px;cursor:pointer;">
+        <span id="audio-vol-master-val" style="font-size:12px;font-weight:800;color:#1db954;min-width:38px;text-align:right;">100%</span>
       </div>
-
-      <!-- EQUALIZER 7 BANDAS -->
-      <div>
-        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
-          <div style="font-size:9px;font-weight:900;letter-spacing:2px;color:rgba(255,255,255,0.2);text-transform:uppercase;">Equalizer — 7 Bandas</div>
-          <button onclick="_audioResetEQ()" style="background:none;border:1px solid rgba(255,255,255,0.07);border-radius:6px;color:rgba(255,255,255,0.22);font-size:9px;font-weight:700;padding:3px 9px;cursor:pointer;touch-action:manipulation;letter-spacing:0.8px;">FLAT</button>
-        </div>
-
-        <!-- Canvas curva frequencia -->
-        <div style="position:relative;background:rgba(0,0,0,0.5);border:1px solid rgba(255,255,255,0.06);border-radius:10px;overflow:hidden;margin-bottom:16px;">
-          <canvas id="eq-canvas" style="width:100%;height:90px;display:block;"></canvas>
-          <!-- Labels dB -->
-          <div style="position:absolute;top:4px;left:6px;font-size:8px;color:rgba(255,255,255,0.18);pointer-events:none;">+12dB</div>
-          <div style="position:absolute;top:50%;left:6px;transform:translateY(-50%);font-size:8px;color:rgba(255,255,255,0.25);pointer-events:none;">0</div>
-          <div style="position:absolute;bottom:4px;left:6px;font-size:8px;color:rgba(255,255,255,0.18);pointer-events:none;">-12dB</div>
-          <!-- Labels freq -->
-          <div style="position:absolute;bottom:3px;right:7px;font-size:8px;color:rgba(255,255,255,0.18);pointer-events:none;">20kHz</div>
-        </div>
-
-        <!-- Sliders verticais -->
-        <div style="display:grid;grid-template-columns:repeat(7,1fr);gap:4px;">
-
-          <div style="display:flex;flex-direction:column;align-items:center;gap:5px;">
-            <span style="font-size:8px;color:rgba(255,255,255,0.3);font-weight:800;">60</span>
-            <div style="height:100px;display:flex;align-items:center;justify-content:center;">
-              <input type="range" id="audio-eq-0" min="-12" max="12" value="0" step="0.5" oninput="_audioAplicar()" style="accent-color:#1db954;cursor:pointer;writing-mode:vertical-lr;direction:rtl;height:90px;width:22px;">
-            </div>
-            <span id="audio-eq-0-val" style="font-size:8px;font-weight:800;color:#1db954;">+0.0</span>
-          </div>
-
-          <div style="display:flex;flex-direction:column;align-items:center;gap:5px;">
-            <span style="font-size:8px;color:rgba(255,255,255,0.3);font-weight:800;">200</span>
-            <div style="height:100px;display:flex;align-items:center;justify-content:center;">
-              <input type="range" id="audio-eq-1" min="-12" max="12" value="0" step="0.5" oninput="_audioAplicar()" style="accent-color:#1db954;cursor:pointer;writing-mode:vertical-lr;direction:rtl;height:90px;width:22px;">
-            </div>
-            <span id="audio-eq-1-val" style="font-size:8px;font-weight:800;color:#1db954;">+0.0</span>
-          </div>
-
-          <div style="display:flex;flex-direction:column;align-items:center;gap:5px;">
-            <span style="font-size:8px;color:rgba(255,255,255,0.3);font-weight:800;">500</span>
-            <div style="height:100px;display:flex;align-items:center;justify-content:center;">
-              <input type="range" id="audio-eq-2" min="-12" max="12" value="0" step="0.5" oninput="_audioAplicar()" style="accent-color:#1db954;cursor:pointer;writing-mode:vertical-lr;direction:rtl;height:90px;width:22px;">
-            </div>
-            <span id="audio-eq-2-val" style="font-size:8px;font-weight:800;color:#1db954;">+0.0</span>
-          </div>
-
-          <div style="display:flex;flex-direction:column;align-items:center;gap:5px;">
-            <span style="font-size:8px;color:rgba(255,255,255,0.3);font-weight:800;">1k</span>
-            <div style="height:100px;display:flex;align-items:center;justify-content:center;">
-              <input type="range" id="audio-eq-3" min="-12" max="12" value="0" step="0.5" oninput="_audioAplicar()" style="accent-color:#1db954;cursor:pointer;writing-mode:vertical-lr;direction:rtl;height:90px;width:22px;">
-            </div>
-            <span id="audio-eq-3-val" style="font-size:8px;font-weight:800;color:#1db954;">+0.0</span>
-          </div>
-
-          <div style="display:flex;flex-direction:column;align-items:center;gap:5px;">
-            <span style="font-size:8px;color:rgba(255,255,255,0.3);font-weight:800;">3k</span>
-            <div style="height:100px;display:flex;align-items:center;justify-content:center;">
-              <input type="range" id="audio-eq-4" min="-12" max="12" value="0" step="0.5" oninput="_audioAplicar()" style="accent-color:#1db954;cursor:pointer;writing-mode:vertical-lr;direction:rtl;height:90px;width:22px;">
-            </div>
-            <span id="audio-eq-4-val" style="font-size:8px;font-weight:800;color:#1db954;">+0.0</span>
-          </div>
-
-          <div style="display:flex;flex-direction:column;align-items:center;gap:5px;">
-            <span style="font-size:8px;color:rgba(255,255,255,0.3);font-weight:800;">8k</span>
-            <div style="height:100px;display:flex;align-items:center;justify-content:center;">
-              <input type="range" id="audio-eq-5" min="-12" max="12" value="0" step="0.5" oninput="_audioAplicar()" style="accent-color:#1db954;cursor:pointer;writing-mode:vertical-lr;direction:rtl;height:90px;width:22px;">
-            </div>
-            <span id="audio-eq-5-val" style="font-size:8px;font-weight:800;color:#1db954;">+0.0</span>
-          </div>
-
-          <div style="display:flex;flex-direction:column;align-items:center;gap:5px;">
-            <span style="font-size:8px;color:rgba(255,255,255,0.3);font-weight:800;">16k</span>
-            <div style="height:100px;display:flex;align-items:center;justify-content:center;">
-              <input type="range" id="audio-eq-6" min="-12" max="12" value="0" step="0.5" oninput="_audioAplicar()" style="accent-color:#1db954;cursor:pointer;writing-mode:vertical-lr;direction:rtl;height:90px;width:22px;">
-            </div>
-            <span id="audio-eq-6-val" style="font-size:8px;font-weight:800;color:#1db954;">+0.0</span>
-          </div>
-
-        </div>
-      </div>
-
-      <!-- BALANCO ESTEREO POR CANAL -->
-      <div>
-        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;">
-          <div style="font-size:9px;font-weight:900;letter-spacing:2px;color:rgba(255,255,255,0.2);text-transform:uppercase;">Balanco Estereo L / R</div>
-          <button onclick="_audioResetPan()" style="background:none;border:1px solid rgba(255,255,255,0.07);border-radius:6px;color:rgba(255,255,255,0.22);font-size:9px;font-weight:700;padding:3px 9px;cursor:pointer;touch-action:manipulation;letter-spacing:0.8px;">RESET</button>
-        </div>
-
-        <div style="display:flex;flex-direction:column;gap:10px;">
-
-          <!-- Master -->
-          <div style="background:rgba(255,255,255,0.025);border:1px solid rgba(255,255,255,0.055);border-radius:12px;padding:11px 14px;">
-            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:7px;">
-              <span style="font-size:9px;font-weight:900;color:rgba(255,255,255,0.45);letter-spacing:1.5px;">MASTER</span>
-              <span id="audio-pan-val" style="font-size:11px;font-weight:900;color:#1db954;min-width:28px;text-align:right;">C</span>
-            </div>
-            <div style="display:flex;align-items:center;gap:7px;">
-              <span style="font-size:8px;color:rgba(255,255,255,0.2);font-weight:800;min-width:8px;">L</span>
-              <input type="range" id="audio-pan" min="-100" max="100" value="0" step="1" oninput="_audioAplicar()" style="flex:1;accent-color:#1db954;height:3px;cursor:pointer;">
-              <span style="font-size:8px;color:rgba(255,255,255,0.2);font-weight:800;min-width:8px;text-align:right;">R</span>
-            </div>
-          </div>
-
-          <!-- Metronomo -->
-          <div style="background:rgba(255,255,255,0.025);border:1px solid rgba(255,255,255,0.055);border-radius:12px;padding:11px 14px;">
-            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:7px;">
-              <div style="display:flex;align-items:center;gap:6px;">
-                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="rgba(29,185,84,0.55)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2" ry="2"/></svg>
-                <span style="font-size:9px;font-weight:900;color:rgba(255,255,255,0.45);letter-spacing:1.5px;">METRO</span>
-              </div>
-              <span id="audio-pan-metro-val" style="font-size:11px;font-weight:900;color:#1db954;min-width:28px;text-align:right;">C</span>
-            </div>
-            <div style="display:flex;align-items:center;gap:7px;">
-              <span style="font-size:8px;color:rgba(255,255,255,0.2);font-weight:800;">L</span>
-              <input type="range" id="audio-pan-metro" min="-100" max="100" value="0" step="1" oninput="_audioAplicar()" style="flex:1;accent-color:#1db954;height:3px;cursor:pointer;">
-              <span style="font-size:8px;color:rgba(255,255,255,0.2);font-weight:800;">R</span>
-            </div>
-          </div>
-
-          <!-- Pad -->
-          <div style="background:rgba(255,255,255,0.025);border:1px solid rgba(255,255,255,0.055);border-radius:12px;padding:11px 14px;">
-            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:7px;">
-              <div style="display:flex;align-items:center;gap:6px;">
-                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="rgba(29,185,84,0.55)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="9" height="9" rx="1"/><rect x="13" y="2" width="9" height="9" rx="1"/><rect x="2" y="13" width="9" height="9" rx="1"/><rect x="13" y="13" width="9" height="9" rx="1"/></svg>
-                <span style="font-size:9px;font-weight:900;color:rgba(255,255,255,0.45);letter-spacing:1.5px;">PAD</span>
-              </div>
-              <span id="audio-pan-pad-val" style="font-size:11px;font-weight:900;color:#1db954;min-width:28px;text-align:right;">C</span>
-            </div>
-            <div style="display:flex;align-items:center;gap:7px;">
-              <span style="font-size:8px;color:rgba(255,255,255,0.2);font-weight:800;">L</span>
-              <input type="range" id="audio-pan-pad" min="-100" max="100" value="0" step="1" oninput="_audioAplicar()" style="flex:1;accent-color:#1db954;height:3px;cursor:pointer;">
-              <span style="font-size:8px;color:rgba(255,255,255,0.2);font-weight:800;">R</span>
-            </div>
-          </div>
-
-          <!-- Click -->
-          <div style="background:rgba(255,255,255,0.025);border:1px solid rgba(255,255,255,0.055);border-radius:12px;padding:11px 14px;">
-            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:7px;">
-              <div style="display:flex;align-items:center;gap:6px;">
-                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="rgba(29,185,84,0.55)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
-                <span style="font-size:9px;font-weight:900;color:rgba(255,255,255,0.45);letter-spacing:1.5px;">CLICK</span>
-              </div>
-              <span id="audio-pan-click-val" style="font-size:11px;font-weight:900;color:#1db954;min-width:28px;text-align:right;">C</span>
-            </div>
-            <div style="display:flex;align-items:center;gap:7px;">
-              <span style="font-size:8px;color:rgba(255,255,255,0.2);font-weight:800;">L</span>
-              <input type="range" id="audio-pan-click" min="-100" max="100" value="0" step="1" oninput="_audioAplicar()" style="flex:1;accent-color:#1db954;height:3px;cursor:pointer;">
-              <span style="font-size:8px;color:rgba(255,255,255,0.2);font-weight:800;">R</span>
-            </div>
-          </div>
-
-        </div>
-      </div>
-
-      <!-- TOM DO METRONOMO -->
-      <div>
-        <div style="font-size:9px;font-weight:900;letter-spacing:2px;color:rgba(255,255,255,0.2);text-transform:uppercase;margin-bottom:10px;">Tom do Metronomo</div>
-        <div style="display:flex;align-items:center;gap:10px;">
-          <span style="font-size:8px;color:rgba(255,255,255,0.2);font-weight:700;">GRAVE</span>
-          <input type="range" id="audio-metro-freq" min="200" max="2000" value="1000" step="50" oninput="_audioAplicar()" style="flex:1;accent-color:#1db954;height:3px;cursor:pointer;">
-          <span style="font-size:8px;color:rgba(255,255,255,0.2);font-weight:700;">AGUDO</span>
-          <span id="audio-metro-freq-val" style="font-size:12px;font-weight:800;color:#1db954;min-width:46px;text-align:right;">1.0kHz</span>
-        </div>
-      </div>
-
-      <!-- MIDI -->
-      <div>
-        <div style="font-size:9px;font-weight:900;letter-spacing:2px;color:rgba(255,255,255,0.2);text-transform:uppercase;margin-bottom:12px;">MIDI Controller</div>
-        <div style="background:rgba(255,255,255,0.025);border:1px solid rgba(255,255,255,0.055);border-radius:14px;padding:16px;display:flex;flex-direction:column;gap:14px;">
-
-          <!-- Status + botao conectar -->
-          <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;">
-            <div style="min-width:0;flex:1;">
-              <div style="font-size:9px;font-weight:700;color:rgba(255,255,255,0.3);letter-spacing:1px;text-transform:uppercase;margin-bottom:3px;">Dispositivos</div>
-              <div id="midi-devices" style="font-size:10px;color:#1db954;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">Nao conectado</div>
-            </div>
-            <button onclick="_midiInicializar()" style="flex-shrink:0;padding:8px 16px;border-radius:10px;background:rgba(29,185,84,0.1);border:1.5px solid rgba(29,185,84,0.25);color:#1db954;font-size:11px;font-weight:900;cursor:pointer;touch-action:manipulation;font-family:inherit;white-space:nowrap;">Conectar MIDI</button>
-          </div>
-
-          <!-- Learn status -->
-          <div id="midi-learn-lbl" style="font-size:9px;color:rgba(255,255,255,0.28);min-height:12px;font-style:italic;padding:6px 10px;background:rgba(255,255,255,0.02);border-radius:7px;border:1px solid rgba(255,255,255,0.04);"></div>
-
-          <!-- Learn targets grid -->
-          <div>
-            <div style="font-size:9px;font-weight:700;color:rgba(255,255,255,0.2);letter-spacing:1px;text-transform:uppercase;margin-bottom:8px;">MIDI Learn</div>
-            <div style="display:grid;grid-template-columns:1fr 1fr;gap:7px;">
-              <button onclick="_midiLearn('audio-vol-master')" style="padding:8px 10px;border-radius:9px;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.07);color:rgba(255,255,255,0.4);font-size:10px;font-weight:700;cursor:pointer;touch-action:manipulation;font-family:inherit;text-align:left;">Volume Master</button>
-              <button onclick="_midiLearn('audio-pan')" style="padding:8px 10px;border-radius:9px;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.07);color:rgba(255,255,255,0.4);font-size:10px;font-weight:700;cursor:pointer;touch-action:manipulation;font-family:inherit;text-align:left;">Pan Master</button>
-              <button onclick="_midiLearn('audio-pan-metro')" style="padding:8px 10px;border-radius:9px;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.07);color:rgba(255,255,255,0.4);font-size:10px;font-weight:700;cursor:pointer;touch-action:manipulation;font-family:inherit;text-align:left;">Pan Metro</button>
-              <button onclick="_midiLearn('audio-pan-pad')" style="padding:8px 10px;border-radius:9px;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.07);color:rgba(255,255,255,0.4);font-size:10px;font-weight:700;cursor:pointer;touch-action:manipulation;font-family:inherit;text-align:left;">Pan Pad</button>
-              <button onclick="_midiLearn('audio-pan-click')" style="padding:8px 10px;border-radius:9px;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.07);color:rgba(255,255,255,0.4);font-size:10px;font-weight:700;cursor:pointer;touch-action:manipulation;font-family:inherit;text-align:left;">Pan Click</button>
-              <button onclick="_midiLearn('audio-eq-3')" style="padding:8px 10px;border-radius:9px;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.07);color:rgba(255,255,255,0.4);font-size:10px;font-weight:700;cursor:pointer;touch-action:manipulation;font-family:inherit;text-align:left;">EQ 1kHz</button>
-              <button onclick="_midiLearn('audio-metro-freq')" style="padding:8px 10px;border-radius:9px;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.07);color:rgba(255,255,255,0.4);font-size:10px;font-weight:700;cursor:pointer;touch-action:manipulation;font-family:inherit;text-align:left;">Tom Metro</button>
-              <button onclick="_midiClearMap()" style="padding:8px 10px;border-radius:9px;background:rgba(255,50,50,0.05);border:1px solid rgba(255,50,50,0.12);color:rgba(255,80,80,0.55);font-size:10px;font-weight:700;cursor:pointer;touch-action:manipulation;font-family:inherit;text-align:left;">Limpar Mapa</button>
-            </div>
-          </div>
-
-        </div>
-      </div>
-
     </div>
+
+    <!-- ── BALANÇO L / R ── -->
+    <div style="margin-bottom:24px;">
+      <div style="font-size:10px;font-weight:900;letter-spacing:2px;color:rgba(255,255,255,0.35);text-transform:uppercase;margin-bottom:12px;">Balanço Estéreo (L / R)</div>
+      <div style="display:flex;align-items:center;gap:14px;">
+        <span style="font-size:11px;font-weight:800;color:rgba(255,255,255,0.4);min-width:16px;">L</span>
+        <input type="range" id="audio-pan" min="-100" max="100" value="0" step="1"
+          oninput="_audioAplicar()"
+          style="flex:1;accent-color:#1db954;height:4px;cursor:pointer;">
+        <span style="font-size:11px;font-weight:800;color:rgba(255,255,255,0.4);min-width:16px;text-align:right;">R</span>
+        <span id="audio-pan-val" style="font-size:12px;font-weight:800;color:#1db954;min-width:38px;text-align:right;">Centro</span>
+      </div>
+      <button onclick="_audioResetPan()" style="margin-top:8px;background:none;border:1px solid rgba(255,255,255,0.08);border-radius:8px;color:rgba(255,255,255,0.3);font-size:10px;font-weight:700;padding:5px 12px;cursor:pointer;touch-action:manipulation;">Centralizar</button>
+    </div>
+
+    <!-- ── EQUALIZER ── -->
+    <div style="margin-bottom:24px;">
+      <div style="font-size:10px;font-weight:900;letter-spacing:2px;color:rgba(255,255,255,0.35);text-transform:uppercase;margin-bottom:12px;">Equalizer (3 bandas)</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;">
+        <!-- Grave -->
+        <div style="display:flex;flex-direction:column;align-items:center;gap:8px;">
+          <span style="font-size:10px;color:rgba(255,255,255,0.4);font-weight:700;">GRAVE</span>
+          <div style="height:120px;display:flex;align-items:center;justify-content:center;">
+            <input type="range" id="audio-eq-low" min="-12" max="12" value="0" step="0.5"
+              oninput="_audioAplicar()"
+              style="accent-color:#1db954;cursor:pointer;writing-mode:vertical-lr;direction:rtl;height:110px;width:28px;">
+          </div>
+          <span id="audio-eq-low-val" style="font-size:11px;font-weight:800;color:#1db954;">0 dB</span>
+          <span style="font-size:9px;color:rgba(255,255,255,0.25);">200 Hz</span>
+        </div>
+        <!-- Médio -->
+        <div style="display:flex;flex-direction:column;align-items:center;gap:8px;">
+          <span style="font-size:10px;color:rgba(255,255,255,0.4);font-weight:700;">MÉDIO</span>
+          <div style="height:120px;display:flex;align-items:center;justify-content:center;">
+            <input type="range" id="audio-eq-mid" min="-12" max="12" value="0" step="0.5"
+              oninput="_audioAplicar()"
+              style="accent-color:#1db954;cursor:pointer;writing-mode:vertical-lr;direction:rtl;height:110px;width:28px;">
+          </div>
+          <span id="audio-eq-mid-val" style="font-size:11px;font-weight:800;color:#1db954;">0 dB</span>
+          <span style="font-size:9px;color:rgba(255,255,255,0.25);">1 kHz</span>
+        </div>
+        <!-- Agudo -->
+        <div style="display:flex;flex-direction:column;align-items:center;gap:8px;">
+          <span style="font-size:10px;color:rgba(255,255,255,0.4);font-weight:700;">AGUDO</span>
+          <div style="height:120px;display:flex;align-items:center;justify-content:center;">
+            <input type="range" id="audio-eq-hi" min="-12" max="12" value="0" step="0.5"
+              oninput="_audioAplicar()"
+              style="accent-color:#1db954;cursor:pointer;writing-mode:vertical-lr;direction:rtl;height:110px;width:28px;">
+          </div>
+          <span id="audio-eq-hi-val" style="font-size:11px;font-weight:800;color:#1db954;">0 dB</span>
+          <span style="font-size:9px;color:rgba(255,255,255,0.25);">8 kHz</span>
+        </div>
+      </div>
+      <button onclick="_audioResetEQ()" style="margin-top:10px;background:none;border:1px solid rgba(255,255,255,0.08);border-radius:8px;color:rgba(255,255,255,0.3);font-size:10px;font-weight:700;padding:5px 12px;cursor:pointer;touch-action:manipulation;">Zerar EQ</button>
+    </div>
+
+    <!-- ── COMPRESSOR ── -->
+    <div style="margin-bottom:24px;">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
+        <div style="font-size:10px;font-weight:900;letter-spacing:2px;color:rgba(255,255,255,0.35);text-transform:uppercase;">Compressor</div>
+        <label style="display:flex;align-items:center;gap:8px;cursor:pointer;">
+          <span style="font-size:11px;color:rgba(255,255,255,0.4);">Ativo</span>
+          <input type="checkbox" id="audio-comp-on" onchange="_audioAplicar()"
+            style="width:16px;height:16px;accent-color:#1db954;cursor:pointer;">
+        </label>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;">
+        <div>
+          <div style="font-size:10px;color:rgba(255,255,255,0.3);margin-bottom:6px;">Threshold</div>
+          <input type="range" id="audio-comp-threshold" min="-60" max="0" value="-24" step="1"
+            oninput="_audioAplicar()" style="width:100%;accent-color:#1db954;height:4px;cursor:pointer;">
+          <span id="audio-comp-thr-val" style="font-size:11px;color:#1db954;font-weight:700;">-24 dB</span>
+        </div>
+        <div>
+          <div style="font-size:10px;color:rgba(255,255,255,0.3);margin-bottom:6px;">Ratio</div>
+          <input type="range" id="audio-comp-ratio" min="1" max="20" value="4" step="0.5"
+            oninput="_audioAplicar()" style="width:100%;accent-color:#1db954;height:4px;cursor:pointer;">
+          <span id="audio-comp-ratio-val" style="font-size:11px;color:#1db954;font-weight:700;">4:1</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── TOM DO METRÔNOMO ── -->
+    <div style="margin-bottom:24px;">
+      <div style="font-size:10px;font-weight:900;letter-spacing:2px;color:rgba(255,255,255,0.35);text-transform:uppercase;margin-bottom:12px;">Tom do Metrônomo</div>
+      <div style="display:flex;align-items:center;gap:14px;">
+        <span style="font-size:10px;color:rgba(255,255,255,0.3);">Grave</span>
+        <input type="range" id="audio-metro-freq" min="200" max="2000" value="1000" step="50"
+          oninput="_audioAplicar()"
+          style="flex:1;accent-color:#1db954;height:4px;cursor:pointer;">
+        <span style="font-size:10px;color:rgba(255,255,255,0.3);">Agudo</span>
+        <span id="audio-metro-freq-val" style="font-size:12px;font-weight:800;color:#1db954;min-width:54px;text-align:right;">1000 Hz</span>
+      </div>
+    </div>
+
+    <!-- ── PRESET RÁPIDO ── -->
+    <div style="margin-bottom:8px;">
+      <div style="font-size:10px;font-weight:900;letter-spacing:2px;color:rgba(255,255,255,0.35);text-transform:uppercase;margin-bottom:12px;">Presets</div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;">
+        <button onclick="_audioPreset('flat')"   style="padding:8px 14px;border-radius:20px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);color:rgba(255,255,255,0.6);font-size:11px;font-weight:700;cursor:pointer;touch-action:manipulation;">Plano</button>
+        <button onclick="_audioPreset('worship')" style="padding:8px 14px;border-radius:20px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);color:rgba(255,255,255,0.6);font-size:11px;font-weight:700;cursor:pointer;touch-action:manipulation;">Worship</button>
+        <button onclick="_audioPreset('rock')"   style="padding:8px 14px;border-radius:20px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);color:rgba(255,255,255,0.6);font-size:11px;font-weight:700;cursor:pointer;touch-action:manipulation;">Rock</button>
+        <button onclick="_audioPreset('jazz')"   style="padding:8px 14px;border-radius:20px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);color:rgba(255,255,255,0.6);font-size:11px;font-weight:700;cursor:pointer;touch-action:manipulation;">Jazz</button>
+        <button onclick="_audioPreset('reset')"  style="padding:8px 14px;border-radius:20px;background:rgba(255,80,80,0.08);border:1px solid rgba(255,80,80,0.2);color:rgba(255,100,100,0.7);font-size:11px;font-weight:700;cursor:pointer;touch-action:manipulation;">Reset</button>
+      </div>
+    </div>
+
   </div>
 </div>
 
