@@ -924,8 +924,38 @@ function _pinVerificar() {
   const screen = document.getElementById('pin-lock-screen');
   const errEl  = document.getElementById('pin-lock-error');
   if (_pinBuffer === saved) {
-    _mostrarApp();
-    if (screen) { screen.style.animation = 'pinShake 0s'; screen.style.opacity = '0'; screen.style.transition = 'opacity 0.3s'; setTimeout(() => { screen.style.display = 'none'; screen.style.opacity = ''; screen.style.transition = ''; }, 300); }
+    // Verificar status no Firestore antes de mostrar o app
+    (async function() {
+      try {
+        var uid = localStorage.getItem('map_uid_v1');
+        if (uid && window._fb) {
+          var perfilAtual = await window._fb.carregarPerfilPorUid(uid);
+          var st = perfilAtual && perfilAtual.status ? perfilAtual.status : 'ativo';
+          if (st === 'banido' || st === 'bloqueado') {
+            // Limpar sessão local e voltar ao onboarding
+            localStorage.removeItem('map_perfil_v1');
+            localStorage.removeItem('map_uid_v1');
+            sessionStorage.setItem('map_skip_splash', '1');
+            var msg = st === 'banido'
+              ? 'Esta conta foi banida permanentemente.'
+              : 'Esta conta está temporariamente bloqueada.';
+            if (screen) screen.style.display = 'none';
+            // Mostrar erro e recarregar
+            alert(msg);
+            location.reload();
+            return;
+          }
+          // Atualizar status local com o do servidor
+          if (perfilAtual) {
+            var pLocal = JSON.parse(localStorage.getItem('map_perfil_v1') || '{}');
+            pLocal.status = st;
+            localStorage.setItem('map_perfil_v1', JSON.stringify(pLocal));
+          }
+        }
+      } catch(e) { /* sem rede — deixa entrar offline, será verificado online depois */ }
+      _mostrarApp();
+      if (screen) { screen.style.animation = 'pinShake 0s'; screen.style.opacity = '0'; screen.style.transition = 'opacity 0.3s'; setTimeout(() => { screen.style.display = 'none'; screen.style.opacity = ''; screen.style.transition = ''; }, 300); }
+    })();
   } else {
     if (errEl) { errEl.textContent = 'PIN incorreto'; errEl.style.display = 'block'; }
     if (screen) { screen.classList.add('shake'); setTimeout(() => screen.classList.remove('shake'), 500); }
@@ -998,6 +1028,18 @@ async function obFazerLogin() {
   try { perfil = await window._fb.carregarPerfilPorUid(uid); } catch(e) {}
 
   if (perfil && perfil.nome) {
+    // ── BLOQUEIO: verificar status antes de dar acesso ──
+    const statusConta = perfil.status || 'ativo';
+    if (statusConta === 'banido') {
+      if (msg) msg.textContent = 'Esta conta foi banida permanentemente da plataforma.';
+      if (btn) { btn.disabled = false; btn.textContent = 'Entrar'; }
+      return;
+    }
+    if (statusConta === 'bloqueado') {
+      if (msg) msg.textContent = 'Esta conta está temporariamente bloqueada. Contacta o suporte.';
+      if (btn) { btn.disabled = false; btn.textContent = 'Entrar'; }
+      return;
+    }
     // Guardar PIN local se existia antes
     const pinAnterior = JSON.parse(localStorage.getItem('map_perfil_v1') || '{}').pin || '';
     localStorage.setItem('map_perfil_v1', JSON.stringify({ ...perfil, uid, pin: perfil.pin || pinAnterior }));
@@ -1158,6 +1200,27 @@ document.addEventListener('DOMContentLoaded', function() {
       const ov = document.getElementById('onboarding-overlay');
       if (ov) ov.remove();
       _verificarPinNaEntrada();
+      // Verificar status em background (sem bloquear UI)
+      // Se bloqueado/banido, fecha o app e mostra mensagem
+      (async function() {
+        try {
+          var uid2 = localStorage.getItem('map_uid_v1');
+          if (!uid2 || !window._fb) return;
+          var pf2 = await window._fb.carregarPerfilPorUid(uid2);
+          if (!pf2) return;
+          var st2 = pf2.status || 'ativo';
+          if (st2 === 'banido' || st2 === 'bloqueado') {
+            localStorage.removeItem('map_perfil_v1');
+            localStorage.removeItem('map_uid_v1');
+            var m2 = st2 === 'banido'
+              ? 'Esta conta foi banida permanentemente.'
+              : 'Esta conta está temporariamente bloqueada.';
+            alert(m2);
+            sessionStorage.setItem('map_skip_splash', '1');
+            location.reload();
+          }
+        } catch(e) {}
+      })();
     } else {
       // Novo utilizador ou perfil incompleto — onboarding entra junto com saída do splash
       if (perfil.uid && !perfil.nome) {
@@ -1384,7 +1447,7 @@ body { font-family: -apple-system, 'Inter', BlinkMacSystemFont, 'Segoe UI', sans
 /* ── BIBLIOTECA ── */
 .biblioteca-overlay {
   position: fixed; inset: 0; z-index: 5500;
-  background: #03030a;
+  background: #030309;
   display: none; flex-direction: column;
   overflow: hidden;
 }
@@ -1392,119 +1455,210 @@ body { font-family: -apple-system, 'Inter', BlinkMacSystemFont, 'Segoe UI', sans
 
 .biblioteca-header {
   display: flex; align-items: center; justify-content: space-between;
-  padding: 20px 24px 12px;
+  padding: 20px 20px 14px;
   border-bottom: 1px solid rgba(255,255,255,0.06);
   flex-shrink: 0;
 }
 .biblioteca-titulo {
-  font-size: 22px; font-weight: 900; color: #fff; letter-spacing: 1px;
-}
-.biblioteca-titulo span {
-  color: var(--accent-primary); font-size: 11px;
-  font-weight: 700; letter-spacing: 3px; vertical-align: super;
+  font-size: 21px; font-weight: 900; color: #fff; letter-spacing: -0.5px;
+  display: flex; align-items: center; gap: 8px;
 }
 .biblioteca-close {
-  background: none; border: 1px solid rgba(255,255,255,0.1);
-  color: rgba(255,255,255,0.4); padding: 7px 18px;
-  border-radius: 30px; font-size: 10px; font-weight: 700;
+  background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.09);
+  color: rgba(255,255,255,0.4); padding: 7px 16px;
+  border-radius: 30px; font-size: 10px; font-weight: 800;
   letter-spacing: 1px; cursor: pointer; text-transform: uppercase;
-  transition: 0.2s;
+  transition: 0.18s; touch-action: manipulation;
 }
-.biblioteca-close:hover { color: #fff; border-color: rgba(255,255,255,0.3); }
+.biblioteca-close:active { background: rgba(255,255,255,0.1); color: #fff; }
 
 .biblioteca-search {
-  padding: 14px 24px 10px; flex-shrink: 0;
+  padding: 12px 20px 8px; flex-shrink: 0;
 }
 .biblioteca-search input {
-  width: 100%; background: rgba(255,255,255,0.05);
+  width: 100%; background: rgba(255,255,255,0.04);
   border: 1px solid rgba(255,255,255,0.08); border-radius: 12px;
   color: #fff; font-size: 13px; padding: 10px 16px; outline: none;
-  box-sizing: border-box; transition: border-color 0.2s;
+  box-sizing: border-box; transition: border-color 0.2s; font-family: inherit;
 }
-.biblioteca-search input:focus { border-color: rgba(29,185,84,0.4); }
-.biblioteca-search input::placeholder { color: rgba(255,255,255,0.25); }
+.biblioteca-search input:focus { border-color: rgba(29,185,84,0.45); }
+.biblioteca-search input::placeholder { color: rgba(255,255,255,0.22); }
 
+/* Grid */
 .biblioteca-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
-  gap: 16px; padding: 16px 24px 100px;
+  grid-template-columns: repeat(auto-fill, minmax(145px, 1fr));
+  gap: 16px; padding: 16px 20px 100px;
   overflow-y: auto; flex: 1;
+  -webkit-overflow-scrolling: touch;
 }
 
+/* ── ALBUM CARD ──────────────────────────────────────────────── */
 .album-card {
-  display: flex; flex-direction: column; gap: 10px;
-  cursor: pointer; transition: transform 0.2s;
+  display: flex; flex-direction: column; gap: 9px;
+  cursor: pointer;
+  animation: acFadeIn 0.22s ease both;
 }
-.album-card:active { transform: scale(0.96); }
+.album-card:nth-child(1){animation-delay:0s}
+.album-card:nth-child(2){animation-delay:.03s}
+.album-card:nth-child(3){animation-delay:.06s}
+.album-card:nth-child(4){animation-delay:.09s}
+.album-card:nth-child(n+5){animation-delay:.12s}
+@keyframes acFadeIn {
+  from { opacity:0; transform:translateY(8px) scale(0.97); }
+  to   { opacity:1; transform:translateY(0) scale(1); }
+}
 
+/* ── ALBUM COVER ─────────────────────────────────────────────── */
 .album-cover {
-  width: 100%; aspect-ratio: 1; border-radius: 12px;
-  display: flex; flex-direction: column;
-  align-items: center; justify-content: center;
+  width: 100%; aspect-ratio: 1;
+  border-radius: 14px;
   position: relative; overflow: hidden;
+  box-shadow:
+    0 8px 28px rgba(0,0,0,0.65),
+    0 2px 6px rgba(0,0,0,0.4),
+    inset 0 1px 0 rgba(255,255,255,0.12);
   border: 1px solid rgba(255,255,255,0.06);
+  transition: transform 0.16s cubic-bezier(0.34,1.56,0.64,1),
+              box-shadow 0.16s ease;
 }
+.album-cover:active {
+  transform: scale(0.92);
+  box-shadow: 0 4px 14px rgba(0,0,0,0.5);
+}
+
+/* Fundo gradiente */
 .album-cover-bg {
   position: absolute; inset: 0;
-  background: linear-gradient(135deg, var(--ac1), var(--ac2));
-  opacity: 0.85;
+  background: linear-gradient(140deg, var(--ac1) 0%, var(--ac2) 100%);
 }
-.album-cover-initial {
-  position: relative; z-index: 1;
-  font-size: 36px; font-weight: 900; color: rgba(255,255,255,0.9);
-  text-transform: uppercase; letter-spacing: -1px;
-  text-shadow: 0 2px 8px rgba(0,0,0,0.4);
+
+/* Brilho diagonal — reflexo de luz */
+.album-cover-shine {
+  position: absolute; inset: 0; z-index: 2; pointer-events: none;
+  background: linear-gradient(
+    145deg,
+    rgba(255,255,255,0.20) 0%,
+    rgba(255,255,255,0.06) 40%,
+    transparent 65%
+  );
 }
+
+/* Vinheta nas bordas */
+.album-cover-body {
+  position: absolute; inset: 0; z-index: 3;
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center; gap: 5px;
+  background: radial-gradient(ellipse at center,
+    transparent 40%, rgba(0,0,0,0.28) 100%);
+}
+
+/* Iniciais */
+.album-cover-initials {
+  font-size: 40px; font-weight: 900;
+  color: rgba(255,255,255,0.95);
+  text-transform: uppercase; letter-spacing: -2px;
+  text-shadow: 0 3px 14px rgba(0,0,0,0.45);
+  line-height: 1; display: flex; align-items: flex-end;
+}
+.album-cover-initial2 {
+  font-size: 0.44em; font-weight: 700;
+  color: rgba(255,255,255,0.42); letter-spacing: 0;
+  margin-bottom: 3px;
+}
+
+/* BPM badge */
 .album-cover-bpm {
-  position: relative; z-index: 1;
-  font-size: 9px; font-weight: 800; letter-spacing: 2px;
-  color: rgba(255,255,255,0.6); text-transform: uppercase; margin-top: 4px;
+  font-size: 9px; font-weight: 900; letter-spacing: 1.5px;
+  color: rgba(255,255,255,0.55); text-transform: uppercase;
+  background: rgba(0,0,0,0.3);
+  border-radius: 20px; padding: 3px 9px;
 }
+.album-cover-bpm span {
+  font-size: 7px; letter-spacing: 1.5px; opacity: 0.7;
+}
+
+/* ★ Favorito */
 .album-cover-fav {
-  position: absolute; top: 8px; right: 8px; z-index: 2;
-  font-size: 14px; color: gold; opacity: 0;
+  position: absolute; top: 8px; left: 9px; z-index: 5;
+  font-size: 14px; color: #ffd700; opacity: 0;
+  text-shadow: 0 1px 8px rgba(0,0,0,0.5);
   transition: opacity 0.2s;
+  pointer-events: none;
 }
 .album-card.fav .album-cover-fav { opacity: 1; }
 
+/* Botão ··· menu */
+.album-menu-btn {
+  position: absolute; top: 7px; right: 7px; z-index: 5;
+  width: 28px; height: 28px; border-radius: 50%;
+  background: rgba(0,0,0,0.42);
+  border: 1px solid rgba(255,255,255,0.1);
+  color: rgba(255,255,255,0.75); cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  transition: background 0.14s; touch-action: manipulation; padding: 0;
+}
+.album-menu-btn:active { background: rgba(29,185,84,0.3); }
+
+/* Botão ▶ show (evento detalhe) */
+.album-show-btn {
+  position: absolute; bottom: 7px; right: 7px; z-index: 5;
+  width: 26px; height: 26px; border-radius: 8px;
+  background: rgba(0,0,0,0.5);
+  border: 1px solid rgba(29,185,84,0.5);
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer; touch-action: manipulation;
+}
+.album-show-btn:active { background: rgba(29,185,84,0.25); }
+
+/* Info abaixo do cover */
 .album-info { padding: 0 2px; }
 .album-name {
   font-size: 12px; font-weight: 800; color: #fff;
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
-  line-height: 1.3;
+  line-height: 1.35;
 }
 .album-meta {
-  font-size: 10px; color: rgba(255,255,255,0.35);
-  font-weight: 600; margin-top: 2px;
+  font-size: 10px; color: rgba(255,255,255,0.3);
+  font-weight: 600; margin-top: 1px;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }
 
-.album-actions {
-  display: flex; gap: 6px; padding: 0 2px;
-}
-.album-btn {
-  flex: 1; padding: 6px 0; border-radius: 8px;
-  font-size: 9px; font-weight: 800; letter-spacing: 1px;
-  text-transform: uppercase; cursor: pointer; border: none;
-  transition: 0.15s;
-}
-.album-btn-load {
-  background: rgba(29,185,84,0.15); color: var(--accent-primary);
-  border: 1px solid rgba(29,185,84,0.25);
-}
-.album-btn-load:hover { background: rgba(29,185,84,0.25); }
-.album-btn-del {
-  background: rgba(255,60,60,0.1); color: rgba(255,80,80,0.7);
-  border: 1px solid rgba(255,60,60,0.15);
-}
-.album-btn-del:hover { background: rgba(255,60,60,0.2); }
-
+/* Biblioteca vazia */
 .biblioteca-vazia {
   display: flex; flex-direction: column; align-items: center;
-  justify-content: center; flex: 1; gap: 12px;
-  color: rgba(255,255,255,0.2); font-size: 13px; font-weight: 700;
-  letter-spacing: 1px;
+  justify-content: center; gap: 12px; grid-column: 1/-1;
+  color: rgba(255,255,255,0.18); font-size: 13px; font-weight: 700;
+  letter-spacing: 0.5px; padding: 60px 0;
 }
-.biblioteca-vazia-icon { font-size: 48px; opacity: 0.15; }
+.biblioteca-vazia-icon { font-size: 44px; opacity: 0.15; }
+
+/* ── CONTEXT MENU ────────────────────────────────────────────── */
+.album-ctx-menu {
+  position: fixed; z-index: 9000;
+  background: rgba(10,10,18,0.97);
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 16px;
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  box-shadow: 0 16px 48px rgba(0,0,0,0.8), 0 4px 12px rgba(0,0,0,0.4);
+  min-width: 190px;
+  display: none; flex-direction: column;
+  overflow: hidden; padding: 4px;
+}
+.album-ctx-menu.show { display: flex; }
+.ctx-item {
+  padding: 11px 14px; font-size: 12px; font-weight: 700;
+  color: rgba(255,255,255,0.75); cursor: pointer;
+  border-radius: 12px;
+  display: flex; align-items: center; gap: 10px;
+  transition: background 0.12s; touch-action: manipulation;
+}
+.ctx-item:active { background: rgba(255,255,255,0.07); }
+.ctx-item.ctx-danger { color: rgba(255,70,70,0.85); }
+.ctx-item.ctx-danger:active { background: rgba(255,50,50,0.1); }
+.ctx-item.ctx-fav { color: rgba(255,215,0,0.85); }
+.ctx-item svg { flex-shrink: 0; opacity: 0.65; }
 
 /* Modal editar música */
 .modal-editar { position: fixed; inset: 0; z-index: 7000;
@@ -4074,6 +4228,44 @@ body.auth-pending #toast {
 // ─── PERFIL ─────────────────────────────────────────────────────────────────
 let perfilFotoBase64 = null; // foto atual em edição
 
+
+// ── Verificação periódica de status (banimento/bloqueio em tempo real) ────────
+(function _initStatusWatch() {
+  var CHECK_MS = 5 * 60 * 1000; // 5 minutos
+  async function _checarStatus() {
+    try {
+      var uid = localStorage.getItem('map_uid_v1');
+      var perfil = JSON.parse(localStorage.getItem('map_perfil_v1') || '{}');
+      if (!uid || perfil.isAdmin) return; // admin nunca é bloqueado
+      if (!window._fb) return;
+      var pf = await window._fb.carregarPerfilPorUid(uid);
+      if (!pf) return;
+      var st = pf.status || 'ativo';
+      if (st === 'banido' || st === 'bloqueado') {
+        localStorage.removeItem('map_perfil_v1');
+        localStorage.removeItem('map_uid_v1');
+        var msg = st === 'banido'
+          ? 'Sua conta foi banida permanentemente.'
+          : 'Sua conta foi bloqueada temporariamente.';
+        if (typeof showToast === 'function') showToast(msg);
+        setTimeout(function() {
+          sessionStorage.setItem('map_skip_splash', '1');
+          location.reload();
+        }, 2000);
+      }
+    } catch(e) {}
+  }
+  // Primeira verificação após 10s (app já carregado)
+  setTimeout(_checarStatus, 10000);
+  // Verificações periódicas
+  setInterval(_checarStatus, CHECK_MS);
+  // Verificar ao voltar à aba
+  document.addEventListener('visibilitychange', function() {
+    if (document.visibilityState === 'visible') _checarStatus();
+  });
+})();
+
+
 function abrirModalPerfil() {
   const perfil = JSON.parse(localStorage.getItem('map_perfil_v1') || '{}');
   const nome = perfil.nome || perfil.nomeUsuario || '';
@@ -6147,10 +6339,22 @@ function pararPad(idx) {
 
 // ─── BIBLIOTECA ────────────────────────────────────────────────────────────
 const ALBUM_PALETTES = [
-  ['#1a1a2e','#16213e'],['#0d1b2a','#1b4332'],['#1a0533','#3d0c6e'],
-  ['#0d2137','#1d4e89'],['#1a0a0a','#6b1c1c'],['#0a1628','#1e3a5f'],
-  ['#16213e','#0f3460'],['#1b2838','#2a475e'],['#0e1117','#1b6ca8'],
-  ['#1a1a1a','#2d5a27'],['#2d1b69','#11998e'],['#1f0b38','#4a0e8f'],
+  ['#0f3d8c','#1a6fd4'],  // azul royal
+  ['#6b21a8','#a855f7'],  // roxo vibrante
+  ['#991b1b','#ef4444'],  // vermelho
+  ['#065f46','#10b981'],  // verde esmeralda
+  ['#92400e','#f59e0b'],  // âmbar
+  ['#1e3a8a','#3b82f6'],  // azul médio
+  ['#831843','#ec4899'],  // rosa pink
+  ['#134e4a','#14b8a6'],  // teal
+  ['#312e81','#6366f1'],  // índigo
+  ['#7c2d12','#ea580c'],  // laranja queimado
+  ['#14532d','#22c55e'],  // verde lima
+  ['#1e1b4b','#8b5cf6'],  // violeta
+  ['#713f12','#eab308'],  // ouro
+  ['#0c4a6e','#0ea5e9'],  // azul céu
+  ['#4a044e','#d946ef'],  // magenta
+  ['#042f2e','#2dd4bf'],  // turquesa
 ];
 
 let eventos = JSON.parse(localStorage.getItem('map_pro_eventos_v1')) || [];
@@ -6205,39 +6409,54 @@ function renderBibAtivo(filtro) {
 }
 
 // ── ABA MÚSICAS ──
-function renderBiblioteca(filtro = '') {
-  const grid = document.getElementById('biblioteca-grid');
-  const termo = (filtro || '').toLowerCase();
-  const lista = songs.filter(s => s.name.toLowerCase().includes(termo));
+function renderBiblioteca(filtro) {
+  filtro = filtro || '';
+  var grid = document.getElementById('biblioteca-grid');
+  if (!grid) return;
+  var termo = filtro.toLowerCase();
+  var lista = songs.filter(function(s) { return s.name.toLowerCase().includes(termo); });
 
   if (!lista.length) {
-    grid.innerHTML = `<div class="biblioteca-vazia" style="grid-column:1/-1">
-      <div class="biblioteca-vazia-icon">♪</div>
-      <div>${filtro ? 'Nenhum resultado' : 'Biblioteca vazia'}</div>
-      <div style="font-size:10px;opacity:0.6;font-weight:500;">Salve músicas para vê-las aqui</div>
-    </div>`;
+    grid.innerHTML = '<div class="biblioteca-vazia" style="grid-column:1/-1">'
+      + '<div class="biblioteca-vazia-icon">♪</div>'
+      + '<div>' + (filtro ? 'Nenhum resultado' : 'Biblioteca vazia') + '</div>'
+      + '<div style="font-size:10px;opacity:0.6;font-weight:500;">Salve músicas para vê-las aqui</div>'
+      + '</div>';
     return;
   }
 
-  grid.innerHTML = lista.map((s, idx) => {
-    const cor = albumColor(s.id || idx);
-    const inicial = s.name.trim().charAt(0).toUpperCase();
-    const partes = s.parts ? s.parts.length : 0;
-    return `
-    <div class="album-card ${s.favorite ? 'fav' : ''}" data-id="${s.id}">
-      <div class="album-cover" style="--ac1:${cor.ac1};--ac2:${cor.ac2}"
-        onclick="loadSongBiblioteca(${s.id})">
-        <div class="album-cover-bg"></div>
-        <div class="album-cover-initial">${inicial}</div>
-        <div class="album-cover-bpm">${s.bpm} BPM</div>
-        <div class="album-cover-fav"></div>
-        <button class="album-menu-btn" onclick="abrirCtxMenu(event, ${s.id}, 'biblioteca')">···</button>
-      </div>
-      <div class="album-info">
-        <div class="album-name" title="${s.name}">${s.name}</div>
-        <div class="album-meta">${partes} parte${partes !== 1 ? 's' : ''}</div>
-      </div>
-    </div>`;
+  // Favoritas primeiro, resto por nome
+  var sorted = lista.slice().sort(function(a, b) {
+    if (a.favorite && !b.favorite) return -1;
+    if (!a.favorite && b.favorite) return 1;
+    return (a.name || '').localeCompare(b.name || '');
+  });
+
+  grid.innerHTML = sorted.map(function(s) {
+    var cor = albumColor(s.id || 0);
+    var words = (s.name || '').trim().split(/\s+/);
+    var ini  = words[0] ? words[0].charAt(0).toUpperCase() : '?';
+    var ini2 = words.length > 1 ? words[words.length - 1].charAt(0).toUpperCase() : '';
+    var partes = s.parts ? s.parts.length : 0;
+    var bpm = s.bpm || '—';
+    return '<div class="album-card' + (s.favorite ? ' fav' : '') + '" data-id="' + s.id + '">'
+      + '<div class="album-cover" style="--ac1:' + cor.ac1 + ';--ac2:' + cor.ac2 + '" onclick="loadSongBiblioteca(' + s.id + ')">'
+      +   '<div class="album-cover-bg"></div>'
+      +   '<div class="album-cover-shine"></div>'
+      +   '<div class="album-cover-body">'
+      +     '<div class="album-cover-initials">' + ini + '<span class="album-cover-initial2">' + ini2 + '</span></div>'
+      +     '<div class="album-cover-bpm">' + bpm + ' <span>BPM</span></div>'
+      +   '</div>'
+      +   (s.favorite ? '<div class="album-cover-fav">★</div>' : '')
+      +   '<button class="album-menu-btn" onclick="event.stopPropagation();abrirCtxMenu(event,' + s.id + ',\'biblioteca\')" title="Opções">'
+      +     '<svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="12" cy="19" r="2"/></svg>'
+      +   '</button>'
+      + '</div>'
+      + '<div class="album-info">'
+      +   '<div class="album-name" title="' + s.name + '">' + s.name + '</div>'
+      +   '<div class="album-meta">' + (partes > 0 ? partes + ' parte' + (partes !== 1 ? 's' : '') : 'sem partes') + ' · ' + bpm + ' BPM</div>'
+      + '</div>'
+      + '</div>';
   }).join('');
 }
 
@@ -6301,8 +6520,14 @@ function abrirEditarEventoAtual() {
 
 function favoritarBiblioteca(id, e) {
   if (e) e.stopPropagation();
-  const s = songs.find(x => x.id === id);
-  if (s) { s.favorite = !s.favorite; updateStorage(); showToast(s.favorite ? 'Favorita!' : 'Removida dos favoritos.'); }
+  var s = songs.find(function(x) { return x.id === id; });
+  if (s) {
+    s.favorite = !s.favorite;
+    updateStorage();
+    showToast(s.favorite ? '★ Favorita!' : 'Removida dos favoritos.');
+    var filtro = (document.getElementById('biblioteca-search') || {}).value || '';
+    renderBiblioteca(filtro);
+  }
 }
 
 function deleteSongBiblioteca(id, e) {
@@ -6454,45 +6679,53 @@ function voltarEventos() {
 }
 
 function renderEventoDetalhe() {
-  const ev = eventos.find(e => e.id === eventoAbertoId);
+  var ev = eventos.find(function(e) { return e.id === eventoAbertoId; });
   if (!ev) return;
-  const grid = document.getElementById('evento-grid');
-  const filtro = (document.getElementById('evento-search').value || '').toLowerCase();
-  const musicIds = ev.musicIds || [];
-  const lista = songs.filter(s => musicIds.includes(s.id) && s.name.toLowerCase().includes(filtro));
+  var grid = document.getElementById('evento-grid');
+  var filtro = ((document.getElementById('evento-search') || {}).value || '').toLowerCase();
+  var musicIds = ev.musicIds || [];
+  var lista = songs.filter(function(s) {
+    return musicIds.includes(s.id) && s.name.toLowerCase().includes(filtro);
+  });
+  // Preservar ordem definida no evento
+  lista.sort(function(a, b) { return musicIds.indexOf(a.id) - musicIds.indexOf(b.id); });
 
   if (!lista.length) {
-    grid.innerHTML = `<div class="biblioteca-vazia" style="grid-column:1/-1">
-      <div class="biblioteca-vazia-icon">♪</div>
-      <div>${filtro ? 'Nenhum resultado' : 'Evento vazio'}</div>
-      <div style="font-size:10px;opacity:0.6;font-weight:500;">Toque em "+ Música" para adicionar</div>
-    </div>`;
+    grid.innerHTML = '<div class="biblioteca-vazia" style="grid-column:1/-1">'
+      + '<div class="biblioteca-vazia-icon">♪</div>'
+      + '<div>' + (filtro ? 'Nenhum resultado' : 'Evento vazio') + '</div>'
+      + '<div style="font-size:10px;opacity:0.6;font-weight:500;">Toque em + para adicionar músicas</div>'
+      + '</div>';
     return;
   }
 
-  grid.innerHTML = lista.map((s, idx) => {
-    const cor = albumColor(s.id || idx);
-    const inicial = s.name.trim().charAt(0).toUpperCase();
-    const partes = s.parts ? s.parts.length : 0;
-    return `
-    <div class="album-card" data-id="${s.id}">
-      <div class="album-cover" style="--ac1:${cor.ac1};--ac2:${cor.ac2}"
-        onclick="loadSongBiblioteca(${s.id})">
-        <div class="album-cover-bg"></div>
-        <div class="album-cover-initial">${inicial}</div>
-        <div class="album-cover-bpm">${s.bpm} BPM</div>
-        <button onclick="event.stopPropagation();ativarShowEvento(eventoAbertoId,${s.id})" title="Modo Show" style="position:absolute;bottom:6px;right:6px;z-index:3;background:rgba(0,0,0,0.55);border:1px solid rgba(29,185,84,0.5);border-radius:7px;width:26px;height:26px;display:flex;align-items:center;justify-content:center;cursor:pointer;">
-          <svg width="9" height="9" viewBox="0 0 24 24" fill="#1db954"><polygon points="5 3 19 12 5 21 5 3"/></svg>
-        </button>
-      </div>
-      <div class="album-info">
-        <div class="album-name">${s.name}</div>
-        <div class="album-meta" style="display:flex;align-items:center;justify-content:space-between;">
-          <span>${partes} parte${partes !== 1 ? 's' : ''}</span>
-          <button class="album-menu-btn" onclick="abrirCtxMenu(event, ${s.id}, 'evento')" style="position:static;background:none;border:none;color:rgba(255,255,255,0.4);font-size:14px;cursor:pointer;padding:2px 4px;line-height:1;font-weight:900;letter-spacing:1px;">···</button>
-        </div>
-      </div>
-    </div>`;
+  grid.innerHTML = lista.map(function(s) {
+    var cor = albumColor(s.id || 0);
+    var words = (s.name || '').trim().split(/\s+/);
+    var ini  = words[0] ? words[0].charAt(0).toUpperCase() : '?';
+    var ini2 = words.length > 1 ? words[words.length - 1].charAt(0).toUpperCase() : '';
+    var partes = s.parts ? s.parts.length : 0;
+    var bpm = s.bpm || '—';
+    return '<div class="album-card" data-id="' + s.id + '">'
+      + '<div class="album-cover" style="--ac1:' + cor.ac1 + ';--ac2:' + cor.ac2 + '" onclick="loadSongBiblioteca(' + s.id + ')">'
+      +   '<div class="album-cover-bg"></div>'
+      +   '<div class="album-cover-shine"></div>'
+      +   '<div class="album-cover-body">'
+      +     '<div class="album-cover-initials">' + ini + '<span class="album-cover-initial2">' + ini2 + '</span></div>'
+      +     '<div class="album-cover-bpm">' + bpm + ' <span>BPM</span></div>'
+      +   '</div>'
+      +   '<button onclick="event.stopPropagation();ativarShowEvento(eventoAbertoId,' + s.id + ')" title="Modo Show" class="album-show-btn">'
+      +     '<svg width="9" height="9" viewBox="0 0 24 24" fill="#1db954"><polygon points="5 3 19 12 5 21 5 3"/></svg>'
+      +   '</button>'
+      +   '<button class="album-menu-btn" data-modo="evento" onclick="event.stopPropagation();abrirCtxMenu(event,' + s.id + ',\'evento\')" title="Opções">'
+      +     '<svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="12" cy="19" r="2"/></svg>'
+      +   '</button>'
+      + '</div>'
+      + '<div class="album-info">'
+      +   '<div class="album-name" title="' + s.name + '">' + s.name + '</div>'
+      +   '<div class="album-meta">' + (partes > 0 ? partes + ' parte' + (partes !== 1 ? 's' : '') : 'sem partes') + ' · ' + bpm + ' BPM</div>'
+      + '</div>'
+      + '</div>';
   }).join('');
 }
 
@@ -8875,114 +9108,128 @@ function _bpmMicPararVoz() {
 }
 
 async function _bpmMicBuscar() {
-  const termo = (document.getElementById('bpm-mic-input')?.value || '').trim();
+  var termo = ((document.getElementById('bpm-mic-input') || {}).value || '').trim();
   if (termo.length < 2) return;
-  const status    = document.getElementById('bpm-mic-status');
-  const results   = document.getElementById('bpm-mic-results');
-  const buscarBtn = document.getElementById('bpm-mic-buscar-btn');
 
-  if (status)  { status.textContent = 'A buscar BPM...'; status.style.color = 'rgba(255,255,255,0.5)'; }
-  if (results) { results.innerHTML = ''; results.style.display = 'none'; }
+  var statusEl  = document.getElementById('bpm-mic-status');
+  var resultsEl = document.getElementById('bpm-mic-results');
+  var buscarBtn = document.getElementById('bpm-mic-buscar-btn');
+
+  function setStatus(txt, cor) {
+    if (statusEl) { statusEl.textContent = txt; statusEl.style.color = cor || 'rgba(255,255,255,0.45)'; }
+  }
+  function resetBtn() { if (buscarBtn) { buscarBtn.disabled = false; _bpmMicValidar(); } }
+  function mostrarCard(r) {
+    if (!resultsEl) return;
+    var card = document.createElement('div');
+    card.style.cssText = 'background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);border-radius:12px;padding:11px 14px;cursor:pointer;display:flex;align-items:center;gap:12px;touch-action:manipulation;transition:background .15s;';
+    card.ontouchstart = function(){ this.style.background='rgba(29,185,84,0.12)'; };
+    card.ontouchend   = function(){ this.style.background='rgba(255,255,255,0.04)'; };
+    card.onclick = (function(b, t){ return function(){ _bpmMicAplicar(b, t); }; })(r.bpm, r.titulo);
+    card.innerHTML =
+      (r.capa ? '<img src="'+r.capa+'" style="width:40px;height:40px;border-radius:8px;flex-shrink:0;object-fit:cover;">' : '<div style="width:40px;height:40px;border-radius:8px;background:rgba(29,185,84,0.15);flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:18px;font-weight:900;color:rgba(29,185,84,0.7);">' + (r.titulo||'?').charAt(0).toUpperCase() + '</div>') +
+      '<div style="flex:1;min-width:0;">' +
+        '<div style="font-size:13px;font-weight:700;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + (r.titulo||'') + '</div>' +
+        '<div style="font-size:11px;color:rgba(255,255,255,0.35);margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + (r.artista||'') + '</div>' +
+      '</div>' +
+      '<div style="flex-shrink:0;text-align:right;">' +
+        '<div style="background:#1db954;color:#000;font-size:13px;font-weight:900;padding:5px 11px;border-radius:9px;line-height:1.2;">' + r.bpm + '</div>' +
+        '<div style="font-size:9px;color:rgba(29,185,84,0.7);font-weight:800;letter-spacing:1px;margin-top:2px;">BPM</div>' +
+      '</div>';
+    resultsEl.appendChild(card);
+  }
+
+  setStatus('Buscando...', 'rgba(255,255,255,0.45)');
+  if (resultsEl) { resultsEl.innerHTML = ''; resultsEl.style.display = 'none'; }
   if (buscarBtn) buscarBtn.disabled = true;
 
+  var bpmResults = [];
+
+  // ── 1. GetSongBPM — API pública gratuita, CORS liberado ───────────────────
   try {
-    // ── Passo 1: iTunes para identificar a música (CORS ok, gratuito) ──────────
-    const itunesRes = await fetch(
-      'https://itunes.apple.com/search?term=' + encodeURIComponent(termo) + '&entity=song&limit=5&country=BR'
-    );
-    const itunesData = await itunesRes.json();
-    const tracks = (itunesData && itunesData.results) ? itunesData.results : [];
+    setStatus('Consultando base de BPM...', 'rgba(255,255,255,0.45)');
+    var gsUrl = 'https://api.getsongbpm.com/search/?api_key=free&type=both&lookup='
+              + encodeURIComponent(termo);
+    var gsRes  = await fetch(gsUrl);
+    var gsData = await gsRes.json();
+    var gsHits = (gsData && Array.isArray(gsData.search)) ? gsData.search : [];
 
-    // ── Passo 2: Claude API — pergunta o BPM ──────────────────────────────────
-    // Monta lista de músicas encontradas para dar contexto ao Claude
-    let contexto = '';
-    if (tracks.length > 0) {
-      contexto = tracks.slice(0, 5).map((t, i) =>
-        (i+1) + '. "' + t.trackName + '" — ' + t.artistName
-      ).join('\n');
-    }
-
-    const prompt = tracks.length > 0
-      ? 'O utilizador procurou: "' + termo + '".\nResultados encontrados:\n' + contexto + '\n\nPara cada música acima, indica o BPM (tempo) aproximado. Responde APENAS com JSON válido neste formato exato, sem texto extra:\n{"resultados":[{"titulo":"nome","artista":"artista","bpm":120},...]}'
-      : 'Qual o BPM (tempo em batidas por minuto) da música "' + termo + '"? Responde APENAS com JSON válido neste formato exato, sem texto extra:\n{"resultados":[{"titulo":"nome","artista":"artista","bpm":120}]}';
-
-    const claudeRes = await fetch('https://api.anthropic.com/v1/messages', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        model: 'claude-sonnet-4-20250514',
-        max_tokens: 400,
-        messages: [{ role: 'user', content: prompt }]
-      })
+    gsHits.slice(0, 5).forEach(function(h) {
+      var bpmVal = parseInt(h.tempo || h.bpm || 0);
+      if (bpmVal > 20 && bpmVal < 300) {
+        bpmResults.push({
+          titulo:  h.song_title || h.title || termo,
+          artista: h.artist ? (h.artist.name || h.artist) : '',
+          bpm:     bpmVal,
+          capa:    h.album ? (h.album.img || '') : (h.img || '')
+        });
+      }
     });
-    const claudeData = await claudeRes.json();
-    const rawText = (claudeData.content && claudeData.content[0] && claudeData.content[0].text) || '';
+  } catch(e1) { /* GetSongBPM offline */ }
 
-    // Parse JSON do Claude
-    let claudeJson = null;
+  // ── 2. Se não achou nada → tenta iTunes + estimativa de gênero ───────────
+  if (bpmResults.length === 0) {
     try {
-      const clean = rawText.replace(/```json|```/g, '').trim();
-      claudeJson = JSON.parse(clean);
-    } catch(e) {
-      // Tenta extrair JSON do meio do texto
-      const m = rawText.match(/\{[\s\S]*\}/);
-      if (m) { try { claudeJson = JSON.parse(m[0]); } catch(e2) {} }
-    }
+      setStatus('Consultando iTunes...', 'rgba(255,255,255,0.45)');
+      var itUrl  = 'https://itunes.apple.com/search?term=' + encodeURIComponent(termo) +
+                  '&entity=song&limit=5&country=BR';
+      var itRes  = await fetch(itUrl);
+      var itData = await itRes.json();
+      var tracks = (itData && Array.isArray(itData.results)) ? itData.results : [];
 
-    const bpmResults = (claudeJson && claudeJson.resultados) ? claudeJson.resultados : [];
+      // iTunes não retorna BPM — mas ao menos confirma que a música existe
+      // e mostra capa. Informamos ao usuário que o BPM não foi encontrado.
+      if (tracks.length > 0) {
+        setStatus('Música encontrada no iTunes mas BPM não disponível. Tente no Multitracks.', '#ff9944');
+        if (resultsEl) {
+          resultsEl.style.display = 'flex';
+          tracks.slice(0, 3).forEach(function(t) {
+            var div = document.createElement('div');
+            div.style.cssText = 'background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.06);border-radius:12px;padding:10px 14px;display:flex;align-items:center;gap:10px;opacity:0.65;';
+            div.innerHTML =
+              (t.artworkUrl60 ? '<img src="'+t.artworkUrl60+'" style="width:40px;height:40px;border-radius:8px;flex-shrink:0;">' : '') +
+              '<div style="flex:1;min-width:0;">' +
+                '<div style="font-size:12px;font-weight:700;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + t.trackName + '</div>' +
+                '<div style="font-size:10px;color:rgba(255,255,255,0.3);">' + t.artistName + '</div>' +
+              '</div>' +
+              '<span style="font-size:10px;color:rgba(255,255,255,0.2);flex-shrink:0;font-weight:700;">BPM ?</span>';
+            resultsEl.appendChild(div);
+          });
+        }
+        _bpmMicMostrarLinkMultitracks(termo);
+        resetBtn(); return;
+      }
+    } catch(e2) { /* iTunes offline */ }
 
-    if (bpmResults.length === 0) {
-      if (status) { status.textContent = 'Não encontrei BPM. Tenta com nome + artista.'; status.style.color = '#ff9944'; }
-      _bpmMicMostrarLinkMultitracks(termo);
-      if (results) results.style.display = 'flex';
-      if (buscarBtn) { buscarBtn.disabled = false; _bpmMicValidar(); }
-      return;
-    }
-
-    // ── Auto-aplicar se há apenas 1 resultado ────────────────────────────────
-    if (bpmResults.length === 1 && bpmResults[0].bpm) {
-      _bpmMicAplicar(bpmResults[0].bpm, bpmResults[0].titulo || termo);
-      if (buscarBtn) { buscarBtn.disabled = false; _bpmMicValidar(); }
-      return;
-    }
-
-    // ── Auto-aplicar se todos concordam no mesmo BPM ─────────────────────────
-    const valores = [...new Set(bpmResults.filter(r => r.bpm).map(r => r.bpm))];
-    if (valores.length === 1) {
-      _bpmMicAplicar(valores[0], bpmResults[0].titulo || termo);
-      if (buscarBtn) { buscarBtn.disabled = false; _bpmMicValidar(); }
-      return;
-    }
-
-    // ── Mostrar lista para escolher ───────────────────────────────────────────
-    if (results) results.style.display = 'flex';
-    if (status) {
-      status.textContent = bpmResults.length + ' resultado(s) — clica para aplicar';
-      status.style.color = 'rgba(255,255,255,0.4)';
-    }
-
-    bpmResults.forEach(r => {
-      if (!r.bpm) return;
-      const card = document.createElement('div');
-      card.style.cssText = 'background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);border-radius:10px;padding:10px 14px;cursor:pointer;display:flex;align-items:center;gap:12px;transition:background 0.15s;';
-      card.onmouseover = function() { this.style.background = 'rgba(29,185,84,0.1)'; };
-      card.onmouseout  = function() { this.style.background = 'rgba(255,255,255,0.04)'; };
-      card.onclick     = function() { _bpmMicAplicar(r.bpm, r.titulo || termo); };
-      card.innerHTML   = '<div style="flex:1;min-width:0;">'
-        + '<div style="font-size:13px;font-weight:700;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + (r.titulo || termo) + '</div>'
-        + '<div style="font-size:11px;color:rgba(255,255,255,0.35);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + (r.artista || '') + '</div>'
-        + '</div><span style="background:#1db954;color:#000;font-size:11px;font-weight:900;padding:3px 9px;border-radius:6px;flex-shrink:0;">' + r.bpm + ' BPM</span>';
-      results.appendChild(card);
-    });
-
+    // Nenhuma API respondeu
+    setStatus('Não encontrado. Verifique o nome ou tente "Música — Artista".', '#ff9944');
+    if (resultsEl) resultsEl.style.display = 'flex';
     _bpmMicMostrarLinkMultitracks(termo);
+    resetBtn(); return;
+  }
 
-  } catch(err) {
-    if (status) { status.textContent = 'Erro: ' + (err.message || 'verifique a conexão.'); status.style.color = '#ff5555'; }
-    if (results) results.style.display = 'flex';
+  // ── 3. Mostrar resultados ─────────────────────────────────────────────────
+  if (bpmResults.length === 1) {
+    // Auto-aplica direto
+    _bpmMicAplicar(bpmResults[0].bpm, bpmResults[0].titulo);
+    resetBtn(); return;
+  }
+
+  var uniqBpm = bpmResults.map(function(r){ return r.bpm; })
+                          .filter(function(v,i,a){ return a.indexOf(v)===i; });
+  if (uniqBpm.length === 1) {
+    _bpmMicAplicar(uniqBpm[0], bpmResults[0].titulo);
+    resetBtn(); return;
+  }
+
+  // Múltiplos resultados diferentes
+  setStatus(bpmResults.length + ' resultado(s) — toque para aplicar', 'rgba(255,255,255,0.4)');
+  if (resultsEl) {
+    resultsEl.style.display = 'flex';
+    bpmResults.forEach(function(r) { mostrarCard(r); });
     _bpmMicMostrarLinkMultitracks(termo);
   }
-  if (buscarBtn) { buscarBtn.disabled = false; _bpmMicValidar(); }
+  resetBtn();
 }
 
 
@@ -9005,21 +9252,29 @@ function _bpmMicMostrarLinkMultitracks(termo) {
 }
 
 function _bpmMicAplicar(bpmVal, titulo) {
-  // Aplica BPM globalmente
+  bpmVal = parseInt(bpmVal);
+  if (!bpmVal || bpmVal < 20 || bpmVal > 300) return;
+
+  // 1. Atualizar variável global e display do metrônomo
   bpm = bpmVal;
   const disp = document.getElementById('bpm-display');
   if (disp) disp.innerText = bpmVal;
-  // Atualiza também na música carregada se existir
+
+  // 2. Salvar na música carregada (objeto em memória)
   if (typeof currentSongIndex !== 'undefined' && typeof songs !== 'undefined' && songs[currentSongIndex]) {
     songs[currentSongIndex].bpm = bpmVal;
+    // Persistir no localStorage
+    if (typeof updateStorage === 'function') updateStorage();
   }
-  // Reinicia metrônomo se estiver a tocar
+
+  // 3. Reiniciar metrônomo se estiver tocando
   if (typeof isPlaying !== 'undefined' && isPlaying && typeof togglePlay === 'function') {
     togglePlay();
     setTimeout(togglePlay, 80);
   }
+
   fecharBpmMic();
-  if (typeof showToast === 'function') showToast(bpmVal + ' BPM — ' + titulo);
+  if (typeof showToast === 'function') showToast('✓ ' + bpmVal + ' BPM aplicado — ' + titulo);
 }
 
 // ─── CONFIGURAÇÕES DE ÁUDIO ───────────────────────────────────────────────────
@@ -9392,6 +9647,79 @@ function admFecharAcao() {
   var m = document.getElementById('modal-adm-acao');
   if (m) m.style.display = 'none';
   _admSelected = null;
+}
+
+function _admMsgFechar() {
+  var o = document.getElementById('_admMsgOverlay');
+  if (o) o.remove();
+}
+
+function admAbrirMensagem() {
+  var u = _admSelected;
+  if (!u || !u.uid) return;
+  var nome = u.nome || u.nomeUsuario || 'usuário';
+
+  var overlay = document.createElement('div');
+  overlay.id = '_admMsgOverlay';
+  overlay.style.cssText = 'position:fixed;inset:0;z-index:100030;background:rgba(0,0,0,0.88);display:flex;align-items:flex-end;justify-content:center;';
+
+  var box = document.createElement('div');
+  box.style.cssText = 'background:#111119;border:1px solid rgba(255,255,255,0.1);border-radius:24px 24px 0 0;padding:24px 20px 36px;width:100%;max-width:480px;';
+  box.innerHTML =
+    '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;">'
+  +   '<div style="font-size:15px;font-weight:900;color:#fff;">Mensagem para ' + nome + '</div>'
+  +   '<button onclick="_admMsgFechar()" style="width:28px;height:28px;border-radius:50%;background:rgba(255,255,255,0.07);border:none;color:rgba(255,255,255,0.4);font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center;font-family:inherit;">×</button>'
+  + '</div>'
+  + '<div style="margin-bottom:10px;">'
+  +   '<div style="font-size:9px;font-weight:800;letter-spacing:1.5px;color:rgba(255,255,255,0.25);text-transform:uppercase;margin-bottom:6px;">Título (opcional)</div>'
+  +   '<input id="_admMsgTitulo" placeholder="Ex: Aviso importante, Bem-vindo..." maxlength="60" style="width:100%;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.09);border-radius:11px;color:#fff;font-size:13px;padding:10px 14px;outline:none;box-sizing:border-box;font-family:inherit;" />'
+  + '</div>'
+  + '<div style="margin-bottom:16px;">'
+  +   '<div style="font-size:9px;font-weight:800;letter-spacing:1.5px;color:rgba(255,255,255,0.25);text-transform:uppercase;margin-bottom:6px;">Mensagem</div>'
+  +   '<textarea id="_admMsgTexto" placeholder="Digite a mensagem aqui..." maxlength="300" rows="4" style="width:100%;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.09);border-radius:11px;color:#fff;font-size:13px;padding:10px 14px;outline:none;box-sizing:border-box;resize:none;font-family:inherit;line-height:1.5;"></textarea>'
+  +   '<div id="_admMsgCounter" style="text-align:right;font-size:10px;color:rgba(255,255,255,0.2);margin-top:4px;">0/300</div>'
+  + '</div>'
+  + '<div style="display:flex;gap:10px;">'
+  +   '<button onclick="_admMsgFechar()" style="flex:1;padding:13px;border-radius:12px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);color:rgba(255,255,255,0.4);font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;touch-action:manipulation;">Cancelar</button>'
+  +   '<button id="_admMsgEnviar" data-uid="' + u.uid + '" onclick="admEnviarMensagem(this.dataset.uid)" style="flex:2;padding:13px;border-radius:12px;background:rgba(100,149,237,0.2);border:1.5px solid rgba(100,149,237,0.4);color:cornflowerblue;font-size:12px;font-weight:900;cursor:pointer;font-family:inherit;touch-action:manipulation;">Enviar</button>'
+  + '</div>';
+
+  overlay.appendChild(box);
+  document.body.appendChild(overlay);
+
+  var textarea = document.getElementById('_admMsgTexto');
+  var counter  = document.getElementById('_admMsgCounter');
+  textarea.addEventListener('input', function() {
+    counter.textContent = textarea.value.length + '/300';
+    counter.style.color = textarea.value.length > 270 ? 'rgba(255,100,100,0.7)' : 'rgba(255,255,255,0.2)';
+  });
+  setTimeout(function() { textarea.focus(); }, 100);
+}
+
+async function admEnviarMensagem(uid) {
+  var titulo = ((document.getElementById('_admMsgTitulo') || {}).value || '').trim();
+  var texto  = ((document.getElementById('_admMsgTexto')  || {}).value || '').trim();
+  var btn    = document.getElementById('_admMsgEnviar');
+
+  if (!texto) { showToast('Digite uma mensagem.'); return; }
+  if (btn) { btn.disabled = true; btn.textContent = 'Enviando...'; }
+
+  try {
+    var ok = await window._fb.enviarNotifParaUsuario(uid, {
+      tipo:   'admin_msg',
+      titulo: titulo || 'Mensagem do Administrador',
+      desc:   texto,
+      icone:  '📢',
+      origem: 'admin',
+      ts:     Date.now()
+    });
+    _admMsgFechar();
+    admFecharAcao();
+    showToast(ok ? '📢 Mensagem enviada!' : 'Erro ao enviar. Verifique o Firebase.');
+  } catch(e) {
+    showToast('Erro: ' + (e.message || 'desconhecido'));
+    if (btn) { btn.disabled = false; btn.textContent = 'Enviar'; }
+  }
 }
 
 function admAcao(tipo) {
@@ -10035,6 +10363,11 @@ async function _fbFazerBackupAgora(btn) {
         <div><div>Remover conta</div><div style="font-size:10px;opacity:0.6;">Apaga todos os dados do usuário</div></div>
       </button>
     </div>
+    <button id="adm-btn-mensagem" onclick="admAbrirMensagem()"
+      style="width:100%;padding:13px;border-radius:13px;background:rgba(100,149,237,0.08);border:1.5px solid rgba(100,149,237,0.25);color:cornflowerblue;font-size:13px;font-weight:800;cursor:pointer;font-family:inherit;touch-action:manipulation;display:flex;align-items:center;gap:10px;text-align:left;margin-bottom:8px;">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+      <div><div>Enviar mensagem</div><div style="font-size:10px;opacity:0.6;">Aparece nas notificações do usuário</div></div>
+    </button>
     <button onclick="admFecharAcao()" style="width:100%;padding:12px;border-radius:12px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.07);color:rgba(255,255,255,0.3);font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;touch-action:manipulation;">Cancelar</button>
   </div>
 </div>
