@@ -263,14 +263,14 @@ window.addEventListener('unhandledrejection', function(e) { e.preventDefault(); 
 
     async enviarEmailRecuperacao(email) {
       try {
-        const r = await fetch('https://identitytoolkit.googleapis.com/v1/accounts:sendOobCode?key=' + _API_KEY, {
+        const r = await _ft('https://identitytoolkit.googleapis.com/v1/accounts:sendOobCode?key=' + _API_KEY, {
           method: 'POST', headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ requestType: 'PASSWORD_RESET', email })
         });
         const d = await r.json();
         if (d.error) return { ok: false, msg: _authErrLocal(d.error.message) };
         return { ok: true };
-      } catch(e) { return { ok: false, msg: 'Erro de rede' }; }
+      } catch(e) { return { ok: false, msg: 'Erro ao enviar. Verifique o email e tente novamente.' }; }
     },
 
     async alterarSenha(idToken, novaSenha) {
@@ -504,6 +504,30 @@ window.addEventListener('unhandledrejection', function(e) { e.preventDefault(); 
         return results.filter(d => d && d.online).map(d => d);
       } catch(e) { return []; }
     }
+  ,
+    async listarTodosUsuarios(limite) {
+      try {
+        const url = 'https://firestore.googleapis.com/v1/projects/' + _PROJECT
+          + '/databases/(default)/documents/usuarios?pageSize=' + (limite || 200)
+          + '&key=' + _API_KEY;
+        const r = await _ft(url, { method: 'GET', headers: { 'Content-Type': 'application/json' } });
+        if (!r.ok) return [];
+        const data = await r.json();
+        return (data.documents || []).map(function(doc) {
+          return Object.assign({ uid: doc.name.split('/').pop() }, _fromFirestore(doc.fields));
+        });
+      } catch(e) { return []; }
+    },
+    async admSetStatus(uid, status) {
+      try {
+        await _set('usuarios/' + uid, { status: status, statusEm: Date.now() }, true);
+        return true;
+      } catch(e) { return false; }
+    },
+    async admRemoverConta(uid) {
+      try { await _delete('usuarios/' + uid); return true; }
+      catch(e) { return false; }
+    }
   };
 
   // Aviso único se aberto como ficheiro local
@@ -623,7 +647,7 @@ async function obVerificarNome() {
   }
   const disponivel = await window._fb.verificarNomeDisponivel(val);
   _obNomeDisponivel = disponivel;
-  if (st) st.textContent = disponivel ? '✔' : '✖';
+  if (st) st.textContent = disponivel ? 'ok' : 'x';
   if (msg) msg.textContent = disponivel ? 'Nome disponível!' : 'Nome já em uso. Escolhe outro.';
   if (btn) { btn.disabled = false; btn.textContent = 'Verificar disponibilidade'; }
   if (disponivel) {
@@ -857,6 +881,7 @@ function _pinVerificar() {
 
   function _mostrarApp() {
     document.body.classList.remove('auth-pending');
+    setTimeout(function() { if (typeof admInicializar === 'function') admInicializar(); }, 600);
   }
 
 
@@ -1101,7 +1126,7 @@ function _adminVerificar() {
 }
 
 function _adminEntrar() {
-  // Define perfil de admin no localStorage e entra no app directamente
+  // Salva perfil admin no localStorage
   const adminPerfil = {
     nome: 'Admin',
     nomeUsuario: 'admin',
@@ -1115,10 +1140,41 @@ function _adminEntrar() {
   };
   localStorage.setItem('map_perfil_v1', JSON.stringify(adminPerfil));
   localStorage.setItem('map_uid_v1', 'admin_local');
-  _mostrarApp();
+
+  // Fecha o modal do PIN
+  const modalPin = document.getElementById('modal-admin');
+  if (modalPin) modalPin.style.display = 'none';
+
+  // Abre a tela de escolha (APP ou ADMIN)
+  const escolha = document.getElementById('admin-escolha');
+  if (escolha) escolha.style.display = 'flex';
+}
+
+function adminEscolherModo(modo) {
+  // Fecha a tela de escolha
+  const escolha = document.getElementById('admin-escolha');
+  if (escolha) escolha.style.display = 'none';
+
+  // Remove onboarding se ainda estiver visível
   const ov = document.getElementById('onboarding-overlay');
   if (ov) { ov.classList.add('done'); setTimeout(function() { ov.remove(); }, 500); }
-  if (typeof showToast === 'function') showToast('Bem-vindo, Admin 👑');
+
+  if (modo === 'painel') {
+    // Entra no app e vai direto para o painel admin
+    _mostrarApp();
+    setTimeout(function() {
+      if (typeof admInicializar === 'function') admInicializar();
+      if (typeof adminMostrarAba === 'function') adminMostrarAba('painel');
+    }, 400);
+    if (typeof showToast === 'function') showToast('Painel Admin');
+  } else {
+    // Entra no app normalmente
+    _mostrarApp();
+    setTimeout(function() {
+      if (typeof admInicializar === 'function') admInicializar();
+    }, 400);
+    if (typeof showToast === 'function') showToast('Bem-vindo, Admin');
+  }
 }
 
 </script>
@@ -3358,7 +3414,7 @@ body.auth-pending #toast {
           <div style="font-size:9px;color:rgba(255,255,255,0.18);text-align:center;margin-top:5px;padding:0 4px;">Os teus dados locais ficam intactos</div>
         </div>
         <button id="perfil-btn-alterar-senha" onclick="abrirAlterarSenha()" style="width:100%;padding:11px;border-radius:12px;background:rgba(29,185,84,0.06);border:1px solid rgba(29,185,84,0.15);color:rgba(29,185,84,0.7);font-size:11px;font-weight:800;cursor:pointer;letter-spacing:1px;text-transform:uppercase;font-family:inherit;transition:0.2s;margin-bottom:6px;" onmouseenter="this.style.background='rgba(29,185,84,0.12)'" onmouseleave="this.style.background='rgba(29,185,84,0.06)'">Alterar Senha</button>
-        <button id="perfil-btn-sair" onclick="sairDaConta()" style="width:100%;padding:11px;border-radius:12px;background:rgba(255,60,60,0.07);border:1px solid rgba(255,60,60,0.18);color:rgba(255,100,100,0.8);font-size:11px;font-weight:800;cursor:pointer;letter-spacing:1px;text-transform:uppercase;font-family:inherit;transition:0.2s;" onmouseenter="this.style.background='rgba(255,60,60,0.14)'" onmouseleave="this.style.background='rgba(255,60,60,0.07)'">Sair do Perfil</button>
+        
       </div>
 
       <!-- Botões ação -->
@@ -3367,6 +3423,11 @@ body.auth-pending #toast {
         <button onclick="salvarPerfil()" style="flex:2;padding:13px;border-radius:12px;background:#1db954;border:none;color:#000;font-size:12px;font-weight:900;cursor:pointer;letter-spacing:1px;text-transform:uppercase;font-family:inherit;transition:0.2s;" onmouseenter="this.style.background='#22d461'" onmouseleave="this.style.background='#1db954'">Salvar Perfil</button>
       </div>
 
+    </div>
+    <!-- Rodapé fixo com botões de conta -->
+    <div style="padding:14px 20px 20px;border-top:1px solid rgba(255,255,255,0.05);display:flex;flex-direction:column;gap:8px;flex-shrink:0;">
+      <button id="perfil-btn-sair" onclick="sairDaConta()" style="width:100%;padding:11px;border-radius:12px;background:rgba(255,60,60,0.07);border:1px solid rgba(255,60,60,0.18);color:rgba(255,100,100,0.8);font-size:11px;font-weight:800;cursor:pointer;letter-spacing:1px;text-transform:uppercase;font-family:inherit;transition:0.2s;touch-action:manipulation;" onmouseenter="this.style.background='rgba(255,60,60,0.14)'" onmouseleave="this.style.background='rgba(255,60,60,0.07)'">Sair do Perfil</button>
+      <button onclick="excluirConta()" style="width:100%;padding:11px;border-radius:12px;background:rgba(255,30,30,0.05);border:1px solid rgba(255,30,30,0.12);color:rgba(255,70,70,0.5);font-size:11px;font-weight:800;cursor:pointer;font-family:inherit;touch-action:manipulation;letter-spacing:0.5px;">Excluir Conta</button>
     </div>
     <!-- hidden badge for compat -->
     <div id="perfil-google-badge" style="display:none !important;"></div>
@@ -3383,7 +3444,7 @@ body.auth-pending #toast {
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#1db954" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
         <span class="amigos-title">Amigos</span>
       </div>
-      <button class="amigos-close" onclick="fecharModalAmigos()">✕</button>
+      <button class="amigos-close" onclick="fecharModalAmigos()">&times;</button>
     </div>
 
     <!-- Sala ativa banner -->
@@ -3448,6 +3509,12 @@ body.auth-pending #toast {
         <span class="logo-tag">Elite Edition</span>
       </div>
     </div>
+    <div id="admin-tabs" style="display:none;margin-left:8px;gap:4px;align-items:center;">
+      <button id="admin-tab-app" onclick="adminMostrarAba('app')"
+        style="padding:5px 14px;border-radius:16px;font-size:10px;font-weight:900;letter-spacing:0.8px;cursor:pointer;touch-action:manipulation;background:rgba(29,185,84,0.15);border:1.5px solid rgba(29,185,84,0.5);color:#1db954;">APP</button>
+      <button id="admin-tab-painel" onclick="adminMostrarAba('painel')"
+        style="padding:5px 14px;border-radius:16px;font-size:10px;font-weight:900;letter-spacing:0.8px;cursor:pointer;touch-action:manipulation;background:rgba(255,255,255,0.05);border:1.5px solid rgba(255,255,255,0.12);color:rgba(255,255,255,0.4);">ADMIN</button>
+    </div>
     <div style="display:flex; align-items:center; gap:12px;">
       <!-- Botão rápido de sala -->
       <button onclick="abrirModalSala()" id="btn-sala" style="background:rgba(29,185,84,0.12); border:1px solid rgba(29,185,84,0.3); color:var(--accent-primary); padding:8px 16px; border-radius:var(--radius-full); font-size:10px; font-weight:800; cursor:pointer; letter-spacing:1px; text-transform:uppercase; transition:0.2s;">
@@ -3478,7 +3545,7 @@ body.auth-pending #toast {
           <div class="menu-item" onclick="abrirPads()">Pads</div>
           <div class="menu-item" onclick="abrirModalStats()">Estatísticas</div>
           <div class="menu-item" onclick="abrirModalCifra()">Importar Cifra</div>
-          <div class="menu-item" onclick="abrirConfigAudio()">⚙ Configurações de Áudio</div>
+          <div class="menu-item" onclick="abrirConfigAudio()">Configurações de Áudio</div>
           <div class="menu-item danger" onclick="resetSection()">Limpar Seção</div>
         </div>
       </div>
@@ -3494,7 +3561,7 @@ body.auth-pending #toast {
     <div style="padding:28px 28px 20px; border-bottom:1px solid var(--glass-border);">
       <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:6px;">
         <h2 style="font-size:17px; font-weight:900; letter-spacing:0.5px;" id="sala-titulo">Sala de Sincronia</h2>
-        <button onclick="fecharModal()" style="background:none; border:none; color:rgba(255,255,255,0.3); font-size:18px; cursor:pointer; line-height:1; padding:4px 6px; border-radius:6px; transition:0.2s;" onmouseover="this.style.color='#fff'" onmouseout="this.style.color='rgba(255,255,255,0.3)'">✕</button>
+        <button onclick="fecharModal()" style="background:none; border:none; color:rgba(255,255,255,0.3); font-size:18px; cursor:pointer; line-height:1; padding:4px 6px; border-radius:6px; transition:0.2s;" onmouseover="this.style.color='#fff'" onmouseout="this.style.color='rgba(255,255,255,0.3)'">&times;</button>
       </div>
       <p style="font-size:11px; color:var(--text-secondary); line-height:1.6; margin:0;" id="sala-subtitulo">Sincronize cifras e andamento com outros músicos em tempo real.</p>
     </div>
@@ -3806,7 +3873,7 @@ body.auth-pending #toast {
   <div class="modal-addmusica-box">
     <div class="modal-addmusica-header">
       <span style="font-size:13px;font-weight:900;color:#fff;">Adicionar ao Evento</span>
-      <button onclick="fecharAddMusica()" style="background:none;border:none;color:rgba(255,255,255,0.4);font-size:18px;cursor:pointer;">✕</button>
+      <button onclick="fecharAddMusica()" style="background:none;border:none;color:rgba(255,255,255,0.4);font-size:18px;cursor:pointer;">&times;</button>
     </div>
     <div class="modal-addmusica-list" id="modal-addmusica-list"></div>
   </div>
@@ -3879,7 +3946,7 @@ body.auth-pending #toast {
 <div class="harmonic-popup" id="harmonic-popup">
   <div class="hp-header">
     <span class="hp-key" id="hp-key-label">Campo Harmonico</span>
-    <button class="hp-close" onclick="fecharHarmonic()">✕</button>
+    <button class="hp-close" onclick="fecharHarmonic()">&times;</button>
   </div>
   <div class="hp-grid" id="hp-grid"></div>
 </div>
@@ -4194,11 +4261,11 @@ async function confirmarFormalizarConta() {
   } catch(e) {}
 
   setMsg('Conta criada! Os teus dados estão seguros.', '#1db954');
-  if (btn) { btn.textContent = 'Conta criada ✓'; }
+  if (btn) { btn.textContent = 'Conta criada'; }
 
   setTimeout(function() {
     fecharFormalizarConta();
-    if (typeof showToast === 'function') showToast('Conta formalizada com sucesso! 🎉');
+    if (typeof showToast === 'function') showToast('Conta formalizada com sucesso!');
     if (typeof atualizarPreviewPerfil === 'function') atualizarPreviewPerfil();
     // Atualiza visibilidade do botão no perfil
     _mostrarBotaoFormalizar();
@@ -4256,7 +4323,7 @@ async function enviarRecuperacaoSenha() {
   const result = await window._fb.enviarEmailRecuperacao(email);
   if (result && result.ok) {
     setMsg('Email enviado! Verifica a tua caixa de entrada.', '#1db954');
-    if (btn) btn.textContent = 'Enviado ✓';
+    if (btn) btn.textContent = 'Enviado';
     setTimeout(fecharEsqueciSenha, 2500);
   } else {
     setMsg((result && result.msg) || 'Erro ao enviar. Verifica o email.', '#ff5555');
@@ -5184,7 +5251,7 @@ function addPart(title = "PARTE", content = "") {
   div.innerHTML = `
     <input type="text" value="${title}" style="background:none;border:none;color:var(--accent-primary);font-weight:900;font-size:11px;width:calc(100% - 30px);outline:none;text-transform:uppercase;" oninput="broadcastEstado()">
     <textarea class="chord-area" oninput="onChordInput(this)" placeholder="C G Am F">${content}</textarea>
-    <button onclick="this.parentElement.remove(); broadcastEstado();" style="position:absolute;top:12px;right:12px;background:none;border:none;color:#ff4d4d;cursor:pointer;">✕</button>`;
+    <button onclick="this.parentElement.remove(); broadcastEstado();" style="position:absolute;top:12px;right:12px;background:none;border:none;color:#ff4d4d;cursor:pointer;">&times;</button>`;
   document.getElementById('notes-grid').appendChild(div);
   const ta = div.querySelector('textarea');
   ta.style.height = ta.scrollHeight + 'px';
@@ -5283,8 +5350,8 @@ function renderSetlist() {
     <div class="song-item ${s.favorite?'fav':''}" onclick="loadSong(${s.id})">
       <div style="color:#fff;font-weight:700;">${s.name}<br><span style="font-size:10px;color:var(--accent-primary);">${s.bpm} BPM</span></div>
       <div style="display:flex;align-items:center;">
-        <span class="fav-star ${s.favorite?'active':''}" onclick="toggleFavorite(${s.id},event)">★</span>
-        <button onclick="deleteSong(${s.id},event)" style="background:none;border:none;color:red;cursor:pointer;margin-left:5px;">✕</button>
+        <span class="fav-star ${s.favorite?'active':''}" onclick="toggleFavorite(${s.id},event)">♥</span>
+        <button onclick="deleteSong(${s.id},event)" style="background:none;border:none;color:red;cursor:pointer;margin-left:5px;">&times;</button>
       </div>
     </div>`).join('');
 }
@@ -6009,7 +6076,7 @@ function renderBiblioteca(filtro = '') {
         <div class="album-cover-bg"></div>
         <div class="album-cover-initial">${inicial}</div>
         <div class="album-cover-bpm">${s.bpm} BPM</div>
-        <div class="album-cover-fav">★</div>
+        <div class="album-cover-fav"></div>
         <button class="album-menu-btn" onclick="abrirCtxMenu(event, ${s.id}, 'biblioteca')">···</button>
       </div>
       <div class="album-info">
@@ -6081,7 +6148,7 @@ function abrirEditarEventoAtual() {
 function favoritarBiblioteca(id, e) {
   if (e) e.stopPropagation();
   const s = songs.find(x => x.id === id);
-  if (s) { s.favorite = !s.favorite; updateStorage(); showToast(s.favorite ? '★ Favorita!' : 'Removida dos favoritos.'); }
+  if (s) { s.favorite = !s.favorite; updateStorage(); showToast(s.favorite ? 'Favorita!' : 'Removida dos favoritos.'); }
 }
 
 function deleteSongBiblioteca(id, e) {
@@ -6140,7 +6207,7 @@ function renderEventos(filtro = '') {
         <button class="evento-btn evento-btn-open" onclick="abrirEventoDetalhe(${ev.id})">Ver</button>
         <button class="evento-btn" onclick="abrirEditarEvento(${ev.id}, event)"
           style="background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.08);color:rgba(255,255,255,0.4);flex:0.7;padding:6px 0;border-radius:8px;font-size:10px;font-weight:800;cursor:pointer;letter-spacing:1px;">ED</button>
-        <button class="evento-btn evento-btn-del" onclick="deletarEvento(${ev.id}, event)">✕</button>
+        <button class="evento-btn evento-btn-del" onclick="deletarEvento(${ev.id}, event)">&times;</button>
       </div>
     </div>`;
   }).join('');
@@ -7091,7 +7158,7 @@ async function abrirModalStats() {
   <div style="background:#0c0c14;border:1px solid rgba(255,255,255,0.08);border-radius:24px 24px 0 0;width:100%;max-width:480px;max-height:85vh;overflow-y:auto;padding:24px;animation:slideUpModal 0.3s cubic-bezier(0.34,1.56,0.64,1);">
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;">
       <span style="font-size:16px;font-weight:900;color:#fff;">Estatísticas</span>
-      <button onclick="document.getElementById('modal-stats').remove()" style="background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.1);color:rgba(255,255,255,0.4);width:30px;height:30px;border-radius:50%;cursor:pointer;font-size:14px;">✕</button>
+      <button onclick="document.getElementById('modal-stats').remove()" style="background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.1);color:rgba(255,255,255,0.4);width:30px;height:30px;border-radius:50%;cursor:pointer;font-size:14px;">&times;</button>
     </div>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px;">
       ${_statCard(songs.length, 'MÚSICAS', '#1db954')}
@@ -8522,7 +8589,7 @@ function _bpmMicVoz() {
   _bpmVozAtiva = true;
   const btn = document.getElementById('bpm-mic-voice-btn');
   if (btn) { btn.style.background = 'rgba(255,80,80,0.2)'; btn.style.borderColor = '#ff5050'; btn.style.color = '#ff5050'; }
-  if (status) { status.textContent = '🎙 A ouvir... diz o nome da música'; status.style.color = 'rgba(29,185,84,0.9)'; }
+  if (status) { status.textContent = 'A ouvir... diz o nome da música'; status.style.color = 'rgba(29,185,84,0.9)'; }
   _bpmSpeechRecog = new SpeechRecognition();
   _bpmSpeechRecog.lang = 'pt-BR';
   _bpmSpeechRecog.interimResults = false;
@@ -8531,7 +8598,7 @@ function _bpmMicVoz() {
     const texto = e.results[0][0].transcript;
     const input = document.getElementById('bpm-mic-input');
     if (input) { input.value = texto; _bpmMicValidar(); }
-    if (status) { status.textContent = '✔ Captado: ' + texto; status.style.color = '#1db954'; }
+    if (status) { status.textContent = 'Captado: ' + texto; status.style.color = '#1db954'; }
     _bpmMicPararVoz();
     setTimeout(_bpmMicBuscar, 400);
   };
@@ -8557,7 +8624,7 @@ async function _bpmMicBuscar() {
   const results   = document.getElementById('bpm-mic-results');
   const buscarBtn = document.getElementById('bpm-mic-buscar-btn');
 
-  if (status)  { status.textContent = '🔍 A buscar BPM...'; status.style.color = 'rgba(255,255,255,0.5)'; }
+  if (status)  { status.textContent = 'A buscar BPM...'; status.style.color = 'rgba(255,255,255,0.5)'; }
   if (results) { results.innerHTML = ''; results.style.display = 'none'; }
   if (buscarBtn) buscarBtn.disabled = true;
 
@@ -8695,7 +8762,7 @@ function _bpmMicAplicar(bpmVal, titulo) {
     setTimeout(togglePlay, 80);
   }
   fecharBpmMic();
-  if (typeof showToast === 'function') showToast('✓ ' + bpmVal + ' BPM — ' + titulo);
+  if (typeof showToast === 'function') showToast(bpmVal + ' BPM — ' + titulo);
 }
 
 // ─── CONFIGURAÇÕES DE ÁUDIO ───────────────────────────────────────────────────
@@ -8898,6 +8965,248 @@ function _audioPreset(tipo) {
   if (typeof showToast === 'function') showToast('Preset ' + tipo.charAt(0).toUpperCase() + tipo.slice(1) + ' aplicado');
 }
 
+// ═══════════════════════════════════════════════════════════════════
+// PAINEL DE ADMINISTRAÇÃO
+// ═══════════════════════════════════════════════════════════════════
+var _admCache    = [];
+var _admSelected = null;
+
+function admInicializar() {
+  try {
+    var p = JSON.parse(localStorage.getItem('map_perfil_v1') || '{}');
+    if (!p.isAdmin) return;
+    var tabs = document.getElementById('admin-tabs');
+    if (tabs) tabs.style.display = 'flex';
+  } catch(e) {}
+}
+
+function adminMostrarAba(aba) {
+  var painel = document.getElementById('admin-painel');
+  var tabApp = document.getElementById('admin-tab-app');
+  var tabAdm = document.getElementById('admin-tab-painel');
+  var ATIVO   = 'padding:5px 14px;border-radius:16px;font-size:10px;font-weight:900;letter-spacing:0.8px;cursor:pointer;touch-action:manipulation;background:rgba(29,185,84,0.15);border:1.5px solid rgba(29,185,84,0.5);color:#1db954;';
+  var INATIVO = 'padding:5px 14px;border-radius:16px;font-size:10px;font-weight:900;letter-spacing:0.8px;cursor:pointer;touch-action:manipulation;background:rgba(255,255,255,0.05);border:1.5px solid rgba(255,255,255,0.12);color:rgba(255,255,255,0.4);';
+  if (aba === 'painel') {
+    if (painel) painel.style.display = 'flex';
+    if (tabApp) tabApp.style.cssText = INATIVO;
+    if (tabAdm) tabAdm.style.cssText = ATIVO;
+    admCarregar();
+  } else {
+    if (painel) painel.style.display = 'none';
+    if (tabApp) tabApp.style.cssText = ATIVO;
+    if (tabAdm) tabAdm.style.cssText = INATIVO;
+  }
+}
+
+async function admCarregar() {
+  var list = document.getElementById('adm-user-list');
+  if (list) list.innerHTML = '<div style="text-align:center;padding:60px 20px;color:rgba(255,255,255,0.2);font-size:13px;">Carregando...</div>';
+  if (!window._fb || !window._fb.listarTodosUsuarios) {
+    if (list) list.innerHTML = '<div style="text-align:center;padding:60px 20px;color:#ff5555;font-size:12px;">Firebase nao disponivel</div>';
+    return;
+  }
+  try {
+    var users = await window._fb.listarTodosUsuarios(200);
+    _admCache = Array.isArray(users) ? users : [];
+    admAtualizarStats();
+    if (!_admCache.length) {
+      if (list) list.innerHTML = '<div style="text-align:center;padding:60px 20px;color:rgba(255,255,255,0.2);font-size:13px;">Nenhum usuario cadastrado</div>';
+    } else {
+      admRenderizar(_admCache);
+    }
+  } catch(err) {
+    if (list) list.innerHTML = '<div style="text-align:center;padding:60px 20px;color:#ff5555;font-size:12px;">Erro: ' + (err.message || err) + '</div>';
+  }
+}
+
+function admBuscar() {
+  var termo  = (document.getElementById('adm-search') ? document.getElementById('adm-search').value : '').toLowerCase().trim();
+  var filtro = document.getElementById('adm-filtro') ? document.getElementById('adm-filtro').value : 'todos';
+  var lista  = _admCache.filter(function(u) {
+    if (termo && !(u.nome||'').toLowerCase().includes(termo) && !(u.nomeUsuario||'').toLowerCase().includes(termo) && !(u.email||'').toLowerCase().includes(termo)) return false;
+    if (filtro === 'ativos')     return !u.status || u.status === 'ativo';
+    if (filtro === 'bloqueados') return u.status === 'bloqueado';
+    if (filtro === 'banidos')    return u.status === 'banido';
+    return true;
+  });
+  admRenderizar(lista);
+}
+
+function admAtualizarStats() {
+  var total   = _admCache.length;
+  var banidos = _admCache.filter(function(u){ return u.status==='banido'; }).length;
+  var bloq    = _admCache.filter(function(u){ return u.status==='bloqueado'; }).length;
+  var ativos  = total - banidos - bloq;
+  var el = function(id){ return document.getElementById(id); };
+  if (el('adm-stat-total'))   el('adm-stat-total').textContent   = total;
+  if (el('adm-stat-ativos'))  el('adm-stat-ativos').textContent  = ativos;
+  if (el('adm-stat-banidos')) el('adm-stat-banidos').textContent = banidos + (bloq ? '+' + bloq : '');
+}
+
+function admRenderizar(lista) {
+  var list = document.getElementById('adm-user-list');
+  if (!list) return;
+  if (!lista || !lista.length) {
+    list.innerHTML = '<div style="text-align:center;padding:60px 20px;color:rgba(255,255,255,0.18);font-size:13px;">Nenhum resultado</div>';
+    return;
+  }
+  list.innerHTML = '';
+  lista.forEach(function(u) {
+    var status = u.status || 'ativo';
+    var inicial = ((u.nome || u.nomeUsuario || '?').charAt(0)).toUpperCase();
+    var dataCad = u.criadoEm ? new Date(u.criadoEm).toLocaleDateString('pt-BR') : '';
+    var scfg = {
+      ativo:     { bg:'rgba(29,185,84,0.12)',  color:'#1db954', label:'ATIVO'     },
+      bloqueado: { bg:'rgba(255,170,0,0.12)', color:'#ffaa00', label:'BLOQUEADO' },
+      banido:    { bg:'rgba(255,60,60,0.12)', color:'#ff4444', label:'BANIDO'    }
+    };
+    var sc = scfg[status] || scfg.ativo;
+    var card = document.createElement('div');
+    card.style.cssText = 'background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.06);border-radius:14px;padding:13px 14px;display:flex;align-items:center;gap:12px;cursor:pointer;transition:background 0.15s;';
+    card.addEventListener('click', function(){ admAbrirAcao(u); });
+    card.addEventListener('mouseover', function(){ this.style.background='rgba(255,255,255,0.06)'; });
+    card.addEventListener('mouseout',  function(){ this.style.background='rgba(255,255,255,0.03)'; });
+    card.innerHTML =
+      '<div style="width:44px;height:44px;border-radius:50%;background:linear-gradient(135deg,#141f14,#1e2e1e);border:1.5px solid rgba(29,185,84,0.18);display:flex;align-items:center;justify-content:center;font-size:17px;font-weight:900;color:#1db954;flex-shrink:0;">' + inicial + '</div>'
+    + '<div style="flex:1;min-width:0;">'
+    +   '<div style="font-size:13px;font-weight:800;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + (u.nome||'Sem nome') + '</div>'
+    +   '<div style="font-size:11px;color:rgba(255,255,255,0.3);margin-top:2px;">@' + (u.nomeUsuario||'—') + (u.instrumento?' · '+u.instrumento:'') + '</div>'
+    +   '<div style="font-size:10px;color:rgba(255,255,255,0.18);margin-top:1px;">' + (u.email||'') + (dataCad?' · '+dataCad:'') + '</div>'
+    + '</div>'
+    + '<div style="display:flex;flex-direction:column;align-items:flex-end;gap:6px;flex-shrink:0;">'
+    +   '<span style="background:'+sc.bg+';color:'+sc.color+';font-size:8px;font-weight:900;padding:3px 8px;border-radius:8px;letter-spacing:0.8px;">'+sc.label+'</span>'
+    +   '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.15)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>'
+    + '</div>';
+    list.appendChild(card);
+  });
+}
+
+function admAbrirAcao(u) {
+  _admSelected = u;
+  var status = u.status || 'ativo';
+  var el = function(id){ return document.getElementById(id); };
+  if (el('adm-acao-avatar')) el('adm-acao-avatar').textContent = ((u.nome||'?').charAt(0)).toUpperCase();
+  if (el('adm-acao-nome'))   el('adm-acao-nome').textContent   = u.nome || 'Sem nome';
+  if (el('adm-acao-sub'))    el('adm-acao-sub').textContent    = '@' + (u.nomeUsuario||'—') + (u.email?' · '+u.email:'');
+  var scfg = {
+    ativo:     { bg:'rgba(29,185,84,0.15)',  color:'#1db954', label:'Ativo'     },
+    bloqueado: { bg:'rgba(255,170,0,0.15)', color:'#ffaa00', label:'Bloqueado' },
+    banido:    { bg:'rgba(255,60,60,0.15)', color:'#ff4444', label:'Banido'    }
+  };
+  var sc = scfg[status] || scfg.ativo;
+  var badge = el('adm-acao-badge');
+  if (badge) { badge.textContent = sc.label; badge.style.cssText = 'font-size:9px;font-weight:900;padding:4px 10px;border-radius:12px;letter-spacing:0.5px;flex-shrink:0;background:'+sc.bg+';color:'+sc.color+';'; }
+  var isBanOuBloq = (status==='banido'||status==='bloqueado');
+  if (el('adm-btn-bloquear'))    el('adm-btn-bloquear').style.display    = (status!=='bloqueado') ? 'flex' : 'none';
+  if (el('adm-btn-banir'))       el('adm-btn-banir').style.display       = (status!=='banido')    ? 'flex' : 'none';
+  if (el('adm-btn-desbloquear')) el('adm-btn-desbloquear').style.display = isBanOuBloq            ? 'flex' : 'none';
+  var m = el('modal-adm-acao');
+  if (m) m.style.display = 'flex';
+}
+
+function admFecharAcao() {
+  var m = document.getElementById('modal-adm-acao');
+  if (m) m.style.display = 'none';
+  _admSelected = null;
+}
+
+async function admAcao(tipo) {
+  var u = _admSelected;
+  if (!u || !u.uid) return;
+  var nomeU = '@' + (u.nomeUsuario || u.nome || 'usuario');
+  var confirmMsgs = {
+    bloquear:    'Bloquear ' + nomeU + '? Impedira o acesso ate restauracao.',
+    banir:       'BANIR ' + nomeU + ' permanentemente? Acao grave e definitiva.',
+    desbloquear: 'Restaurar o acesso de ' + nomeU + '?',
+    remover:     'REMOVER a conta de ' + nomeU + '? Dados apagados. Irreversivel!'
+  };
+  if (!confirm(confirmMsgs[tipo] || 'Confirmar?')) return;
+  admFecharAcao();
+  if (!window._fb) { if(typeof showToast==='function') showToast('Firebase nao disponivel'); return; }
+  if (tipo === 'remover') {
+    var ok = await window._fb.admRemoverConta(u.uid);
+    if (ok) {
+      _admCache = _admCache.filter(function(x){ return x.uid !== u.uid; });
+      admAtualizarStats(); admBuscar();
+      if(typeof showToast==='function') showToast('Conta removida');
+    } else { if(typeof showToast==='function') showToast('Erro ao remover'); }
+    return;
+  }
+  var novoStatus = tipo==='bloquear' ? 'bloqueado' : tipo==='banir' ? 'banido' : 'ativo';
+  var ok2 = await window._fb.admSetStatus(u.uid, novoStatus);
+  if (ok2) {
+    var idx = _admCache.findIndex(function(x){ return x.uid===u.uid; });
+    if (idx>=0) _admCache[idx].status = novoStatus;
+    admAtualizarStats(); admBuscar();
+    var msgs = { bloqueado:'Usuario bloqueado', banido:'Usuario banido', ativo:'Acesso restaurado' };
+    if(typeof showToast==='function') showToast(msgs[novoStatus]||'Atualizado');
+  } else { if(typeof showToast==='function') showToast('Erro ao atualizar'); }
+}
+// ─── EXCLUIR CONTA ────────────────────────────────────────────────────────────
+function excluirConta() {
+  // Limpa o input e abre o modal de confirmação
+  const inp = document.getElementById('excluir-confirma-input');
+  if (inp) inp.value = '';
+  const btn = document.getElementById('btn-confirmar-exclusao');
+  if (btn) {
+    btn.disabled = true;
+    btn.style.cursor = 'not-allowed';
+    btn.style.color = 'rgba(255,80,80,0.4)';
+    btn.style.borderColor = 'rgba(255,50,50,0.15)';
+    btn.style.background = 'rgba(255,50,50,0.08)';
+  }
+  const m = document.getElementById('modal-excluir-conta');
+  if (m) m.style.display = 'flex';
+}
+
+function _fecharExcluirConta() {
+  const m = document.getElementById('modal-excluir-conta');
+  if (m) m.style.display = 'none';
+}
+
+function _excluirValidar() {
+  const val = (document.getElementById('excluir-confirma-input')?.value || '').trim().toUpperCase();
+  const btn = document.getElementById('btn-confirmar-exclusao');
+  if (!btn) return;
+  const ok = val === 'EXCLUIR';
+  btn.disabled = !ok;
+  btn.style.cursor = ok ? 'pointer' : 'not-allowed';
+  btn.style.color = ok ? '#ff4444' : 'rgba(255,80,80,0.4)';
+  btn.style.borderColor = ok ? 'rgba(255,50,50,0.5)' : 'rgba(255,50,50,0.15)';
+  btn.style.background = ok ? 'rgba(255,50,50,0.15)' : 'rgba(255,50,50,0.08)';
+}
+
+async function _excluirConfirmar() {
+  _fecharExcluirConta();
+  fecharModalPerfil();
+
+  const perfil = JSON.parse(localStorage.getItem('map_perfil_v1') || '{}');
+  const uid = perfil.uid;
+
+  // Apagar do Firestore se tiver conta na nuvem
+  if (uid && uid !== 'local' && uid !== 'admin_local' && window._fb) {
+    try { await window._fb.admRemoverConta(uid); } catch(e) {}
+  }
+
+  // Marcar offline
+  if (typeof _fbMarcarOffline === 'function') _fbMarcarOffline();
+
+  // Limpar todo o localStorage
+  const keysParaLimpar = [
+    'map_perfil_v1', 'map_uid_v1', 'map_pro_elite_v1',
+    'map_pro_eventos_v1', 'map_notifs_v1', 'map_last_version'
+  ];
+  keysParaLimpar.forEach(function(k) { localStorage.removeItem(k); });
+
+  // Limpar chaves de áudio
+  ['audio_vol','audio_pan','audio_eq_low','audio_eq_mid','audio_eq_hi',
+   'audio_comp_on','audio_comp_thr','audio_comp_ratio','audio_metro_freq'
+  ].forEach(function(k) { localStorage.removeItem(k); });
+
+  showToast('Conta excluída');
+  sessionStorage.setItem('map_skip_splash', '1');
+  setTimeout(function() { location.reload(); }, 1200);
+}
 </script>
 
 
@@ -9011,7 +9320,7 @@ function _audioPreset(tipo) {
 </div>
 
 <!-- MODAL ESQUECI A SENHA ────────────────────────────────────── -->
-<div id="modal-esqueci-senha" style="display:none;position:fixed;inset:0;z-index:99997;background:rgba(0,0,0,0.85);align-items:center;justify-content:center;">
+<div id="modal-esqueci-senha" style="display:none;position:fixed;inset:0;z-index:100002;background:rgba(0,0,0,0.85);align-items:center;justify-content:center;">
   <div style="background:#111118;border:1px solid rgba(255,255,255,0.1);border-radius:20px;padding:32px 24px;width:calc(100% - 48px);max-width:360px;display:flex;flex-direction:column;gap:20px;">
     <h3 style="margin:0;font-size:18px;font-weight:800;color:#fff;">Recuperar senha</h3>
     <p style="margin:0;font-size:13px;color:rgba(255,255,255,0.5);line-height:1.5;">Introduz o email da tua conta. Vais receber um link para criar uma nova senha.</p>
@@ -9031,7 +9340,7 @@ function _audioPreset(tipo) {
 </div>
 
 <!-- MODAL ALTERAR SENHA ─────────────────────────────────────── -->
-<div id="modal-alterar-senha" style="display:none;position:fixed;inset:0;z-index:99997;background:rgba(0,0,0,0.85);align-items:center;justify-content:center;">
+<div id="modal-alterar-senha" style="display:none;position:fixed;inset:0;z-index:100002;background:rgba(0,0,0,0.85);align-items:center;justify-content:center;">
   <div style="background:#111118;border:1px solid rgba(255,255,255,0.1);border-radius:20px;padding:32px 24px;width:calc(100% - 48px);max-width:360px;display:flex;flex-direction:column;gap:20px;">
     <h3 style="margin:0;font-size:18px;font-weight:800;color:#fff;">Alterar senha</h3>
     <div style="display:flex;flex-direction:column;gap:12px;">
@@ -9069,7 +9378,7 @@ function _audioPreset(tipo) {
 </div>
 
 <!-- ══ Modal Formalizar Conta ════════════════════════════════════════════════ -->
-<div id="modal-formalizar-conta" style="display:none;position:fixed;inset:0;z-index:99999;background:rgba(0,0,0,0.88);align-items:center;justify-content:center;padding:24px;box-sizing:border-box;">
+<div id="modal-formalizar-conta" style="display:none;position:fixed;inset:0;z-index:100002;background:rgba(0,0,0,0.88);align-items:center;justify-content:center;padding:24px;box-sizing:border-box;">
   <div style="background:#111118;border:1px solid rgba(255,200,50,0.18);border-radius:20px;padding:28px 24px;width:100%;max-width:360px;display:flex;flex-direction:column;gap:18px;">
     <div style="display:flex;align-items:center;gap:10px;">
       <div style="width:36px;height:36px;border-radius:10px;background:rgba(255,200,50,0.1);border:1px solid rgba(255,200,50,0.2);display:flex;align-items:center;justify-content:center;flex-shrink:0;">
@@ -9126,7 +9435,7 @@ function _audioPreset(tipo) {
   <div style="background:#111118;border:1px solid rgba(255,255,255,0.1);border-radius:20px;padding:28px 24px;width:calc(100% - 48px);max-width:360px;display:flex;flex-direction:column;gap:16px;">
     <div style="display:flex;align-items:center;justify-content:space-between;">
       <h3 style="margin:0;font-size:17px;font-weight:800;color:#fff;">Pesquisar BPM</h3>
-      <button onclick="fecharBpmMic()" style="background:none;border:none;color:rgba(255,255,255,0.4);cursor:pointer;font-size:20px;line-height:1;touch-action:manipulation;">✕</button>
+      <button onclick="fecharBpmMic()" style="background:none;border:none;color:rgba(255,255,255,0.4);cursor:pointer;font-size:20px;line-height:1;touch-action:manipulation;">&times;</button>
     </div>
     <!-- Input manual -->
     <div style="display:flex;gap:8px;">
@@ -9158,7 +9467,7 @@ function _audioPreset(tipo) {
 
 
 <!-- MODAL ADMIN -->
-<div id="modal-admin" style="display:none;position:fixed;inset:0;z-index:99999;background:rgba(0,0,0,0.92);align-items:center;justify-content:center;">
+<div id="modal-admin" style="display:none;position:fixed;inset:0;z-index:100002;background:rgba(0,0,0,0.92);align-items:center;justify-content:center;">
   <div style="background:#0e0e15;border:1px solid rgba(255,255,255,0.07);border-radius:20px;padding:32px 28px;width:calc(100% - 64px);max-width:300px;display:flex;flex-direction:column;align-items:center;gap:20px;">
     <div style="font-size:11px;font-weight:900;letter-spacing:3px;color:rgba(255,255,255,0.2);text-transform:uppercase;">Acesso restrito</div>
     <!-- Dots indicadores -->
@@ -9181,7 +9490,7 @@ function _audioPreset(tipo) {
       <button onclick="_adminTecla('9')" style="padding:16px;border-radius:12px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.07);color:#fff;font-size:18px;font-weight:700;cursor:pointer;font-family:inherit;touch-action:manipulation;">9</button>
       <button onclick="_adminApagar()" style="padding:16px;border-radius:12px;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.05);color:rgba(255,255,255,0.3);font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;touch-action:manipulation;">⌫</button>
       <button onclick="_adminTecla('0')" style="padding:16px;border-radius:12px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.07);color:#fff;font-size:18px;font-weight:700;cursor:pointer;font-family:inherit;touch-action:manipulation;">0</button>
-      <button onclick="_fecharAdmin()" style="padding:16px;border-radius:12px;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.05);color:rgba(255,255,255,0.2);font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;touch-action:manipulation;">✕</button>
+      <button onclick="_fecharAdmin()" style="padding:16px;border-radius:12px;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.05);color:rgba(255,255,255,0.2);font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;touch-action:manipulation;">&times;</button>
     </div>
     <div id="admin-err" style="font-size:11px;color:#ff5555;min-height:14px;"></div>
   </div>
@@ -9197,7 +9506,7 @@ function _audioPreset(tipo) {
         <div style="font-size:16px;font-weight:900;color:#fff;letter-spacing:0.5px;">Configurações de Áudio</div>
         <div style="font-size:11px;color:rgba(255,255,255,0.3);margin-top:2px;">Metrônomo · Pads · Saída</div>
       </div>
-      <button onclick="fecharConfigAudio()" style="background:rgba(255,255,255,0.06);border:none;color:rgba(255,255,255,0.5);width:32px;height:32px;border-radius:50%;cursor:pointer;font-size:16px;touch-action:manipulation;">✕</button>
+      <button onclick="fecharConfigAudio()" style="background:rgba(255,255,255,0.06);border:none;color:rgba(255,255,255,0.5);width:32px;height:32px;border-radius:50%;cursor:pointer;font-size:16px;touch-action:manipulation;">&times;</button>
     </div>
 
     <!-- ── VOLUME MASTER ── -->
@@ -9318,6 +9627,157 @@ function _audioPreset(tipo) {
       </div>
     </div>
 
+  </div>
+</div>
+
+<!-- PAINEL ADMIN -->
+<div id="admin-painel" style="display:none;position:fixed;inset:0;z-index:8000;background:#09090f;flex-direction:column;overflow:hidden;">
+  <div style="background:#101018;border-bottom:1px solid rgba(255,255,255,0.07);padding:14px 18px;display:flex;align-items:center;gap:12px;flex-shrink:0;">
+    <div style="flex:1;">
+      <div style="font-size:15px;font-weight:900;color:#fff;">Administração</div>
+      <div style="font-size:10px;color:rgba(255,255,255,0.28);margin-top:2px;letter-spacing:0.5px;">MAP MUSIC PRO · CONTROLE DE USUÁRIOS</div>
+    </div>
+    <div style="display:flex;gap:14px;flex-shrink:0;">
+      <div style="text-align:center;"><div id="adm-stat-total" style="font-size:20px;font-weight:900;color:#1db954;">—</div><div style="font-size:8px;color:rgba(255,255,255,0.28);letter-spacing:1px;">TOTAL</div></div>
+      <div style="text-align:center;"><div id="adm-stat-ativos" style="font-size:20px;font-weight:900;color:#fff;">—</div><div style="font-size:8px;color:rgba(255,255,255,0.28);letter-spacing:1px;">ATIVOS</div></div>
+      <div style="text-align:center;"><div id="adm-stat-banidos" style="font-size:20px;font-weight:900;color:#ff4444;">—</div><div style="font-size:8px;color:rgba(255,255,255,0.28);letter-spacing:1px;">BANIDOS</div></div>
+    </div>
+  </div>
+  <div style="padding:10px 16px;background:#0c0c14;border-bottom:1px solid rgba(255,255,255,0.05);flex-shrink:0;display:flex;gap:8px;align-items:center;">
+    <div style="position:relative;flex:1;">
+      <svg style="position:absolute;left:11px;top:50%;transform:translateY(-50%);pointer-events:none;" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.25)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+      <input id="adm-search" type="text" placeholder="Buscar por nome, @usuario ou e-mail..."
+        oninput="admBuscar()"
+        style="width:100%;box-sizing:border-box;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);border-radius:10px;color:#fff;font-size:12px;padding:9px 12px 9px 32px;outline:none;font-family:inherit;"
+        onfocus="this.style.borderColor='rgba(29,185,84,0.4)'" onblur="this.style.borderColor='rgba(255,255,255,0.08)'">
+    </div>
+    <select id="adm-filtro" onchange="admBuscar()"
+      style="background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);border-radius:10px;color:rgba(255,255,255,0.6);font-size:11px;font-weight:700;padding:9px 10px;font-family:inherit;cursor:pointer;outline:none;flex-shrink:0;">
+      <option value="todos">Todos</option>
+      <option value="ativos">Ativos</option>
+      <option value="bloqueados">Bloqueados</option>
+      <option value="banidos">Banidos</option>
+    </select>
+    <button onclick="admCarregar()" style="width:36px;height:36px;border-radius:10px;background:rgba(29,185,84,0.08);border:1px solid rgba(29,185,84,0.2);color:#1db954;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;touch-action:manipulation;">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
+    </button>
+  </div>
+  <div id="adm-user-list" style="flex:1;overflow-y:auto;padding:10px 14px;display:flex;flex-direction:column;gap:6px;-webkit-overflow-scrolling:touch;">
+    <div style="text-align:center;padding:60px 20px;color:rgba(255,255,255,0.2);font-size:13px;">A carregar...</div>
+  </div>
+</div>
+
+<!-- MODAL AÇÃO ADMIN -->
+<div id="modal-adm-acao" style="display:none;position:fixed;inset:0;z-index:100010;background:rgba(0,0,0,0.92);align-items:flex-end;justify-content:center;">
+  <div style="background:#111119;border:1px solid rgba(255,255,255,0.08);border-radius:24px 24px 0 0;padding:24px 20px 36px;width:100%;max-width:480px;">
+    <div style="display:flex;align-items:center;gap:14px;margin-bottom:18px;">
+      <div id="adm-acao-avatar" style="width:50px;height:50px;border-radius:50%;background:linear-gradient(135deg,#1a2f1a,#223322);border:2px solid rgba(29,185,84,0.25);display:flex;align-items:center;justify-content:center;font-size:20px;font-weight:900;color:#1db954;flex-shrink:0;"></div>
+      <div style="flex:1;min-width:0;">
+        <div id="adm-acao-nome" style="font-size:16px;font-weight:900;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;"></div>
+        <div id="adm-acao-sub" style="font-size:11px;color:rgba(255,255,255,0.3);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;"></div>
+      </div>
+      <div id="adm-acao-badge" style="font-size:9px;font-weight:900;padding:4px 10px;border-radius:12px;letter-spacing:0.5px;flex-shrink:0;"></div>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:8px;margin-bottom:10px;">
+      <button id="adm-btn-bloquear" onclick="admAcao('bloquear')"
+        style="width:100%;padding:13px;border-radius:13px;background:rgba(255,170,0,0.08);border:1.5px solid rgba(255,170,0,0.2);color:#ffaa00;font-size:13px;font-weight:800;cursor:pointer;font-family:inherit;touch-action:manipulation;display:flex;align-items:center;gap:10px;text-align:left;">
+        <div><div>Bloquear temporariamente</div><div style="font-size:10px;opacity:0.6;">Impede acesso até ser restaurado</div></div>
+      </button>
+      <button id="adm-btn-banir" onclick="admAcao('banir')"
+        style="width:100%;padding:13px;border-radius:13px;background:rgba(255,50,50,0.08);border:1.5px solid rgba(255,50,50,0.2);color:#ff4444;font-size:13px;font-weight:800;cursor:pointer;font-family:inherit;touch-action:manipulation;display:flex;align-items:center;gap:10px;text-align:left;">
+        <div><div>Banir permanentemente</div><div style="font-size:10px;opacity:0.6;">Banimento definitivo da plataforma</div></div>
+      </button>
+      <button id="adm-btn-desbloquear" onclick="admAcao('desbloquear')"
+        style="display:none;width:100%;padding:13px;border-radius:13px;background:rgba(29,185,84,0.08);border:1.5px solid rgba(29,185,84,0.2);color:#1db954;font-size:13px;font-weight:800;cursor:pointer;font-family:inherit;touch-action:manipulation;align-items:center;gap:10px;text-align:left;">
+        <div><div>Desbloquear / Restaurar acesso</div><div style="font-size:10px;opacity:0.6;">Volta ao estado ativo</div></div>
+      </button>
+      <button id="adm-btn-remover" onclick="admAcao('remover')"
+        style="width:100%;padding:13px;border-radius:13px;background:rgba(255,50,50,0.04);border:1.5px solid rgba(255,50,50,0.1);color:rgba(255,80,80,0.6);font-size:13px;font-weight:800;cursor:pointer;font-family:inherit;touch-action:manipulation;display:flex;align-items:center;gap:10px;text-align:left;">
+        <div><div>Remover conta</div><div style="font-size:10px;opacity:0.6;">Apaga todos os dados do usuário</div></div>
+      </button>
+    </div>
+    <button onclick="admFecharAcao()" style="width:100%;padding:12px;border-radius:12px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.07);color:rgba(255,255,255,0.3);font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;touch-action:manipulation;">Cancelar</button>
+  </div>
+</div>
+
+<!-- TELA DE ESCOLHA ADMIN (aparece após PIN correto) -->
+<div id="admin-escolha" style="display:none;position:fixed;inset:0;z-index:100003;background:rgba(0,0,0,0.96);align-items:center;justify-content:center;padding:24px;">
+  <div style="width:100%;max-width:340px;display:flex;flex-direction:column;align-items:center;gap:28px;">
+
+    <!-- Título -->
+    <div style="text-align:center;">
+      <div style="font-size:28px;margin-bottom:8px;color:#ffd700;font-weight:900;letter-spacing:2px;">ADM</div>
+      <div style="font-size:18px;font-weight:900;color:#fff;letter-spacing:0.5px;">Como deseja entrar?</div>
+      <div style="font-size:12px;color:rgba(255,255,255,0.3);margin-top:6px;">Escolha o modo de acesso</div>
+    </div>
+
+    <!-- Cards de escolha -->
+    <div style="display:flex;flex-direction:column;gap:14px;width:100%;">
+
+      <!-- Card APP -->
+      <button onclick="adminEscolherModo('app')"
+        style="width:100%;padding:22px 20px;border-radius:18px;background:rgba(29,185,84,0.08);border:2px solid rgba(29,185,84,0.25);cursor:pointer;font-family:inherit;touch-action:manipulation;display:flex;align-items:center;gap:16px;text-align:left;transition:all 0.2s;"
+        onmouseover="this.style.background='rgba(29,185,84,0.15)';this.style.borderColor='rgba(29,185,84,0.5)'"
+        onmouseout="this.style.background='rgba(29,185,84,0.08)';this.style.borderColor='rgba(29,185,84,0.25)'">
+        <div style="width:48px;height:48px;border-radius:14px;background:rgba(29,185,84,0.15);border:1px solid rgba(29,185,84,0.3);display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#1db954" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>
+        </div>
+        <div>
+          <div style="font-size:16px;font-weight:900;color:#fff;margin-bottom:3px;">Tela Principal</div>
+          <div style="font-size:12px;color:rgba(255,255,255,0.4);">Metrônomo, setlist, cifras e mais</div>
+        </div>
+        <svg style="margin-left:auto;flex-shrink:0;" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="rgba(29,185,84,0.6)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+      </button>
+
+      <!-- Card ADMIN -->
+      <button onclick="adminEscolherModo('painel')"
+        style="width:100%;padding:22px 20px;border-radius:18px;background:rgba(255,200,0,0.06);border:2px solid rgba(255,200,0,0.2);cursor:pointer;font-family:inherit;touch-action:manipulation;display:flex;align-items:center;gap:16px;text-align:left;transition:all 0.2s;"
+        onmouseover="this.style.background='rgba(255,200,0,0.12)';this.style.borderColor='rgba(255,200,0,0.4)'"
+        onmouseout="this.style.background='rgba(255,200,0,0.06)';this.style.borderColor='rgba(255,200,0,0.2)'">
+        <div style="width:48px;height:48px;border-radius:14px;background:rgba(255,200,0,0.1);border:1px solid rgba(255,200,0,0.25);display:flex;align-items:center;justify-content:center;flex-shrink:0;"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#ffd700" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg></div>
+        <div>
+          <div style="font-size:16px;font-weight:900;color:#fff;margin-bottom:3px;">Painel Admin</div>
+          <div style="font-size:12px;color:rgba(255,255,255,0.4);">Controle de usuários e plataforma</div>
+        </div>
+        <svg style="margin-left:auto;flex-shrink:0;" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="rgba(255,200,0,0.5)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+      </button>
+
+    </div>
+
+    <button onclick="document.getElementById('admin-escolha').style.display='none'"
+      style="background:none;border:none;color:rgba(255,255,255,0.2);font-size:12px;font-family:inherit;cursor:pointer;padding:8px;touch-action:manipulation;">
+      Cancelar
+    </button>
+  </div>
+</div>
+
+<!-- MODAL EXCLUIR CONTA -->
+<div id="modal-excluir-conta" style="display:none;position:fixed;inset:0;z-index:100010;background:rgba(0,0,0,0.92);align-items:center;justify-content:center;padding:24px;">
+  <div style="background:#111118;border:1px solid rgba(255,50,50,0.2);border-radius:20px;padding:28px 24px;width:100%;max-width:340px;display:flex;flex-direction:column;gap:16px;">
+    <div style="text-align:center;">
+      <div style="width:48px;height:48px;border-radius:50%;background:rgba(255,50,50,0.1);border:1px solid rgba(255,50,50,0.2);display:flex;align-items:center;justify-content:center;margin:0 auto 12px;">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#ff4444" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>
+      </div>
+      <div style="font-size:16px;font-weight:900;color:#fff;margin-bottom:8px;">Excluir Conta</div>
+      <div style="font-size:13px;color:rgba(255,255,255,0.45);line-height:1.5;">Todos os seus dados serão apagados permanentemente. Esta ação não pode ser desfeita.</div>
+    </div>
+    <div style="background:rgba(255,50,50,0.06);border:1px solid rgba(255,50,50,0.12);border-radius:12px;padding:12px 14px;">
+      <div style="font-size:11px;color:rgba(255,100,100,0.7);font-weight:700;margin-bottom:4px;">Para confirmar, escreva:</div>
+      <div style="font-size:13px;font-weight:900;color:#ff4444;letter-spacing:1px;margin-bottom:10px;">EXCLUIR</div>
+      <input id="excluir-confirma-input" type="text" placeholder="Digite EXCLUIR"
+        oninput="_excluirValidar()"
+        style="width:100%;box-sizing:border-box;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.1);border-radius:8px;color:#fff;font-size:13px;font-weight:700;padding:10px 12px;outline:none;font-family:inherit;letter-spacing:1px;"
+        onfocus="this.style.borderColor='rgba(255,80,80,0.4)'"
+        onblur="this.style.borderColor='rgba(255,255,255,0.1)'">
+    </div>
+    <button id="btn-confirmar-exclusao" onclick="_excluirConfirmar()" disabled
+      style="width:100%;padding:13px;border-radius:12px;background:rgba(255,50,50,0.08);border:1.5px solid rgba(255,50,50,0.15);color:rgba(255,80,80,0.4);font-size:13px;font-weight:900;cursor:not-allowed;font-family:inherit;touch-action:manipulation;letter-spacing:0.5px;transition:all 0.2s;">
+      Excluir permanentemente
+    </button>
+    <button onclick="_fecharExcluirConta()"
+      style="width:100%;padding:11px;border-radius:12px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.07);color:rgba(255,255,255,0.35);font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;touch-action:manipulation;">
+      Cancelar
+    </button>
   </div>
 </div>
 </body>
