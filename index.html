@@ -379,11 +379,8 @@ window.addEventListener('unhandledrejection', function(e) { e.preventDefault(); 
       } catch(e) { return false; }
     },
 
-    async _queryNotifs(uid) {
-      try {
-        const rows = await _query('notificacoes', [['lida','==',false]], 'ts', 20);
-        return rows.filter(function(r) { return r.id && String(r.id).length > 0; });
-      } catch(e) { return []; }
+    ouvirNotificacoes(uid, callback) {
+      return _pollQuery('notificacoes', [['lida','==',false]], callback, 2000);
     },
     async sugestoes(uid) {
       try {
@@ -7874,6 +7871,19 @@ function _iniciarListenerSolicitacoes() {
       }
     });
   });
+
+  // Listener de notificações do ADM (a cada 2s)
+  window._fb.ouvirNotificacoes(uid, function(notifs) {
+    notifs.forEach(function(n) {
+      if (!n.id) return;
+      const jaExiste = notificacoes.some(x => x.id === n.id);
+      if (!jaExiste) {
+        adicionarNotif(n.tipo || 'event', n.titulo || 'Mensagem do Administrador', n.desc || '', n.id);
+        // Marca como lida no Firebase
+        try { _fb._set && _fb._set('notificacoes/' + uid + '_' + n.id, { lida: true }, true); } catch(e) {}
+      }
+    });
+  });
 }
 
 function _atualizarBadgesAmigos() {
@@ -8511,24 +8521,6 @@ document.addEventListener('visibilitychange', function() {
   }
 });
 
-// ── Polling de notificações do Firebase (mensagens do admin) ─────────────────
-var _notifPollInterval = null;
-
-async function _pollNotificacoesFirebase() {
-  try {
-    var uid = localStorage.getItem('map_uid_v1');
-    if (!uid || uid === 'admin_local' || !window._fb) return;
-    var rows = await window._fb._queryNotifs(uid);
-    if (!rows || !rows.length) return;
-    rows.forEach(function(n) {
-      if (!notificacoes.find(function(x) { return x.id === n.id; })) {
-        var tipo = n.tipo === 'admin_msg' ? 'alert' : (n.tipo || 'alert');
-        adicionarNotif(tipo, n.titulo || 'Mensagem do Administrador', n.desc || n.texto || '', n.id);
-      }
-    });
-  } catch(e) {}
-}
-
 window.addEventListener('load', function() {
   // Activa Wake Lock ao abrir o app
   ativarWakeLock();
@@ -8536,11 +8528,6 @@ window.addEventListener('load', function() {
   atualizarBadge();
   verificarAtualizacoes();
   setTimeout(verificarEventosProximos, 1500);
-  // Inicia polling de notificações do Firebase (mensagens do admin)
-  setTimeout(function() {
-    _pollNotificacoesFirebase();
-    _notifPollInterval = setInterval(_pollNotificacoesFirebase, 30000);
-  }, 4000);
   // Faz backup automático ao abrir o app (garante que a nuvem está atualizada)
   setTimeout(function() {
     if (songs.length > 0) _fbBackupMusicas();
