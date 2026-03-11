@@ -331,10 +331,12 @@ window.addEventListener('unhandledrejection', function(e) { e.preventDefault(); 
       } catch(e) { return false; }
     },
 
-    async enviarSolicitacao(deUid, deNome, deInst, paraUid) {
+    async enviarSolicitacao(deUid, deNome, deInst, paraUid, paraNome, paraInst) {
       try {
         await _set('solicitacoes/' + deUid + '_' + paraUid, {
-          de: deUid, deNome, deInst: deInst || '', para: paraUid, status: 'pendente'
+          de: deUid, deNome, deInst: deInst || '', para: paraUid,
+          paraNome: paraNome || '', paraInst: paraInst || '',
+          status: 'pendente'
         }, false);
         return true;
       } catch(e) { return false; }
@@ -355,8 +357,8 @@ window.addEventListener('unhandledrejection', function(e) { e.preventDefault(); 
           _query('solicitacoes', [['para','==',uid],['status','==','aceito']], null, 50)
         ]);
         const amigos = [];
-        s1.forEach(x => amigos.push({ solId: x.id, uid: x.para, nome: x.deNome, inst: x.deInst }));
-        s2.forEach(x => amigos.push({ solId: x.id, uid: x.de, nome: x.deNome, inst: x.deInst }));
+        s1.forEach(x => amigos.push({ solId: x.id, uid: x.para, nome: x.paraNome || x.deNome, inst: x.paraInst || x.deInst }));
+        s2.forEach(x => amigos.push({ solId: x.id, uid: x.de,   nome: x.deNome, inst: x.deInst }));
         return amigos;
       } catch(e) { return []; }
     },
@@ -8109,7 +8111,7 @@ async function enviarSolicitacaoFb(paraUid, paraNome, paraInst) {
   if (!_isFbReady()) { showToast('Firebase indisponível. Verifica a ligação.'); return; }
   const perfil = _getPerfilLocal();
   const uid = _getUid();
-  const ok = await window._fb.enviarSolicitacao(uid, perfil.nome || 'Músico', perfil.instrumento || null, paraUid);
+  const ok = await window._fb.enviarSolicitacao(uid, perfil.nome || 'Músico', perfil.instrumento || null, paraUid, paraNome, paraInst || null);
   if (ok) {
     // Guarda localmente quais enviei
     window._solEnviadas = window._solEnviadas || [];
