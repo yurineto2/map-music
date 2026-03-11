@@ -378,6 +378,13 @@ window.addEventListener('unhandledrejection', function(e) { e.preventDefault(); 
         return true;
       } catch(e) { return false; }
     },
+
+    async _queryNotifs(uid) {
+      try {
+        const rows = await _query('notificacoes', [['lida','==',false]], 'ts', 20);
+        return rows.filter(function(r) { return r.id && String(r.id).length > 0; });
+      } catch(e) { return []; }
+    },
     async sugestoes(uid) {
       try {
         const rows = await _query('usuarios', [], 'atualizadoEm', 20);
@@ -1329,6 +1336,9 @@ function _adminEntrar() {
   // Fecha o modal do PIN
   const modalPin = document.getElementById('modal-admin');
   if (modalPin) modalPin.style.display = 'none';
+
+  // Remove auth-pending para a tela de escolha ficar visivel
+  document.body.classList.remove('auth-pending');
 
   // Abre a tela de escolha (APP ou ADMIN)
   const escolha = document.getElementById('admin-escolha');
@@ -3297,7 +3307,7 @@ body.viewer-mode input[type="text"] { pointer-events: none; }
 .ob-pin-input:focus { border-color: rgba(29,185,84,0.5); }
 
 /* ── Auth pending: esconde app até login confirmado ── */
-body.auth-pending > *:not(#ob-splash):not(#onboarding-overlay):not(#toast):not(#modal-esqueci-senha):not(#modal-formalizar-conta):not(#modal-alterar-senha):not(#pin-lock-screen):not(#modal-admin):not(script):not(style) {
+body.auth-pending > *:not(#ob-splash):not(#onboarding-overlay):not(#toast):not(#modal-esqueci-senha):not(#modal-formalizar-conta):not(#modal-alterar-senha):not(#pin-lock-screen):not(#modal-admin):not(#admin-escolha):not(script):not(style) {
   visibility: hidden !important;
   pointer-events: none !important;
 }
@@ -3779,8 +3789,7 @@ body.auth-pending #toast {
         <span class="logo-name"><span class="logo-shimmer">Map Music</span><span class="pro">PRO</span></span>
         <span class="logo-tag">Elite Edition</span>
       </div>
-      <!-- trigger admin discreto no header do app -->
-      <div id="app-admin-trigger" onclick="_adminTrigger()" style="position:absolute;top:-4px;left:-4px;width:44px;height:44px;cursor:pointer;z-index:9999;touch-action:manipulation;-webkit-tap-highlight-color:transparent;" title=""></div>
+
     </div>
     <div id="admin-tabs" style="display:none;margin-left:8px;gap:4px;align-items:center;flex-shrink:0;">
       <button id="admin-tab-app" onclick="adminMostrarAba('app')"
@@ -8502,6 +8511,24 @@ document.addEventListener('visibilitychange', function() {
   }
 });
 
+// ── Polling de notificações do Firebase (mensagens do admin) ─────────────────
+var _notifPollInterval = null;
+
+async function _pollNotificacoesFirebase() {
+  try {
+    var uid = localStorage.getItem('map_uid_v1');
+    if (!uid || uid === 'admin_local' || !window._fb) return;
+    var rows = await window._fb._queryNotifs(uid);
+    if (!rows || !rows.length) return;
+    rows.forEach(function(n) {
+      if (!notificacoes.find(function(x) { return x.id === n.id; })) {
+        var tipo = n.tipo === 'admin_msg' ? 'alert' : (n.tipo || 'alert');
+        adicionarNotif(tipo, n.titulo || 'Mensagem do Administrador', n.desc || n.texto || '', n.id);
+      }
+    });
+  } catch(e) {}
+}
+
 window.addEventListener('load', function() {
   // Activa Wake Lock ao abrir o app
   ativarWakeLock();
@@ -8509,6 +8536,11 @@ window.addEventListener('load', function() {
   atualizarBadge();
   verificarAtualizacoes();
   setTimeout(verificarEventosProximos, 1500);
+  // Inicia polling de notificações do Firebase (mensagens do admin)
+  setTimeout(function() {
+    _pollNotificacoesFirebase();
+    _notifPollInterval = setInterval(_pollNotificacoesFirebase, 30000);
+  }, 4000);
   // Faz backup automático ao abrir o app (garante que a nuvem está atualizada)
   setTimeout(function() {
     if (songs.length > 0) _fbBackupMusicas();
