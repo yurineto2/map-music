@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
+<style>*{margin:0;padding:0;box-sizing:border-box;}html,body{background:#06060c!important;color:#fff;}#ob-splash{position:fixed;inset:0;z-index:100000;background:#06060c;display:flex;align-items:center;justify-content:center;}</style>
 <script>
 // Suprime erros cross-origin (file://, Firebase offline, etc.)
 window.onerror = function() { return true; };
@@ -8,6 +9,7 @@ window.addEventListener('error', function(e) { e.preventDefault(); e.stopPropaga
 window.addEventListener('unhandledrejection', function(e) { e.preventDefault(); });
 </script>
 <meta charset="UTF-8">
+
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>Map Music Pro - Elite Edition</title>
 <!-- Google Fonts removed — using system fonts -->
@@ -25,7 +27,7 @@ window.addEventListener('unhandledrejection', function(e) { e.preventDefault(); 
     delete reqOpts.signal; // garante que nenhum signal vaza
     const fetchPromise = fetch(url, reqOpts);
     const timeoutPromise = new Promise((_, reject) =>
-      setTimeout(() => reject(new Error('timeout')), 10000)
+      setTimeout(() => reject(new Error('timeout')), 6000)
     );
     return Promise.race([fetchPromise, timeoutPromise]);
   }
@@ -118,6 +120,14 @@ window.addEventListener('unhandledrejection', function(e) { e.preventDefault(); 
     return r.ok;
   }
 
+  async function _delete(path) {
+    try {
+      const r = await _ft(_url(path), { method: 'DELETE' });
+      return r.ok;
+    } catch(e) { return false; }
+  }
+
+
   async function _query(collection, filters, orderField, limitN) {
     const sf = (filters || []).map(f => ({
       fieldFilter: {
@@ -136,7 +146,7 @@ window.addEventListener('unhandledrejection', function(e) { e.preventDefault(); 
         limit: limitN || 20
       }
     };
-    const r = await fetch('https://firestore.googleapis.com/v1/projects/' + _PROJECT + '/databases/(default)/documents:runQuery?key=' + _API_KEY, {
+    const r = await _ft('https://firestore.googleapis.com/v1/projects/' + _PROJECT + '/databases/(default)/documents:runQuery?key=' + _API_KEY, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(body)
@@ -196,11 +206,16 @@ window.addEventListener('unhandledrejection', function(e) { e.preventDefault(); 
       'USER_DISABLED': 'Esta conta foi desativada.',
       'TOO_MANY_ATTEMPTS_TRY_LATER': 'Muitas tentativas. Tente mais tarde.',
       'MISSING_PASSWORD': 'Digite a senha.',
-      'MISSING_EMAIL': 'Digite o email.'
+      'MISSING_EMAIL': 'Digite o email.',
+      'NETWORK_ERROR': 'Erro de rede. Verifique sua conexão.',
+      'NETWORK_REQUEST_FAILED': 'Sem conexão com a internet.',
+      'OPERATION_NOT_ALLOWED': 'Login por email não está ativo. Ative no Firebase Console.',
+      'USER_NOT_FOUND': 'Email não encontrado.',
+      'RESET_PASSWORD_EXCEED_LIMIT': 'Muitas tentativas de redefinição. Tente mais tarde.'
     };
     if (!code) return 'Erro desconhecido';
     for (const k in map) { if (code.includes(k)) return map[k]; }
-    return code;
+    return 'Erro: ' + code;
   }
 
   window._fb = {
@@ -239,26 +254,40 @@ window.addEventListener('unhandledrejection', function(e) { e.preventDefault(); 
     // ── Firebase Auth REST ──────────────────────────────────────────
     async registarComEmail(email, senha) {
       try {
-        const r = await fetch('https://identitytoolkit.googleapis.com/v1/accounts:signUp?key=' + _API_KEY, {
+        const r = await _ft('https://identitytoolkit.googleapis.com/v1/accounts:signUp?key=' + _API_KEY, {
           method: 'POST', headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ email, password: senha, returnSecureToken: true })
         });
+        if (!r.ok) {
+          const d = await r.json().catch(() => ({}));
+          return { ok: false, msg: _authErrLocal((d.error && d.error.message) || 'NETWORK_ERROR') };
+        }
         const d = await r.json();
         if (d.error) return { ok: false, msg: _authErrLocal(d.error.message) };
         return { ok: true, uid: d.localId, idToken: d.idToken };
-      } catch(e) { return { ok: false, msg: 'Erro de rede' }; }
+      } catch(e) {
+        const msg = e.message === 'timeout' ? 'Tempo esgotado. Verifique sua conexão.' : 'Sem conexão com a internet.';
+        return { ok: false, msg };
+      }
     },
 
     async loginComEmail(email, senha) {
       try {
-        const r = await fetch('https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key=' + _API_KEY, {
+        const r = await _ft('https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key=' + _API_KEY, {
           method: 'POST', headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ email, password: senha, returnSecureToken: true })
         });
+        if (!r.ok) {
+          const d = await r.json().catch(() => ({}));
+          return { ok: false, msg: _authErrLocal((d.error && d.error.message) || 'NETWORK_ERROR') };
+        }
         const d = await r.json();
         if (d.error) return { ok: false, msg: _authErrLocal(d.error.message) };
         return { ok: true, uid: d.localId, idToken: d.idToken };
-      } catch(e) { return { ok: false, msg: 'Erro de rede' }; }
+      } catch(e) {
+        const msg = e.message === 'timeout' ? 'Tempo esgotado. Verifique sua conexão.' : 'Sem conexão com a internet.';
+        return { ok: false, msg };
+      }
     },
 
     async enviarEmailRecuperacao(email) {
@@ -267,15 +296,22 @@ window.addEventListener('unhandledrejection', function(e) { e.preventDefault(); 
           method: 'POST', headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ requestType: 'PASSWORD_RESET', email })
         });
+        if (!r.ok) {
+          const d = await r.json().catch(() => ({}));
+          return { ok: false, msg: _authErrLocal((d.error && d.error.message) || 'NETWORK_ERROR') };
+        }
         const d = await r.json();
         if (d.error) return { ok: false, msg: _authErrLocal(d.error.message) };
         return { ok: true };
-      } catch(e) { return { ok: false, msg: 'Erro ao enviar. Verifique o email e tente novamente.' }; }
+      } catch(e) {
+        const msg = e.message === 'timeout' ? 'Tempo esgotado.' : 'Sem conexão. Tente novamente.';
+        return { ok: false, msg };
+      }
     },
 
     async alterarSenha(idToken, novaSenha) {
       try {
-        const r = await fetch('https://identitytoolkit.googleapis.com/v1/accounts:update?key=' + _API_KEY, {
+        const r = await _ft('https://identitytoolkit.googleapis.com/v1/accounts:update?key=' + _API_KEY, {
           method: 'POST', headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ idToken, password: novaSenha, returnSecureToken: true })
         });
@@ -328,7 +364,9 @@ window.addEventListener('unhandledrejection', function(e) { e.preventDefault(); 
       try {
         await Promise.allSettled([
           _delete('solicitacoes/' + meuUid + '_' + amigoUid),
-          _delete('solicitacoes/' + amigoUid + '_' + meuUid)
+          _delete('solicitacoes/' + amigoUid + '_' + meuUid),
+          _delete('amigos/' + meuUid + '_' + amigoUid),
+          _delete('amigos/' + amigoUid + '_' + meuUid)
         ]);
         return true;
       } catch(e) { return false; }
@@ -348,20 +386,44 @@ window.addEventListener('unhandledrejection', function(e) { e.preventDefault(); 
     },
 
     async backupMusicas(uid, musicas) {
-      try { return await _set('backups/' + uid, { musicas: JSON.stringify(musicas), total: musicas.length }, true); } catch(e) { return false; }
+      try {
+        // Salva musicas preservando eventos existentes (merge)
+        return await _set('backups/' + uid, {
+          musicas: JSON.stringify(musicas),
+          total: musicas.length,
+          updatedAt: Date.now()
+        }, true);
+      } catch(e) { return false; }
     },
     async restaurarMusicas(uid) {
       try {
         const d = await _get('backups/' + uid);
         if (!d) return null;
-        return {
-          musicas: JSON.parse(d.musicas || '[]'),
-          eventos: JSON.parse(d.eventos || '[]')
-        };
+        let musicas = [], eventos = [];
+        try { musicas = JSON.parse(d.musicas || '[]'); } catch(e) { musicas = []; }
+        try { eventos = JSON.parse(d.eventos || '[]'); } catch(e) { eventos = []; }
+        return { musicas, eventos, updatedAt: d.updatedAt || null };
       } catch(e) { return null; }
     },
+    async salvarBackupCompleto(uid, musicas, eventos) {
+      try {
+        return await _set('backups/' + uid, {
+          musicas: JSON.stringify(musicas || []),
+          eventos: JSON.stringify(eventos || []),
+          total: (musicas || []).length,
+          totalEventos: (eventos || []).length,
+          updatedAt: Date.now()
+        }, true);
+      } catch(e) { return false; }
+    },
     async backupEventos(uid, eventos) {
-      try { return await _set('backups/' + uid, { eventos: JSON.stringify(eventos), totalEventos: eventos.length }, true); } catch(e) { return false; }
+      try {
+        return await _set('backups/' + uid, {
+          eventos: JSON.stringify(eventos),
+          totalEventos: eventos.length,
+          updatedAt: Date.now()
+        }, true);
+      } catch(e) { return false; }
     },
 
     async criarSalaFb(codigo, hostUid, hostNome, estado) {
@@ -369,7 +431,7 @@ window.addEventListener('unhandledrejection', function(e) { e.preventDefault(); 
         // Testa conectividade primeiro
         const testUrl = 'https://firestore.googleapis.com/v1/projects/map-music-eb8aa/databases/(default)/documents?key=AIzaSyBausGqamGuEbxV8NdHfuRY0Tx21LELj-Y&pageSize=1';
         try {
-          const testR = await fetch(testUrl);
+          const testR = await _ft(testUrl);
           if (!testR.ok) {
             const testErr = await testR.json().catch(() => ({}));
             console.error('Firebase conectividade:', testR.status, JSON.stringify(testErr));
@@ -558,7 +620,7 @@ window.addEventListener('unhandledrejection', function(e) { e.preventDefault(); 
     try {
       const ctrl = new AbortController();
       const timeout = setTimeout(() => ctrl.abort(), 8000);
-      const r = await fetch(
+      const r = await _ft(
         'https://firestore.googleapis.com/v1/projects/' + _PROJECT + '/databases/(default)/documents?pageSize=1&key=' + _API_KEY,
         { signal: ctrl.signal }
       );
@@ -881,7 +943,9 @@ function _pinVerificar() {
 
   function _mostrarApp() {
     document.body.classList.remove('auth-pending');
-    setTimeout(function() { if (typeof admInicializar === 'function') admInicializar(); }, 600);
+    if (typeof admInicializar === 'function') admInicializar();
+    // Garantir que o fundo nunca pisca
+    if (!document.body.style.background) document.body.style.background = '';
   }
 
 
@@ -934,22 +998,54 @@ async function obFazerLogin() {
   try { perfil = await window._fb.carregarPerfilPorUid(uid); } catch(e) {}
 
   if (perfil && perfil.nome) {
-    localStorage.setItem('map_perfil_v1', JSON.stringify({ ...perfil, uid }));
+    // Guardar PIN local se existia antes
+    const pinAnterior = JSON.parse(localStorage.getItem('map_perfil_v1') || '{}').pin || '';
+    localStorage.setItem('map_perfil_v1', JSON.stringify({ ...perfil, uid, pin: perfil.pin || pinAnterior }));
     localStorage.setItem('map_uid_v1', uid);
+
+    // Restaurar backup da nuvem automaticamente
+    try {
+      const backup = await window._fb.restaurarMusicas(uid);
+      if (backup) {
+        if (backup.musicas && backup.musicas.length > 0) {
+          // Mesclar com dados locais: priorizar nuvem se local estiver vazio
+          const localMusicas = JSON.parse(localStorage.getItem('map_pro_elite_v1') || '[]');
+          if (localMusicas.length === 0 || backup.musicas.length > localMusicas.length) {
+            localStorage.setItem('map_pro_elite_v1', JSON.stringify(backup.musicas));
+          }
+        }
+        if (backup.eventos && backup.eventos.length > 0) {
+          const localEventos = JSON.parse(localStorage.getItem('map_pro_eventos_v1') || '[]');
+          if (localEventos.length === 0 || backup.eventos.length > localEventos.length) {
+            localStorage.setItem('map_pro_eventos_v1', JSON.stringify(backup.eventos));
+          }
+        }
+      }
+    } catch(e) {}
+
     _mostrarApp();
-    // Inicializa app após login
-    if (typeof renderNotifPanel === 'function') renderNotifPanel();
-    if (typeof atualizarBadge === 'function') atualizarBadge();
-    if (typeof atualizarPreviewPerfil === 'function') atualizarPreviewPerfil();
-    if (typeof renderBiblioteca === 'function') renderBiblioteca();
     const ov = document.getElementById('onboarding-overlay');
     if (ov) ov.classList.add('done');
-    setTimeout(function() { if (ov) ov.remove(); }, 600);
+    setTimeout(function() {
+      if (ov) ov.remove();
+      if (typeof renderNotifPanel === 'function') renderNotifPanel();
+      if (typeof atualizarBadge === 'function') atualizarBadge();
+      if (typeof atualizarPreviewPerfil === 'function') atualizarPreviewPerfil();
+      // Re-carregar songs e eventos do localStorage (agora com backup restaurado)
+      if (typeof songs !== 'undefined') {
+        try { songs = JSON.parse(localStorage.getItem('map_pro_elite_v1') || '[]'); } catch(e) {}
+      }
+      if (typeof eventos !== 'undefined') {
+        try { eventos = JSON.parse(localStorage.getItem('map_pro_eventos_v1') || '[]'); } catch(e) {}
+      }
+      if (typeof renderBiblioteca === 'function') renderBiblioteca();
+      if (typeof renderSetlist === 'function') renderSetlist();
+    }, 600);
   } else {
     // Conta Firebase existe mas sem perfil — vai pro cadastro
     if (msg) msg.textContent = 'Conta encontrada mas sem perfil. Cria a tua conta.';
     if (btn) { btn.disabled = false; btn.textContent = 'Entrar'; }
-    setTimeout(function() { obMostrarAba('cadastro'); }, 1500);
+    setTimeout(function() { obMostrarAba('cadastro'); }, 600);
   }
 }
 
@@ -998,6 +1094,25 @@ document.addEventListener('DOMContentLoaded', function() {
   const perfil = JSON.parse(localStorage.getItem('map_perfil_v1') || '{}');
   const splash = document.getElementById('ob-splash');
   const skipSplash = sessionStorage.getItem('map_skip_splash') === '1';
+
+  // Admin com sessao activa: pula splash e PIN completamente
+  if (perfil.isAdmin && perfil.uid === 'admin_local') {
+    if (splash) splash.remove();
+    const ovAdm = document.getElementById('onboarding-overlay');
+    if (ovAdm) ovAdm.remove();
+    // Evita flash: transicao suave ao entrar directo
+    document.body.style.opacity = '0';
+    document.body.style.transition = 'opacity 0.15s';
+    _mostrarApp();
+    admInicializar();
+    requestAnimationFrame(function() {
+      requestAnimationFrame(function() {
+        document.body.style.opacity = '';
+        document.body.style.transition = '';
+      });
+    });
+    return;
+  }
 
   // Helper: mostrar onboarding com animação
   function _mostrarOnboarding() {
@@ -1055,8 +1170,8 @@ document.addEventListener('DOMContentLoaded', function() {
     // Remove splash do DOM após animação terminar
     setTimeout(function() {
       if (splash) splash.remove();
-    }, 800);
-  }, 3500);
+    }, 300);
+  }, 4000);
 });
 
 // ─── ADMIN ACCESS ─────────────────────────────────────────────────────────────
@@ -1069,7 +1184,14 @@ function _adminTrigger() {
   const err = document.getElementById('admin-err');
   if (err) err.textContent = '';
   const modal = document.getElementById('modal-admin');
-  if (modal) modal.style.display = 'flex';
+  if (modal) {
+    modal.style.display = 'flex';
+    // Foco no primeiro dot para feedback imediato
+    setTimeout(function() {
+      const firstBtn = modal.querySelector('button[onclick*="_adminTecla"]');
+      if (firstBtn) firstBtn.focus();
+    }, 100);
+  }
 }
 
 function _fecharAdmin() {
@@ -1151,29 +1273,23 @@ function _adminEntrar() {
 }
 
 function adminEscolherModo(modo) {
-  // Fecha a tela de escolha
-  const escolha = document.getElementById('admin-escolha');
+  var escolha = document.getElementById('admin-escolha');
   if (escolha) escolha.style.display = 'none';
 
-  // Remove onboarding se ainda estiver visível
-  const ov = document.getElementById('onboarding-overlay');
-  if (ov) { ov.classList.add('done'); setTimeout(function() { ov.remove(); }, 500); }
+  // Remove onboarding se ainda estiver visivel (caso venha do login)
+  var ov = document.getElementById('onboarding-overlay');
+  if (ov) { ov.classList.add('done'); setTimeout(function() { ov.remove(); }, 400); }
+
+  // Sempre garantir que o app esta visivel e admin inicializado
+  _mostrarApp();
+  admInicializar();
 
   if (modo === 'painel') {
-    // Entra no app e vai direto para o painel admin
-    _mostrarApp();
-    setTimeout(function() {
-      if (typeof admInicializar === 'function') admInicializar();
-      if (typeof adminMostrarAba === 'function') adminMostrarAba('painel');
-    }, 400);
-    if (typeof showToast === 'function') showToast('Painel Admin');
+    adminMostrarAba('painel');
+    showToast('Painel Admin');
   } else {
-    // Entra no app normalmente
-    _mostrarApp();
-    setTimeout(function() {
-      if (typeof admInicializar === 'function') admInicializar();
-    }, 400);
-    if (typeof showToast === 'function') showToast('Bem-vindo, Admin');
+    adminMostrarAba('app');
+    showToast('Bem-vindo, Admin');
   }
 }
 
@@ -3134,10 +3250,11 @@ body.auth-pending #toast {
   transition: all 0.15s;
 }
 .amigo-btn-remover:active { background: rgba(255,60,60,0.2); }
-</style>
 
+@keyframes spinAdm { to { transform: rotate(360deg); } }
+</style>
 </head>
-<body id="app-body" class="auth-pending">
+<body id="app-body" class="auth-pending" style="background:#06060c;margin:0;padding:0;">
 
 <div class="toast" id="toast"></div>
 
@@ -3149,6 +3266,7 @@ body.auth-pending #toast {
   <div id="ob-splash-name"><span class="logo-shimmer">Map Music</span><span>PRO</span></div>
   <div id="ob-splash-user"></div>
   <div id="ob-splash-sub">Para músicos ao vivo</div>
+  <div style="position:absolute;bottom:20px;font-size:8px;color:rgba(255,255,255,0.12);letter-spacing:1px;font-weight:300;">por Jurandir Neto</div>
 </div>
 
 <!-- ONBOARDING — PRIMEIRO ACESSO -->
@@ -3158,7 +3276,7 @@ body.auth-pending #toast {
     <div class="ob-hero-ring"></div>
     <div class="ob-hero-ring"></div>
     <h1><span class="logo-shimmer">Map Music</span><span>PRO</span></h1>
-    <p>A ferramenta profissional para músicos ao vivo</p>
+    <p>A ferramenta profissional para músicos ao vivo<br><span style="font-size:9px;color:rgba(255,255,255,0.15);letter-spacing:0.8px;font-weight:300;">por Jurandir Neto</span></p>
   </div>
   <div class="ob-form">
 
@@ -3461,8 +3579,7 @@ body.auth-pending #toast {
     <div class="amigos-add-bar">
       <div class="amigos-add-row">
         <input class="amigos-add-input" id="amigos-add-input"
-          placeholder="Buscar por ID numérico (ex: 47382910)..." autocomplete="off"
-          inputmode="numeric" pattern="[0-9]*"
+          placeholder="Nome, @usuário ou ID (ex: 47382910)..." autocomplete="off"
           oninput="buscarAmigosInput(this.value)"
           onkeydown="if(event.key==='Enter') buscarAmigosInput(this.value)">
       </div>
@@ -3503,13 +3620,15 @@ body.auth-pending #toast {
 
 <header class="app-header">
   <div class="header-content">
-    <div class="app-logo">
+    <div class="app-logo" style="position:relative;">
       <div class="logo-text">
         <span class="logo-name"><span class="logo-shimmer">Map Music</span><span class="pro">PRO</span></span>
         <span class="logo-tag">Elite Edition</span>
       </div>
+      <!-- trigger admin discreto no header do app -->
+      <div id="app-admin-trigger" onclick="_adminTrigger()" style="position:absolute;top:-4px;left:-4px;width:44px;height:44px;cursor:pointer;z-index:9999;touch-action:manipulation;-webkit-tap-highlight-color:transparent;" title=""></div>
     </div>
-    <div id="admin-tabs" style="display:none;margin-left:8px;gap:4px;align-items:center;">
+    <div id="admin-tabs" style="display:none;margin-left:8px;gap:4px;align-items:center;flex-shrink:0;">
       <button id="admin-tab-app" onclick="adminMostrarAba('app')"
         style="padding:5px 14px;border-radius:16px;font-size:10px;font-weight:900;letter-spacing:0.8px;cursor:pointer;touch-action:manipulation;background:rgba(29,185,84,0.15);border:1.5px solid rgba(29,185,84,0.5);color:#1db954;">APP</button>
       <button id="admin-tab-painel" onclick="adminMostrarAba('painel')"
@@ -4010,17 +4129,51 @@ function abrirModalPerfil() {
   }
 }
 
-function sairDaConta() {
-  if (!confirm('Sair do perfil? Os dados locais serão apagados.\nAs músicas e eventos guardados na nuvem ficam seguros.')) return;
-  // Marca offline no Firebase antes de sair
-  _fbMarcarOffline();
-  // Limpa todos os dados de conta locais
-  localStorage.removeItem('map_perfil_v1');
-  localStorage.removeItem('map_uid_v1');
-  localStorage.removeItem('map_notifs_v1');
-  localStorage.removeItem('map_last_version');
-  fecharModalPerfil();
-  // Sinaliza que deve pular splash e ir direto ao cadastro
+async function sairDaConta() {
+  // confirm() nativo bloqueado em iOS em contextos de overlay — usar modal próprio
+  const overlay = document.createElement('div');
+  overlay.style.cssText = 'position:fixed;inset:0;z-index:100020;background:rgba(0,0,0,0.88);display:flex;align-items:center;justify-content:center;padding:24px;';
+  overlay.innerHTML =
+    '<div style="background:#111119;border:1px solid rgba(255,255,255,0.1);border-radius:20px;padding:26px 22px;width:100%;max-width:320px;display:flex;flex-direction:column;gap:14px;">'
+  + '<div style="font-size:16px;font-weight:900;color:#fff;">Sair do perfil?</div>'
+  + '<div style="font-size:13px;color:rgba(255,255,255,0.45);line-height:1.5;">Os dados locais serão apagados. As músicas e eventos guardados na nuvem ficam seguros.</div>'
+  + '<div style="display:flex;gap:10px;margin-top:4px;">'
+  + '<button id="_sair-cancel" style="flex:1;padding:12px;border-radius:12px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);color:rgba(255,255,255,0.4);font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;touch-action:manipulation;">Cancelar</button>'
+  + '<button id="_sair-confirm" style="flex:2;padding:12px;border-radius:12px;background:rgba(255,60,60,0.85);border:none;color:#fff;font-size:12px;font-weight:900;cursor:pointer;font-family:inherit;touch-action:manipulation;">Sair</button>'
+  + '</div></div>';
+  document.body.appendChild(overlay);
+  document.getElementById('_sair-cancel').onclick = function() { overlay.remove(); };
+  document.getElementById('_sair-confirm').onclick = async function() {
+    overlay.remove();
+    fecharModalPerfil();
+    await _executarSaida();
+  };
+}
+async function _executarSaida() {
+
+  // 1. Fazer backup final antes de sair
+  if (_isFbReady()) {
+    try {
+      const uid = _getUid();
+      const musicasLocais  = JSON.parse(localStorage.getItem('map_pro_elite_v1')   || '[]');
+      const eventosLocais  = JSON.parse(localStorage.getItem('map_pro_eventos_v1') || '[]');
+      if (window._fb.salvarBackupCompleto) {
+        await window._fb.salvarBackupCompleto(uid, musicasLocais, eventosLocais);
+      } else {
+        if (musicasLocais.length)  await window._fb.backupMusicas(uid, musicasLocais);
+        if (eventosLocais.length)  await window._fb.backupEventos(uid, eventosLocais);
+      }
+    } catch(e) {}
+    _fbMarcarOffline();
+  }
+
+  // 2. Limpar TODOS os dados locais (incluindo músicas e eventos)
+  [
+    'map_perfil_v1', 'map_uid_v1', 'map_notifs_v1', 'map_last_version',
+    'map_pro_elite_v1', 'map_pro_eventos_v1'
+  ].forEach(function(k) { localStorage.removeItem(k); });
+
+  // 3. Reload para login
   sessionStorage.setItem('map_skip_splash', '1');
   location.reload();
 }
@@ -5428,9 +5581,10 @@ function fecharCtxMenu() {
 }
 
 function ctxAcao(acao) {
+  // Capturar id ANTES de fechar o menu (fecharCtxMenu zera ctxSongId)
+  var id = ctxSongId;
   fecharCtxMenu();
-  if (ctxSongId === null) return;
-  const id = ctxSongId;
+  if (id === null || id === undefined) return;
   if (acao === 'abrir')   { loadSongBiblioteca(id); }
   if (acao === 'fav')     { favoritarBiblioteca(id, null); }
   if (acao === 'deletar') { deleteSongBiblioteca(id, null); }
@@ -6153,12 +6307,28 @@ function favoritarBiblioteca(id, e) {
 
 function deleteSongBiblioteca(id, e) {
   if (e) e.stopPropagation();
-  if (confirm('Excluir música?')) {
-    songs = songs.filter(s => s.id !== id);
+  var song = songs.find(function(s) { return s.id === id; });
+  var nome = song ? song.name : 'esta música';
+  var overlay = document.createElement('div');
+  overlay.style.cssText = 'position:fixed;inset:0;z-index:100020;background:rgba(0,0,0,0.88);display:flex;align-items:center;justify-content:center;padding:24px;';
+  overlay.innerHTML =
+    '<div style="background:#111119;border:1px solid rgba(255,255,255,0.1);border-radius:20px;padding:24px 20px;width:100%;max-width:300px;display:flex;flex-direction:column;gap:14px;">'
+  + '<div style="font-size:15px;font-weight:900;color:#fff;">Excluir música?</div>'
+  + '<div style="font-size:13px;color:rgba(255,255,255,0.4);line-height:1.5;"><b style="color:#fff;">' + nome + '</b> será removida da biblioteca permanentemente.</div>'
+  + '<div style="display:flex;gap:10px;margin-top:4px;">'
+  + '<button id="_del-cancel" style="flex:1;padding:12px;border-radius:12px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);color:rgba(255,255,255,0.4);font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;touch-action:manipulation;">Cancelar</button>'
+  + '<button id="_del-confirm" style="flex:2;padding:12px;border-radius:12px;background:rgba(255,60,60,0.8);border:none;color:#fff;font-size:12px;font-weight:900;cursor:pointer;font-family:inherit;touch-action:manipulation;">Excluir</button>'
+  + '</div></div>';
+  document.body.appendChild(overlay);
+  document.getElementById('_del-cancel').onclick = function() { overlay.remove(); };
+  document.getElementById('_del-confirm').onclick = function() {
+    overlay.remove();
+    songs = songs.filter(function(s) { return s.id !== id; });
     updateStorage();
-    renderBiblioteca(document.getElementById('biblioteca-search').value);
+    var searchEl = document.getElementById('biblioteca-search');
+    renderBiblioteca(searchEl ? searchEl.value : '');
     showToast('Removida.');
-  }
+  };
 }
 
 // ── ABA EVENTOS ──
@@ -7040,12 +7210,15 @@ async function _fbBackupMusicas() {
   clearTimeout(_backupTimer);
   _backupTimer = setTimeout(async () => {
     const uid = _getUid();
-    const ok = await window._fb.backupMusicas(uid, songs);
-    if (ok) {
-      // Atualiza estatísticas
-      _fbAtualizarStats();
-      console.log('Backup musicas OK -', songs.length, 'músicas');
+    const eventosAtuais = JSON.parse(localStorage.getItem('map_pro_eventos_v1') || '[]');
+    // Salva músicas e eventos juntos para garantir consistência
+    let ok;
+    if (window._fb.salvarBackupCompleto) {
+      ok = await window._fb.salvarBackupCompleto(uid, songs, eventosAtuais);
+    } else {
+      ok = await window._fb.backupMusicas(uid, songs);
     }
+    if (ok) _fbAtualizarStats();
   }, 2000);
 }
 
@@ -7061,32 +7234,54 @@ async function _fbBackupEventos() {
 }
 
 async function _fbRestaurarBackup() {
-  if (!_isFbReady()) { showToast('Firebase indisponível. Verifica a ligação.'); return; }
+  if (!_isFbReady()) { showToast('Firebase indisponível'); return; }
   const uid = _getUid();
-  showToast('A procurar backup na nuvem...');
-  const backup = await window._fb.restaurarMusicas(uid);
+  showToast('Buscando backup...');
+  let backup;
+  try { backup = await window._fb.restaurarMusicas(uid); } catch(e) { backup = null; }
   if (!backup || (!backup.musicas?.length && !backup.eventos?.length)) {
-    showToast('Nenhum backup encontrado na nuvem');
+    showToast('Nenhum backup encontrado');
     return;
   }
-  const totalMusicas = backup.musicas?.length || 0;
-  const totalEventos = backup.eventos?.length || 0;
-  const msg = 'Backup encontrado:\n• ' + totalMusicas + ' músicas\n• ' + totalEventos + ' eventos\n\nRestaurar agora?';
-  if (!window.confirm(msg)) return;
+  const totalM = backup.musicas?.length || 0;
+  const totalE = backup.eventos?.length || 0;
+  const dataStr = backup.updatedAt ? new Date(backup.updatedAt).toLocaleString('pt-BR') : '';
 
-  if (totalMusicas > 0) {
-    songs = backup.musicas;
-    localStorage.setItem('map_pro_elite_v1', JSON.stringify(songs));
-    renderSetlist();
-  }
-  if (totalEventos > 0) {
-    eventos = backup.eventos;
-    localStorage.setItem('map_pro_eventos_v1', JSON.stringify(eventos));
-  }
-  showToast('' + totalMusicas + ' músicas e ' + totalEventos + ' eventos restaurados!');
-  adicionarNotif('update', 'Backup restaurado!',
-    totalMusicas + ' músicas e ' + totalEventos + ' eventos carregados da nuvem.',
-    'restore_v1');
+  const msgModal = document.createElement('div');
+  msgModal.style.cssText = 'position:fixed;inset:0;z-index:100020;background:rgba(0,0,0,0.92);display:flex;align-items:center;justify-content:center;padding:24px;';
+  msgModal.innerHTML =
+    '<div style="background:#111118;border:1px solid rgba(255,255,255,0.1);border-radius:20px;padding:28px 24px;width:100%;max-width:340px;display:flex;flex-direction:column;gap:16px;">'
+  + '<div style="font-size:16px;font-weight:900;color:#fff;">Backup encontrado</div>'
+  + '<div style="background:rgba(29,185,84,0.06);border:1px solid rgba(29,185,84,0.15);border-radius:12px;padding:14px 16px;display:flex;flex-direction:column;gap:6px;">'
+  + '<div style="font-size:13px;color:rgba(255,255,255,0.7);">' + totalM + ' <span style="color:rgba(255,255,255,0.35);font-size:11px;">músicas</span></div>'
+  + '<div style="font-size:13px;color:rgba(255,255,255,0.7);">' + totalE + ' <span style="color:rgba(255,255,255,0.35);font-size:11px;">eventos</span></div>'
+  + (dataStr ? '<div style="font-size:10px;color:rgba(255,255,255,0.25);margin-top:4px;">Salvo em ' + dataStr + '</div>' : '')
+  + '</div>'
+  + '<div style="font-size:12px;color:rgba(255,255,255,0.4);line-height:1.5;">Os dados atuais serão substituídos pelos do backup.</div>'
+  + '<div style="display:flex;gap:10px;">'
+  + '<button id="_rest-cancelar" style="flex:1;padding:12px;border-radius:12px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);color:rgba(255,255,255,0.4);font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;touch-action:manipulation;">Cancelar</button>'
+  + '<button id="_rest-confirmar" style="flex:2;padding:12px;border-radius:12px;background:#1db954;border:none;color:#000;font-size:12px;font-weight:900;cursor:pointer;font-family:inherit;touch-action:manipulation;">Restaurar</button>'
+  + '</div></div>';
+  document.body.appendChild(msgModal);
+
+  document.getElementById('_rest-cancelar').onclick = function() { msgModal.remove(); };
+  document.getElementById('_rest-confirmar').onclick = function() {
+    msgModal.remove();
+    if (totalM > 0) {
+      songs = backup.musicas;
+      localStorage.setItem('map_pro_elite_v1', JSON.stringify(songs));
+      if (typeof renderSetlist === 'function') renderSetlist();
+      if (typeof renderBiblioteca === 'function') renderBiblioteca();
+    }
+    if (totalE > 0) {
+      eventos = backup.eventos;
+      localStorage.setItem('map_pro_eventos_v1', JSON.stringify(eventos));
+    }
+    showToast(totalM + ' músicas e ' + totalE + ' eventos restaurados');
+    if (typeof adicionarNotif === 'function') adicionarNotif('update', 'Backup restaurado', totalM + ' músicas e ' + totalE + ' eventos carregados.', 'restore_v1');
+    const ms = document.getElementById('modal-stats');
+    if (ms) { ms.remove(); setTimeout(function(){ if(typeof abrirModalStats==='function') abrirModalStats(); }, 300); }
+  };
 }
 
 // ── Estatísticas ─────────────────────────────────────────────────────────────
@@ -7171,8 +7366,8 @@ async function abrirModalStats() {
     <div style="height:1px;background:rgba(255,255,255,0.05);margin:16px 0;"></div>
     <div style="font-size:9px;font-weight:900;letter-spacing:2px;color:rgba(255,255,255,0.25);margin-bottom:12px;">BACKUP NA NUVEM</div>
     <div style="display:flex;gap:10px;">
-      <button onclick="_fbBackupMusicas();showToast('Backup realizado!')" style="flex:1;padding:12px;border-radius:10px;background:rgba(29,185,84,0.1);border:1px solid rgba(29,185,84,0.25);color:#1db954;font-size:11px;font-weight:800;cursor:pointer;font-family:inherit;">Fazer Backup</button>
-      <button onclick="_fbRestaurarBackup()" style="flex:1;padding:12px;border-radius:10px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);color:rgba(255,255,255,0.5);font-size:11px;font-weight:800;cursor:pointer;font-family:inherit;">Restaurar</button>
+      <button onclick="_fbFazerBackupAgora(this)" style="flex:1;padding:12px;border-radius:10px;background:rgba(29,185,84,0.1);border:1px solid rgba(29,185,84,0.25);color:#1db954;font-size:11px;font-weight:800;cursor:pointer;font-family:inherit;touch-action:manipulation;">Fazer Backup</button>
+      <button onclick="_fbRestaurarBackup()" style="flex:1;padding:12px;border-radius:10px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);color:rgba(255,255,255,0.5);font-size:11px;font-weight:800;cursor:pointer;font-family:inherit;touch-action:manipulation;">Restaurar</button>
     </div>
   </div>
 </div>`;
@@ -7490,7 +7685,8 @@ async function buscarAmigosInput(val) {
   clearTimeout(_buscaTimer);
   const trimmed = val.trim();
   if (trimmed.length < 2) {
-    if (_amigoTab === 'buscar') _renderAmigos();
+    // Texto limpo: mostrar sugestoes
+    _renderAmigos();
     return;
   }
   // Garante que está na tab Buscar
@@ -7639,17 +7835,32 @@ async function convidarAmigo(nome, amigoUid) {
 // ── Render principal ─────────────────────────────────────────────────────────
 
 async function removerAmigo(uid, nome) {
-  if (!confirm('Remover ' + nome + ' dos amigos?')) return;
-  if (!_isFbReady()) { showToast('Firebase não disponível'); return; }
-  try {
-    await window._fb.removerAmigo(_getUid(), uid);
-    adicionarNotif('info', 'Amigo removido', nome + ' foi removido da tua lista.', 'rm_' + uid);
-    showToast(nome + ' removido');
-    _amigosCache = _amigosCache.filter(function(a) { return a.uid !== uid; });
-    _renderAmigos();
-  } catch(e) {
-    showToast('Erro ao remover amigo');
-  }
+  // Modal proprio — confirm() nativo bloqueado em iOS dentro de overlays
+  var overlay = document.createElement('div');
+  overlay.style.cssText = 'position:fixed;inset:0;z-index:100020;background:rgba(0,0,0,0.88);display:flex;align-items:center;justify-content:center;padding:24px;';
+  overlay.innerHTML =
+    '<div style="background:#111119;border:1px solid rgba(255,255,255,0.1);border-radius:20px;padding:24px 20px;width:100%;max-width:300px;display:flex;flex-direction:column;gap:14px;">'
+  + '<div style="font-size:15px;font-weight:900;color:#fff;">Remover amigo?</div>'
+  + '<div style="font-size:13px;color:rgba(255,255,255,0.4);line-height:1.5;">Remover <b style="color:#fff;">' + (nome||'') + '</b> da sua lista de amigos.</div>'
+  + '<div style="display:flex;gap:10px;margin-top:4px;">'
+  + '<button id="_rm-cancel" style="flex:1;padding:12px;border-radius:12px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);color:rgba(255,255,255,0.4);font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;touch-action:manipulation;">Cancelar</button>'
+  + '<button id="_rm-confirm" style="flex:2;padding:12px;border-radius:12px;background:rgba(255,60,60,0.8);border:none;color:#fff;font-size:12px;font-weight:900;cursor:pointer;font-family:inherit;touch-action:manipulation;">Remover</button>'
+  + '</div></div>';
+  document.body.appendChild(overlay);
+  document.getElementById('_rm-cancel').onclick = function() { overlay.remove(); };
+  document.getElementById('_rm-confirm').onclick = async function() {
+    overlay.remove();
+    if (!_isFbReady()) { showToast('Firebase nao disponivel'); return; }
+    try {
+      await window._fb.removerAmigo(_getUid(), uid);
+      adicionarNotif('info', 'Amigo removido', (nome||'') + ' foi removido da sua lista.', 'rm_' + uid);
+      showToast((nome||'Usuario') + ' removido');
+      _amigosCache = _amigosCache.filter(function(a) { return a.uid !== uid; });
+      _renderAmigos();
+    } catch(e) {
+      showToast('Erro ao remover amigo');
+    }
+  };
 }
 
 async function _renderAmigos() {
@@ -7657,7 +7868,50 @@ async function _renderAmigos() {
   if (!lista) return;
 
   if (_amigoTab === 'buscar') {
-    lista.innerHTML = '<div class="amigos-empty"><p>Digite acima para buscar músicos</p></div>';
+    // Mostra sugestoes enquanto nao ha texto na busca
+    const inputVal = (document.getElementById('amigos-add-input') || {}).value || '';
+    if (inputVal.trim().length >= 2) return; // busca activa — nao sobrescrever
+    lista.innerHTML = '<div class="amigos-empty"><p style="opacity:0.4;font-size:12px;">A carregar sugestoes...</p></div>';
+    if (!_isFbReady()) {
+      lista.innerHTML = '<div class="amigos-empty"><p style="opacity:0.35;">Conecte-se para ver sugestoes</p></div>';
+      return;
+    }
+    const uid = _getUid();
+    const amigosUids = _amigosCache.map(a => a.uid);
+    const solEnviadasUids = (window._solEnviadas || []).map(s => s.para);
+    let sugs = [];
+    try { sugs = await window._fb.sugestoes(uid); } catch(e) {}
+    // Filtrar amigos e ja enviados
+    sugs = sugs.filter(u => u.uid !== uid && !amigosUids.includes(u.uid));
+    if (!sugs.length) {
+      lista.innerHTML = '<div class="amigos-empty"><svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg><p>Nenhuma sugestao disponivel</p><small style="color:rgba(255,255,255,0.2);font-size:10px;">Use a busca acima para encontrar musicos</small></div>';
+      return;
+    }
+    lista.innerHTML =
+      '<div style="padding:12px 16px 6px;font-size:9px;font-weight:900;letter-spacing:2px;color:rgba(255,255,255,0.2);">SUGESTOES DE MUSICOS</div>'
+      + sugs.slice(0, 10).map(function(u) {
+          var inicial = ((u.nome || '?').charAt(0)).toUpperCase();
+          var jaEnviou = solEnviadasUids.includes(u.uid);
+          var jaAmigo  = amigosUids.includes(u.uid);
+          var pid = u.profileId || '';
+          var pidFmt = pid.length >= 7 ? pid.slice(0,4) + ' ' + pid.slice(4,8) : pid;
+          var _uid2 = (u.uid || '').replace(/"/g,'');
+          var _nm2  = (u.nome || '').replace(/"/g,'');
+          var _inst2= (u.instrumento || '').replace(/"/g,'');
+          var btn = jaAmigo
+            ? '<span style="font-size:10px;color:#1db954;font-weight:700;">Amigo</span>'
+            : jaEnviou
+              ? '<span style="font-size:10px;color:rgba(255,255,255,0.3);font-weight:700;">Enviada</span>'
+              : '<button class="amigo-btn amigo-btn-aceitar" data-uid="' + _uid2 + '" data-nome="' + _nm2 + '" data-inst="' + _inst2 + '" onclick="enviarSolicitacaoFb(this.dataset.uid,this.dataset.nome,this.dataset.inst)">+ Adicionar</button>';
+          return '<div class="amigo-item">'
+            + '<div class="amigo-avatar">' + inicial + '</div>'
+            + '<div class="amigo-info">'
+            +   '<div class="amigo-nome">' + (u.nome || '—') + '</div>'
+            +   '<div class="amigo-inst">' + (u.instrumento || 'Instrumento nao definido') + (pidFmt ? ' <span style="color:rgba(29,185,84,0.5);font-family:monospace;font-weight:700;font-size:10px;">· ' + pidFmt + '</span>' : '') + '</div>'
+            + '</div>'
+            + '<div class="amigo-actions">' + btn + '</div>'
+            + '</div>';
+        }).join('');
     return;
   }
 
@@ -7737,6 +7991,9 @@ async function _renderAmigos() {
     const btnConvidar = (isHost && myRoomCode)
       ? `<button class="amigo-btn amigo-btn-convidar" onclick="convidarAmigo('${(a.nome||'').replace(/'/g,"\'")}')">Convidar</button>`
       : '';
+    const _aUid  = (a.uid||'').replace(/"/g,'');
+    const _aNome = (a.nome||'').replace(/"/g,'');
+    const btnRemover = '<button class="amigo-btn amigo-btn-remover" data-uid="' + _aUid + '" data-nome="' + _aNome + '" onclick="removerAmigo(this.dataset.uid,this.dataset.nome)" title="Remover amigo" style="background:rgba(255,60,60,0.07);border-color:rgba(255,60,60,0.18);color:rgba(255,80,80,0.7);"><svg width=\"13\" height=\"13\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2.5\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><line x1=\"18\" y1=\"6\" x2=\"6\" y2=\"18\"/><line x1=\"6\" y1=\"6\" x2=\"18\" y2=\"18\"/></svg></button>';
     return `<div class="amigo-item">
       <div class="amigo-avatar">${inicial}</div>
       <div class="amigo-info">
@@ -7746,7 +8003,7 @@ async function _renderAmigos() {
         </div>
         <div class="amigo-inst">${a.inst||'Instrumento não definido'}</div>
       </div>
-      <div class="amigo-actions">${btnConvidar}</div>
+      <div class="amigo-actions">${btnConvidar}${btnRemover}</div>
     </div>`;
   }).join('');
 }
@@ -8990,7 +9247,12 @@ function adminMostrarAba(aba) {
     if (painel) painel.style.display = 'flex';
     if (tabApp) tabApp.style.cssText = INATIVO;
     if (tabAdm) tabAdm.style.cssText = ATIVO;
-    admCarregar();
+    // Só recarrega se cache está vazio ou foi há mais de 60s
+    var agora = Date.now();
+    if (!_admCache.length || !_admLastLoad || (agora - _admLastLoad) > 60000) {
+      _admLastLoad = agora;
+      admCarregar();
+    }
   } else {
     if (painel) painel.style.display = 'none';
     if (tabApp) tabApp.style.cssText = ATIVO;
@@ -9000,22 +9262,39 @@ function adminMostrarAba(aba) {
 
 async function admCarregar() {
   var list = document.getElementById('adm-user-list');
-  if (list) list.innerHTML = '<div style="text-align:center;padding:60px 20px;color:rgba(255,255,255,0.2);font-size:13px;">Carregando...</div>';
+  var btn  = document.querySelector('#admin-painel button[onclick="admCarregar()"]');
+  if (list) list.innerHTML =
+    '<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;padding:60px 20px;gap:12px;">'
+  + '<div style="width:28px;height:28px;border:3px solid rgba(29,185,84,0.2);border-top-color:#1db954;border-radius:50%;animation:spinAdm 0.7s linear infinite;"></div>'
+  + '<div style="color:rgba(255,255,255,0.25);font-size:12px;">Buscando usuários...</div>'
+  + '</div>';
+  if (btn) { btn.disabled = true; btn.style.opacity = '0.4'; }
   if (!window._fb || !window._fb.listarTodosUsuarios) {
-    if (list) list.innerHTML = '<div style="text-align:center;padding:60px 20px;color:#ff5555;font-size:12px;">Firebase nao disponivel</div>';
+    if (list) list.innerHTML = '<div style="text-align:center;padding:60px 20px;color:#ff5555;font-size:12px;">Firebase indisponível</div>';
+    if (btn) { btn.disabled = false; btn.style.opacity = ''; }
     return;
   }
+  var t0 = Date.now();
   try {
     var users = await window._fb.listarTodosUsuarios(200);
+    var elapsed = Date.now() - t0;
     _admCache = Array.isArray(users) ? users : [];
     admAtualizarStats();
     if (!_admCache.length) {
-      if (list) list.innerHTML = '<div style="text-align:center;padding:60px 20px;color:rgba(255,255,255,0.2);font-size:13px;">Nenhum usuario cadastrado</div>';
+      if (list) list.innerHTML = '<div style="text-align:center;padding:60px 20px;color:rgba(255,255,255,0.2);font-size:13px;">Nenhum utilizador registado</div>';
     } else {
       admRenderizar(_admCache);
     }
+    if (typeof showToast === 'function' && elapsed > 2000) showToast(_admCache.length + ' utilizadores em ' + (elapsed/1000).toFixed(1) + 's');
   } catch(err) {
-    if (list) list.innerHTML = '<div style="text-align:center;padding:60px 20px;color:#ff5555;font-size:12px;">Erro: ' + (err.message || err) + '</div>';
+    var emsg = (err && err.message) || String(err);
+    if (list) list.innerHTML = '<div style="text-align:center;padding:40px 20px;display:flex;flex-direction:column;gap:8px;">'
+      + '<div style="color:#ff5555;font-size:12px;">Erro ao carregar</div>'
+      + '<div style="color:rgba(255,255,255,0.2);font-size:10px;">' + emsg + '</div>'
+      + '<button onclick="admCarregar()" style="margin-top:8px;padding:10px 20px;border-radius:10px;background:rgba(29,185,84,0.1);border:1px solid rgba(29,185,84,0.25);color:#1db954;font-size:11px;font-weight:800;cursor:pointer;font-family:inherit;touch-action:manipulation;">Tentar novamente</button>'
+      + '</div>';
+  } finally {
+    if (btn) { btn.disabled = false; btn.style.opacity = ''; }
   }
 }
 
@@ -9023,7 +9302,10 @@ function admBuscar() {
   var termo  = (document.getElementById('adm-search') ? document.getElementById('adm-search').value : '').toLowerCase().trim();
   var filtro = document.getElementById('adm-filtro') ? document.getElementById('adm-filtro').value : 'todos';
   var lista  = _admCache.filter(function(u) {
-    if (termo && !(u.nome||'').toLowerCase().includes(termo) && !(u.nomeUsuario||'').toLowerCase().includes(termo) && !(u.email||'').toLowerCase().includes(termo)) return false;
+    if (termo) {
+      var haystack = [(u.nome||''), (u.nomeUsuario||''), (u.email||''), (u.instrumento||'')].join(' ').toLowerCase();
+      if (!haystack.includes(termo)) return false;
+    }
     if (filtro === 'ativos')     return !u.status || u.status === 'ativo';
     if (filtro === 'bloqueados') return u.status === 'bloqueado';
     if (filtro === 'banidos')    return u.status === 'banido';
@@ -9040,7 +9322,7 @@ function admAtualizarStats() {
   var el = function(id){ return document.getElementById(id); };
   if (el('adm-stat-total'))   el('adm-stat-total').textContent   = total;
   if (el('adm-stat-ativos'))  el('adm-stat-ativos').textContent  = ativos;
-  if (el('adm-stat-banidos')) el('adm-stat-banidos').textContent = banidos + (bloq ? '+' + bloq : '');
+  if (el('adm-stat-banidos')) el('adm-stat-banidos').textContent = banidos + bloq;
 }
 
 function admRenderizar(lista) {
@@ -9066,12 +9348,14 @@ function admRenderizar(lista) {
     card.addEventListener('click', function(){ admAbrirAcao(u); });
     card.addEventListener('mouseover', function(){ this.style.background='rgba(255,255,255,0.06)'; });
     card.addEventListener('mouseout',  function(){ this.style.background='rgba(255,255,255,0.03)'; });
+        // Sanitizar valores antes de inserir no DOM
+    var _s = function(v) { return (v||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); };
     card.innerHTML =
-      '<div style="width:44px;height:44px;border-radius:50%;background:linear-gradient(135deg,#141f14,#1e2e1e);border:1.5px solid rgba(29,185,84,0.18);display:flex;align-items:center;justify-content:center;font-size:17px;font-weight:900;color:#1db954;flex-shrink:0;">' + inicial + '</div>'
+      '<div style="width:44px;height:44px;border-radius:50%;background:linear-gradient(135deg,#141f14,#1e2e1e);border:1.5px solid rgba(29,185,84,0.18);display:flex;align-items:center;justify-content:center;font-size:17px;font-weight:900;color:#1db954;flex-shrink:0;">' + _s(inicial) + '</div>'
     + '<div style="flex:1;min-width:0;">'
-    +   '<div style="font-size:13px;font-weight:800;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + (u.nome||'Sem nome') + '</div>'
-    +   '<div style="font-size:11px;color:rgba(255,255,255,0.3);margin-top:2px;">@' + (u.nomeUsuario||'—') + (u.instrumento?' · '+u.instrumento:'') + '</div>'
-    +   '<div style="font-size:10px;color:rgba(255,255,255,0.18);margin-top:1px;">' + (u.email||'') + (dataCad?' · '+dataCad:'') + '</div>'
+    +   '<div style="font-size:13px;font-weight:800;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + _s(u.nome||'Sem nome') + '</div>'
+    +   '<div style="font-size:11px;color:rgba(255,255,255,0.3);margin-top:2px;">@' + _s(u.nomeUsuario||'—') + (u.instrumento?' · '+_s(u.instrumento):'') + '</div>'
+    +   '<div style="font-size:10px;color:rgba(255,255,255,0.18);margin-top:1px;">' + _s(u.email||'') + (dataCad?' · '+dataCad:'') + '</div>'
     + '</div>'
     + '<div style="display:flex;flex-direction:column;align-items:flex-end;gap:6px;flex-shrink:0;">'
     +   '<span style="background:'+sc.bg+';color:'+sc.color+';font-size:8px;font-weight:900;padding:3px 8px;border-radius:8px;letter-spacing:0.8px;">'+sc.label+'</span>'
@@ -9087,7 +9371,7 @@ function admAbrirAcao(u) {
   var el = function(id){ return document.getElementById(id); };
   if (el('adm-acao-avatar')) el('adm-acao-avatar').textContent = ((u.nome||'?').charAt(0)).toUpperCase();
   if (el('adm-acao-nome'))   el('adm-acao-nome').textContent   = u.nome || 'Sem nome';
-  if (el('adm-acao-sub'))    el('adm-acao-sub').textContent    = '@' + (u.nomeUsuario||'—') + (u.email?' · '+u.email:'');
+  if (el('adm-acao-sub'))    el('adm-acao-sub').textContent    = '@' + (u.nomeUsuario||'—') + (u.email ? ' · ' + u.email : '') + (u.instrumento ? ' · ' + u.instrumento : '');
   var scfg = {
     ativo:     { bg:'rgba(29,185,84,0.15)',  color:'#1db954', label:'Ativo'     },
     bloqueado: { bg:'rgba(255,170,0,0.15)', color:'#ffaa00', label:'Bloqueado' },
@@ -9110,37 +9394,63 @@ function admFecharAcao() {
   _admSelected = null;
 }
 
-async function admAcao(tipo) {
+function admAcao(tipo) {
   var u = _admSelected;
   if (!u || !u.uid) return;
   var nomeU = '@' + (u.nomeUsuario || u.nome || 'usuario');
-  var confirmMsgs = {
-    bloquear:    'Bloquear ' + nomeU + '? Impedira o acesso ate restauracao.',
-    banir:       'BANIR ' + nomeU + ' permanentemente? Acao grave e definitiva.',
-    desbloquear: 'Restaurar o acesso de ' + nomeU + '?',
-    remover:     'REMOVER a conta de ' + nomeU + '? Dados apagados. Irreversivel!'
+
+  var cfg = {
+    bloquear:    { titulo: 'Bloquear usuario',    msg: 'Bloquear ' + nomeU + '? O acesso sera impedido ate restauracao.', cor: '#ffaa00' },
+    banir:       { titulo: 'Banir usuario',        msg: 'Banir ' + nomeU + ' permanentemente? Esta acao e grave e definitiva.', cor: '#ff4444' },
+    desbloquear: { titulo: 'Restaurar acesso',     msg: 'Restaurar o acesso de ' + nomeU + '?', cor: '#1db954' },
+    remover:     { titulo: 'Remover conta',        msg: 'Remover a conta de ' + nomeU + '? Todos os dados serao apagados. Irreversivel!', cor: '#ff4444' }
   };
-  if (!confirm(confirmMsgs[tipo] || 'Confirmar?')) return;
-  admFecharAcao();
-  if (!window._fb) { if(typeof showToast==='function') showToast('Firebase nao disponivel'); return; }
-  if (tipo === 'remover') {
-    var ok = await window._fb.admRemoverConta(u.uid);
-    if (ok) {
-      _admCache = _admCache.filter(function(x){ return x.uid !== u.uid; });
+  var c = cfg[tipo] || { titulo: 'Confirmar', msg: 'Confirmar acao?', cor: '#fff' };
+
+  // Modal de confirmacao proprio (confirm() nativo falha em iOS dentro de modais)
+  var overlay = document.createElement('div');
+  overlay.style.cssText = 'position:fixed;inset:0;z-index:100020;background:rgba(0,0,0,0.85);display:flex;align-items:center;justify-content:center;padding:24px;';
+  overlay.innerHTML =
+    '<div style="background:#111119;border:1px solid rgba(255,255,255,0.1);border-radius:18px;padding:24px 20px;width:100%;max-width:320px;display:flex;flex-direction:column;gap:14px;">'
+  + '<div style="font-size:15px;font-weight:900;color:#fff;">' + c.titulo + '</div>'
+  + '<div style="font-size:13px;color:rgba(255,255,255,0.5);line-height:1.5;">' + c.msg + '</div>'
+  + '<div style="display:flex;gap:10px;margin-top:4px;">'
+  + '<button id="_adm-cancel" style="flex:1;padding:12px;border-radius:12px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);color:rgba(255,255,255,0.4);font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;touch-action:manipulation;">Cancelar</button>'
+  + '<button id="_adm-confirm" style="flex:2;padding:12px;border-radius:12px;background:' + c.cor + ';border:none;color:' + (tipo==='desbloquear'?'#000':'#fff') + ';font-size:12px;font-weight:900;cursor:pointer;font-family:inherit;touch-action:manipulation;">Confirmar</button>'
+  + '</div></div>';
+  document.body.appendChild(overlay);
+
+  document.getElementById('_adm-cancel').onclick = function() { overlay.remove(); };
+  document.getElementById('_adm-confirm').onclick = async function() {
+    overlay.remove();
+    admFecharAcao();
+    if (!window._fb) { showToast('Firebase nao disponivel'); return; }
+
+    if (tipo === 'remover') {
+      showToast('Removendo...');
+      var ok = await window._fb.admRemoverConta(u.uid);
+      if (ok) {
+        _admCache = _admCache.filter(function(x){ return x.uid !== u.uid; });
+        admAtualizarStats(); admBuscar();
+        showToast('Conta removida');
+      } else {
+        showToast('Erro ao remover — verifique as regras do Firestore');
+      }
+      return;
+    }
+
+    var novoStatus = tipo==='bloquear' ? 'bloqueado' : tipo==='banir' ? 'banido' : 'ativo';
+    var ok2 = await window._fb.admSetStatus(u.uid, novoStatus);
+    if (ok2) {
+      var idx = _admCache.findIndex(function(x){ return x.uid===u.uid; });
+      if (idx>=0) _admCache[idx].status = novoStatus;
       admAtualizarStats(); admBuscar();
-      if(typeof showToast==='function') showToast('Conta removida');
-    } else { if(typeof showToast==='function') showToast('Erro ao remover'); }
-    return;
-  }
-  var novoStatus = tipo==='bloquear' ? 'bloqueado' : tipo==='banir' ? 'banido' : 'ativo';
-  var ok2 = await window._fb.admSetStatus(u.uid, novoStatus);
-  if (ok2) {
-    var idx = _admCache.findIndex(function(x){ return x.uid===u.uid; });
-    if (idx>=0) _admCache[idx].status = novoStatus;
-    admAtualizarStats(); admBuscar();
-    var msgs = { bloqueado:'Usuario bloqueado', banido:'Usuario banido', ativo:'Acesso restaurado' };
-    if(typeof showToast==='function') showToast(msgs[novoStatus]||'Atualizado');
-  } else { if(typeof showToast==='function') showToast('Erro ao atualizar'); }
+      var msgs = { bloqueado:'Usuario bloqueado', banido:'Usuario banido', ativo:'Acesso restaurado' };
+      showToast(msgs[novoStatus] || 'Atualizado');
+    } else {
+      showToast('Erro ao atualizar status');
+    }
+  };
 }
 // ─── EXCLUIR CONTA ────────────────────────────────────────────────────────────
 function excluirConta() {
@@ -9207,7 +9517,33 @@ async function _excluirConfirmar() {
   sessionStorage.setItem('map_skip_splash', '1');
   setTimeout(function() { location.reload(); }, 1200);
 }
-</script>
+async function _fbFazerBackupAgora(btn) {
+  if (!_isFbReady()) { showToast('Firebase indisponível'); return; }
+  if (btn) { btn.disabled = true; btn.textContent = 'Salvando...'; }
+  try {
+    const uid = _getUid();
+    const eventosAtuais = JSON.parse(localStorage.getItem('map_pro_eventos_v1') || '[]');
+    let ok;
+    if (window._fb.salvarBackupCompleto) {
+      ok = await window._fb.salvarBackupCompleto(uid, songs, eventosAtuais);
+    } else {
+      ok = await window._fb.backupMusicas(uid, songs);
+      if (eventosAtuais.length) await window._fb.backupEventos(uid, eventosAtuais);
+      ok = true;
+    }
+    if (ok) {
+      showToast(songs.length + ' músicas salvas na nuvem');
+      _fbAtualizarStats();
+      if (btn) { btn.textContent = 'Salvo!'; setTimeout(function(){ if(btn){ btn.disabled=false; btn.textContent='Fazer Backup'; }}, 2000); }
+    } else {
+      showToast('Erro ao fazer backup');
+      if (btn) { btn.disabled = false; btn.textContent = 'Fazer Backup'; }
+    }
+  } catch(e) {
+    showToast('Erro ao fazer backup');
+    if (btn) { btn.disabled = false; btn.textContent = 'Fazer Backup'; }
+  }
+}</script>
 
 
 <!-- PAINEL DE NOTIFICAÇÕES -->
@@ -9633,6 +9969,9 @@ async function _excluirConfirmar() {
 <!-- PAINEL ADMIN -->
 <div id="admin-painel" style="display:none;position:fixed;inset:0;z-index:8000;background:#09090f;flex-direction:column;overflow:hidden;">
   <div style="background:#101018;border-bottom:1px solid rgba(255,255,255,0.07);padding:14px 18px;display:flex;align-items:center;gap:12px;flex-shrink:0;">
+    <button onclick="adminMostrarAba('app')" style="width:36px;height:36px;border-radius:10px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);color:rgba(255,255,255,0.6);cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;touch-action:manipulation;" title="Voltar ao app">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+    </button>
     <div style="flex:1;">
       <div style="font-size:15px;font-weight:900;color:#fff;">Administração</div>
       <div style="font-size:10px;color:rgba(255,255,255,0.28);margin-top:2px;letter-spacing:0.5px;">MAP MUSIC PRO · CONTROLE DE USUÁRIOS</div>
