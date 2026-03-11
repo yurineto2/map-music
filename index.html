@@ -1046,7 +1046,13 @@ async function obFazerLogin() {
     }
     // Guardar PIN local se existia antes
     const pinAnterior = JSON.parse(localStorage.getItem('map_perfil_v1') || '{}').pin || '';
-    localStorage.setItem('map_perfil_v1', JSON.stringify({ ...perfil, uid, pin: perfil.pin || pinAnterior }));
+    // Restaura foto e banner do Firebase (campos que vem no perfil do Firestore)
+    const perfilCompleto = {
+      ...perfil,
+      uid,
+      pin: perfil.pin || pinAnterior
+    };
+    localStorage.setItem('map_perfil_v1', JSON.stringify(perfilCompleto));
     localStorage.setItem('map_uid_v1', uid);
 
     // Restaurar backup da nuvem automaticamente
@@ -4686,6 +4692,94 @@ function fecharModalPerfil() {
   document.getElementById('modal-perfil').style.display = 'none';
 }
 
+// ─── PERFIL PUBLICO DE OUTROS USUARIOS ──────────────────────────────────────
+async function verPerfilUsuario(uid) {
+  if (!uid) return;
+  const modal = document.getElementById('modal-perfil-publico');
+  if (!modal) return;
+
+  // Reset
+  document.getElementById('pp-avatar').innerHTML = '<div style="width:100%;height:100%;background:linear-gradient(135deg,#1a2f1a,#223322);display:flex;align-items:center;justify-content:center;font-size:28px;font-weight:900;color:#1db954;">...</div>';
+  document.getElementById('pp-nome').textContent = 'Carregando...';
+  document.getElementById('pp-inst').textContent = '';
+  document.getElementById('pp-id').textContent = '';
+  document.getElementById('pp-banner').style.backgroundImage = '';
+  document.getElementById('pp-banner').style.background = 'linear-gradient(135deg,#0d2918,#0a1a10)';
+  document.getElementById('pp-add-btn').style.display = 'none';
+  modal.style.display = 'flex';
+
+  try {
+    const u = await window._fb.carregarPerfilPorUid(uid);
+    if (!u) { showToast('Perfil nao encontrado'); modal.style.display = 'none'; return; }
+
+    const nome = u.nome || u.nomeUsuario || '—';
+    const inicial = nome.charAt(0).toUpperCase();
+
+    // Banner
+    if (u.bannerFoto) {
+      const bpx = u.bannerPosX !== undefined ? u.bannerPosX : 50;
+      const bpy = u.bannerPosY !== undefined ? u.bannerPosY : 50;
+      document.getElementById('pp-banner').style.backgroundImage = 'url(' + u.bannerFoto + ')';
+      document.getElementById('pp-banner').style.backgroundSize = (u.bannerZoom || 100) + '%';
+      document.getElementById('pp-banner').style.backgroundPosition = bpx + '% ' + bpy + '%';
+    }
+
+    // Avatar
+    const avEl = document.getElementById('pp-avatar');
+    if (u.foto) {
+      const px = u.fotoPosX !== undefined ? u.fotoPosX : 50;
+      const py = u.fotoPosY !== undefined ? u.fotoPosY : 50;
+      avEl.innerHTML = '<img src="' + u.foto + '" style="width:100%;height:100%;object-fit:cover;border-radius:15px;object-position:' + px + '% ' + py + '%;">';
+    } else {
+      avEl.innerHTML = '<span style="font-size:28px;font-weight:900;color:#1db954;">' + inicial + '</span>';
+    }
+
+    document.getElementById('pp-nome').textContent = nome;
+    const instMap = { guitarra:'Guitarra', baixo:'Baixo', teclado:'Teclado', bateria:'Bateria', voz:'Voz', violao:'Violao', produtor:'Produtor', outro:'Outro' };
+    document.getElementById('pp-inst').textContent = u.instrumento ? (instMap[u.instrumento] || u.instrumento) : '';
+    const pid = u.profileId || '';
+    document.getElementById('pp-id').textContent = pid.length >= 7 ? pid.slice(0,4) + ' ' + pid.slice(4,8) : pid;
+
+    // Botao adicionar (se nao for amigo ja)
+    const meuUid = localStorage.getItem('map_uid_v1');
+    if (uid !== meuUid) {
+      const amigosUids = _amigosCache.map(a => a.uid);
+      const solEnviadasUids = (window._solEnviadas || []).map(s => s.para);
+      const addBtn = document.getElementById('pp-add-btn');
+      addBtn.style.display = 'block';
+      if (amigosUids.includes(uid)) {
+        addBtn.textContent = 'Ja e seu amigo';
+        addBtn.disabled = true;
+        addBtn.style.background = 'rgba(29,185,84,0.1)';
+        addBtn.style.color = '#1db954';
+        addBtn.style.borderColor = 'rgba(29,185,84,0.3)';
+      } else if (solEnviadasUids.includes(uid)) {
+        addBtn.textContent = 'Solicitacao enviada';
+        addBtn.disabled = true;
+        addBtn.style.background = 'rgba(255,255,255,0.04)';
+        addBtn.style.color = 'rgba(255,255,255,0.3)';
+        addBtn.style.borderColor = 'rgba(255,255,255,0.08)';
+      } else {
+        addBtn.textContent = '+ Adicionar';
+        addBtn.disabled = false;
+        addBtn.style.background = 'rgba(29,185,84,0.12)';
+        addBtn.style.color = '#1db954';
+        addBtn.style.borderColor = 'rgba(29,185,84,0.35)';
+        addBtn.onclick = function() {
+          enviarSolicitacaoFb(uid, nome, u.instrumento || '');
+          addBtn.textContent = 'Solicitacao enviada';
+          addBtn.disabled = true;
+        };
+      }
+    }
+  } catch(e) { showToast('Erro ao carregar perfil'); modal.style.display = 'none'; }
+}
+
+function fecharPerfilPublico() {
+  const modal = document.getElementById('modal-perfil-publico');
+  if (modal) modal.style.display = 'none';
+}
+
 
 
 
@@ -7992,7 +8086,7 @@ async function buscarAmigosInput(val) {
 
       let btn = '';
       if (jaAmigo) {
-        btn = '<span style="font-size:10px;color:#1db954;font-weight:700;">Amigo</span>';
+        btn = '<button class="amigo-btn" onclick="verPerfilUsuario(\'' + u.uid + '\')" style="background:rgba(29,185,84,0.08);border-color:rgba(29,185,84,0.2);color:#1db954;font-size:10px;">Ver perfil</button>';
       } else if (solEnviada) {
         btn = '<span style="font-size:10px;color:rgba(255,255,255,0.3);font-weight:700;">Enviada</span>';
       } else {
@@ -8000,8 +8094,8 @@ async function buscarAmigosInput(val) {
       }
 
       return `<div class="amigo-item">
-        <div class="amigo-avatar">${inicial}</div>
-        <div class="amigo-info">
+        <div class="amigo-avatar" onclick="verPerfilUsuario('${u.uid}')" style="cursor:pointer;">${inicial}</div>
+        <div class="amigo-info" onclick="verPerfilUsuario('${u.uid}')" style="cursor:pointer;">
           <div class="amigo-nome">${u.nome || '—'}</div>
           <div class="amigo-inst">${u.instrumento || 'Instrumento não definido'}${pidFormatted ? ' · <span style="color:rgba(29,185,84,0.6);font-family:monospace;font-weight:700;">'+pidFormatted+'</span>' : ''}</div>
         </div>
@@ -8246,16 +8340,17 @@ async function _renderAmigos() {
     const _aUid  = (a.uid||'').replace(/"/g,'');
     const _aNome = (a.nome||'').replace(/"/g,'');
     const btnRemover = '<button class="amigo-btn amigo-btn-remover" data-uid="' + _aUid + '" data-nome="' + _aNome + '" onclick="removerAmigo(this.dataset.uid,this.dataset.nome)" title="Remover amigo" style="background:rgba(255,60,60,0.07);border-color:rgba(255,60,60,0.18);color:rgba(255,80,80,0.7);"><svg width=\"13\" height=\"13\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2.5\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><line x1=\"18\" y1=\"6\" x2=\"6\" y2=\"18\"/><line x1=\"6\" y1=\"6\" x2=\"18\" y2=\"18\"/></svg></button>';
+    const btnVerPerfil = '<button class="amigo-btn" data-uid="' + _aUid + '" onclick="verPerfilUsuario(this.dataset.uid)" style="background:rgba(255,255,255,0.04);border-color:rgba(255,255,255,0.1);color:rgba(255,255,255,0.5);font-size:10px;">Ver</button>';
     return `<div class="amigo-item">
-      <div class="amigo-avatar">${inicial}</div>
-      <div class="amigo-info">
+      <div class="amigo-avatar" onclick="verPerfilUsuario('${_aUid}')" style="cursor:pointer;">${inicial}</div>
+      <div class="amigo-info" onclick="verPerfilUsuario('${_aUid}')" style="cursor:pointer;">
         <div style="display:flex;align-items:center;gap:7px;">
           <div class="amigo-nome">${a.nome||'—'}</div>
           <div class="${isOnline ? 'amigo-online-dot' : 'amigo-offline-dot'}" title="${isOnline ? 'Online agora' : 'Offline'}"></div>
         </div>
-        <div class="amigo-inst">${a.inst||'Instrumento não definido'}</div>
+        <div class="amigo-inst">${a.inst||'Instrumento nao definido'}</div>
       </div>
-      <div class="amigo-actions">${btnConvidar}${btnRemover}</div>
+      <div class="amigo-actions">${btnVerPerfil}${btnConvidar}${btnRemover}</div>
     </div>`;
   }).join('');
 }
@@ -8997,6 +9092,17 @@ function salvarPerfil() {
     };
     // Só sincroniza foto se tiver (evita enviar null e apagar foto existente)
     if (perfil.foto) fbData.foto = perfil.foto;
+    if (perfil.fotoOffX !== undefined) fbData.fotoOffX = perfil.fotoOffX;
+    if (perfil.fotoOffY !== undefined) fbData.fotoOffY = perfil.fotoOffY;
+    if (perfil.fotoZoom !== undefined) fbData.fotoZoom = perfil.fotoZoom;
+    if (perfil.fotoPosX !== undefined) fbData.fotoPosX = perfil.fotoPosX;
+    if (perfil.fotoPosY !== undefined) fbData.fotoPosY = perfil.fotoPosY;
+    if (perfil.bannerFoto) fbData.bannerFoto = perfil.bannerFoto;
+    if (perfil.bannerOffX !== undefined) fbData.bannerOffX = perfil.bannerOffX;
+    if (perfil.bannerOffY !== undefined) fbData.bannerOffY = perfil.bannerOffY;
+    if (perfil.bannerZoom !== undefined) fbData.bannerZoom = perfil.bannerZoom;
+    if (perfil.bannerPosX !== undefined) fbData.bannerPosX = perfil.bannerPosX;
+    if (perfil.bannerPosY !== undefined) fbData.bannerPosY = perfil.bannerPosY;
     window._fb.salvarPerfilCompleto(perfil.uid || _getUid(), fbData).catch(function(){});
   }
 
@@ -10439,6 +10545,31 @@ async function _fbFazerBackupAgora(btn) {
       style="background:none;border:none;color:rgba(255,255,255,0.2);font-size:12px;font-family:inherit;cursor:pointer;padding:8px;touch-action:manipulation;">
       Cancelar
     </button>
+  </div>
+</div>
+
+<!-- MODAL PERFIL PUBLICO -->
+<div id="modal-perfil-publico" style="display:none;position:fixed;inset:0;z-index:99999;background:rgba(0,0,0,0.92);align-items:flex-end;justify-content:center;padding:0;" onclick="if(event.target===this)fecharPerfilPublico()">
+  <div style="background:#0c0c14;border:1px solid rgba(255,255,255,0.08);border-radius:24px 24px 0 0;width:100%;max-width:480px;display:flex;flex-direction:column;overflow:hidden;max-height:90vh;animation:slideUpModal 0.3s cubic-bezier(0.34,1.56,0.64,1);">
+    <!-- Banner -->
+    <div id="pp-banner" style="position:relative;height:110px;background:linear-gradient(135deg,#0d2918,#0a1a10);background-size:cover;background-position:center;flex-shrink:0;overflow:hidden;">
+      <button onclick="fecharPerfilPublico()" style="position:absolute;top:10px;right:10px;z-index:4;background:rgba(0,0,0,0.5);border:1px solid rgba(255,255,255,0.15);border-radius:50%;width:28px;height:28px;display:flex;align-items:center;justify-content:center;cursor:pointer;color:rgba(255,255,255,0.8);font-size:16px;line-height:1;">&times;</button>
+      <div style="position:absolute;top:16px;left:20px;z-index:2;font-size:9px;font-weight:900;letter-spacing:3px;color:rgba(29,185,84,0.6);text-transform:uppercase;">Perfil</div>
+    </div>
+    <!-- Avatar -->
+    <div style="padding:0 24px;margin-top:-36px;flex-shrink:0;position:relative;z-index:2;">
+      <div style="display:flex;align-items:flex-end;justify-content:space-between;">
+        <div id="pp-avatar" style="width:72px;height:72px;border-radius:18px;background:linear-gradient(135deg,#1db954,#17a349);display:flex;align-items:center;justify-content:center;font-size:28px;font-weight:900;color:#000;overflow:hidden;border:3px solid #0c0c14;box-shadow:0 4px 20px rgba(0,0,0,0.6);"></div>
+      </div>
+    </div>
+    <!-- Info -->
+    <div style="padding:14px 24px 24px;display:flex;flex-direction:column;gap:6px;overflow-y:auto;">
+      <div id="pp-nome" style="font-size:20px;font-weight:900;color:#fff;"></div>
+      <div id="pp-inst" style="font-size:12px;color:rgba(255,255,255,0.45);font-weight:600;"></div>
+      <div id="pp-id" style="font-size:11px;color:rgba(29,185,84,0.5);font-family:monospace;font-weight:700;letter-spacing:1px;margin-top:2px;"></div>
+      <button id="pp-add-btn" style="display:none;margin-top:16px;width:100%;padding:13px;border-radius:13px;font-size:13px;font-weight:900;cursor:pointer;font-family:inherit;touch-action:manipulation;border:1.5px solid;transition:all 0.2s;"></button>
+      <button onclick="fecharPerfilPublico()" style="margin-top:8px;width:100%;padding:11px;border-radius:12px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.07);color:rgba(255,255,255,0.35);font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;touch-action:manipulation;">Fechar</button>
+    </div>
   </div>
 </div>
 
