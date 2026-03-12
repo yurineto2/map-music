@@ -1234,6 +1234,8 @@ document.addEventListener('DOMContentLoaded', function() {
     // Garante que todos os filhos são interativos (iOS Safari fix)
     ov.querySelectorAll('button, input, select').forEach(function(el) {
       el.style.pointerEvents = 'auto';
+      // Remove readOnly temporário que previne teclado durante splash
+      el.removeAttribute('readonly');
     });
     // Adiciona classe .visible que contém a transição definida no CSS
     requestAnimationFrame(function() {
@@ -3155,10 +3157,10 @@ body.viewer-mode input[type="text"] { pointer-events: none; }
   transition: none;
   pointer-events: none; /* JS define auto via _mostrarOnboarding */
 }
-/* Garante que filhos do onboarding são sempre clicáveis quando visível */
-#onboarding-overlay button,
-#onboarding-overlay input,
-#onboarding-overlay select {
+/* Filhos do onboarding só são clicáveis quando o overlay está visível */
+#onboarding-overlay.visible button,
+#onboarding-overlay.visible input,
+#onboarding-overlay.visible select {
   pointer-events: auto !important;
 }
 #onboarding-overlay.visible {
@@ -3660,12 +3662,12 @@ body.auth-pending #toast {
     <div id="ob-painel-login">
       <div class="ob-field">
         <label class="ob-label">Email</label>
-        <input id="login-email" type="email" class="ob-input" placeholder="teu@email.com" autocomplete="email" oninput="obLoginValidar()">
+        <input id="login-email" type="email" class="ob-input" placeholder="teu@email.com" autocomplete="email" readonly oninput="obLoginValidar()">
       </div>
       <div class="ob-field">
         <label class="ob-label">Senha</label>
         <div style="position:relative;">
-          <input id="login-senha" type="password" class="ob-input" placeholder="••••••••" autocomplete="current-password" oninput="obLoginValidar()" style="padding-right:44px;">
+          <input id="login-senha" type="password" class="ob-input" placeholder="••••••••" autocomplete="current-password" readonly oninput="obLoginValidar()" style="padding-right:44px;">
           <button type="button" onclick="_obToggleSenha('login-senha','login-olho')"
             style="position:absolute;right:12px;top:50%;transform:translateY(-50%);background:none;border:none;color:rgba(255,255,255,0.3);cursor:pointer;padding:4px;">
             <svg id="login-olho" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
@@ -3692,7 +3694,7 @@ body.auth-pending #toast {
         <div class="ob-field">
           <label class="ob-label">Nome de utilizador</label>
           <div style="position:relative;">
-            <input id="ob-nome" type="text" class="ob-input" placeholder="@nomeusuario" autocomplete="off" maxlength="24"
+            <input id="ob-nome" type="text" class="ob-input" placeholder="@nomeusuario" autocomplete="off" maxlength="24" readonly
               oninput="obNomeInput()" style="padding-right:44px;">
             <div id="ob-nome-status" style="position:absolute;right:12px;top:50%;transform:translateY(-50%);font-size:14px;"></div>
           </div>
@@ -3704,7 +3706,7 @@ body.auth-pending #toast {
         </div>
         <div class="ob-field" style="margin-top:4px;">
           <label class="ob-label">Email</label>
-          <input id="ob-email" type="email" class="ob-input" placeholder="teu@email.com" autocomplete="email" oninput="_obValidarCta()">
+          <input id="ob-email" type="email" class="ob-input" placeholder="teu@email.com" autocomplete="email" readonly oninput="_obValidarCta()">
           <div id="ob-email-msg" style="font-size:11px;color:rgba(255,255,255,0.3);margin-top:6px;min-height:16px;"></div>
         </div>
       </div><!-- /ob-step-1 -->
@@ -3719,7 +3721,7 @@ body.auth-pending #toast {
         <div class="ob-field">
           <label class="ob-label">Criar senha (mín. 6 caracteres)</label>
           <div style="position:relative;">
-            <input id="ob-senha" type="password" class="ob-input" placeholder="••••••••" autocomplete="new-password" minlength="6"
+            <input id="ob-senha" type="password" class="ob-input" placeholder="••••••••" autocomplete="new-password" readonly minlength="6"
               oninput="_obValidarCta()" style="padding-right:44px;">
             <button type="button" onclick="_obToggleSenha('ob-senha','ob-olho-1')"
               style="position:absolute;right:12px;top:50%;transform:translateY(-50%);background:none;border:none;color:rgba(255,255,255,0.3);cursor:pointer;padding:4px;">
@@ -3731,7 +3733,7 @@ body.auth-pending #toast {
         <div class="ob-field">
           <label class="ob-label">Confirmar senha</label>
           <div style="position:relative;">
-            <input id="ob-senha2" type="password" class="ob-input" placeholder="••••••••" autocomplete="new-password"
+            <input id="ob-senha2" type="password" class="ob-input" placeholder="••••••••" autocomplete="new-password" readonly
               oninput="_obValidarCta()" style="padding-right:44px;">
             <button type="button" onclick="_obToggleSenha('ob-senha2','ob-olho-2')"
               style="position:absolute;right:12px;top:50%;transform:translateY(-50%);background:none;border:none;color:rgba(255,255,255,0.3);cursor:pointer;padding:4px;">
@@ -3742,10 +3744,10 @@ body.auth-pending #toast {
         <div class="ob-field">
           <label class="ob-label">PIN de acesso rápido (4 dígitos)</label>
           <div style="display:flex;gap:12px;justify-content:center;margin-top:4px;">
-            <input id="ob-pin-0" type="tel" maxlength="1" class="ob-pin-input" oninput="obPinNext(0)" onkeydown="obPinKey(event,0)">
-            <input id="ob-pin-1" type="tel" maxlength="1" class="ob-pin-input" oninput="obPinNext(1)" onkeydown="obPinKey(event,1)">
-            <input id="ob-pin-2" type="tel" maxlength="1" class="ob-pin-input" oninput="obPinNext(2)" onkeydown="obPinKey(event,2)">
-            <input id="ob-pin-3" type="tel" maxlength="1" class="ob-pin-input" oninput="obPinNext(3)" onkeydown="obPinKey(event,3)">
+            <input id="ob-pin-0" type="tel" maxlength="1" class="ob-pin-input" readonly oninput="obPinNext(0)" onkeydown="obPinKey(event,0)">
+            <input id="ob-pin-1" type="tel" maxlength="1" class="ob-pin-input" readonly oninput="obPinNext(1)" onkeydown="obPinKey(event,1)">
+            <input id="ob-pin-2" type="tel" maxlength="1" class="ob-pin-input" readonly oninput="obPinNext(2)" onkeydown="obPinKey(event,2)">
+            <input id="ob-pin-3" type="tel" maxlength="1" class="ob-pin-input" readonly oninput="obPinNext(3)" onkeydown="obPinKey(event,3)">
           </div>
           <div style="font-size:9px;color:rgba(255,255,255,0.2);text-align:center;margin-top:6px;">O PIN desbloqueia o app rapidamente</div>
         </div>
@@ -13357,6 +13359,7 @@ body[data-ambiente="vocalista"] .swipe-hint { display: none !important; }
       </button>
       <div id="vocal-drop" class="dropdown-menu" style="display:none;">
         <div class="menu-item" onclick="abrirModalPerfil();fecharVocalMenu()">Meu Perfil</div>
+        <div class="menu-item" onclick="fecharVocalMenu();_vocPedirApiKey(function(k){if(k){_vocSaveApiKey(k);vocToast('Chave da API salva!');}})">🔑 Chave da API</div>
         <div class="menu-item" onclick="desconectar()">Sair</div>
       </div>
     </div>
@@ -13784,6 +13787,7 @@ function vocAbrirPainel(id, originEl) {
   // Preparar conteúdo antes de mostrar
   if(id === 'salvos') _vocRenderFavs();
   if(id === 'tom') _vocRenderTons();
+  if(id === 'letras') _vocRenderHist();
   if(id === 'videos') { var vi=document.getElementById('voc-input-video'); if(vi&&_voc.titulo) vi.value=_voc.titulo+' '+_voc.artista; }
 
   // Mostrar e animar
@@ -13826,19 +13830,66 @@ function _vocRenderHist(){
 }
 function vocAbrirDaHistEl(el){
   var t=el.getAttribute('data-titulo'), a=el.getAttribute('data-artista'), l=el.getAttribute('data-letra');
-  if(t&&a&&l){ _voc.titulo=t;_voc.artista=a;_voc.letra=l; vocAbrirLetra(t,a,l); }
+  if(t&&a&&l){ _voc.titulo=t;_voc.artista=a;_voc.letra=l; vocFecharPainel(); vocAbrirLetra(t,a,l); }
 }
 
 // ── Claude API ────────────────────────────────────────────────────────────────
+function _vocGetApiKey(){ try{ return localStorage.getItem('voc_claude_api_key')||''; }catch(e){ return ''; } }
+function _vocSaveApiKey(k){ try{ if(k)localStorage.setItem('voc_claude_api_key',k.trim()); }catch(e){} }
+
 async function _vocClaude(prompt, maxTokens) {
-  var r = await fetch('https://api.anthropic.com/v1/messages', {
-    method:'POST',
-    headers:{ 'Content-Type':'application/json','anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true' },
-    body: JSON.stringify({ model:'claude-sonnet-4-6', max_tokens:maxTokens||1000, messages:[{role:'user',content:prompt}] })
-  });
-  if(!r.ok){ var e=await r.text(); console.error('API erro:',r.status,e); return null; }
-  var d=await r.json();
-  return d.content&&d.content[0]?d.content[0].text:null;
+  var apiKey = _vocGetApiKey();
+  if(!apiKey){
+    // Mostra modal de configuração de chave
+    _vocPedirApiKey(function(k){ if(k){ _vocSaveApiKey(k); vocToast('Chave salva! Tente novamente.'); } });
+    return null;
+  }
+  try {
+    var r = await fetch('https://api.anthropic.com/v1/messages', {
+      method:'POST',
+      headers:{
+        'Content-Type':'application/json',
+        'anthropic-version':'2023-06-01',
+        'anthropic-dangerous-direct-browser-access':'true',
+        'x-api-key': apiKey
+      },
+      body: JSON.stringify({ model:'claude-sonnet-4-6', max_tokens:maxTokens||1000, messages:[{role:'user',content:prompt}] })
+    });
+    if(!r.ok){
+      var e=await r.text();
+      console.error('API erro:',r.status,e);
+      if(r.status===401||r.status===403){
+        vocToast('Chave inválida. Configure novamente.');
+        _vocPedirApiKey(function(k){ if(k){ _vocSaveApiKey(k); vocToast('Chave salva! Tente novamente.'); } });
+      }
+      return null;
+    }
+    var d=await r.json();
+    return d.content&&d.content[0]?d.content[0].text:null;
+  } catch(e) { console.error('_vocClaude erro:',e); return null; }
+}
+
+function _vocPedirApiKey(cb){
+  var overlay=document.createElement('div');
+  overlay.style.cssText='position:fixed;inset:0;z-index:99999;background:rgba(0,0,0,0.85);display:flex;align-items:center;justify-content:center;padding:20px;';
+  overlay.innerHTML='<div style="background:#10101a;border:1px solid rgba(138,92,246,0.25);border-radius:20px;padding:28px 24px;max-width:360px;width:100%;">'
+    +'<div style="font-size:16px;font-weight:900;color:#fff;margin-bottom:8px;">🔑 Chave da API Claude</div>'
+    +'<div style="font-size:12px;color:rgba(255,255,255,0.4);margin-bottom:20px;line-height:1.5;">Para buscar letras e músicas, insira sua chave da API Anthropic. Ela fica salva apenas no seu dispositivo.</div>'
+    +'<input id="_vocApiInput" type="password" placeholder="sk-ant-..." style="width:100%;background:rgba(255,255,255,0.05);border:1px solid rgba(138,92,246,0.3);border-radius:12px;padding:14px;color:#fff;font-size:14px;outline:none;margin-bottom:16px;">'
+    +'<div style="display:flex;gap:10px;">'
+    +'<button onclick="this.closest(\'div[style]\').remove()" style="flex:1;padding:13px;border-radius:12px;border:1px solid rgba(255,255,255,0.1);background:transparent;color:rgba(255,255,255,0.4);font-size:13px;font-weight:700;cursor:pointer;">Cancelar</button>'
+    +'<button id="_vocApiSaveBtn" style="flex:2;padding:13px;border-radius:12px;border:none;background:rgba(138,92,246,0.8);color:#fff;font-size:13px;font-weight:800;cursor:pointer;">Salvar chave</button>'
+    +'</div>'
+    +'<div style="margin-top:14px;text-align:center;"><a href="https://console.anthropic.com/account/keys" target="_blank" style="font-size:11px;color:rgba(138,92,246,0.6);text-decoration:none;">Obter chave em console.anthropic.com →</a></div>'
+    +'</div>';
+  document.body.appendChild(overlay);
+  var btn=document.getElementById('_vocApiSaveBtn');
+  if(btn) btn.onclick=function(){
+    var k=(document.getElementById('_vocApiInput').value||'').trim();
+    overlay.remove();
+    if(cb)cb(k);
+  };
+  setTimeout(function(){ var inp=document.getElementById('_vocApiInput'); if(inp)inp.focus(); },100);
 }
 
 // ── Busca de letras ───────────────────────────────────────────────────────────
@@ -13896,6 +13947,7 @@ async function vocCarregarLetraEl(el){
     _vocAddHist({titulo:titulo,artista:artista,letra:letraLimpa});
     _voc.titulo=titulo; _voc.artista=artista; _voc.letra=letraLimpa;
     _vocDefinirTom(titulo,artista);
+    vocFecharPainel();
     vocAbrirLetra(titulo,artista,letraLimpa);
   }catch(e){
     res.innerHTML='<div class="voc-empty"><div class="voc-empty-title">Erro ao carregar</div><div class="voc-empty-sub">Verifique sua conexao</div></div>';
@@ -13990,7 +14042,7 @@ function vocToggleAula(id){ var body=document.getElementById('voc-body-'+id),arr
 
 // ── Vídeos ────────────────────────────────────────────────────────────────────
 async function vocBuscarVideos(){
-  var q=(document.getElementById('voc-input-video').value||'').trim(); if(!q)return;
+  var q=(document.getElementById('voc-input-video').value||'').trim(); if(!q){ vocToast('Digite o nome da música'); return; }
   var res=document.getElementById('voc-videos-res');
   res.innerHTML='<div class="voc-spinner"></div>';
   var tipos=[{label:'Com Letra',badge:'COM LETRA',query:q+' letra oficial'},{label:'Lyric Video',badge:'LYRIC',query:q+' lyric video'},{label:'Karaokê',badge:'KARAOKÊ',query:q+' karaoke'},{label:'Ao Vivo',badge:'AO VIVO',query:q+' ao vivo'}];
