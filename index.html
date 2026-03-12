@@ -1264,7 +1264,8 @@ document.addEventListener('DOMContentLoaded', function() {
       _mostrarApp();
       const ov = document.getElementById('onboarding-overlay');
       if (ov) ov.remove();
-      _verificarPinNaEntrada();
+      // Aguarda splash terminar animação (~700ms) antes de mostrar PIN/Face ID
+      setTimeout(function() { _verificarPinNaEntrada(); }, 750);
       // Verificar status em background (sem bloquear UI)
       // Se bloqueado/banido, fecha o app e mostra mensagem
       (async function() {
