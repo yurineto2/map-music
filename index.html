@@ -772,7 +772,7 @@ function _obValidarCta() {
     else senhaMsg.textContent = '';
   }
 
-  if (cta) cta.disabled = !ok;
+  if (cta) cta.style.opacity = ok ? '1' : '0.5'; // visual only, never disabled
 }
 
 // ── Show step 2 after nome + email confirmed ─────────────────────────────────
@@ -1184,9 +1184,10 @@ document.addEventListener('DOMContentLoaded', function() {
     }
     const btnCta = document.getElementById('ob-cta');
     if (btnCta) {
+      btnCta.removeAttribute('disabled');
       btnCta.addEventListener('touchend', function(e) {
         e.preventDefault();
-        if (!btnCta.disabled) terminarOnboarding();
+        terminarOnboarding();
       });
     }
     const btnLogin = document.getElementById('btn-login');
@@ -3635,8 +3636,8 @@ body.auth-pending #toast {
 <body id="app-body" class="auth-pending" style="background:#06060c;margin:0;padding:0;">
 
 <!-- BOTÃO DE TESTE EMERGENCIAL -->
-<button id="btn-teste-emergencial" style="display:none;position:fixed;bottom:20px;right:20px;z-index:999999;background:red;color:white;font-size:16px;font-weight:900;padding:16px 24px;border:none;border-radius:12px;cursor:pointer;" onclick="alert('CLIQUE FUNCIONOU!\nnome='+(document.getElementById('ob-nome')?.value||'vazio')+'\nemail='+(typeof _obEmail!=='undefined'?_obEmail:'vazio')+'\nsenha='+(document.getElementById('ob-senha')?.value?.length||0)+'chars\npin='+_obGetPin()+'\ninst='+(typeof obInstrumentoSelecionado!=='undefined'?obInstrumentoSelecionado:'vazio')+'\nnomeOk='+(typeof _obNomeDisponivel!=='undefined'?_obNomeDisponivel:'?'))">
-  🔴 TESTE
+<button id="btn-teste-emergencial" style="display:none;position:fixed;bottom:20px;right:20px;z-index:999999;background:red;color:white;font-size:16px;font-weight:900;padding:16px 24px;border:none;border-radius:12px;cursor:pointer;" onclick="terminarOnboarding()">
+  🔴 CRIAR CONTA
 </button>
 <script>
 // Mostra botão de teste quando ob-step-2 aparecer
