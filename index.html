@@ -810,19 +810,18 @@ window._obAvancarStep2 = _obAvancarStep2;
 
 // ── terminarOnboarding ───────────────────────────────────────────────────────
 async function terminarOnboarding() {
-  alert('terminarOnboarding chamado');
   const nomeUsuario = (document.getElementById('ob-nome')?.value || '').trim();
   const senha       = document.getElementById('ob-senha')?.value || '';
   const senha2      = document.getElementById('ob-senha2')?.value || '';
   const pin         = _obGetPin();
   const cta         = document.getElementById('ob-cta');
 
-  if (!_obNomeDisponivel || nomeUsuario.length < 2) { alert('BLOQUEIO: nome'); return; }
-  if (senha.length < 6 || senha !== senha2) { alert('BLOQUEIO: senha'); return; }
-  if (pin.length < 4) { alert('BLOQUEIO: pin='+pin); return; }
-  if (!_obEmail) { alert('BLOQUEIO: email vazio'); return; }
+  if (!_obNomeDisponivel || nomeUsuario.length < 2) return;
+  if (senha.length < 6 || senha !== senha2) return;
+  if (pin.length < 4) return;
+  if (!_obEmail) return;
 
-  alert('Tudo ok! Criando conta para ' + _obEmail);
+  if (cta) { cta.disabled = true; cta.textContent = 'A criar conta...'; }
 
   if (cta) { cta.disabled = true; cta.textContent = 'A criar conta...'; }
 
@@ -836,7 +835,6 @@ async function terminarOnboarding() {
   const authResult = await window._fb.registarComEmail(_obEmail, senha);
   if (!authResult.ok) {
     if (cta) { cta.disabled = false; cta.textContent = 'Criar conta'; }
-    alert('ERRO FIREBASE: ' + authResult.msg);
     if (typeof showToast === 'function') showToast(authResult.msg);
     return;
   }
@@ -1071,14 +1069,28 @@ async function obFazerLogin() {
   if (perfil && perfil.nome) {
     // ── BLOQUEIO: verificar status antes de dar acesso ──
     const statusConta = perfil.status || 'ativo';
-    if (statusConta === 'banido') {
-      if (msg) msg.textContent = 'Esta conta foi banida permanentemente da plataforma.';
+    if (statusConta === 'banido' || statusConta === 'bloqueado') {
       if (btn) { btn.disabled = false; btn.textContent = 'Entrar'; }
-      return;
-    }
-    if (statusConta === 'bloqueado') {
-      if (msg) msg.textContent = 'Esta conta está temporariamente bloqueada. Contacta o suporte.';
-      if (btn) { btn.disabled = false; btn.textContent = 'Entrar'; }
+      const isBanido = statusConta === 'banido';
+      const overlay = document.createElement('div');
+      overlay.style.cssText = 'position:fixed;inset:0;z-index:100030;background:rgba(0,0,0,0.95);display:flex;align-items:center;justify-content:center;padding:24px;';
+      overlay.innerHTML =
+        '<div style="background:#111119;border:1px solid rgba(255,50,50,0.25);border-radius:20px;padding:32px 24px;width:100%;max-width:340px;display:flex;flex-direction:column;align-items:center;gap:16px;text-align:center;">'
+      + '<div style="width:64px;height:64px;border-radius:50%;background:rgba(255,50,50,0.1);border:2px solid rgba(255,50,50,0.3);display:flex;align-items:center;justify-content:center;">'
+      + '<svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#ff4444" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"/></svg>'
+      + '</div>'
+      + '<div style="font-size:18px;font-weight:900;color:#ff4444;">' + (isBanido ? 'Conta Banida' : 'Conta Bloqueada') + '</div>'
+      + '<div style="font-size:13px;color:rgba(255,255,255,0.5);line-height:1.6;">'
+      + (isBanido
+          ? 'Esta conta foi <b style="color:#fff;">banida permanentemente</b> da plataforma por violação dos termos de uso.'
+          : 'Esta conta está <b style="color:#fff;">temporariamente bloqueada</b>. Entre em contato com o suporte para restaurar o acesso.')
+      + '</div>'
+      + '<div style="width:100%;background:rgba(255,50,50,0.06);border:1px solid rgba(255,50,50,0.15);border-radius:10px;padding:12px;font-size:11px;color:rgba(255,150,150,0.7);line-height:1.5;">'
+      + (isBanido ? 'Banimento definitivo — sem possibilidade de recurso.' : 'Bloqueio temporário — aguarde contato do suporte.')
+      + '</div>'
+      + '<button onclick="this.closest(\'div[style]\').remove()" style="width:100%;padding:13px;border-radius:12px;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.1);color:rgba(255,255,255,0.5);font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;touch-action:manipulation;margin-top:4px;">Fechar</button>'
+      + '</div>';
+      document.body.appendChild(overlay);
       return;
     }
     // Guardar PIN local se existia antes
@@ -3638,19 +3650,6 @@ body.auth-pending #toast {
 </style>
 </head>
 <body id="app-body" class="auth-pending" style="background:#06060c;margin:0;padding:0;">
-
-<!-- BOTÃO DE TESTE EMERGENCIAL -->
-<button id="btn-teste-emergencial" style="display:none;position:fixed;bottom:20px;right:20px;z-index:999999;background:red;color:white;font-size:16px;font-weight:900;padding:16px 24px;border:none;border-radius:12px;cursor:pointer;" onclick="terminarOnboarding()">
-  🔴 CRIAR CONTA
-</button>
-<script>
-// Mostra botão de teste quando ob-step-2 aparecer
-setInterval(function(){
-  var step2 = document.getElementById('ob-step-2');
-  var btn = document.getElementById('btn-teste-emergencial');
-  if(step2 && btn) btn.style.display = (step2.style.display !== 'none') ? 'block' : 'none';
-}, 500);
-</script>
 
 <div class="toast" id="toast"></div>
 
@@ -12001,7 +12000,7 @@ function admAbrirLiberarEmail() {
   overlay.style.cssText = 'position:fixed;inset:0;z-index:100025;background:rgba(0,0,0,0.92);display:flex;align-items:center;justify-content:center;padding:24px;';
   overlay.innerHTML =
     '<div style="background:#111119;border:1px solid rgba(80,200,255,0.2);border-radius:18px;padding:24px 20px;width:100%;max-width:360px;display:flex;flex-direction:column;gap:14px;">'
-  + '<div style="font-size:15px;font-weight:900;color:#fff;">🔓 Liberar Email para Novo Cadastro</div>'
+  + '<div style="font-size:15px;font-weight:900;color:#fff;">Liberar Email para Novo Cadastro</div>'
   + '<div style="font-size:12px;color:rgba(255,255,255,0.4);line-height:1.5;">Busca o usuário pelo email e remove o registro do Firestore. Depois delete manualmente no Firebase Auth Console.</div>'
   + '<input id="_lib-email-input" type="email" placeholder="email@exemplo.com" style="width:100%;box-sizing:border-box;background:rgba(255,255,255,0.05);border:1px solid rgba(80,200,255,0.3);border-radius:10px;color:#fff;font-size:13px;padding:11px 14px;outline:none;font-family:inherit;">'
   + '<div id="_lib-resultado" style="min-height:40px;font-size:12px;color:rgba(255,255,255,0.4);"></div>'
@@ -12029,7 +12028,7 @@ async function admBuscarPorEmail() {
     }
     if (!encontrado) {
       res.innerHTML = '<div style="background:rgba(255,170,0,0.08);border:1px solid rgba(255,170,0,0.2);border-radius:8px;padding:10px;color:#ffaa00;font-size:12px;line-height:1.5;">'
-        + '⚠️ Email não encontrado no Firestore.<br>'
+        + 'Email não encontrado no Firestore.<br>'
         + 'Pode já ter sido removido. Acesse:<br>'
         + '<b>Firebase Console → Authentication → Users</b><br>e delete manualmente.</div>';
       return;
@@ -12040,8 +12039,8 @@ async function admBuscarPorEmail() {
     + '<div style="color:rgba(255,255,255,0.4);margin-top:3px;">Status: ' + (encontrado.status||'ativo') + '</div>'
     + '<div style="color:rgba(255,255,255,0.4);">UID: ' + encontrado.uid + '</div>'
     + '</div>'
-    + '<button onclick="admConfirmarLiberar(\'' + encontrado.uid + '\',\'' + email + '\')" style="width:100%;padding:11px;border-radius:10px;background:#50c8ff;border:none;color:#000;font-size:13px;font-weight:900;cursor:pointer;font-family:inherit;touch-action:manipulation;">🗑️ Remover do Firestore</button>'
-    + '<div style="margin-top:8px;font-size:10px;color:rgba(255,200,80,0.7);line-height:1.4;">⚠️ Após isso, delete também no Firebase Auth Console para liberar completamente o email.</div>';
+    + '<button onclick="admConfirmarLiberar(\'' + encontrado.uid + '\',\'' + email + '\')" style="width:100%;padding:11px;border-radius:10px;background:#50c8ff;border:none;color:#000;font-size:13px;font-weight:900;cursor:pointer;font-family:inherit;touch-action:manipulation;">Remover do Firestore</button>'
+    + '<div style="margin-top:8px;font-size:10px;color:rgba(255,200,80,0.7);line-height:1.4;">Após isso, delete também no Firebase Auth Console para liberar completamente o email.</div>';
   } catch(e) {
     res.innerHTML = '<span style="color:#ff4444;">Erro: ' + e.message + '</span>';
   }
@@ -12056,7 +12055,7 @@ async function admConfirmarLiberar(uid, email) {
     admAtualizarStats(); admBuscar();
     if (res) res.innerHTML =
       '<div style="background:rgba(10,158,110,0.1);border:1px solid rgba(10,158,110,0.3);border-radius:8px;padding:12px;font-size:12px;line-height:1.6;">'
-    + '✅ <b style="color:#fff;">Registro removido do Firestore!</b><br><br>'
+    + '<b style="color:#fff;">Registro removido do Firestore!</b><br><br>'
     + 'Agora acesse:<br>'
     + '<b style="color:#ffaa00;">console.firebase.google.com</b><br>'
     + '→ Authentication → Users<br>'
@@ -12083,10 +12082,10 @@ async function admReativarEmail() {
   + '<div style="font-size:13px;color:rgba(255,255,255,0.5);line-height:1.6;">'
   + 'Isso vai <b style="color:#fff;">apagar o registro</b> de <b style="color:#50c8ff;">' + nome + '</b> no Firestore.<br><br>'
   + 'Email: <b style="color:#fff;">' + (email||'não disponível') + '</b><br><br>'
-  + '⚠️ Para liberar completamente o email, você também precisa deletar o usuário no <b style="color:#ffaa00;">Firebase Console → Authentication</b>.'
+  + 'Para liberar completamente o email, você também precisa deletar o usuário no <b style="color:#ffaa00;">Firebase Console → Authentication</b>.'
   + '</div>'
   + '<div style="background:rgba(255,170,0,0.08);border:1px solid rgba(255,170,0,0.2);border-radius:10px;padding:12px;font-size:11px;color:rgba(255,200,80,0.9);line-height:1.5;">'
-  + '📋 <b>Passo a passo:</b><br>'
+  + '<b>Passo a passo:</b><br>'
   + '1. Clique "Confirmar" abaixo (apaga do Firestore)<br>'
   + '2. Acesse console.firebase.google.com<br>'
   + '3. Authentication → Users<br>'
@@ -12108,7 +12107,7 @@ async function admReativarEmail() {
     if (ok) {
       _admCache = _admCache.filter(function(x){ return x.uid !== u.uid; });
       admAtualizarStats(); admBuscar();
-      showToast('✅ Registro removido — delete o email no Firebase Auth Console');
+      showToast('Registro removido — delete o email no Firebase Auth Console');
     } else {
       showToast('Erro ao remover registro');
     }
@@ -12852,64 +12851,69 @@ async function _fbFazerBackupAgora(btn) {
     <!-- Título -->
     <div style="text-align:center;">
       <div style="font-size:28px;margin-bottom:8px;color:#ffd700;font-weight:900;letter-spacing:2px;">ADM</div>
-      <div style="font-size:18px;font-weight:900;color:#fff;letter-spacing:0.5px;">Como deseja entrar?</div>
-      <div style="font-size:12px;color:rgba(255,255,255,0.3);margin-top:6px;">Escolha o modo de acesso</div>
+      <div style="font-size:18px;font-weight:900;color:#fff;letter-spacing:0.5px;">Bem-vindo</div>
+      <div style="font-size:12px;color:rgba(255,255,255,0.3);margin-top:6px;">Escolha onde deseja entrar</div>
     </div>
 
-    <!-- Cards de escolha -->
-    <div style="display:flex;flex-direction:column;gap:14px;width:100%;">
+    <!-- Botão Espaço (abre sub-opções) -->
+    <div style="width:100%;display:flex;flex-direction:column;gap:12px;">
 
-      <!-- Card APP -->
-      <button onclick="adminEscolherModo('app')"
-        style="width:100%;padding:22px 20px;border-radius:18px;background:rgba(10,158,110,0.08);border:2px solid rgba(10,158,110,0.25);cursor:pointer;font-family:inherit;touch-action:manipulation;display:flex;align-items:center;gap:16px;text-align:left;transition:all 0.2s;"
-        onmouseover="this.style.background='rgba(10,158,110,0.15)';this.style.borderColor='rgba(10,158,110,0.5)'"
-        onmouseout="this.style.background='rgba(10,158,110,0.08)';this.style.borderColor='rgba(10,158,110,0.25)'">
-        <div style="width:48px;height:48px;border-radius:14px;background:rgba(10,158,110,0.15);border:1px solid rgba(10,158,110,0.3);display:flex;align-items:center;justify-content:center;flex-shrink:0;">
-          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#0A9E6E" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>
+      <!-- Botão principal ESPAÇO -->
+      <div style="background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.07);border-radius:20px;overflow:hidden;">
+        <div style="padding:18px 20px 14px;display:flex;align-items:center;gap:14px;">
+          <div style="width:44px;height:44px;border-radius:13px;background:linear-gradient(135deg,rgba(255,215,0,0.15),rgba(138,92,246,0.15));border:1px solid rgba(255,255,255,0.1);display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#ffd700" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polygon points="10 8 16 12 10 16 10 8"/></svg>
+          </div>
+          <div>
+            <div style="font-size:16px;font-weight:900;color:#fff;letter-spacing:0.3px;">Espaço</div>
+            <div style="font-size:11px;color:rgba(255,255,255,0.35);margin-top:2px;">Selecione o ambiente</div>
+          </div>
         </div>
-        <div>
-          <div style="font-size:16px;font-weight:900;color:#fff;margin-bottom:3px;">Tela Principal</div>
-          <div style="font-size:12px;color:rgba(255,255,255,0.4);">Metrônomo, setlist, cifras e mais</div>
-        </div>
-        <svg style="margin-left:auto;flex-shrink:0;" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="rgba(10,158,110,0.6)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
-      </button>
 
-      <!-- Card ADMIN -->
-      <button onclick="adminEscolherModo('painel')"
-        style="width:100%;padding:22px 20px;border-radius:18px;background:rgba(255,200,0,0.06);border:2px solid rgba(255,200,0,0.2);cursor:pointer;font-family:inherit;touch-action:manipulation;display:flex;align-items:center;gap:16px;text-align:left;transition:all 0.2s;"
-        onmouseover="this.style.background='rgba(255,200,0,0.12)';this.style.borderColor='rgba(255,200,0,0.4)'"
-        onmouseout="this.style.background='rgba(255,200,0,0.06)';this.style.borderColor='rgba(255,200,0,0.2)'">
-        <div style="width:48px;height:48px;border-radius:14px;background:rgba(255,200,0,0.1);border:1px solid rgba(255,200,0,0.25);display:flex;align-items:center;justify-content:center;flex-shrink:0;"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#ffd700" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg></div>
-        <div>
-          <div style="font-size:16px;font-weight:900;color:#fff;margin-bottom:3px;">Painel Admin</div>
-          <div style="font-size:12px;color:rgba(255,255,255,0.4);">Controle de usuários e plataforma</div>
+        <!-- Sub-opções -->
+        <div style="border-top:1px solid rgba(255,255,255,0.06);display:flex;flex-direction:column;">
+
+          <!-- Painel Admin -->
+          <button onclick="adminEscolherModo('painel')"
+            style="width:100%;padding:16px 20px;background:transparent;border:none;border-bottom:1px solid rgba(255,255,255,0.04);cursor:pointer;font-family:inherit;touch-action:manipulation;display:flex;align-items:center;gap:14px;text-align:left;transition:background 0.15s;"
+            onmouseover="this.style.background='rgba(255,200,0,0.07)'"
+            onmouseout="this.style.background='transparent'">
+            <div style="width:36px;height:36px;border-radius:10px;background:rgba(255,200,0,0.1);border:1px solid rgba(255,200,0,0.2);display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#ffd700" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+            </div>
+            <div style="flex:1;">
+              <div style="font-size:14px;font-weight:800;color:#fff;">Painel Admin</div>
+              <div style="font-size:11px;color:rgba(255,255,255,0.35);margin-top:1px;">Gestão de usuários e plataforma</div>
+            </div>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="rgba(255,200,0,0.4)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+          </button>
+
+          <!-- Espaço Vocalista -->
+          <button onclick="adminEscolherModo('vocalista')"
+            style="width:100%;padding:16px 20px;background:transparent;border:none;cursor:pointer;font-family:inherit;touch-action:manipulation;display:flex;align-items:center;gap:14px;text-align:left;transition:background 0.15s;"
+            onmouseover="this.style.background='rgba(138,92,246,0.08)'"
+            onmouseout="this.style.background='transparent'">
+            <div style="width:36px;height:36px;border-radius:10px;background:rgba(138,92,246,0.1);border:1px solid rgba(138,92,246,0.22);display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#a78bfa" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>
+            </div>
+            <div style="flex:1;">
+              <div style="font-size:14px;font-weight:800;color:#fff;">Espaço Vocalista</div>
+              <div style="font-size:11px;color:rgba(255,255,255,0.35);margin-top:1px;">Letras, tons e aulas gospel</div>
+            </div>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="rgba(138,92,246,0.45)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+          </button>
+
         </div>
-        <svg style="margin-left:auto;flex-shrink:0;" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="rgba(255,200,0,0.5)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
-      </button>
+      </div>
 
     </div>
 
-      <!-- Card VOCALISTA -->
-      <button onclick="adminEscolherModo('vocalista')"
-        style="width:100%;padding:22px 20px;border-radius:18px;background:rgba(138,92,246,0.06);border:2px solid rgba(138,92,246,0.2);cursor:pointer;font-family:inherit;touch-action:manipulation;display:flex;align-items:center;gap:16px;text-align:left;transition:all 0.2s;"
-        onmouseover="this.style.background='rgba(138,92,246,0.12)';this.style.borderColor='rgba(138,92,246,0.4)'"
-        onmouseout="this.style.background='rgba(138,92,246,0.06)';this.style.borderColor='rgba(138,92,246,0.2)'">
-        <div style="width:48px;height:48px;border-radius:14px;background:rgba(138,92,246,0.1);border:1px solid rgba(138,92,246,0.25);display:flex;align-items:center;justify-content:center;flex-shrink:0;">
-          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="rgba(138,92,246,0.9)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>
-        </div>
-        <div>
-          <div style="font-size:16px;font-weight:900;color:#fff;margin-bottom:3px;">Espaço Vocalista</div>
-          <div style="font-size:12px;color:rgba(255,255,255,0.4);">Visualizar ambiente dos vocalistas</div>
-        </div>
-        <svg style="margin-left:auto;flex-shrink:0;" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="rgba(138,92,246,0.5)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
-      </button>
-
-    </div>
-
-    <button onclick="document.getElementById('admin-escolha').style.display='none'"
-      style="background:none;border:none;color:rgba(255,255,255,0.2);font-size:12px;font-family:inherit;cursor:pointer;padding:8px;touch-action:manipulation;">
-      Cancelar
+    <button onclick="adminEscolherModo('app')"
+      style="background:none;border:none;color:rgba(255,255,255,0.2);font-size:12px;font-family:inherit;cursor:pointer;padding:8px;touch-action:manipulation;display:flex;align-items:center;gap:6px;">
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+      Ir para o App
     </button>
+
   </div>
 </div>
 
@@ -13038,11 +13042,43 @@ body[data-ambiente="vocalista"] .swipe-hint { display: none !important; }
   font-size: 22px; font-weight: 900; color: #fff; letter-spacing: -0.5px;
 }
 
-/* Grid 2 colunas */
+/* Grid 2 colunas (mobile) */
 .voc-grid {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
   gap: 12px;
+}
+
+/* Desktop: 4 colunas e container centralizado */
+@media (min-width: 768px) {
+  #voc-home {
+    padding: 32px 24px 48px;
+    max-width: 860px;
+    margin: 0 auto;
+    width: 100%;
+  }
+  #vocal-app {
+    align-items: center;
+  }
+  .voc-hdr {
+    width: 100%;
+    max-width: 860px;
+    margin: 0 auto;
+    box-sizing: border-box;
+  }
+  .voc-grid {
+    grid-template-columns: repeat(4, 1fr);
+    gap: 14px;
+  }
+  .voc-alb {
+    border-radius: 16px;
+  }
+  /* Salvos ocupa 2 colunas no desktop também */
+  .voc-alb-salvos {
+    grid-column: span 2 !important;
+    aspect-ratio: auto !important;
+    min-height: 80px !important;
+  }
 }
 
 /* Álbum card */
@@ -13133,6 +13169,59 @@ body[data-ambiente="vocalista"] .swipe-hint { display: none !important; }
   font-size: 11px; color: rgba(255,255,255,0.32);
   margin-top: 4px; font-weight: 600; line-height: 1.4;
 }
+
+/* Botão de info "?" */
+.voc-info-btn {
+  position: absolute; top: 12px; right: 12px;
+  width: 26px; height: 26px; border-radius: 50%;
+  background: rgba(255,255,255,0.08);
+  border: 1px solid rgba(255,255,255,0.12);
+  color: rgba(255,255,255,0.4);
+  font-size: 12px; font-weight: 900;
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer; z-index: 10;
+  font-family: Georgia, serif;
+  transition: background 0.2s, color 0.2s;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+}
+.voc-info-btn:hover { background: rgba(255,255,255,0.16); color: #fff; }
+
+/* Tooltip de info */
+.voc-info-tip {
+  display: none;
+  position: fixed;
+  z-index: 100040;
+  background: #1a1a2e;
+  border: 1px solid rgba(255,255,255,0.12);
+  border-radius: 16px;
+  padding: 16px;
+  width: 230px;
+  box-shadow: 0 16px 48px rgba(0,0,0,0.7);
+  pointer-events: none;
+}
+.voc-info-tip.vis { display: block; }
+.voc-info-tip-header {
+  display: flex; align-items: center; gap: 10px; margin-bottom: 12px;
+}
+.voc-info-tip-ico {
+  width: 34px; height: 34px; border-radius: 10px;
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+}
+.voc-info-tip-title { font-size: 13px; font-weight: 900; color: #fff; }
+.voc-info-tip-steps { display: flex; flex-direction: column; gap: 8px; }
+.voc-info-tip-step {
+  display: flex; align-items: flex-start; gap: 8px;
+}
+.voc-info-tip-num {
+  width: 18px; height: 18px; border-radius: 50%;
+  background: rgba(255,255,255,0.07);
+  font-size: 9px; font-weight: 900; color: rgba(255,255,255,0.5);
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0; margin-top: 1px;
+}
+.voc-info-tip-text { font-size: 11px; color: rgba(255,255,255,0.5); line-height: 1.5; }
 
 /* Badge de contagem */
 .voc-alb-badge {
@@ -13501,6 +13590,15 @@ body[data-ambiente="vocalista"] .swipe-hint { display: none !important; }
   </div>
 </div>
 
+<!-- Tooltip de info vocalista -->
+<div id="voc-info-tip" class="voc-info-tip">
+  <div class="voc-info-tip-header">
+    <div class="voc-info-tip-ico" id="voc-tip-ico"></div>
+    <div class="voc-info-tip-title" id="voc-tip-title"></div>
+  </div>
+  <div class="voc-info-tip-steps" id="voc-tip-steps"></div>
+</div>
+
 <!-- ── VOCAL APP ───────────────────────────────────────────────────────────── -->
 <div id="vocal-app">
 
@@ -13539,6 +13637,7 @@ body[data-ambiente="vocalista"] .swipe-hint { display: none !important; }
         <div class="voc-alb-deco">
           <svg width="90" height="90" viewBox="0 0 24 24" fill="white" stroke="none"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8" fill="none" stroke="white" stroke-width="2"/><line x1="16" y1="13" x2="8" y2="13" stroke="white" stroke-width="2"/><line x1="16" y1="17" x2="8" y2="17" stroke="white" stroke-width="2"/></svg>
         </div>
+        <button class="voc-info-btn" onclick="vocMostrarInfo(event,'letras')">?</button>
         <div class="voc-alb-inner">
           <div class="voc-alb-icon" style="background:rgba(138,92,246,0.15);border:1px solid rgba(138,92,246,0.2);">
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#a78bfa" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
@@ -13555,6 +13654,7 @@ body[data-ambiente="vocalista"] .swipe-hint { display: none !important; }
         <div class="voc-alb-deco">
           <svg width="90" height="90" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="1.5"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>
         </div>
+        <button class="voc-info-btn" onclick="vocMostrarInfo(event,'tom')">?</button>
         <div class="voc-alb-inner">
           <div class="voc-alb-icon" style="background:rgba(34,197,120,0.12);border:1px solid rgba(34,197,120,0.18);">
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#4ade80" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>
@@ -13571,6 +13671,7 @@ body[data-ambiente="vocalista"] .swipe-hint { display: none !important; }
         <div class="voc-alb-deco">
           <svg width="90" height="90" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="1.5"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/></svg>
         </div>
+        <button class="voc-info-btn" onclick="vocMostrarInfo(event,'aulas')">?</button>
         <div class="voc-alb-inner">
           <div class="voc-alb-icon" style="background:rgba(251,113,133,0.12);border:1px solid rgba(251,113,133,0.18);">
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fb7185" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>
@@ -13587,6 +13688,7 @@ body[data-ambiente="vocalista"] .swipe-hint { display: none !important; }
         <div class="voc-alb-deco">
           <svg width="90" height="90" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="1.5"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2"/></svg>
         </div>
+        <button class="voc-info-btn" onclick="vocMostrarInfo(event,'videos')">?</button>
         <div class="voc-alb-inner">
           <div class="voc-alb-icon" style="background:rgba(96,165,250,0.12);border:1px solid rgba(96,165,250,0.18);">
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#60a5fa" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2" ry="2"/></svg>
@@ -13603,6 +13705,7 @@ body[data-ambiente="vocalista"] .swipe-hint { display: none !important; }
         <div class="voc-alb-deco" style="bottom:-12px;right:-12px;">
           <svg width="110" height="110" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="1.2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
         </div>
+        <button class="voc-info-btn" onclick="vocMostrarInfo(event,'salvos')">?</button>
         <div class="voc-alb-inner" style="flex-direction:row;align-items:center;gap:14px;padding:18px 20px;">
           <div class="voc-alb-icon" style="background:rgba(251,191,36,0.1);border:1px solid rgba(251,191,36,0.16);flex-shrink:0;">
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fbbf24" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
@@ -13997,7 +14100,7 @@ async function _vocClaude(prompt, maxTokens) {
   var r = await fetch('https://api.anthropic.com/v1/messages', {
     method:'POST',
     headers:{ 'Content-Type':'application/json','anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true' },
-    body: JSON.stringify({ model:'claude-sonnet-4-6', max_tokens:maxTokens||1000, messages:[{role:'user',content:prompt}] })
+    body: JSON.stringify({ model:'claude-sonnet-4-5', max_tokens:maxTokens||1000, messages:[{role:'user',content:prompt}] })
   });
   if(!r.ok){ var e=await r.text(); console.error('API erro:',r.status,e); return null; }
   var d=await r.json();
@@ -14046,22 +14149,32 @@ async function vocCarregarLetraEl(el){
   var res=document.getElementById('voc-resultados');
   res.innerHTML='<div class="voc-spinner"></div><div style="text-align:center;font-size:12px;color:rgba(255,255,255,0.22);padding:8px;">Carregando letra...</div>';
   try{
-    var prompt='Escreva a letra COMPLETA da musica "'+titulo+'" de '+artista+'. '
-      +'Estruture com tags entre colchetes sozinhas na linha: [Intro], [Verso 1], [Verso 2], [Pre-Refrao], [Refrao], [Ponte], [Outro], [Coda], [Solo]. '
-      +'Nao inclua acordes, cifras ou qualquer texto alem das tags e do texto cantado. '
-      +'Se nao souber a letra, responda exatamente: LETRA_NAO_ENCONTRADA';
-    var txt=await _vocClaude(prompt,2500);
-    if(!txt||txt.includes('LETRA_NAO_ENCONTRADA')){
-      res.innerHTML='<div class="voc-empty"><div class="voc-empty-ico"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="rgba(138,92,246,0.5)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></div><div class="voc-empty-title">Letra nao encontrada</div><a class="voc-link-btn" href="https://www.letras.mus.br/busca/?q='+encodeURIComponent(titulo+' '+artista)+'" target="_blank">Buscar no Letras.mus.br</a></div>';
+    var prompt='Voce e um banco de letras de musicas gospel brasileiras e internacionais.\n'
+      +'Escreva a letra COMPLETA da musica "'+titulo+'" de '+artista+'.\n'
+      +'REGRAS OBRIGATORIAS:\n'
+      +'- Escreva APENAS a letra cantada, sem introducao, sem explicacoes, sem comentarios\n'
+      +'- Separe as secoes com tags entre colchetes em linha propria: [Intro], [Verso 1], [Verso 2], [Pre-Refrao], [Refrao], [Ponte], [Outro], [Coda]\n'
+      +'- NAO inclua acordes, cifras, numeros de acorde ou qualquer notacao musical\n'
+      +'- Se conhecer parcialmente a letra, escreva o que souber\n'
+      +'- Somente se realmente nao conhecer NADA desta musica, escreva apenas: LETRA_NAO_ENCONTRADA\n'
+      +'Escreva a letra agora:';
+    var txt=await _vocClaude(prompt,3000);
+    if(!txt){ 
+      res.innerHTML='<div class="voc-empty"><div class="voc-empty-ico"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="rgba(138,92,246,0.5)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></div><div class="voc-empty-title">Erro de conexão</div><div class="voc-empty-sub">Verifique sua internet e tente novamente</div></div>';
       return;
     }
-    var letraLimpa=txt.replace(/\r\n/g,'\n').replace(/\n{3,}/g,'\n\n').trim();
+    var txtLimpo = txt.trim();
+    if(txtLimpo === 'LETRA_NAO_ENCONTRADA' || txtLimpo.startsWith('LETRA_NAO_ENCONTRADA')){
+      res.innerHTML='<div class="voc-empty"><div class="voc-empty-ico"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="rgba(138,92,246,0.5)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></div><div class="voc-empty-title">Letra não encontrada</div><div class="voc-empty-sub" style="margin-bottom:12px;">Não encontrei a letra desta música</div><a class="voc-link-btn" href="https://www.letras.mus.br/busca/?q='+encodeURIComponent(titulo+' '+artista)+'" target="_blank">Buscar no Letras.mus.br</a></div>';
+      return;
+    }
+    var letraLimpa=txtLimpo.replace(/\r\n/g,'\n').replace(/\n{3,}/g,'\n\n').trim();
     _vocAddHist({titulo:titulo,artista:artista,letra:letraLimpa});
     _voc.titulo=titulo; _voc.artista=artista; _voc.letra=letraLimpa;
     _vocDefinirTom(titulo,artista);
     vocAbrirLetra(titulo,artista,letraLimpa);
   }catch(e){
-    res.innerHTML='<div class="voc-empty"><div class="voc-empty-title">Erro ao carregar</div><div class="voc-empty-sub">Verifique sua conexao</div></div>';
+    res.innerHTML='<div class="voc-empty"><div class="voc-empty-title">Erro ao carregar</div><div class="voc-empty-sub">Verifique sua conexão</div></div>';
   }
 }
 
@@ -14149,6 +14262,82 @@ function vocSelTom(nota){ _voc.tomSel=nota; _vocRenderTons(); }
 function vocSalvarTom(){ if(!_voc.tomSel||!_voc.titulo)return; var tons=(vocTons()||[]).filter(function(t){return t.titulo!==_voc.titulo;}); tons.unshift({titulo:_voc.titulo,artista:_voc.artista,tom:_voc.tomSel,at:Date.now()}); vocTons(tons); vocToast('Tom '+_voc.tomSel+' salvo'); _vocRenderTons(); _vocAtualizarBadgeSalvos(); }
 
 // ── Aulas toggle ──────────────────────────────────────────────────────────────
+// ── Info tooltip dos cards ────────────────────────────────────────────────────
+var _vocInfoTimer = null;
+var _vocInfoData = {
+  letras: {
+    title: 'Letras Gospel',
+    cor: '#a78bfa',
+    ico: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#a78bfa" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>',
+    steps: ['Digite o nome da música ou artista gospel', 'Escolha na lista de resultados', 'Leia a letra com scroll automático', 'Toque ★ para salvar nos favoritos']
+  },
+  tom: {
+    title: 'Tonalidade',
+    cor: '#4ade80',
+    ico: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#4ade80" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>',
+    steps: ['Abra uma letra e toque "Tom"', 'Selecione as notas que sua voz alcança', 'O app sugere a tonalidade ideal', 'Salve o tom para acessar depois']
+  },
+  aulas: {
+    title: 'Aulas Vocais',
+    cor: '#fb7185',
+    ico: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fb7185" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>',
+    steps: ['Escolha uma categoria de técnica', 'Leia a explicação de cada exercício', 'Pratique no seu ritmo', 'Repita diariamente para evoluir']
+  },
+  videos: {
+    title: 'Vídeos',
+    cor: '#60a5fa',
+    ico: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#60a5fa" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2" ry="2"/></svg>',
+    steps: ['Busque uma música ou tema gospel', 'Veja sugestões de vídeos do YouTube', 'Toque para abrir direto no YouTube', 'Estude covers e playbacks']
+  },
+  salvos: {
+    title: 'Salvos',
+    cor: '#fbbf24',
+    ico: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fbbf24" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>',
+    steps: ['Letras favoritadas ficam aqui', 'Tons salvos por música aparecem aqui', 'Acesse sem precisar buscar novamente', 'Toque para reabrir qualquer letra']
+  }
+};
+
+function vocMostrarInfo(e, tipo) {
+  e.stopPropagation();
+  var tip  = document.getElementById('voc-info-tip');
+  var data = _vocInfoData[tipo];
+  if (!tip || !data) return;
+
+  // Preenche conteúdo
+  document.getElementById('voc-tip-ico').innerHTML   = '<div style="width:34px;height:34px;border-radius:10px;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.1);display:flex;align-items:center;justify-content:center;">' + data.ico + '</div>';
+  document.getElementById('voc-tip-title').textContent = data.title;
+  document.getElementById('voc-tip-steps').innerHTML  = data.steps.map(function(s,i){
+    return '<div class="voc-info-tip-step">'
+      + '<div class="voc-info-tip-num" style="background:rgba(255,255,255,0.06);border:1px solid ' + data.cor + '33;color:' + data.cor + ';">' + (i+1) + '</div>'
+      + '<div class="voc-info-tip-text">' + s + '</div>'
+      + '</div>';
+  }).join('');
+
+  // Posiciona perto do botão
+  var btn  = e.currentTarget;
+  var rect = btn.getBoundingClientRect();
+  var tw   = 230;
+  var left = rect.left + rect.width / 2 - tw / 2;
+  var top  = rect.bottom + 8;
+  if (left + tw > window.innerWidth - 12) left = window.innerWidth - tw - 12;
+  if (left < 12) left = 12;
+  if (top + 220 > window.innerHeight) top = rect.top - 228;
+
+  tip.style.left = left + 'px';
+  tip.style.top  = top  + 'px';
+  tip.style.borderColor = data.cor + '33';
+  tip.classList.add('vis');
+
+  clearTimeout(_vocInfoTimer);
+  _vocInfoTimer = setTimeout(function(){ tip.classList.remove('vis'); }, 4000);
+}
+
+document.addEventListener('click', function(){
+  var tip = document.getElementById('voc-info-tip');
+  if (tip) tip.classList.remove('vis');
+  clearTimeout(_vocInfoTimer);
+});
+
 function vocToggleAula(id){ var body=document.getElementById('voc-body-'+id),arr=document.getElementById('voc-arr-'+id); if(!body)return; var open=body.classList.toggle('open'); if(arr)arr.classList.toggle('open',open); }
 
 // ── Vídeos ────────────────────────────────────────────────────────────────────
