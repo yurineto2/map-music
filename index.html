@@ -810,16 +810,19 @@ window._obAvancarStep2 = _obAvancarStep2;
 
 // ── terminarOnboarding ───────────────────────────────────────────────────────
 async function terminarOnboarding() {
+  alert('terminarOnboarding chamado');
   const nomeUsuario = (document.getElementById('ob-nome')?.value || '').trim();
   const senha       = document.getElementById('ob-senha')?.value || '';
   const senha2      = document.getElementById('ob-senha2')?.value || '';
   const pin         = _obGetPin();
   const cta         = document.getElementById('ob-cta');
 
-  if (!_obNomeDisponivel || nomeUsuario.length < 2) return;
-  if (senha.length < 6 || senha !== senha2) return;
-  if (pin.length < 4) return;
-  if (!_obEmail) return;
+  if (!_obNomeDisponivel || nomeUsuario.length < 2) { alert('BLOQUEIO: nome'); return; }
+  if (senha.length < 6 || senha !== senha2) { alert('BLOQUEIO: senha'); return; }
+  if (pin.length < 4) { alert('BLOQUEIO: pin='+pin); return; }
+  if (!_obEmail) { alert('BLOQUEIO: email vazio'); return; }
+
+  alert('Tudo ok! Criando conta para ' + _obEmail);
 
   if (cta) { cta.disabled = true; cta.textContent = 'A criar conta...'; }
 
@@ -833,6 +836,7 @@ async function terminarOnboarding() {
   const authResult = await window._fb.registarComEmail(_obEmail, senha);
   if (!authResult.ok) {
     if (cta) { cta.disabled = false; cta.textContent = 'Criar conta'; }
+    alert('ERRO FIREBASE: ' + authResult.msg);
     if (typeof showToast === 'function') showToast(authResult.msg);
     return;
   }
@@ -3792,21 +3796,7 @@ setInterval(function(){
             <button class="ob-chip" data-val="outro" onclick="obToggleChip(this)" style="touch-action:manipulation;">Outro</button>
           </div>
         </div>
-        <button class="ob-cta" id="ob-cta" style="opacity:1!important;pointer-events:auto!important;cursor:pointer!important;" onclick="
-          var nome=(document.getElementById('ob-nome')?.value||'').trim();
-          var s1=document.getElementById('ob-senha')?.value||'';
-          var s2=document.getElementById('ob-senha2')?.value||'';
-          var pin=_obGetPin();
-          var email=typeof _obEmail!=='undefined'?_obEmail:'VAZIO';
-          var inst=typeof obInstrumentoSelecionado!=='undefined'?obInstrumentoSelecionado:'VAZIO';
-          var nomeOk=typeof _obNomeDisponivel!=='undefined'?_obNomeDisponivel:false;
-          if(!nomeOk||nome.length<2){alert('BLOQUEIO: Nome inválido\nnome='+nome+'\ndisponivel='+nomeOk);return;}
-          if(s1.length<6){alert('BLOQUEIO: Senha curta ('+s1.length+' chars)');return;}
-          if(s1!==s2){alert('BLOQUEIO: Senhas diferentes');return;}
-          if(pin.length<4){alert('BLOQUEIO: PIN incompleto ('+pin+')');return;}
-          if(!email||email==='VAZIO'){alert('BLOQUEIO: Email vazio');return;}
-          terminarOnboarding();
-        ">Criar conta</button>
+        <button class="ob-cta" id="ob-cta" style="opacity:1!important;pointer-events:auto!important;cursor:pointer!important;" onclick="terminarOnboarding()">Criar conta</button>
         <p class="ob-terms">Os seus dados ficam seguros. A senha é gerida pelo Firebase.</p>
       </div><!-- /ob-step-2 -->
 
@@ -12004,6 +11994,127 @@ function admAcao(tipo) {
     }
   };
 }
+// ── Abrir modal liberar email ─────────────────────────────────────────────────
+function admAbrirLiberarEmail() {
+  var overlay = document.createElement('div');
+  overlay.id = 'modal-liberar-email';
+  overlay.style.cssText = 'position:fixed;inset:0;z-index:100025;background:rgba(0,0,0,0.92);display:flex;align-items:center;justify-content:center;padding:24px;';
+  overlay.innerHTML =
+    '<div style="background:#111119;border:1px solid rgba(80,200,255,0.2);border-radius:18px;padding:24px 20px;width:100%;max-width:360px;display:flex;flex-direction:column;gap:14px;">'
+  + '<div style="font-size:15px;font-weight:900;color:#fff;">🔓 Liberar Email para Novo Cadastro</div>'
+  + '<div style="font-size:12px;color:rgba(255,255,255,0.4);line-height:1.5;">Busca o usuário pelo email e remove o registro do Firestore. Depois delete manualmente no Firebase Auth Console.</div>'
+  + '<input id="_lib-email-input" type="email" placeholder="email@exemplo.com" style="width:100%;box-sizing:border-box;background:rgba(255,255,255,0.05);border:1px solid rgba(80,200,255,0.3);border-radius:10px;color:#fff;font-size:13px;padding:11px 14px;outline:none;font-family:inherit;">'
+  + '<div id="_lib-resultado" style="min-height:40px;font-size:12px;color:rgba(255,255,255,0.4);"></div>'
+  + '<div style="display:flex;gap:10px;">'
+  + '<button onclick="document.getElementById(\'modal-liberar-email\').remove()" style="flex:1;padding:12px;border-radius:12px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);color:rgba(255,255,255,0.4);font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;touch-action:manipulation;">Fechar</button>'
+  + '<button onclick="admBuscarPorEmail()" style="flex:2;padding:12px;border-radius:12px;background:rgba(80,200,255,0.15);border:1px solid rgba(80,200,255,0.3);color:#50c8ff;font-size:12px;font-weight:900;cursor:pointer;font-family:inherit;touch-action:manipulation;">Buscar</button>'
+  + '</div></div>';
+  document.body.appendChild(overlay);
+  setTimeout(function(){ var el=document.getElementById('_lib-email-input'); if(el)el.focus(); }, 100);
+}
+
+async function admBuscarPorEmail() {
+  var email = (document.getElementById('_lib-email-input')?.value || '').trim().toLowerCase();
+  var res   = document.getElementById('_lib-resultado');
+  if (!email || !res) return;
+  res.innerHTML = '<span style="color:rgba(255,255,255,0.4);">Buscando...</span>';
+
+  try {
+    // Busca no cache primeiro
+    var encontrado = _admCache.find(function(u){ return (u.email||'').toLowerCase() === email; });
+    // Se não achou no cache, busca no Firestore
+    if (!encontrado) {
+      var todos = await window._fb.admListarTodos ? await window._fb.admListarTodos() : [];
+      encontrado = todos.find(function(u){ return (u.email||'').toLowerCase() === email; });
+    }
+    if (!encontrado) {
+      res.innerHTML = '<div style="background:rgba(255,170,0,0.08);border:1px solid rgba(255,170,0,0.2);border-radius:8px;padding:10px;color:#ffaa00;font-size:12px;line-height:1.5;">'
+        + '⚠️ Email não encontrado no Firestore.<br>'
+        + 'Pode já ter sido removido. Acesse:<br>'
+        + '<b>Firebase Console → Authentication → Users</b><br>e delete manualmente.</div>';
+      return;
+    }
+    res.innerHTML =
+      '<div style="background:rgba(10,158,110,0.08);border:1px solid rgba(10,158,110,0.2);border-radius:8px;padding:10px;margin-bottom:8px;font-size:12px;">'
+    + '<b style="color:#fff;">@' + (encontrado.nomeUsuario||encontrado.nome||'usuario') + '</b>'
+    + '<div style="color:rgba(255,255,255,0.4);margin-top:3px;">Status: ' + (encontrado.status||'ativo') + '</div>'
+    + '<div style="color:rgba(255,255,255,0.4);">UID: ' + encontrado.uid + '</div>'
+    + '</div>'
+    + '<button onclick="admConfirmarLiberar(\'' + encontrado.uid + '\',\'' + email + '\')" style="width:100%;padding:11px;border-radius:10px;background:#50c8ff;border:none;color:#000;font-size:13px;font-weight:900;cursor:pointer;font-family:inherit;touch-action:manipulation;">🗑️ Remover do Firestore</button>'
+    + '<div style="margin-top:8px;font-size:10px;color:rgba(255,200,80,0.7);line-height:1.4;">⚠️ Após isso, delete também no Firebase Auth Console para liberar completamente o email.</div>';
+  } catch(e) {
+    res.innerHTML = '<span style="color:#ff4444;">Erro: ' + e.message + '</span>';
+  }
+}
+
+async function admConfirmarLiberar(uid, email) {
+  var res = document.getElementById('_lib-resultado');
+  if (res) res.innerHTML = '<span style="color:rgba(255,255,255,0.4);">Removendo...</span>';
+  var ok = await window._fb.admRemoverConta(uid);
+  if (ok) {
+    _admCache = _admCache.filter(function(x){ return x.uid !== uid; });
+    admAtualizarStats(); admBuscar();
+    if (res) res.innerHTML =
+      '<div style="background:rgba(10,158,110,0.1);border:1px solid rgba(10,158,110,0.3);border-radius:8px;padding:12px;font-size:12px;line-height:1.6;">'
+    + '✅ <b style="color:#fff;">Registro removido do Firestore!</b><br><br>'
+    + 'Agora acesse:<br>'
+    + '<b style="color:#ffaa00;">console.firebase.google.com</b><br>'
+    + '→ Authentication → Users<br>'
+    + '→ Busque: <b style="color:#50c8ff;">' + email + '</b><br>'
+    + '→ Clique nos 3 pontos → Delete account'
+    + '</div>';
+  } else {
+    if (res) res.innerHTML = '<span style="color:#ff4444;">Erro ao remover. Verifique as regras do Firestore.</span>';
+  }
+}
+
+// ── Abrir modal liberar email ─────────────────────────────────────────────────
+async function admReativarEmail() {
+  var u = _admSelected;
+  if (!u) return;
+  var email = u.email || '';
+  var nome  = '@' + (u.nomeUsuario || u.nome || 'usuario');
+
+  var overlay = document.createElement('div');
+  overlay.style.cssText = 'position:fixed;inset:0;z-index:100025;background:rgba(0,0,0,0.92);display:flex;align-items:center;justify-content:center;padding:24px;';
+  overlay.innerHTML =
+    '<div style="background:#111119;border:1px solid rgba(80,200,255,0.2);border-radius:18px;padding:24px 20px;width:100%;max-width:340px;display:flex;flex-direction:column;gap:14px;">'
+  + '<div style="font-size:15px;font-weight:900;color:#fff;">Liberar email para novo cadastro</div>'
+  + '<div style="font-size:13px;color:rgba(255,255,255,0.5);line-height:1.6;">'
+  + 'Isso vai <b style="color:#fff;">apagar o registro</b> de <b style="color:#50c8ff;">' + nome + '</b> no Firestore.<br><br>'
+  + 'Email: <b style="color:#fff;">' + (email||'não disponível') + '</b><br><br>'
+  + '⚠️ Para liberar completamente o email, você também precisa deletar o usuário no <b style="color:#ffaa00;">Firebase Console → Authentication</b>.'
+  + '</div>'
+  + '<div style="background:rgba(255,170,0,0.08);border:1px solid rgba(255,170,0,0.2);border-radius:10px;padding:12px;font-size:11px;color:rgba(255,200,80,0.9);line-height:1.5;">'
+  + '📋 <b>Passo a passo:</b><br>'
+  + '1. Clique "Confirmar" abaixo (apaga do Firestore)<br>'
+  + '2. Acesse console.firebase.google.com<br>'
+  + '3. Authentication → Users<br>'
+  + '4. Busque o email e delete o usuário'
+  + '</div>'
+  + '<div style="display:flex;gap:10px;margin-top:4px;">'
+  + '<button id="_re-cancel" style="flex:1;padding:12px;border-radius:12px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);color:rgba(255,255,255,0.4);font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;touch-action:manipulation;">Cancelar</button>'
+  + '<button id="_re-confirm" style="flex:2;padding:12px;border-radius:12px;background:#50c8ff;border:none;color:#000;font-size:12px;font-weight:900;cursor:pointer;font-family:inherit;touch-action:manipulation;">Confirmar</button>'
+  + '</div></div>';
+  document.body.appendChild(overlay);
+
+  document.getElementById('_re-cancel').onclick = function() { overlay.remove(); };
+  document.getElementById('_re-confirm').onclick = async function() {
+    overlay.remove();
+    admFecharAcao();
+    if (!u.uid) { showToast('UID não encontrado'); return; }
+    showToast('Removendo registro...');
+    var ok = await window._fb.admRemoverConta(u.uid);
+    if (ok) {
+      _admCache = _admCache.filter(function(x){ return x.uid !== u.uid; });
+      admAtualizarStats(); admBuscar();
+      showToast('✅ Registro removido — delete o email no Firebase Auth Console');
+    } else {
+      showToast('Erro ao remover registro');
+    }
+  };
+}
+
 // ─── EXCLUIR CONTA ────────────────────────────────────────────────────────────
 function excluirConta() {
   // Limpa o input e abre o modal de confirmação
@@ -12648,6 +12759,9 @@ async function _fbFazerBackupAgora(btn) {
 <!-- PAINEL ADMIN -->
 <div id="admin-painel" style="display:none;position:fixed;inset:0;z-index:8000;background:#09090f;flex-direction:column;overflow:hidden;">
   <div style="background:#101018;border-bottom:1px solid rgba(255,255,255,0.07);padding:14px 18px;display:flex;align-items:center;gap:12px;flex-shrink:0;">
+    <button onclick="admAbrirLiberarEmail()" style="width:36px;height:36px;border-radius:10px;background:rgba(80,200,255,0.08);border:1px solid rgba(80,200,255,0.2);color:#50c8ff;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;touch-action:manipulation;" title="Liberar email para novo cadastro">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 9.9-1"/></svg>
+    </button>
     <button onclick="adminMostrarAba('app')" style="width:36px;height:36px;border-radius:10px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);color:rgba(255,255,255,0.6);cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;touch-action:manipulation;" title="Voltar ao app">
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
     </button>
@@ -12715,6 +12829,11 @@ async function _fbFazerBackupAgora(btn) {
       <button id="adm-btn-remover" onclick="admAcao('remover')"
         style="width:100%;padding:13px;border-radius:13px;background:rgba(255,50,50,0.04);border:1.5px solid rgba(255,50,50,0.1);color:rgba(255,80,80,0.6);font-size:13px;font-weight:800;cursor:pointer;font-family:inherit;touch-action:manipulation;display:flex;align-items:center;gap:10px;text-align:left;">
         <div><div>Remover conta</div><div style="font-size:10px;opacity:0.6;">Apaga todos os dados do usuário</div></div>
+      </button>
+      <button id="adm-btn-reativar-email" onclick="admReativarEmail()"
+        style="width:100%;padding:13px;border-radius:13px;background:rgba(80,200,255,0.06);border:1.5px solid rgba(80,200,255,0.2);color:#50c8ff;font-size:13px;font-weight:800;cursor:pointer;font-family:inherit;touch-action:manipulation;display:flex;align-items:center;gap:10px;text-align:left;">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.11 12 19.79 19.79 0 0 1 1.07 3.37 2 2 0 0 1 3 1h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L7.09 8.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
+        <div><div>Liberar email para novo cadastro</div><div style="font-size:10px;opacity:0.6;">Remove o registro e libera o email</div></div>
       </button>
     </div>
     <button id="adm-btn-mensagem" onclick="admAbrirMensagem()"
