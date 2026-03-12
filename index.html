@@ -764,7 +764,7 @@ function _obValidarCta() {
   const pin    = _obGetPin();
   const senhaMsg = document.getElementById('ob-senha-msg');
 
-  let ok = _obNomeDisponivel && senha.length >= 6 && senha === senha2 && pin.length === 4 && !!obInstrumentoSelecionado;
+  let ok = _obNomeDisponivel && senha.length >= 6 && senha === senha2 && pin.length === 4;
 
   if (senhaMsg) {
     if (senha.length > 0 && senha.length < 6) senhaMsg.textContent = 'Mínimo 6 caracteres';
@@ -772,7 +772,11 @@ function _obValidarCta() {
     else senhaMsg.textContent = '';
   }
 
-  if (cta) cta.disabled = !ok;
+  // Aviso de instrumento não selecionado (não bloqueia o cadastro)
+  var chipMsg = document.getElementById('ob-chip-msg');
+  if (chipMsg) chipMsg.textContent = (!obInstrumentoSelecionado && ok) ? 'Selecione um instrumento para continuar' : '';
+
+  if (cta) cta.disabled = !(ok && !!obInstrumentoSelecionado);
 }
 
 // ── Show step 2 after nome + email confirmed ─────────────────────────────────
@@ -3762,6 +3766,7 @@ body.auth-pending #toast {
             <button class="ob-chip" data-val="outro" onclick="obToggleChip(this)" style="touch-action:manipulation;">Outro</button>
           </div>
         </div>
+        <div id="ob-chip-msg" style="font-size:11px;color:#ff9944;text-align:center;min-height:16px;margin-top:-12px;"></div>
         <button class="ob-cta" id="ob-cta" onclick="terminarOnboarding()" disabled>Criar conta</button>
         <p class="ob-terms">Os seus dados ficam seguros. A senha é gerida pelo Firebase.</p>
       </div><!-- /ob-step-2 -->
@@ -11559,6 +11564,11 @@ function admInicializar() {
     if (!p.isAdmin) return;
     var tabs = document.getElementById('admin-tabs');
     if (tabs) tabs.style.display = 'flex';
+    // Admin nao tem acesso a Sala nem Amigos
+    var btnSala = document.getElementById('btn-sala');
+    if (btnSala) btnSala.style.display = 'none';
+    var btnAmigos = document.getElementById('btn-amigos-header');
+    if (btnAmigos) btnAmigos.style.display = 'none';
   } catch(e) {}
 }
 
@@ -12604,7 +12614,7 @@ async function _fbFazerBackupAgora(btn) {
 <!-- PAINEL ADMIN -->
 <div id="admin-painel" style="display:none;position:fixed;inset:0;z-index:8000;background:#09090f;flex-direction:column;overflow:hidden;">
   <div style="background:#101018;border-bottom:1px solid rgba(255,255,255,0.07);padding:14px 18px;display:flex;align-items:center;gap:12px;flex-shrink:0;">
-    <button onclick="adminMostrarAba('app')" style="width:36px;height:36px;border-radius:10px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);color:rgba(255,255,255,0.6);cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;touch-action:manipulation;" title="Voltar ao app">
+    <button onclick="adminMostrarAba('app');var ec=document.getElementById('admin-escolha');if(ec)ec.style.display='flex';" style="width:36px;height:36px;border-radius:10px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);color:rgba(255,255,255,0.6);cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;touch-action:manipulation;" title="Voltar">
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
     </button>
     <div style="flex:1;">
