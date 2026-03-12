@@ -1260,12 +1260,13 @@ document.addEventListener('DOMContentLoaded', function() {
     if (splash) splash.classList.add('exit');
 
     if (perfil.nome && perfil.nome.trim().length >= 2) {
-      // Utilizador registado — mostra PIN ou app logo ao iniciar saída do splash
-      _mostrarApp();
+      // Aguarda splash terminar animação (0.7s) antes de mostrar app e PIN/Face ID
       const ov = document.getElementById('onboarding-overlay');
       if (ov) ov.remove();
-      // Aguarda splash terminar animação (~700ms) antes de mostrar PIN/Face ID
-      setTimeout(function() { _verificarPinNaEntrada(); }, 750);
+      setTimeout(function() {
+        _mostrarApp();
+        _verificarPinNaEntrada();
+      }, 750);
       // Verificar status em background (sem bloquear UI)
       // Se bloqueado/banido, fecha o app e mostra mensagem
       (async function() {
@@ -3407,7 +3408,7 @@ body.viewer-mode input[type="text"] { pointer-events: none; }
 .ob-pin-input:focus { border-color: rgba(10,158,110,0.5); }
 
 /* ── Auth pending: esconde app até login confirmado ── */
-body.auth-pending > *:not(#ob-splash):not(#onboarding-overlay):not(#toast):not(#modal-esqueci-senha):not(#modal-formalizar-conta):not(#modal-alterar-senha):not(#pin-lock-screen):not(#modal-admin):not(#admin-escolha):not(script):not(style) {
+body.auth-pending > *:not(#ob-splash):not(#onboarding-overlay):not(#toast):not(#modal-esqueci-senha):not(#modal-formalizar-conta):not(#modal-alterar-senha):not(#modal-admin):not(#admin-escolha):not(script):not(style) {
   visibility: hidden !important;
   pointer-events: none !important;
 }
