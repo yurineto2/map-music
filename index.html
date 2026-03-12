@@ -764,7 +764,7 @@ function _obValidarCta() {
   const pin    = _obGetPin();
   const senhaMsg = document.getElementById('ob-senha-msg');
 
-  let ok = _obNomeDisponivel && senha.length >= 6 && senha === senha2 && pin.length === 4 && !!obInstrumentoSelecionado;
+  let ok = _obNomeDisponivel && senha.length >= 6 && senha === senha2 && pin.length === 4;
 
   if (senhaMsg) {
     if (senha.length > 0 && senha.length < 6) senhaMsg.textContent = 'Mínimo 6 caracteres';
@@ -1260,13 +1260,11 @@ document.addEventListener('DOMContentLoaded', function() {
     if (splash) splash.classList.add('exit');
 
     if (perfil.nome && perfil.nome.trim().length >= 2) {
-      // Aguarda splash terminar animação (0.7s) antes de mostrar app e PIN/Face ID
+      // Utilizador registado — mostra app e aguarda splash terminar antes do PIN
+      _mostrarApp();
       const ov = document.getElementById('onboarding-overlay');
       if (ov) ov.remove();
-      setTimeout(function() {
-        _mostrarApp();
-        _verificarPinNaEntrada();
-      }, 750);
+      setTimeout(function() { _verificarPinNaEntrada(); }, 750);
       // Verificar status em background (sem bloquear UI)
       // Se bloqueado/banido, fecha o app e mostra mensagem
       (async function() {
@@ -1313,15 +1311,10 @@ if (!localStorage.getItem('map_autofocus_done_v1')) {
       var isVocalista = document.body.dataset.ambiente === 'vocalista';
       if (isVocalista) {
         var vocInput = document.getElementById('voc-input-busca');
-        if (vocInput && vocInput.offsetParent !== null) {
-          vocInput.focus();
-          return;
-        }
+        if (vocInput && vocInput.offsetParent !== null) { vocInput.focus(); return; }
       }
       var bibInput = document.getElementById('biblioteca-search');
-      if (bibInput && bibInput.offsetParent !== null) {
-        bibInput.focus();
-      }
+      if (bibInput && bibInput.offsetParent !== null) { bibInput.focus(); }
     } catch(e) {}
   }, 5000);
 }
@@ -3408,7 +3401,7 @@ body.viewer-mode input[type="text"] { pointer-events: none; }
 .ob-pin-input:focus { border-color: rgba(10,158,110,0.5); }
 
 /* ── Auth pending: esconde app até login confirmado ── */
-body.auth-pending > *:not(#ob-splash):not(#onboarding-overlay):not(#toast):not(#modal-esqueci-senha):not(#modal-formalizar-conta):not(#modal-alterar-senha):not(#modal-admin):not(#admin-escolha):not(script):not(style) {
+body.auth-pending > *:not(#ob-splash):not(#onboarding-overlay):not(#toast):not(#modal-esqueci-senha):not(#modal-formalizar-conta):not(#modal-alterar-senha):not(#pin-lock-screen):not(#modal-admin):not(#admin-escolha):not(script):not(style) {
   visibility: hidden !important;
   pointer-events: none !important;
 }
@@ -3641,6 +3634,19 @@ body.auth-pending #toast {
 </head>
 <body id="app-body" class="auth-pending" style="background:#06060c;margin:0;padding:0;">
 
+<!-- BOTÃO DE TESTE EMERGENCIAL -->
+<button id="btn-teste-emergencial" style="display:none;position:fixed;bottom:20px;right:20px;z-index:999999;background:red;color:white;font-size:16px;font-weight:900;padding:16px 24px;border:none;border-radius:12px;cursor:pointer;" onclick="alert('CLIQUE FUNCIONOU!\nnome='+(document.getElementById('ob-nome')?.value||'vazio')+'\nemail='+(typeof _obEmail!=='undefined'?_obEmail:'vazio')+'\nsenha='+(document.getElementById('ob-senha')?.value?.length||0)+'chars\npin='+_obGetPin()+'\ninst='+(typeof obInstrumentoSelecionado!=='undefined'?obInstrumentoSelecionado:'vazio')+'\nnomeOk='+(typeof _obNomeDisponivel!=='undefined'?_obNomeDisponivel:'?'))">
+  🔴 TESTE
+</button>
+<script>
+// Mostra botão de teste quando ob-step-2 aparecer
+setInterval(function(){
+  var step2 = document.getElementById('ob-step-2');
+  var btn = document.getElementById('btn-teste-emergencial');
+  if(step2 && btn) btn.style.display = (step2.style.display !== 'none') ? 'block' : 'none';
+}, 500);
+</script>
+
 <div class="toast" id="toast"></div>
 
 <!-- SPLASH SCREEN — ANIMAÇÃO INICIAL -->
@@ -3785,7 +3791,21 @@ body.auth-pending #toast {
             <button class="ob-chip" data-val="outro" onclick="obToggleChip(this)" style="touch-action:manipulation;">Outro</button>
           </div>
         </div>
-        <button class="ob-cta" id="ob-cta" onclick="terminarOnboarding()" disabled>Criar conta</button>
+        <button class="ob-cta" id="ob-cta" style="opacity:1!important;pointer-events:auto!important;cursor:pointer!important;" onclick="
+          var nome=(document.getElementById('ob-nome')?.value||'').trim();
+          var s1=document.getElementById('ob-senha')?.value||'';
+          var s2=document.getElementById('ob-senha2')?.value||'';
+          var pin=_obGetPin();
+          var email=typeof _obEmail!=='undefined'?_obEmail:'VAZIO';
+          var inst=typeof obInstrumentoSelecionado!=='undefined'?obInstrumentoSelecionado:'VAZIO';
+          var nomeOk=typeof _obNomeDisponivel!=='undefined'?_obNomeDisponivel:false;
+          if(!nomeOk||nome.length<2){alert('BLOQUEIO: Nome inválido\nnome='+nome+'\ndisponivel='+nomeOk);return;}
+          if(s1.length<6){alert('BLOQUEIO: Senha curta ('+s1.length+' chars)');return;}
+          if(s1!==s2){alert('BLOQUEIO: Senhas diferentes');return;}
+          if(pin.length<4){alert('BLOQUEIO: PIN incompleto ('+pin+')');return;}
+          if(!email||email==='VAZIO'){alert('BLOQUEIO: Email vazio');return;}
+          terminarOnboarding();
+        ">Criar conta</button>
         <p class="ob-terms">Os seus dados ficam seguros. A senha é gerida pelo Firebase.</p>
       </div><!-- /ob-step-2 -->
 
