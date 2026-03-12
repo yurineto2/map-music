@@ -3683,12 +3683,12 @@ body.auth-pending #toast {
     <div id="ob-painel-login">
       <div class="ob-field">
         <label class="ob-label">Email</label>
-        <input id="login-email" type="email" class="ob-input" placeholder="teu@email.com" autocomplete="email" oninput="obLoginValidar()">
+        <input id="login-email" type="email" class="ob-input" placeholder="teu@email.com" autocomplete="off" oninput="obLoginValidar()">
       </div>
       <div class="ob-field">
         <label class="ob-label">Senha</label>
         <div style="position:relative;">
-          <input id="login-senha" type="password" class="ob-input" placeholder="••••••••" autocomplete="current-password" oninput="obLoginValidar()" style="padding-right:44px;">
+          <input id="login-senha" type="password" class="ob-input" placeholder="••••••••" autocomplete="off" oninput="obLoginValidar()" style="padding-right:44px;">
           <button type="button" onclick="_obToggleSenha('login-senha','login-olho')"
             style="position:absolute;right:12px;top:50%;transform:translateY(-50%);background:none;border:none;color:rgba(255,255,255,0.3);cursor:pointer;padding:4px;">
             <svg id="login-olho" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
