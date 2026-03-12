@@ -747,14 +747,15 @@ function obPinKey(e, i) {
 function _obValidarCta() {
   const step1 = document.getElementById('ob-step-1');
   const step2 = document.getElementById('ob-step-2');
-  const step1Visible = step1 && step1.style.display !== 'none';
+  // Usa offsetParent para detectar visibilidade real independente de inline style
+  const step2Visible = step2 && step2.style.display === 'flex';
   const cta = document.getElementById('ob-cta');
   const btnVerif = document.getElementById('ob-btn-verificar');
 
-  if (step1Visible) {
+  if (!step2Visible) {
     // Step 1: activa botão verificar se nome >= 2 chars
     const nome = (document.getElementById('ob-nome')?.value || '').trim();
-    if (btnVerif) btnVerif.disabled = nome.length < 2;
+    if (btnVerif) { btnVerif.disabled = nome.length < 2; btnVerif.style.opacity = nome.length >= 2 ? '1' : '0.4'; }
     return;
   }
 
