@@ -2,16 +2,83 @@
 <html lang="pt-BR">
 <head>
 <style>*{margin:0;padding:0;box-sizing:border-box;}html,body{background:#06060c!important;color:#fff;}#ob-splash{position:fixed;inset:0;z-index:100010;background:#06060c;display:flex;flex-direction:column;align-items:center;justify-content:center;}</style>
+<style>
+#ios-open-safari {
+  position: fixed; inset: 0; z-index: 99999999;
+  background: #06060c;
+  font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  padding: 36px; text-align: center;
+  color: #fff;
+}
+</style>
+<div id="ios-open-safari">
+  <div style="width:72px;height:72px;border-radius:20px;background:rgba(138,92,246,0.15);border:2px solid rgba(138,92,246,0.4);display:flex;align-items:center;justify-content:center;margin-bottom:24px;">
+    <svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="#a78bfa" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="8 12 12 8 16 12"/><line x1="12" y1="16" x2="12" y2="8"/></svg>
+  </div>
+  <div style="font-size:22px;font-weight:900;margin-bottom:10px;">Abrir no Safari</div>
+  <div style="font-size:14px;color:rgba(255,255,255,0.5);line-height:1.8;margin-bottom:32px;">
+    Este app precisa ser aberto no <strong style="color:#fff;">Safari</strong> para funcionar.<br>
+    Toque no botão <strong style="color:#a78bfa;">Compartilhar ⬆</strong> e escolha<br>
+    <strong style="color:#a78bfa;">"Abrir no Safari"</strong>
+  </div>
+  <div style="background:rgba(138,92,246,0.1);border:1px solid rgba(138,92,246,0.3);border-radius:16px;padding:20px 24px;font-size:13px;color:rgba(255,255,255,0.6);line-height:2;max-width:320px;">
+    <span style="color:#fff;font-weight:700;">1.</span> Toque em <strong style="color:#a78bfa;">⬆ Compartilhar</strong> (barra inferior)<br>
+    <span style="color:#fff;font-weight:700;">2.</span> Role e toque em <strong style="color:#a78bfa;">"Abrir no Safari"</strong><br>
+    <span style="color:#fff;font-weight:700;">3.</span> O app abrirá normalmente ✓
+  </div>
+</div>
 <script>
-// Suprime erros cross-origin (file://, Firebase offline, etc.)
-window.onerror = function() { return true; };
-window.addEventListener('error', function(e) { e.preventDefault(); e.stopPropagation(); }, true);
-window.addEventListener('unhandledrejection', function(e) { e.preventDefault(); });
+// Se JS roda, esconde o banner — app vai inicializar normalmente
+(function(){ var b = document.getElementById('ios-open-safari'); if(b) b.style.display='none'; })();
+</script>
+<script>
+// Suprime erros cross-origin (file://, Firebase offline, Safari iOS, etc.)
+window.onerror = function(msg, src, line, col, err) {
+  if (!msg || msg === 'Script error.' || msg === 'Script error') return true;
+  return false;
+};
+window.addEventListener('error', function(e) {
+  if (!e.message || e.message === 'Script error.' || e.message === 'Script error') {
+    e.preventDefault(); e.stopPropagation(); return;
+  }
+  if (e.target && (e.target.tagName === 'SCRIPT' || e.target.tagName === 'LINK' || e.target.tagName === 'IMG')) {
+    e.preventDefault(); e.stopPropagation();
+  }
+}, true);
+window.addEventListener('unhandledrejection', function(e) {
+  var r = e.reason;
+  if (!r) { e.preventDefault(); return; }
+  var msg = (r.message || r.toString() || '').toLowerCase();
+  if (msg.indexOf('network') !== -1 || msg.indexOf('fetch') !== -1 ||
+      msg.indexOf('timeout') !== -1 || msg.indexOf('abort') !== -1 ||
+      msg.indexOf('failed to fetch') !== -1 || msg.indexOf('load failed') !== -1 ||
+      msg === 'script error' || msg === 'script error.') {
+    e.preventDefault();
+  }
+});
 </script>
 <meta charset="UTF-8">
-
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>Map Music Pro - Elite Edition</title>
+<style>
+#noscript-banner {
+  display: block;
+  position: fixed;
+  inset: 0;
+  background: #06060c;
+  z-index: 9999999;
+  font-family: -apple-system, sans-serif;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 32px;
+  text-align: center;
+}
+#noscript-banner.hide { display: none !important; }
+</style>
 <!-- Google Fonts removed — using system fonts -->
 <script>
 // ─── FIREBASE via REST API — sem CDN, funciona em qualquer browser ────────────
@@ -20,15 +87,54 @@ window.addEventListener('unhandledrejection', function(e) { e.preventDefault(); 
   const _API_KEY = 'AIzaSyBausGqamGuEbxV8NdHfuRY0Tx21LELj-Y';
 
   // Fetch com timeout de 10s para evitar hanging no Safari iOS
+  // _ft: wrapper de fetch/XHR com fallback automático para Safari iOS
+  // O fetch com mode:'cors' pode falhar em file:// ou Safari ITP
+  // O XHR funciona em mais contextos no Safari iOS
+  function _xhrFetch(url, opts) {
+    return new Promise(function(resolve, reject) {
+      var method = (opts && opts.method) || 'GET';
+      var body   = (opts && opts.body)   || null;
+      var headers = (opts && opts.headers) || {};
+      var xhr = new XMLHttpRequest();
+      xhr.open(method, url, true);
+      for (var h in headers) xhr.setRequestHeader(h, headers[h]);
+      xhr.timeout = 15000;
+      xhr.ontimeout = function() { reject(new Error('timeout')); };
+      xhr.onerror  = function() { reject(new Error('Load failed')); };
+      xhr.onload   = function() {
+        // Simula interface Response do fetch
+        var status = xhr.status;
+        var ok = status >= 200 && status < 300;
+        var text = xhr.responseText;
+        resolve({
+          ok: ok,
+          status: status,
+          statusText: xhr.statusText,
+          json: function() {
+            return new Promise(function(res, rej) {
+              try { res(JSON.parse(text)); } catch(e) { rej(e); }
+            });
+          },
+          text: function() { return Promise.resolve(text); }
+        });
+      };
+      xhr.send(body || null);
+    });
+  }
+
   function _ft(url, opts) {
-    // Nunca passa AbortSignal ao fetch — causa DataCloneError no Safari iOS
-    // Timeout via Promise.race funciona em todos os browsers sem risco de clone
-    const reqOpts = Object.assign({}, opts || {});
-    delete reqOpts.signal; // garante que nenhum signal vaza
-    const fetchPromise = fetch(url, reqOpts);
-    const timeoutPromise = new Promise((_, reject) =>
-      setTimeout(() => reject(new Error('timeout')), 6000)
-    );
+    var reqOpts = Object.assign({}, opts || {});
+    delete reqOpts.signal;
+    delete reqOpts.mode; // Remover mode:'cors' — causa preflight que Safari bloqueia
+    // Tenta fetch primeiro; se falhar com erro de rede, usa XHR como fallback
+    var timeoutMs = 15000;
+    var fetchPromise = fetch(url, reqOpts).catch(function(fetchErr) {
+      // fetch falhou (Load failed, CORS, etc.) — tenta XHR
+      return _xhrFetch(url, opts);
+    });
+    var timeoutPromise = new Promise(function(_, reject) {
+      setTimeout(function() { reject(new Error('timeout')); }, timeoutMs);
+    });
     return Promise.race([fetchPromise, timeoutPromise]);
   }
 
@@ -164,14 +270,21 @@ window.addEventListener('unhandledrejection', function(e) { e.preventDefault(); 
     intervalMs = intervalMs || 3000;
     let last = null;
     let stopped = false;
+    let errCount = 0;
     async function check() {
       if (stopped) return;
       try {
         const data = await _get(path);
+        errCount = 0;
         const str = JSON.stringify(data);
         if (str !== last) { last = str; if (data) callback(data); }
-      } catch(e) {}
-      if (!stopped) setTimeout(check, intervalMs);
+      } catch(e) {
+        errCount++;
+      }
+      if (!stopped) {
+        var delay = errCount > 3 ? Math.min(intervalMs * Math.pow(2, errCount - 3), 300000) : intervalMs;
+        setTimeout(check, delay);
+      }
     }
     check();
     return function() { stopped = true; };
@@ -181,14 +294,22 @@ window.addEventListener('unhandledrejection', function(e) { e.preventDefault(); 
     intervalMs = intervalMs || 4000;
     let last = null;
     let stopped = false;
+    let errCount = 0;
     async function check() {
       if (stopped) return;
       try {
         const rows = await _query(col, filters);
+        errCount = 0;
         const str = JSON.stringify(rows);
         if (str !== last) { last = str; callback(rows); }
-      } catch(e) {}
-      if (!stopped) setTimeout(check, intervalMs);
+      } catch(e) {
+        errCount++;
+      }
+      if (!stopped) {
+        // Backoff exponencial em caso de erros: max 5 min
+        var delay = errCount > 3 ? Math.min(intervalMs * Math.pow(2, errCount - 3), 300000) : intervalMs;
+        setTimeout(check, delay);
+      }
     }
     check();
     return function() { stopped = true; };
@@ -266,27 +387,45 @@ window.addEventListener('unhandledrejection', function(e) { e.preventDefault(); 
         if (d.error) return { ok: false, msg: _authErrLocal(d.error.message) };
         return { ok: true, uid: d.localId, idToken: d.idToken };
       } catch(e) {
-        const msg = e.message === 'timeout' ? 'Tempo esgotado. Verifique sua conexão.' : 'Sem conexão com a internet.';
+        const isTimeout = e.message === 'timeout';
+        const isLoadFailed = /load failed|failed to fetch|networkerror|network request failed/i.test(e.message || '');
+        const msg = isTimeout ? 'Tempo esgotado. Tente novamente.' 
+                  : isLoadFailed ? 'Erro de rede ao criar conta. Verifique sua conexão e tente novamente.'
+                  : 'Sem conexão com a internet.';
         return { ok: false, msg };
       }
     },
 
     async loginComEmail(email, senha) {
-      try {
-        const r = await _ft('https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key=' + _API_KEY, {
-          method: 'POST', headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ email, password: senha, returnSecureToken: true })
-        });
-        if (!r.ok) {
-          const d = await r.json().catch(() => ({}));
-          return { ok: false, msg: _authErrLocal((d.error && d.error.message) || 'NETWORK_ERROR') };
+      const MAX_TENTATIVAS = 2;
+      for (let tentativa = 1; tentativa <= MAX_TENTATIVAS; tentativa++) {
+        try {
+          const r = await _ft('https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key=' + _API_KEY, {
+            method: 'POST', headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email, password: senha, returnSecureToken: true })
+          });
+          if (!r.ok) {
+            const d = await r.json().catch(() => ({}));
+            return { ok: false, msg: _authErrLocal((d.error && d.error.message) || 'NETWORK_ERROR') };
+          }
+          const d = await r.json();
+          if (d.error) return { ok: false, msg: _authErrLocal(d.error.message) };
+          return { ok: true, uid: d.localId, idToken: d.idToken };
+        } catch(e) {
+          const isTimeout = e.message === 'timeout';
+          const isNetworkErr = isTimeout || /load failed|failed to fetch|networkerror|network request failed/i.test(e.message || '');
+          // Retry automático em erro de rede
+          if (isNetworkErr && tentativa < MAX_TENTATIVAS) {
+            await new Promise(function(r){ setTimeout(r, 2000); });
+            continue;
+          }
+          const msg = isTimeout
+            ? 'Tempo esgotado. Verifique sua internet e tente novamente.'
+            : navigator.onLine === false
+            ? 'Sem internet. Verifique sua conexão.'
+            : 'Não foi possível conectar ao Firebase. Erro: ' + (e.message || 'desconhecido') + '. Toque em "Testar conexão" abaixo.';
+          return { ok: false, msg };
         }
-        const d = await r.json();
-        if (d.error) return { ok: false, msg: _authErrLocal(d.error.message) };
-        return { ok: true, uid: d.localId, idToken: d.idToken };
-      } catch(e) {
-        const msg = e.message === 'timeout' ? 'Tempo esgotado. Verifique sua conexão.' : 'Sem conexão com a internet.';
-        return { ok: false, msg };
       }
     },
 
@@ -348,7 +487,7 @@ window.addEventListener('unhandledrejection', function(e) { e.preventDefault(); 
       try { return await _set('solicitacoes/' + solId, { status: 'recusado' }, true); } catch(e) { return false; }
     },
     ouvirSolicitacoes(uid, callback) {
-      return _pollQuery('solicitacoes', [['para','==',uid],['status','==','pendente']], callback, 5000);
+      return _pollQuery('solicitacoes', [['para','==',uid],['status','==','pendente']], callback, 20000);
     },
     async listarAmigos(uid) {
       try {
@@ -384,7 +523,7 @@ window.addEventListener('unhandledrejection', function(e) { e.preventDefault(); 
     },
 
     ouvirNotificacoes(uid, callback) {
-      return _pollQuery('notificacoes', [['para','==',uid],['lida','==',false]], callback, 2000);
+      return _pollQuery('notificacoes', [['para','==',uid],['lida','==',false]], callback, 30000);
     },
     async sugestoes(uid) {
       try {
@@ -620,13 +759,9 @@ window.addEventListener('unhandledrejection', function(e) { e.preventDefault(); 
 
   async function _testarConectividade() {
     try {
-      const ctrl = new AbortController();
-      const timeout = setTimeout(() => ctrl.abort(), 8000);
       const r = await _ft(
-        'https://firestore.googleapis.com/v1/projects/' + _PROJECT + '/databases/(default)/documents?pageSize=1&key=' + _API_KEY,
-        { signal: ctrl.signal }
+        'https://firestore.googleapis.com/v1/projects/' + _PROJECT + '/databases/(default)/documents?pageSize=1&key=' + _API_KEY
       );
-      clearTimeout(timeout);
       if (r.status === 403) {
         console.warn('Firebase: regras de segurança bloqueiam acesso.');
       } else {
@@ -691,7 +826,7 @@ function obNomeInput() {
   const msg = document.getElementById('ob-nome-msg');
   const st  = document.getElementById('ob-nome-status');
   if (btn) { btn.disabled = val.length < 2; btn.style.opacity = val.length >= 2 ? '1' : '0.4'; }
-  if (msg) msg.textContent = val.length >= 2 ? 'Clica em verificar disponibilidade' : '';
+  if (msg) msg.textContent = val.length >= 2 ? 'Clique em verificar disponibilidade' : '';
   if (st)  st.textContent = '';
   _obValidarCta();
 }
@@ -702,9 +837,9 @@ async function obVerificarNome() {
   const btn = document.getElementById('ob-btn-verificar');
   const msg = document.getElementById('ob-nome-msg');
   const st  = document.getElementById('ob-nome-status');
-  if (btn) { btn.disabled = true; btn.textContent = 'A verificar...'; }
+  if (btn) { btn.disabled = true; btn.textContent = 'Verificando...'; }
   if (!window._fb) {
-    if (msg) msg.textContent = 'A carregar... tenta em 1 segundo.';
+    if (msg) msg.textContent = 'Carregando... tente em 1 segundo.';
     if (btn) { btn.disabled = false; btn.textContent = 'Verificar disponibilidade'; }
     setTimeout(obVerificarNome, 1000);
     return;
@@ -787,14 +922,14 @@ function _obAvancarStep2() {
   const email = (emailEl?.value || '').trim();
   const emailOk = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
   if (!emailOk) {
-    if (emailMsg) { emailMsg.textContent = 'Email inválido — preenche o email antes de continuar'; emailMsg.style.color = '#ff4444'; }
+    if (emailMsg) { emailMsg.textContent = 'Email inválido — preencha o email antes de continuar'; emailMsg.style.color = '#ff4444'; }
     emailEl?.focus();
     emailEl?.scrollIntoView({ behavior: 'smooth', block: 'center' });
     return;
   }
   if (!_obNomeDisponivel) {
     const msg = document.getElementById('ob-nome-msg');
-    if (msg) msg.textContent = 'Verifica primeiro o nome';
+    if (msg) msg.textContent = 'Verifique primeiro o nome';
     return;
   }
   _obEmail = email;
@@ -821,14 +956,14 @@ async function terminarOnboarding() {
   if (pin.length < 4) return;
   if (!_obEmail) return;
 
-  if (cta) { cta.disabled = true; cta.textContent = 'A criar conta...'; }
+  if (cta) { cta.disabled = true; cta.textContent = 'Criando conta...'; }
 
-  if (cta) { cta.disabled = true; cta.textContent = 'A criar conta...'; }
+  if (cta) { cta.disabled = true; cta.textContent = 'Criando conta...'; }
 
   // 1. Registar no Firebase Auth
   if (!window._fb) {
     if (cta) { cta.disabled = false; cta.textContent = 'Criar conta'; }
-    if (typeof showToast === 'function') showToast('Firebase a carregar, tenta novamente.');
+    if (typeof showToast === 'function') showToast('Firebase carregando, tente novamente.');
     return;
   }
 
@@ -945,8 +1080,8 @@ function _pinVerificar() {
               : 'Esta conta está temporariamente bloqueada.';
             if (screen) screen.style.display = 'none';
             // Mostrar erro e recarregar
-            alert(msg);
-            location.reload();
+            showToast(msg, 'error');
+            setTimeout(function() { location.reload(); }, 2500);
             return;
           }
           // Atualizar status local com o do servidor
@@ -1046,7 +1181,15 @@ async function obFazerLogin() {
   const msg   = document.getElementById('login-msg');
 
   if (msg) msg.textContent = '';
-  if (btn) { btn.disabled = true; btn.textContent = 'A entrar...'; }
+  if (btn) { btn.disabled = true; btn.textContent = 'Entrando...'; }
+
+  // Detectar about:/file: — Safari bloqueia fetch cross-origin nesses contextos
+  var _proto = window.location.protocol;
+  if (_proto === 'file:' || _proto === 'about:' || _proto === 'blob:') {
+    if (msg) msg.textContent = '⚠️ Abra o arquivo diretamente no Safari (não em preview). Role para baixo e toque em "Abrir no Safari".';
+    if (btn) { btn.disabled = false; btn.textContent = 'Entrar'; }
+    return;
+  }
 
   if (!window._fb) {
     if (msg) msg.textContent = 'Firebase não carregado. Tenta novamente.';
@@ -1054,6 +1197,7 @@ async function obFazerLogin() {
     return;
   }
 
+  if (btn) btn.textContent = 'Verificando...';
   const result = await window._fb.loginComEmail(email, senha);
   if (!result.ok) {
     if (msg) msg.textContent = result.msg || 'Email ou senha incorretos.';
@@ -1149,10 +1293,44 @@ async function obFazerLogin() {
     }, 600);
   } else {
     // Conta Firebase existe mas sem perfil — vai pro cadastro
-    if (msg) msg.textContent = 'Conta encontrada mas sem perfil. Cria a tua conta.';
+    if (msg) msg.textContent = 'Conta encontrada mas sem perfil. Crie sua conta.';
     if (btn) { btn.disabled = false; btn.textContent = 'Entrar'; }
     setTimeout(function() { obMostrarAba('cadastro'); }, 600);
   }
+}
+
+async function obDiagnosticarConexao() {
+  var msgEl = document.getElementById('login-msg');
+  if (msgEl) { msgEl.style.color = 'rgba(138,92,246,0.9)'; msgEl.style.fontSize = '10px'; msgEl.style.lineHeight = '1.6'; msgEl.textContent = 'Testando...'; }
+
+  var API_KEY = 'AIzaSyBausGqamGuEbxV8NdHfuRY0Tx21LELj-Y';
+  var linhas = [];
+  linhas.push('Protocolo: ' + window.location.protocol);
+  linhas.push('Online: ' + navigator.onLine);
+
+  try {
+    var r1 = await Promise.race([
+      fetch('https://firestore.googleapis.com/v1/projects/map-music-eb8aa/databases/(default)/documents?pageSize=1&key=' + API_KEY, {mode:'cors'}),
+      new Promise(function(_,rej){ setTimeout(function(){ rej(new Error('timeout')); }, 8000); })
+    ]);
+    linhas.push('Firestore: ' + r1.status);
+  } catch(e) { linhas.push('Firestore ERRO: ' + (e.message || String(e))); }
+
+  try {
+    var r2 = await Promise.race([
+      fetch('https://identitytoolkit.googleapis.com/v1/accounts:lookup?key=' + API_KEY, {
+        method:'POST', headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({idToken:'invalid'}), mode:'cors'
+      }),
+      new Promise(function(_,rej){ setTimeout(function(){ rej(new Error('timeout')); }, 8000); })
+    ]);
+    var d2 = await r2.json().catch(function(){ return {}; });
+    linhas.push('Auth: ' + r2.status + (d2.error ? ' - ' + d2.error.message : ''));
+  } catch(e) { linhas.push('Auth ERRO: ' + (e.message || String(e))); }
+
+  var texto = linhas.join(' | ');
+  if (msgEl) msgEl.textContent = texto;
+  try { await navigator.clipboard.writeText(texto); if (typeof showToast === 'function') showToast('Diagnóstico copiado!'); } catch(e) {}
 }
 
 function obAbrirEsqueciSenha() {
@@ -1172,6 +1350,39 @@ function obAbrirEsqueciSenha() {
 }
 
 document.addEventListener('DOMContentLoaded', function() {
+
+  // ── Detectar contexto sem rede (about:srcdoc, file:, blob:) ──────────────────
+  var proto = window.location.protocol;
+  var href  = window.location.href;
+  var isSrcdoc = (href === 'about:srcdoc' || href.indexOf('about:srcdoc') === 0);
+  var semRede  = isSrcdoc || proto === 'file:' || proto === 'blob:';
+  if (semRede) {
+    document.body.classList.remove('auth-pending');
+    var _splashEl = document.getElementById('ob-splash');
+    if (_splashEl) _splashEl.style.display = 'none';
+
+    var ov = document.createElement('div');
+    ov.id = 'proto-warn-overlay';
+    ov.style.cssText = 'position:fixed;inset:0;z-index:999999;background:#06060c;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:32px;text-align:center;font-family:system-ui,-apple-system,sans-serif;';
+
+    var instrucoes = isSrcdoc
+      ? '<b style="color:#fff;">1.</b> Toque no ícone <b style="color:#a78bfa;">&#x2913; Download</b> (canto superior direito desta tela)<br><b style="color:#fff;">2.</b> Toque em <b style="color:#a78bfa;">"Abrir no Safari"</b><br><b style="color:#fff;">3.</b> O app abrirá com login funcionando'
+      : '<b style="color:#fff;">1.</b> Não abra o arquivo direto do Files/Downloads<br><b style="color:#fff;">2.</b> No Safari, use <b style="color:#a78bfa;">Arquivo → Abrir</b><br><b style="color:#fff;">3.</b> Selecione o arquivo .html';
+
+    ov.innerHTML = ''
+      + '<div style="width:72px;height:72px;border-radius:20px;background:rgba(138,92,246,0.15);border:2px solid rgba(138,92,246,0.35);display:flex;align-items:center;justify-content:center;margin-bottom:24px;">'
+      +   '<svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#a78bfa" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>'
+      + '</div>'
+      + '<div style="font-size:22px;font-weight:900;color:#fff;margin-bottom:8px;">Baixe e abra no Safari</div>'
+      + '<div style="font-size:13px;color:rgba(255,255,255,0.45);margin-bottom:24px;">Este app precisa rodar diretamente no Safari para acessar o servidor.</div>'
+      + '<div style="background:rgba(255,255,255,0.05);border:1px solid rgba(138,92,246,0.2);border-radius:16px;padding:20px;width:100%;max-width:340px;font-size:14px;color:rgba(255,255,255,0.7);line-height:2;text-align:left;">'
+      +   instrucoes
+      + '</div>';
+
+    document.body.appendChild(ov);
+    return;
+  }
+
   // ── Failsafe Safari iOS: se auth-pending não for removido em 6s, força remoção ──
   // Previne tela preta caso qualquer erro silencioso interrompa o fluxo de inicialização
   setTimeout(function() {
@@ -1297,7 +1508,7 @@ document.addEventListener('DOMContentLoaded', function() {
             var m2 = st2 === 'banido'
               ? 'Esta conta foi banida permanentemente.'
               : 'Esta conta está temporariamente bloqueada.';
-            alert(m2);
+            showToast(m2, 'error');
             sessionStorage.setItem('map_skip_splash', '1');
             location.reload();
           }
@@ -1544,13 +1755,14 @@ body { font-family: -apple-system, 'Inter', BlinkMacSystemFont, 'Segoe UI', sans
   font-size: 8px; font-weight: 700; letter-spacing: 3px;
   color: rgba(255,255,255,0.3); text-transform: uppercase; margin-top: 3px;
 }
-.menu-container { position: relative; }
+.menu-container { position: relative; z-index: 9999; }
 .menu-btn { background: none; border: none; color: #fff; cursor: pointer; padding: 8px; border-radius: 50%; display: flex; align-items: center; }
-.dropdown-menu { position: absolute; top: 45px; right: 0; background: rgba(20,20,30,0.92); backdrop-filter: blur(15px); border: 1px solid var(--glass-border); border-radius: var(--radius-lg); width: 210px; display: none; flex-direction: column; z-index: 2000; box-shadow: 0 15px 35px rgba(0,0,0,0.8); overflow: hidden; }
+.dropdown-menu { position: absolute; top: 48px; right: 0; background: #0d0d1a; backdrop-filter: blur(20px); border: 1px solid rgba(138,92,246,0.18); border-radius: 16px; width: 220px; display: none; flex-direction: column; z-index: 9999; box-shadow: 0 20px 50px rgba(0,0,0,0.95), 0 0 0 1px rgba(255,255,255,0.04); overflow: hidden; }
 .dropdown-menu.show { display: flex; }
-.menu-item { padding: 14px 18px; color: rgba(255,255,255,0.8); font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 1px; cursor: pointer; border-bottom: 1px solid var(--glass-border); transition: 0.2s; display: flex; align-items: center; gap: 8px; }
+.menu-item { padding: 15px 18px; color: rgba(255,255,255,0.75); font-size: 13px; font-weight: 600; letter-spacing: 0.2px; cursor: pointer; border-bottom: 1px solid rgba(255,255,255,0.05); transition: background 0.15s, color 0.15s; display: flex; align-items: center; gap: 12px; touch-action: manipulation; }
 .menu-item:last-child { border-bottom: none; }
-.menu-item:hover { background: rgba(255,255,255,0.05); color: var(--accent-primary); }
+.menu-item:hover { background: rgba(138,92,246,0.08); color: #c4b5fd; }
+.menu-item:active { background: rgba(138,92,246,0.15); }
 .menu-item.danger { color: #ff4d4d; }
 
 /* SYNC STATUS BAR */
@@ -2704,8 +2916,33 @@ body.performance-mode .perf-song-indicator { display: flex; }
 .amigos-empty svg { opacity: 0.15; }
 .amigos-empty p { font-size: 12px; font-weight: 600; letter-spacing: 0.5px; }
 
-.toast { position: fixed; bottom: 80px; left: 50%; transform: translateX(-50%); background: var(--accent-primary); color: #000; padding: 10px 20px; border-radius: var(--radius-full); font-weight: 700; font-size: 12px; z-index: 9999; opacity: 0; transition: opacity 0.3s; pointer-events: none; white-space: nowrap; }
-.toast.show { opacity: 1; }
+.toast {
+  position: fixed; bottom: 88px; left: 50%;
+  transform: translateX(-50%) translateY(16px);
+  background: #1c1c28; color: #fff;
+  padding: 11px 18px 11px 14px;
+  border-radius: 16px;
+  font-weight: 700; font-size: 13px;
+  z-index: 99999; opacity: 0;
+  transition: opacity 0.28s ease, transform 0.32s cubic-bezier(0.34,1.3,0.64,1);
+  pointer-events: none;
+  display: flex; align-items: center; gap: 9px;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.55), 0 1px 0 rgba(255,255,255,0.05) inset;
+  border: 1px solid rgba(255,255,255,0.09);
+  max-width: min(90vw, 360px);
+  white-space: normal;
+}
+.toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+.toast-icon { flex-shrink: 0; display: flex; align-items: center; opacity: 0.9; }
+.toast-msg { line-height: 1.4; }
+.toast-success { background: #0d2218; border-color: rgba(10,158,110,0.35); color: #4ade80; }
+.toast-success .toast-icon { color: #4ade80; }
+.toast-error   { background: #1f0d0d; border-color: rgba(255,60,60,0.35); color: #f87171; }
+.toast-error .toast-icon { color: #f87171; }
+.toast-warning { background: #1c180a; border-color: rgba(250,180,0,0.3); color: #fbbf24; }
+.toast-warning .toast-icon { color: #fbbf24; }
+.toast-info    { background: #0e0e1f; border-color: rgba(255,255,255,0.12); color: rgba(255,255,255,0.85); }
+.toast-info .toast-icon { color: rgba(255,255,255,0.5); }
 
 /* MODAL PADS AMBIENT */
 .pads-overlay {
@@ -3256,7 +3493,7 @@ body.viewer-mode input[type="text"] { pointer-events: none; }
   font-weight: 500; letter-spacing: 1px;
   text-transform: uppercase;
 }
-/* Nome do utilizador (retorno) */
+/* Nome do usuário (retorno) */
 .ob-hero-username {
   position: relative; z-index: 1;
   font-size: 17px; font-weight: 700;
@@ -3418,7 +3655,7 @@ body.viewer-mode input[type="text"] { pointer-events: none; }
 .ob-pin-input:focus { border-color: rgba(10,158,110,0.5); }
 
 /* ── Auth pending: esconde app até login confirmado ── */
-body.auth-pending > *:not(#ob-splash):not(#onboarding-overlay):not(#toast):not(#modal-esqueci-senha):not(#modal-formalizar-conta):not(#modal-alterar-senha):not(#pin-lock-screen):not(#modal-admin):not(#admin-escolha):not(script):not(style) {
+body.auth-pending > *:not(#ob-splash):not(#onboarding-overlay):not(#toast):not(#modal-esqueci-senha):not(#modal-formalizar-conta):not(#modal-alterar-senha):not(#pin-lock-screen):not(#modal-admin):not(#admin-escolha):not(#proto-warn-overlay):not(script):not(style) {
   visibility: hidden !important;
   pointer-events: none !important;
 }
@@ -3693,12 +3930,12 @@ body.auth-pending #toast {
     <div id="ob-painel-login">
       <div class="ob-field">
         <label class="ob-label">Email</label>
-        <input id="login-email" type="email" class="ob-input" placeholder="teu@email.com" autocomplete="off" oninput="obLoginValidar()">
+        <input id="login-email" type="email" class="ob-input" placeholder="seu@email.com" autocomplete="email" inputmode="email" oninput="obLoginValidar()">
       </div>
       <div class="ob-field">
         <label class="ob-label">Senha</label>
         <div style="position:relative;">
-          <input id="login-senha" type="password" class="ob-input" placeholder="••••••••" autocomplete="off" oninput="obLoginValidar()" style="padding-right:44px;">
+          <input id="login-senha" type="password" class="ob-input" placeholder="••••••••" autocomplete="current-password" oninput="obLoginValidar()" style="padding-right:44px;">
           <button type="button" onclick="_obToggleSenha('login-senha','login-olho')"
             style="position:absolute;right:12px;top:50%;transform:translateY(-50%);background:none;border:none;color:rgba(255,255,255,0.3);cursor:pointer;padding:4px;">
             <svg id="login-olho" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
@@ -3709,11 +3946,15 @@ body.auth-pending #toast {
       <button class="ob-cta" id="btn-login" onclick="obFazerLogin()" disabled style="margin-top:8px;">Entrar</button>
       <button onclick="obMostrarAba('cadastro')"
         style="width:100%;background:none;border:none;color:rgba(255,255,255,0.35);font-size:12px;font-family:inherit;cursor:pointer;padding:12px;margin-top:4px;">
-        Não tens conta? <span style="color:#0A9E6E;font-weight:700;">Criar conta</span>
+        Não tem conta? <span style="color:#0A9E6E;font-weight:700;">Criar conta</span>
       </button>
       <button onclick="obAbrirEsqueciSenha()"
-        style="width:100%;background:none;border:none;color:rgba(255,255,255,0.25);font-size:11px;font-family:inherit;cursor:pointer;padding:4px;">
+        style="width:100%;background:none;border:none;color:rgba(255,255,255,0.35);font-size:12px;font-family:inherit;cursor:pointer;padding:10px;touch-action:manipulation;">
         Esqueci a senha
+      </button>
+      <button onclick="obDiagnosticarConexao()"
+        style="width:100%;background:none;border:none;color:rgba(138,92,246,0.4);font-size:11px;font-family:inherit;cursor:pointer;padding:8px;touch-action:manipulation;">
+        🔍 Testar conexão com servidor
       </button>
     </div><!-- /ob-painel-login -->
 
@@ -3723,7 +3964,7 @@ body.auth-pending #toast {
       <!-- ETAPA 1: Nome + Email -->
       <div id="ob-step-1">
         <div class="ob-field">
-          <label class="ob-label">Nome de utilizador</label>
+          <label class="ob-label">Nome de usuário</label>
           <div style="position:relative;">
             <input id="ob-nome" type="text" class="ob-input" placeholder="@nomeusuario" autocomplete="off" maxlength="24"
               oninput="obNomeInput()" style="padding-right:44px;">
@@ -3737,7 +3978,7 @@ body.auth-pending #toast {
         </div>
         <div class="ob-field" style="margin-top:4px;">
           <label class="ob-label">Email</label>
-          <input id="ob-email" type="email" class="ob-input" placeholder="teu@email.com" autocomplete="email" oninput="_obValidarCta()">
+          <input id="ob-email" type="email" inputmode="email" class="ob-input" placeholder="seu@email.com" autocomplete="email" oninput="_obValidarCta()">
           <div id="ob-email-msg" style="font-size:11px;color:rgba(255,255,255,0.3);margin-top:6px;min-height:16px;"></div>
         </div>
       </div><!-- /ob-step-1 -->
@@ -3916,13 +4157,13 @@ body.auth-pending #toast {
 
       <!-- Sair da conta -->
       <div style="padding-top:8px;padding-bottom:2px;">
-        <!-- Formalizar conta — só aparece se utilizador sem conta Firebase -->
+        <!-- Formalizar conta — só aparece se usuário sem conta Firebase -->
         <div id="perfil-formalizar-wrap" style="display:none;margin-bottom:2px;">
           <button onclick="abrirFormalizarConta()"
             style="width:100%;padding:10px 14px;border-radius:12px;background:rgba(255,200,50,0.06);border:1px dashed rgba(255,200,50,0.25);color:rgba(255,200,50,0.65);font-size:10px;font-weight:700;cursor:pointer;font-family:inherit;letter-spacing:0.8px;display:flex;align-items:center;justify-content:center;gap:8px;transition:0.2s;touch-action:manipulation;"
             onmouseenter="this.style.background='rgba(255,200,50,0.11)'" onmouseleave="this.style.background='rgba(255,200,50,0.06)'">
             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/><polyline points="16 11 18 13 22 9"/></svg>
-            Guardar conta na nuvem
+            Salvar conta na nuvem
           </button>
           <div style="font-size:9px;color:rgba(255,255,255,0.18);text-align:center;margin-top:5px;padding:0 4px;">Os teus dados locais ficam intactos</div>
         </div>
@@ -4152,7 +4393,7 @@ body.auth-pending #toast {
     <div id="tab-criar" style="display:none; padding:24px 28px 28px;">
       <p style="font-size:11px; color:var(--text-secondary); margin-bottom:12px;">O teu código de sala:</p>
       <div class="room-code-display loading" id="my-room-code">···</div>
-      <p style="font-size:10px; color:var(--text-secondary); margin-bottom:20px;" id="criar-status">A criar sala...</p>
+      <p style="font-size:10px; color:var(--text-secondary); margin-bottom:20px;" id="criar-status">Criando sala...</p>
       <button class="modal-btn primary" id="btn-copiar-codigo" onclick="copiarCodigo()" disabled>Copiar Código</button>
       <button class="modal-btn secondary" style="margin-top:8px;" onclick="fecharModal()">Fechar</button>
       <button class="modal-btn danger" style="margin-top:8px;background:rgba(255,60,60,0.12);border:1px solid rgba(255,60,60,0.3);color:rgba(255,100,100,0.95);font-weight:900;" onclick="if(confirm('Encerrar a sala?'))desconectar()">Encerrar Sala</button>
@@ -4182,7 +4423,7 @@ body.auth-pending #toast {
 
     <div id="cifra-step-1">
       <p style="font-size:11px; color:var(--text-secondary); margin-bottom:14px;">
-        Cola o texto ou busca um ficheiro .txt — a app extrai os acordes e divide por seções automaticamente.
+        Cola o texto ou busque um arquivo .txt — a app extrai os acordes e divide por seções automaticamente.
       </p>
 
       <!-- Botão buscar arquivo -->
@@ -4354,7 +4595,7 @@ body.auth-pending #toast {
       <div class="biblioteca-tab" id="tab-musicas" onclick="bibTab('musicas')">Músicas</div>
     </div>
     <div class="biblioteca-search">
-      <input type="text" id="biblioteca-search" placeholder="Buscar..."
+      <input type="text" id="biblioteca-search" placeholder="Buscar música..."
         oninput="renderBibAtivo(this.value)">
     </div>
     <div class="biblioteca-grid" id="biblioteca-grid"></div>
@@ -4717,7 +4958,7 @@ async function confirmarAlterarSenha() {
     if (msg) { msg.textContent = txt; msg.style.color = cor || 'rgba(255,255,255,0.4)'; }
   }
 
-  if (!senhaAtual) { setMsg('Preenche a senha actual.', '#ff5555'); return; }
+  if (!senhaAtual) { setMsg('Preencha a senha atual.', '#ff5555'); return; }
   if (senhaNova.length < 6) { setMsg('Nova senha deve ter mínimo 6 caracteres.', '#ff5555'); return; }
   if (senhaNova !== senhaConf) { setMsg('As senhas não coincidem.', '#ff5555'); return; }
 
@@ -4733,7 +4974,7 @@ async function confirmarAlterarSenha() {
 
   const loginResult = await window._fb.loginComEmail(email, senhaAtual);
   if (!loginResult.ok) {
-    setMsg('Senha actual incorrecta.', '#ff5555');
+    setMsg('Senha atual incorreta.', '#ff5555');
     if (btn) { btn.disabled = false; btn.textContent = 'Alterar senha'; }
     return;
   }
@@ -4823,14 +5064,14 @@ async function confirmarFormalizarConta() {
 
   if (!window._fb) { setMsg('Firebase não disponível. Tenta novamente.', '#ff5555'); return; }
 
-  if (btn) { btn.disabled = true; btn.textContent = 'A criar conta...'; }
+  if (btn) { btn.disabled = true; btn.textContent = 'Criando conta...'; }
   setMsg('', null);
 
   // 1. Regista no Firebase Auth
   const authResult = await window._fb.registarComEmail(email, senha);
   if (!authResult.ok) {
     setMsg(authResult.msg || 'Erro ao criar conta.', '#ff5555');
-    if (btn) { btn.disabled = false; btn.textContent = 'Criar conta e guardar dados'; }
+    if (btn) { btn.disabled = false; btn.textContent = 'Criar conta e salvar dados'; }
     return;
   }
 
@@ -4853,7 +5094,7 @@ async function confirmarFormalizarConta() {
   localStorage.setItem('map_uid_v1', novoUid);
 
   // 3. Sincroniza músicas e eventos para o novo UID no Firebase
-  setMsg('A guardar dados na nuvem…', 'rgba(255,200,50,0.7)');
+  setMsg('Salvando dados na nuvem…', 'rgba(255,200,50,0.7)');
   try {
     await window._fb.salvarPerfilCompleto(novoUid, {
       nome:        perfil.nome        || '',
@@ -4936,11 +5177,11 @@ async function enviarRecuperacaoSenha() {
 
   const result = await window._fb.enviarEmailRecuperacao(email);
   if (result && result.ok) {
-    setMsg('Email enviado! Verifica a tua caixa de entrada.', '#0A9E6E');
+    setMsg('Email enviado! Verifique sua caixa de entrada.', '#0A9E6E');
     if (btn) btn.textContent = 'Enviado';
     setTimeout(fecharEsqueciSenha, 2500);
   } else {
-    setMsg((result && result.msg) || 'Erro ao enviar. Verifica o email.', '#ff5555');
+    setMsg((result && result.msg) || 'Erro ao enviar. Verifique o email.', '#ff5555');
     if (btn) { btn.disabled = false; btn.textContent = 'Enviar email'; }
   }
 }
@@ -5108,7 +5349,7 @@ function setConnStatus(msg, type) {
 async function criarSala() {
   if (isHost) { showToast('Sala já ativa — código: ' + myRoomCode); return; }
   // Verifica Firebase — usa window._fbReady (definido sincronamente pelo script Firebase)
-  if (!window._fb || !window._fbReady) { showToast('Firebase indisponível. Verifica a ligação.'); return; }
+  if (!window._fb || !window._fbReady) { showToast('Firebase indisponível. Verifique a conexão.'); return; }
   _fbReady = true; // sincroniza variável local
   const code = gerarCodigo4();
   myRoomCode = code;
@@ -5233,7 +5474,7 @@ async function entrarNaSala() {
 
   if (code.length !== 4) { showToast('Código inválido'); return; }
   // Verifica Firebase
-  if (!window._fb || !window._fbReady) { showToast('Firebase indisponível. Verifica a ligação.'); return; }
+  if (!window._fb || !window._fbReady) { showToast('Firebase indisponível. Verifique a conexão.'); return; }
   _fbReady = true;
 
   const btn = document.getElementById('btn-entrar');
@@ -5562,7 +5803,7 @@ function mostrarEscolhaSala() {
   const cs = document.getElementById('criar-status');
   const bc = document.getElementById('btn-copiar-codigo');
   if (rc) { rc.classList.add('loading'); rc.innerText = '···'; }
-  if (cs) cs.innerText = 'A criar sala...';
+  if (cs) cs.innerText = 'Criando sala...';
   if (bc) bc.disabled = true;
   // Limpa inputs da tela entrar
   ['d0','d1','d2','d3'].forEach(id => {
@@ -5626,10 +5867,29 @@ function prevDigit(e, idx) {
 }
 
 // ─── UI ───────────────────────────────────────────────────────────────────
-function showToast(msg) {
-  const t = document.getElementById('toast');
-  t.innerText = msg; t.classList.add('show');
-  setTimeout(() => t.classList.remove('show'), 2500);
+var _toastTimer = null;
+function showToast(msg, tipo) {
+  try {
+    if (!tipo) {
+      if (/erro|falhou|falha|incorret|inválid|bloqueado|banido/i.test(msg)) tipo = 'error';
+      else if (/salvo|salva|criado|backup|restaurado|aplicado|bem-vindo/i.test(msg)) tipo = 'success';
+      else if (/atenção|aviso|aguardando|reconect/i.test(msg)) tipo = 'warning';
+      else tipo = 'info';
+    }
+    var icons = {
+      success: '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>',
+      error:   '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>',
+      warning: '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>',
+      info:    '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>'
+    };
+    var t = document.getElementById('toast');
+    if (!t) return;
+    clearTimeout(_toastTimer);
+    t.className = 'toast toast-' + (tipo || 'info');
+    t.innerHTML = '<span class="toast-icon">' + (icons[tipo] || '') + '</span><span class="toast-msg">' + (msg || '') + '</span>';
+    t.classList.add('show');
+    _toastTimer = setTimeout(function() { t.classList.remove('show'); }, msg && msg.length > 40 ? 3500 : 2500);
+  } catch(e) {}
 }
 
 function toggleMenu(e) { e.stopPropagation(); document.getElementById('m-drop').classList.toggle('show'); }
@@ -5688,7 +5948,7 @@ function compartilharSetlist() {
   } else if (navigator.clipboard) {
     navigator.clipboard.writeText(texto).then(() => showToast('Setlist copiado!'));
   } else {
-    prompt('Copia o teu setlist:', texto);
+    showToast('Copie o texto do setlist manualmente.', 'info');
   }
 }
 
@@ -6026,7 +6286,7 @@ function saveSong() {
     songs[currentSongIndex].bpm   = bpm;
     songs[currentSongIndex].parts = parts;
     updateStorage();
-    showToast('Alterações guardadas!');
+    showToast('Alterações salvas!');
   } else {
     // Nova música — usa modal customizado em vez de prompt() nativo (bloqueado no iOS)
     var overlay = document.createElement('div');
@@ -6052,7 +6312,7 @@ function saveSong() {
       currentSongIndex = songs.length - 1;
       updateStorage();
       _fbBackupMusicas();
-      showToast('Música salva!');
+      showToast('Música salva!', 'success');
       atualizarBtnSalvar();
     };
     document.getElementById('_save-cancel').onclick  = function(){ overlay.remove(); };
@@ -6083,12 +6343,20 @@ function updateStorage() {
 function renderSetlist() {
   document.getElementById('song-count').innerText = songs.length;
   var _e = function(s){ return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); };
+  if (!songs.length) {
+    document.getElementById('song-list').innerHTML =
+      '<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;padding:28px 16px;gap:10px;">'
+      + '<svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.18)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>'
+      + '<div style="color:rgba(255,255,255,0.25);font-size:12px;font-weight:700;text-align:center;">Nenhuma música salva<br><span style="font-size:11px;font-weight:400;opacity:0.7;">Salve sua primeira música ↑</span></div>'
+      + '</div>';
+    return;
+  }
   document.getElementById('song-list').innerHTML = songs.map(function(s) {
     return '<div class="song-item ' + (s.favorite?'fav':'') + '" onclick="loadSong(' + s.id + ')">'
-      + '<div style="color:#fff;font-weight:700;">' + _e(s.name) + '<br><span style="font-size:10px;color:var(--accent-primary);">' + s.bpm + ' BPM</span></div>'
-      + '<div style="display:flex;align-items:center;">'
-      + '<span class="fav-star ' + (s.favorite?'active':'') + '" onclick="toggleFavorite(' + s.id + ',event)">♥</span>'
-      + '<button onclick="deleteSong(' + s.id + ',event)" style="background:none;border:none;color:red;cursor:pointer;margin-left:5px;">&times;</button>'
+      + '<div style="color:#fff;font-weight:700;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + _e(s.name) + '<br><span style="font-size:10px;color:var(--accent-primary);">' + s.bpm + ' BPM</span></div>'
+      + '<div style="display:flex;align-items:center;gap:2px;flex-shrink:0;">'
+      + '<span class="fav-star ' + (s.favorite?'active':'') + '" onclick="toggleFavorite(' + s.id + ',event)" style="padding:6px;">♥</span>'
+      + '<button onclick="deleteSong(' + s.id + ',event)" style="background:none;border:none;color:rgba(255,80,80,0.65);cursor:pointer;padding:6px;font-size:16px;line-height:1;touch-action:manipulation;">&times;</button>'
       + '</div></div>';
   }).join('');
 }
@@ -6127,7 +6395,7 @@ function deleteSong(id, e) {
     overlay.remove();
     songs = songs.filter(function(s){ return s.id !== id; });
     updateStorage();
-    showToast('Removida.');
+    showToast('Removida.', 'warning');
   };
 }
 
@@ -6278,7 +6546,7 @@ function importData() {
         const imp = JSON.parse(re.target.result);
         if (!Array.isArray(imp)) throw new Error();
         songs = imp; updateStorage(); showToast('Backup importado!');
-      } catch { alert('Ficheiro inválido.'); }
+      } catch { showToast('Arquivo inválido. Use um backup .json gerado pelo app.', 'error'); }
     };
   };
   input.click();
@@ -6967,7 +7235,7 @@ function deleteSongBiblioteca(id, e) {
     updateStorage();
     var searchEl = document.getElementById('biblioteca-search');
     renderBiblioteca(searchEl ? searchEl.value : '');
-    showToast('Removida.');
+    showToast('Removida.', 'warning');
   };
 }
 
@@ -7065,7 +7333,7 @@ function salvarEvento() {
 
 function deletarEvento(id, e) {
   e.stopPropagation();
-  if (confirm('Excluir evento?')) {
+  if (true) { showToast('Evento excluído', 'warning');
     eventos = eventos.filter(ev => ev.id !== id);
     salvarEventos();
     renderEventos(document.getElementById('biblioteca-search').value);
@@ -7583,7 +7851,7 @@ async function lerArquivoCifra(input) {
 
 function analisarCifra() {
   const texto = document.getElementById('cifra-input').value.replace(/\r\n/g,'\n').replace(/\r/g,'\n').trim();
-  if (!texto) { showToast('Cola uma cifra ou abre um ficheiro.'); return; }
+  if (!texto) { showToast('Cola uma cifra ou abra um arquivo.'); return; }
 
   document.getElementById('cifra-step-1').style.display = 'none';
   document.getElementById('cifra-loading').style.display = 'block';
@@ -7983,7 +8251,7 @@ document.addEventListener('visibilitychange', function() {
 
 // ── Modal de Estatísticas ─────────────────────────────────────────────────────
 async function abrirModalStats() {
-  if (!_isFbReady()) { showToast('Firebase indisponível. Verifica a ligação.'); return; }
+  if (!_isFbReady()) { showToast('Firebase indisponível. Verifique a conexão.'); return; }
   document.getElementById('m-drop').classList.remove('show');
   const uid = _getUid();
   const stats = await window._fb.carregarEstatistica(uid);
@@ -8351,7 +8619,7 @@ async function buscarAmigosInput(val) {
   // Garante que está na tab Buscar
   if (_amigoTab !== 'buscar') amigoTab('buscar');
   _buscaTimer = setTimeout(async () => {
-    if (!_isFbReady()) { showToast('Firebase indisponível. Verifica a ligação.'); return; }
+    if (!_isFbReady()) { showToast('Firebase indisponível. Verifique a conexão.'); return; }
     const uid = _getUid();
     const lista = document.getElementById('amigos-list');
     if (!lista) return;
@@ -8377,8 +8645,8 @@ async function buscarAmigosInput(val) {
 
     if (filtrados.length === 0) {
       const msg = isIdSearch
-        ? 'Nenhum utilizador com este ID'
-        : 'Nenhum utilizador encontrado';
+        ? 'Nenhum usuário com este ID'
+        : 'Nenhum usuário encontrado';
       lista.innerHTML = `<div class="amigos-empty"><p>${msg}</p></div>`;
       return;
     }
@@ -8419,7 +8687,7 @@ async function buscarAmigosInput(val) {
 }
 
 async function enviarSolicitacaoFb(paraUid, paraNome, paraInst) {
-  if (!_isFbReady()) { showToast('Firebase indisponível. Verifica a ligação.'); return; }
+  if (!_isFbReady()) { showToast('Firebase indisponível. Verifique a conexão.'); return; }
   const perfil = _getPerfilLocal();
   const uid = _getUid();
   const ok = await window._fb.enviarSolicitacao(uid, perfil.nome || 'Músico', perfil.instrumento || null, paraUid, paraNome, paraInst);
@@ -8530,7 +8798,7 @@ async function _renderAmigos() {
     // Mostra sugestoes enquanto nao ha texto na busca
     const inputVal = (document.getElementById('amigos-add-input') || {}).value || '';
     if (inputVal.trim().length >= 2) return; // busca activa — nao sobrescrever
-    lista.innerHTML = '<div class="amigos-empty"><p style="opacity:0.4;font-size:12px;">A carregar sugestoes...</p></div>';
+    lista.innerHTML = '<div class="amigos-empty"><p style="opacity:0.4;font-size:12px;">Buscando sugestões...</p></div>';
     if (!_isFbReady()) {
       lista.innerHTML = '<div class="amigos-empty"><p style="opacity:0.35;">Conecte-se para ver sugestoes</p></div>';
       return;
@@ -8600,7 +8868,7 @@ async function _renderAmigos() {
   lista.innerHTML = '<div class="amigos-empty"><p style="opacity:0.4;">Carregando...</p></div>';
 
   if (!_isFbReady()) {
-    lista.innerHTML = '<div class="amigos-empty"><p>Firebase a carregar...</p></div>';
+    lista.innerHTML = '<div class="amigos-empty"><p>Firebase carregando...</p></div>';
     return;
   }
 
@@ -8814,7 +9082,7 @@ function verificarEventosProximos() {
 
     if (diffDias === 0) {
       adicionarNotif('alert', 'HOJE — ' + ev.nome,
-        'Tens um evento agendado para hoje! Verifica o setlist.',
+        'Você tem um evento hoje! Verifique o setlist.',
         'ev_hoje_' + ev.id);
     } else if (diffDias === 1) {
       adicionarNotif('event', 'Amanhã — ' + ev.nome,
@@ -11688,11 +11956,11 @@ async function admCarregar() {
     _admCache = Array.isArray(users) ? users : [];
     admAtualizarStats();
     if (!_admCache.length) {
-      if (list) list.innerHTML = '<div style="text-align:center;padding:60px 20px;color:rgba(255,255,255,0.2);font-size:13px;">Nenhum utilizador registado</div>';
+      if (list) list.innerHTML = '<div style="text-align:center;padding:60px 20px;color:rgba(255,255,255,0.2);font-size:13px;">Nenhum usuário cadastrado</div>';
     } else {
       admRenderizar(_admCache);
     }
-    if (typeof showToast === 'function' && elapsed > 2000) showToast(_admCache.length + ' utilizadores em ' + (elapsed/1000).toFixed(1) + 's');
+    if (typeof showToast === 'function' && elapsed > 2000) showToast(_admCache.length + ' usuários em ' + (elapsed/1000).toFixed(1) + 's');
   } catch(err) {
     var emsg = (err && err.message) || String(err);
     if (list) list.innerHTML = '<div style="text-align:center;padding:40px 20px;display:flex;flex-direction:column;gap:8px;">'
@@ -12051,7 +12319,7 @@ function admAbrirLiberarEmail() {
     '<div style="background:#111119;border:1px solid rgba(80,200,255,0.2);border-radius:18px;padding:24px 20px;width:100%;max-width:360px;display:flex;flex-direction:column;gap:14px;">'
   + '<div style="font-size:15px;font-weight:900;color:#fff;">Liberar Email para Novo Cadastro</div>'
   + '<div style="font-size:12px;color:rgba(255,255,255,0.4);line-height:1.5;">Busca o usuário pelo email e remove o registro do Firestore. Depois delete manualmente no Firebase Auth Console.</div>'
-  + '<input id="_lib-email-input" type="email" placeholder="email@exemplo.com" style="width:100%;box-sizing:border-box;background:rgba(255,255,255,0.05);border:1px solid rgba(80,200,255,0.3);border-radius:10px;color:#fff;font-size:13px;padding:11px 14px;outline:none;font-family:inherit;">'
+  + '<input id="_lib-email-input" type="email" inputmode="email" placeholder="email@exemplo.com" style="width:100%;box-sizing:border-box;background:rgba(255,255,255,0.05);border:1px solid rgba(80,200,255,0.3);border-radius:10px;color:#fff;font-size:13px;padding:11px 14px;outline:none;font-family:inherit;">'
   + '<div id="_lib-resultado" style="min-height:40px;font-size:12px;color:rgba(255,255,255,0.4);"></div>'
   + '<div style="display:flex;gap:10px;">'
   + '<button onclick="document.getElementById(\'modal-liberar-email\').remove()" style="flex:1;padding:12px;border-radius:12px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);color:rgba(255,255,255,0.4);font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;touch-action:manipulation;">Fechar</button>'
@@ -12371,9 +12639,9 @@ async function _fbFazerBackupAgora(btn) {
 <div id="modal-esqueci-senha" style="display:none;position:fixed;inset:0;z-index:100002;background:rgba(0,0,0,0.85);align-items:center;justify-content:center;">
   <div style="background:#111118;border:1px solid rgba(255,255,255,0.1);border-radius:20px;padding:32px 24px;width:calc(100% - 48px);max-width:360px;display:flex;flex-direction:column;gap:20px;">
     <h3 style="margin:0;font-size:18px;font-weight:800;color:#fff;">Recuperar senha</h3>
-    <p style="margin:0;font-size:13px;color:rgba(255,255,255,0.5);line-height:1.5;">Introduz o email da tua conta. Vais receber um link para criar uma nova senha.</p>
+    <p style="margin:0;font-size:13px;color:rgba(255,255,255,0.5);line-height:1.5;">Digite o email da tua conta. Vais receber um link para criar uma nova senha.</p>
     <div style="position:relative;">
-      <input id="esqueci-email-input" type="email" placeholder="teu@email.com"
+      <input id="esqueci-email-input" type="email" inputmode="email" placeholder="seu@email.com"
         style="width:100%;box-sizing:border-box;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.1);border-radius:12px;color:#fff;font-size:14px;padding:13px 16px;outline:none;font-family:inherit;"
         oninput="_esqueciValidar()" onkeydown="if(event.key==='Enter')enviarRecuperacaoSenha()"
         onfocus="this.style.borderColor='rgba(10,158,110,0.5)'" onblur="this.style.borderColor='rgba(255,255,255,0.1)'">
@@ -12393,7 +12661,7 @@ async function _fbFazerBackupAgora(btn) {
     <h3 style="margin:0;font-size:18px;font-weight:800;color:#fff;">Alterar senha</h3>
     <div style="display:flex;flex-direction:column;gap:12px;">
       <div style="position:relative;">
-        <input id="alterar-senha-atual" type="password" placeholder="Senha actual"
+        <input id="alterar-senha-atual" type="password" placeholder="Senha atual"
           style="width:100%;box-sizing:border-box;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.1);border-radius:12px;color:#fff;font-size:14px;padding:13px 44px 13px 16px;outline:none;font-family:inherit;"
           onfocus="this.style.borderColor='rgba(10,158,110,0.5)'" onblur="this.style.borderColor='rgba(255,255,255,0.1)'">
         <button type="button" onclick="_toggleSenhaField('alterar-senha-atual')" style="position:absolute;right:12px;top:50%;transform:translateY(-50%);background:none;border:none;color:rgba(255,255,255,0.3);cursor:pointer;">
@@ -12433,7 +12701,7 @@ async function _fbFazerBackupAgora(btn) {
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="rgba(255,200,50,0.8)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/><polyline points="16 11 18 13 22 9"/></svg>
       </div>
       <div>
-        <div style="font-size:15px;font-weight:900;color:#fff;line-height:1.2;">Guardar conta na nuvem</div>
+        <div style="font-size:15px;font-weight:900;color:#fff;line-height:1.2;">Salvar conta na nuvem</div>
         <div style="font-size:11px;color:rgba(255,255,255,0.3);margin-top:2px;">Os teus dados locais ficam intactos</div>
       </div>
     </div>
@@ -12441,7 +12709,7 @@ async function _fbFazerBackupAgora(btn) {
       Cria um email e senha para aceder aos teus dados em qualquer dispositivo. As tuas músicas, eventos e configurações <strong style="color:rgba(255,255,255,0.65);">não serão apagados</strong>.
     </div>
     <div style="display:flex;flex-direction:column;gap:10px;">
-      <input id="formalizar-email" type="email" placeholder="O teu email" autocomplete="email"
+      <input id="formalizar-email" type="email" inputmode="email" placeholder="Seu email" autocomplete="email"
         style="background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.1);border-radius:12px;color:#fff;font-size:14px;padding:12px 16px;outline:none;font-family:inherit;width:100%;box-sizing:border-box;"
         onfocus="this.style.borderColor='rgba(255,200,50,0.4)'" onblur="this.style.borderColor='rgba(255,255,255,0.1)'"
         oninput="_formalizarValidar()">
@@ -12471,7 +12739,7 @@ async function _fbFazerBackupAgora(btn) {
       <button onclick="fecharFormalizarConta()" style="flex:1;padding:12px;border-radius:12px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);color:rgba(255,255,255,0.4);font-size:11px;font-weight:700;cursor:pointer;font-family:inherit;touch-action:manipulation;">Cancelar</button>
       <button id="btn-formalizar-confirmar" onclick="confirmarFormalizarConta()" disabled
         style="flex:2;padding:12px;border-radius:12px;background:rgba(255,200,50,0.15);border:1px solid rgba(255,200,50,0.3);color:rgba(255,200,50,0.8);font-size:11px;font-weight:900;cursor:pointer;font-family:inherit;letter-spacing:0.5px;transition:0.2s;touch-action:manipulation;">
-        Criar conta e guardar dados
+        Criar conta e salvar dados
       </button>
     </div>
   </div>
@@ -12846,7 +13114,7 @@ async function _fbFazerBackupAgora(btn) {
     </button>
   </div>
   <div id="adm-user-list" style="flex:1;overflow-y:auto;padding:10px 14px;display:flex;flex-direction:column;gap:6px;-webkit-overflow-scrolling:touch;">
-    <div style="text-align:center;padding:60px 20px;color:rgba(255,255,255,0.2);font-size:13px;">A carregar...</div>
+    <div style="text-align:center;padding:60px 20px;color:rgba(255,255,255,0.2);font-size:13px;">Carregando...</div>
   </div>
 </div>
 
@@ -13043,7 +13311,7 @@ body[data-ambiente="vocalista"] .swipe-hint { display: none !important; }
 /* ─── RAIZ ───────────────────────────────────────────────────────────────── */
 #vocal-app {
   display: none; position: fixed; inset: 0;
-  background: #07070e; flex-direction: column;
+  background: #05050d; flex-direction: column;
   z-index: 500; font-family: inherit; overflow: hidden;
 }
 #vocal-app.ativo { display: flex; }
@@ -13052,9 +13320,10 @@ body[data-ambiente="vocalista"] .swipe-hint { display: none !important; }
 .voc-hdr {
   display: flex; align-items: center; gap: 10px;
   padding: 0 18px; height: 58px; flex-shrink: 0;
-  background: rgba(9,9,26,0.95);
-  border-bottom: 1px solid rgba(255,255,255,0.05);
-  backdrop-filter: blur(12px);
+  background: rgba(5,5,15,0.98);
+  border-bottom: 1px solid rgba(138,92,246,0.12);
+  backdrop-filter: blur(20px);
+  position: relative; z-index: 100;
 }
 .voc-hdr-logo { flex: 1; }
 .voc-hdr-title { font-size: 17px; font-weight: 900; color: #fff; letter-spacing: -0.5px; line-height: 1; }
@@ -13666,8 +13935,26 @@ body[data-ambiente="vocalista"] .swipe-hint { display: none !important; }
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="5" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="12" cy="19" r="1"/></svg>
       </button>
       <div id="vocal-drop" class="dropdown-menu" style="display:none;">
-        <div class="menu-item" onclick="abrirModalPerfil();fecharVocalMenu()">Meu Perfil</div>
-        <div class="menu-item" onclick="desconectar()">Sair</div>
+        <div style="padding:12px 18px 8px;font-size:9px;font-weight:800;color:rgba(138,92,246,0.5);letter-spacing:2px;text-transform:uppercase;">Conta</div>
+        <div class="menu-item" onclick="abrirModalPerfil();fecharVocalMenu()">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+          Meu Perfil
+        </div>
+        <div class="menu-item" onclick="abrirModalAmigos();fecharVocalMenu()">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+          Amigos
+        </div>
+        <div style="margin:4px 12px;border-top:1px solid rgba(255,255,255,0.05);"></div>
+        <div style="padding:10px 18px 6px;font-size:9px;font-weight:800;color:rgba(138,92,246,0.5);letter-spacing:2px;text-transform:uppercase;">IA</div>
+        <div class="menu-item" onclick="_vocPedirChave();fecharVocalMenu()">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+          Chave API
+        </div>
+        <div style="margin:4px 12px;border-top:1px solid rgba(255,255,255,0.05);"></div>
+        <div class="menu-item danger" onclick="desconectar()" style="color:rgba(248,113,113,0.8);margin-bottom:4px;">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+          Sair
+        </div>
       </div>
     </div>
   </div>
@@ -14145,15 +14432,81 @@ function vocAbrirDaHistEl(el){
 }
 
 // ── Claude API ────────────────────────────────────────────────────────────────
+function _vocGetKey(){ try{ return localStorage.getItem('voc_claude_key')||''; }catch(e){ return ''; } }
+function _vocSaveKey(k){ try{ localStorage.setItem('voc_claude_key', k.trim()); }catch(e){} }
+
 async function _vocClaude(prompt, maxTokens) {
-  var r = await fetch('https://api.anthropic.com/v1/messages', {
-    method:'POST',
-    headers:{ 'Content-Type':'application/json','anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true' },
-    body: JSON.stringify({ model:'claude-sonnet-4-5', max_tokens:maxTokens||1000, messages:[{role:'user',content:prompt}] })
-  });
-  if(!r.ok){ var e=await r.text(); console.error('API erro:',r.status,e); return null; }
-  var d=await r.json();
-  return d.content&&d.content[0]?d.content[0].text:null;
+  var key = _vocGetKey();
+  if(!key) { _vocPedirChave(); return null; }
+  try {
+    var r = await fetch('https://api.anthropic.com/v1/messages', {
+      method:'POST',
+      headers:{
+        'Content-Type':'application/json',
+        'anthropic-version':'2023-06-01',
+        'anthropic-dangerous-direct-browser-access':'true',
+        'x-api-key': key
+      },
+      body: JSON.stringify({ model:'claude-haiku-4-5-20251001', max_tokens:maxTokens||1000, messages:[{role:'user',content:prompt}] })
+    });
+    if(r.status === 401) { _vocSaveKey(''); _vocPedirChave('Chave inválida. Insira novamente.'); return null; }
+    if(!r.ok){ var e=await r.text(); console.error('API erro:',r.status,e); return null; }
+    var d=await r.json();
+    return d.content&&d.content[0]?d.content[0].text:null;
+  } catch(e) { return null; }
+}
+
+function _vocPedirChave(msgExtra) {
+  // Remove modal anterior se existir
+  var old = document.getElementById('voc-key-modal');
+  if(old) old.remove();
+
+  var msg = msgExtra || 'Para usar Letras, Aulas e Vídeos, insira sua chave da API Anthropic.';
+  var overlay = document.createElement('div');
+  overlay.id = 'voc-key-modal';
+  overlay.style.cssText = 'position:fixed;inset:0;z-index:99999;background:rgba(0,0,0,0.85);backdrop-filter:blur(8px);display:flex;align-items:flex-end;justify-content:center;padding:0;';
+  overlay.innerHTML =
+    '<div style="background:#0d0d1a;border:1px solid rgba(138,92,246,0.25);border-radius:24px 24px 0 0;padding:28px 24px 40px;width:100%;max-width:480px;box-shadow:0 -20px 60px rgba(0,0,0,0.8);">'
+    + '<div style="width:36px;height:4px;background:rgba(255,255,255,0.12);border-radius:2px;margin:0 auto 24px;"></div>'
+    + '<div style="display:flex;align-items:center;gap:12px;margin-bottom:8px;">'
+    +   '<div style="width:42px;height:42px;border-radius:12px;background:rgba(138,92,246,0.15);border:1px solid rgba(138,92,246,0.25);display:flex;align-items:center;justify-content:center;">'
+    +     '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#a78bfa" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>'
+    +   '</div>'
+    +   '<div>'
+    +     '<div style="font-size:15px;font-weight:900;color:#fff;">Chave da API</div>'
+    +     '<div style="font-size:11px;color:rgba(138,92,246,0.7);font-weight:700;letter-spacing:0.5px;">Anthropic · claude.ai</div>'
+    +   '</div>'
+    + '</div>'
+    + '<p style="font-size:13px;color:rgba(255,255,255,0.45);line-height:1.6;margin:16px 0 20px;">' + msg + '</p>'
+    + '<input id="voc-key-input" type="password" placeholder="sk-ant-..." '
+    +   'style="width:100%;box-sizing:border-box;background:rgba(255,255,255,0.05);border:1px solid rgba(138,92,246,0.3);border-radius:12px;color:#fff;font-size:14px;padding:14px 16px;outline:none;font-family:inherit;letter-spacing:0.5px;margin-bottom:12px;">'
+    + '<button onclick="_vocConfirmarChave()" '
+    +   'style="width:100%;padding:15px;border-radius:12px;background:linear-gradient(135deg,#7c3aed,#8a5cf6);border:none;color:#fff;font-size:14px;font-weight:800;cursor:pointer;font-family:inherit;letter-spacing:0.5px;touch-action:manipulation;">'
+    +   'Salvar e continuar'
+    + '</button>'
+    + '<button onclick="var m=document.getElementById(&quot;voc-key-modal&quot;);if(m)m.remove();" '
+    +   'style="width:100%;padding:12px;border-radius:12px;background:none;border:none;color:rgba(255,255,255,0.25);font-size:13px;cursor:pointer;font-family:inherit;margin-top:8px;touch-action:manipulation;">'
+    +   'Agora não'
+    + '</button>'
+    + '<p style="font-size:11px;color:rgba(255,255,255,0.18);text-align:center;margin-top:16px;line-height:1.5;">A chave fica salva apenas neste dispositivo.<br>Obtenha em <span style="color:rgba(138,92,246,0.6);">console.anthropic.com</span></p>'
+    + '</div>';
+  document.body.appendChild(overlay);
+  setTimeout(function(){ var i=document.getElementById('voc-key-input'); if(i)i.focus(); }, 300);
+}
+
+function _vocConfirmarChave() {
+  var input = document.getElementById('voc-key-input');
+  var key = input ? input.value.trim() : '';
+  if(!key || !key.startsWith('sk-ant-')) {
+    input.style.borderColor = 'rgba(248,113,113,0.6)';
+    input.placeholder = 'Chave inválida — deve começar com sk-ant-...';
+    setTimeout(function(){ input.style.borderColor = 'rgba(138,92,246,0.3)'; }, 2000);
+    return;
+  }
+  _vocSaveKey(key);
+  var modal = document.getElementById('voc-key-modal');
+  if(modal) modal.remove();
+  showToast('Chave salva! Tente buscar novamente.', 'success');
 }
 
 // ── Busca de letras ───────────────────────────────────────────────────────────
@@ -14477,5 +14830,37 @@ setTimeout(function(){ _vocRenderHist(); _vocAtualizarBadgeSalvos(); }, 300);
 </script>
 
 
+
+<script>
+// ─── HAPTIC FEEDBACK — vibração leve nos botões (seguro para Safari) ──────────
+(function() {
+  if (!navigator.vibrate) return; // iOS Safari não suporta — sai silenciosamente
+
+  var BOTOES = [
+    '#btn-login', '#ob-cta', '#ob-btn-verificar',
+    '.modal-evento-save', '.modal-editar-save', '.modal-addmusica-plus',
+    '.evento-btn-open', '.biblioteca-close', '.modal-btn',
+    '#btn-save-vitro', '.voc-search-btn', '.ob-tab',
+    '.pin-key', '.menu-item'
+  ].join(',');
+
+  document.addEventListener('touchstart', function(e) {
+    try {
+      var t = e.target;
+      var btn = (t && t.matches && t.matches(BOTOES)) ? t
+              : (t && t.closest ? t.closest(BOTOES) : null);
+      if (!btn) return;
+
+      if (btn.classList.contains('pin-key')) {
+        navigator.vibrate(8);
+      } else if (btn.classList.contains('danger')) {
+        navigator.vibrate([20, 30, 20]);
+      } else {
+        navigator.vibrate(15);
+      }
+    } catch(e) {}
+  }, { passive: true });
+})();
+</script>
 </body>
 </html>
