@@ -4022,11 +4022,40 @@ body.auth-pending #toast {
       </div>
 
     </div>
-    <div id="admin-tabs" style="display:none;margin-left:8px;gap:4px;align-items:center;flex-shrink:0;">
-      <button id="admin-tab-app" onclick="adminMostrarAba('app')"
-        style="padding:5px 14px;border-radius:16px;font-size:10px;font-weight:900;letter-spacing:0.8px;cursor:pointer;touch-action:manipulation;background:rgba(10,158,110,0.15);border:1.5px solid rgba(10,158,110,0.5);color:#0A9E6E;">APP</button>
-      <button id="admin-tab-painel" onclick="adminMostrarAba('painel')"
-        style="padding:5px 14px;border-radius:16px;font-size:10px;font-weight:900;letter-spacing:0.8px;cursor:pointer;touch-action:manipulation;background:rgba(255,255,255,0.05);border:1.5px solid rgba(255,255,255,0.12);color:rgba(255,255,255,0.4);">ADMIN</button>
+    <div id="admin-tabs" style="display:none;margin-left:8px;gap:4px;align-items:center;flex-shrink:0;position:relative;">
+      <button id="admin-tab-espaco" onclick="admToggleEspacoMenu(event)"
+        style="padding:5px 14px;border-radius:16px;font-size:10px;font-weight:900;letter-spacing:0.8px;cursor:pointer;touch-action:manipulation;background:rgba(10,158,110,0.15);border:1.5px solid rgba(10,158,110,0.5);color:#0A9E6E;display:flex;align-items:center;gap:6px;">
+        ESPAÇO
+        <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+      </button>
+      <!-- Dropdown ESPAÇO -->
+      <div id="adm-espaco-drop" style="display:none;position:absolute;top:calc(100% + 8px);left:0;z-index:100050;background:#111119;border:1px solid rgba(255,255,255,0.1);border-radius:14px;overflow:hidden;min-width:200px;box-shadow:0 12px 40px rgba(0,0,0,0.7);">
+        <button onclick="adminMostrarAba('painel');admFecharEspacoMenu()"
+          style="width:100%;padding:13px 16px;background:transparent;border:none;border-bottom:1px solid rgba(255,255,255,0.06);cursor:pointer;font-family:inherit;touch-action:manipulation;display:flex;align-items:center;gap:12px;text-align:left;transition:background 0.15s;"
+          onmouseover="this.style.background='rgba(255,200,0,0.07)'" onmouseout="this.style.background='transparent'">
+          <div style="width:30px;height:30px;border-radius:9px;background:rgba(255,200,0,0.1);border:1px solid rgba(255,200,0,0.2);display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#ffd700" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+          </div>
+          <div>
+            <div style="font-size:12px;font-weight:800;color:#fff;">Painel Admin</div>
+            <div style="font-size:10px;color:rgba(255,255,255,0.35);margin-top:1px;">Gestão de usuários</div>
+          </div>
+        </button>
+        <button onclick="adminMostrarAba('vocalista');admFecharEspacoMenu()"
+          style="width:100%;padding:13px 16px;background:transparent;border:none;cursor:pointer;font-family:inherit;touch-action:manipulation;display:flex;align-items:center;gap:12px;text-align:left;transition:background 0.15s;"
+          onmouseover="this.style.background='rgba(138,92,246,0.08)'" onmouseout="this.style.background='transparent'">
+          <div style="width:30px;height:30px;border-radius:9px;background:rgba(138,92,246,0.1);border:1px solid rgba(138,92,246,0.22);display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#a78bfa" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>
+          </div>
+          <div>
+            <div style="font-size:12px;font-weight:800;color:#fff;">Espaço Vocalista</div>
+            <div style="font-size:10px;color:rgba(255,255,255,0.35);margin-top:1px;">Letras, tons e aulas</div>
+          </div>
+        </button>
+      </div>
+      <!-- ids mantidos para compatibilidade com adminMostrarAba -->
+      <button id="admin-tab-app" style="display:none;"></button>
+      <button id="admin-tab-painel" style="display:none;"></button>
     </div>
     <div style="display:flex; align-items:center; gap:12px;">
       <!-- Botão rápido de sala -->
@@ -11597,25 +11626,45 @@ function admInicializar() {
 
 function adminMostrarAba(aba) {
   var painel = document.getElementById('admin-painel');
-  var tabApp = document.getElementById('admin-tab-app');
-  var tabAdm = document.getElementById('admin-tab-painel');
-  var ATIVO   = 'padding:5px 14px;border-radius:16px;font-size:10px;font-weight:900;letter-spacing:0.8px;cursor:pointer;touch-action:manipulation;background:rgba(10,158,110,0.15);border:1.5px solid rgba(10,158,110,0.5);color:#0A9E6E;';
-  var INATIVO = 'padding:5px 14px;border-radius:16px;font-size:10px;font-weight:900;letter-spacing:0.8px;cursor:pointer;touch-action:manipulation;background:rgba(255,255,255,0.05);border:1.5px solid rgba(255,255,255,0.12);color:rgba(255,255,255,0.4);';
   if (aba === 'painel') {
     if (painel) painel.style.display = 'flex';
-    if (tabApp) tabApp.style.cssText = INATIVO;
-    if (tabAdm) tabAdm.style.cssText = ATIVO;
-    // Só recarrega se cache está vazio ou foi há mais de 60s
+    // fecha vocalista se estiver aberto
+    var vApp = document.getElementById('vocal-app');
+    if (vApp) vApp.classList.remove('ativo');
     var agora = Date.now();
     if (!_admCache.length || !_admLastLoad || (agora - _admLastLoad) > 60000) {
       _admLastLoad = agora;
       admCarregar();
     }
-  } else {
+  } else if (aba === 'vocalista') {
     if (painel) painel.style.display = 'none';
-    if (tabApp) tabApp.style.cssText = ATIVO;
-    if (tabAdm) tabAdm.style.cssText = INATIVO;
+    _rotearAmbiente && _rotearAmbiente();
+    var vApp2 = document.getElementById('vocal-app');
+    if (vApp2) vApp2.classList.add('ativo');
+  } else {
+    // app
+    if (painel) painel.style.display = 'none';
+    var vApp3 = document.getElementById('vocal-app');
+    if (vApp3) vApp3.classList.remove('ativo');
   }
+}
+
+function admToggleEspacoMenu(e) {
+  e.stopPropagation();
+  var d = document.getElementById('adm-espaco-drop');
+  if (!d) return;
+  var vis = d.style.display !== 'none';
+  d.style.display = vis ? 'none' : 'block';
+  if (!vis) {
+    setTimeout(function() {
+      document.addEventListener('click', admFecharEspacoMenu, { once: true });
+    }, 0);
+  }
+}
+
+function admFecharEspacoMenu() {
+  var d = document.getElementById('adm-espaco-drop');
+  if (d) d.style.display = 'none';
 }
 
 async function admCarregar() {
