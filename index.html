@@ -1226,20 +1226,23 @@ document.addEventListener('DOMContentLoaded', function() {
   function _mostrarOnboarding() {
     const ov = document.getElementById('onboarding-overlay');
     if (!ov) return;
-    // Limpa inline styles que conflitam com a classe .visible
     ov.style.opacity = '';
     ov.style.transform = '';
     ov.style.transition = '';
     ov.style.pointerEvents = 'auto';
-    // Garante que todos os filhos são interativos (iOS Safari fix)
-    ov.querySelectorAll('button, input, select').forEach(function(el) {
-      el.style.pointerEvents = 'auto';
-      // Remove readOnly temporário que previne teclado durante splash
-      el.removeAttribute('readonly');
-    });
-    // Adiciona classe .visible que contém a transição definida no CSS
     requestAnimationFrame(function() {
       ov.classList.add('visible');
+      // Remove readonly só após a transição CSS terminar (~700ms)
+      // No iOS Safari, inputs em transição ignoram focus e não abrem teclado
+      setTimeout(function() {
+        ov.querySelectorAll('input, select').forEach(function(el) {
+          el.removeAttribute('readonly');
+          el.style.pointerEvents = 'auto';
+        });
+        ov.querySelectorAll('button').forEach(function(el) {
+          el.style.pointerEvents = 'auto';
+        });
+      }, 750);
     });
   }
 
