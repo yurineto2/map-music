@@ -376,6 +376,8 @@ window.addEventListener('unhandledrejection', function(e) {
       } catch(e) { return true; }
     },
 
+    _set, _get, _query,
+
     async carregarPerfilPorUid(uid) {
       if (uid === 'admin_local' || uid === 'admin') return null;
       try {
@@ -510,11 +512,28 @@ window.addEventListener('unhandledrejection', function(e) {
           _query('solicitacoes', [['para','==',uid],['status','==','aceito']], null, 50)
         ]);
         const amigos = [];
-        // s1: eu enviei — o amigo é x.para, nome dele é x.paraNome
-        s1.forEach(x => { if (!_ADMIN.includes(x.para)) amigos.push({ solId: x.id, uid: x.para, nome: x.paraNome || x.deNome, inst: x.paraInst || x.deInst }); });
-        // s2: recebi — o amigo é x.de, nome dele é x.deNome
-        s2.forEach(x => amigos.push({ solId: x.id, uid: x.de, nome: x.deNome, inst: x.deInst }));
-        return amigos;
+        // s1: eu enviei — amigo é x.para
+        s1.forEach(x => { if (!_ADMIN.includes(x.para)) amigos.push({ solId: x.id, uid: x.para, nome: x.paraNome || '', inst: x.paraInst || '' }); });
+        // s2: recebi — amigo é x.de
+        s2.forEach(x => { if (!_ADMIN.includes(x.de)) amigos.push({ solId: x.id, uid: x.de, nome: x.deNome || '', inst: x.deInst || '' }); });
+        // Dedup por uid
+        const vistos = new Set();
+        const uniq = amigos.filter(a => { if (vistos.has(a.uid)) return false; vistos.add(a.uid); return true; });
+        // Busca perfil real de cada amigo para nome e foto atualizados
+        const perfis = await Promise.all(uniq.map(a => _get('usuarios/' + a.uid).catch(() => null)));
+        return uniq.map((a, i) => {
+          const p = perfis[i];
+          return {
+            solId: a.solId,
+            uid: a.uid,
+            nome: (p && p.nome) ? p.nome : (a.nome || '—'),
+            inst: (p && p.instrumento) ? p.instrumento : (a.inst || ''),
+            foto: (p && p.foto) ? p.foto : null,
+            fotoOffX: p ? (p.fotoOffX || 0) : 0,
+            fotoOffY: p ? (p.fotoOffY || 0) : 0,
+            fotoZoom: p ? (p.fotoZoom || 1) : 1,
+          };
+        });
       } catch(e) { return []; }
     },
     async removerAmigo(meuUid, amigoUid) {
@@ -1393,6 +1412,17 @@ function obAbrirEsqueciSenha() {
 }
 
 document.addEventListener('DOMContentLoaded', function() {
+
+  // ── Link seguro de acesso — verificar antes de qualquer render ───────────────
+  (function() {
+    var params = new URLSearchParams(window.location.search);
+    if (params.get('lseg')) {
+      // Limpa URL para não vazar token no histórico
+      window.history.replaceState({}, '', window.location.href.split('?')[0]);
+      // Guarda token em sessionStorage para uso após Firebase carregar
+      sessionStorage.setItem('_lseg_token', params.get('lseg'));
+    }
+  })();
 
   // ── Detectar contexto sem rede (about:srcdoc, file:, blob:) ──────────────────
   var proto = window.location.protocol;
@@ -5273,6 +5303,10 @@ let perfilFotoBase64 = null; // foto atual em edição
         }, 2000);
       }
     } catch(e) {}
+  }
+  // Verificar link seguro se houver token pendente
+  if (sessionStorage.getItem('_lseg_token')) {
+    _verificarLinkSeguro().catch(function(){});
   }
   // Primeira verificação após 3s (app já carregado)
   setTimeout(_checarStatus, 3000);
@@ -10340,6 +10374,9 @@ async function _renderAmigos() {
   lista.innerHTML = _amigosCache.map(a => {
     const inicial = (a.nome||'?').charAt(0).toUpperCase();
     const isOnline = amigosUidsOnline.includes(a.uid);
+    const avatarContent = a.foto
+      ? `<img src="${a.foto}" style="width:100%;height:100%;object-fit:cover;object-position:${(a.fotoOffX||0)*-1}px ${(a.fotoOffY||0)*-1}px;transform:scale(${a.fotoZoom||1});transform-origin:center;" />`
+      : inicial;
     const btnConvidar = (isHost && myRoomCode)
       ? `<button class="amigo-btn amigo-btn-convidar" onclick="convidarAmigo('${(a.nome||'').replace(/'/g,"\'")}')">Convidar</button>`
       : '';
@@ -10348,7 +10385,7 @@ async function _renderAmigos() {
     const btnRemover = '<button class="amigo-btn amigo-btn-remover" data-uid="' + _aUid + '" data-nome="' + _aNome + '" onclick="removerAmigo(this.dataset.uid,this.dataset.nome)" title="Remover amigo" style="background:rgba(255,60,60,0.07);border-color:rgba(255,60,60,0.18);color:rgba(255,80,80,0.7);"><svg width=\"13\" height=\"13\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2.5\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><line x1=\"18\" y1=\"6\" x2=\"6\" y2=\"18\"/><line x1=\"6\" y1=\"6\" x2=\"18\" y2=\"18\"/></svg></button>';
     const btnVerPerfil = '<button class="amigo-btn" data-uid="' + _aUid + '" onclick="verPerfilUsuario(this.dataset.uid)" style="background:rgba(255,255,255,0.04);border-color:rgba(255,255,255,0.1);color:rgba(255,255,255,0.5);font-size:10px;">Ver</button>';
     return `<div class="amigo-item">
-      <div class="amigo-avatar" data-uid="${_aUid}" onclick="verPerfilUsuario(this.dataset.uid)" style="cursor:pointer;">${inicial}</div>
+      <div class="amigo-avatar" data-uid="${_aUid}" onclick="verPerfilUsuario(this.dataset.uid)" style="cursor:pointer;overflow:hidden;">${avatarContent}</div>
       <div class="amigo-info" data-uid="${_aUid}" onclick="verPerfilUsuario(this.dataset.uid)" style="cursor:pointer;">
         <div style="display:flex;align-items:center;gap:7px;">
           <div class="amigo-nome">${a.nome||'—'}</div>
@@ -10368,10 +10405,10 @@ const _origSalvarPerfil = window.salvarPerfil;
 
 // ─── SISTEMA DE NOTIFICAÇÕES ──────────────────────────────────────────────────
 const APP_VERSION = '1.4.6';
-let notificacoes = (JSON.parse(localStorage.getItem('map_notifs_v1')) || []).filter(n => !n.ts || (Date.now() - n.ts) < (4 * 60 * 60 * 1000));
+let notificacoes = (JSON.parse(localStorage.getItem('map_notifs_v1')) || []).filter(n => !n.ts || (Date.now() - n.ts) < (1 * 60 * 60 * 1000));
 let notifPanelOpen = false;
 
-const NOTIF_EXPIRY_MS = 4 * 60 * 60 * 1000; // 4 horas
+const NOTIF_EXPIRY_MS = 1 * 60 * 60 * 1000; // 1 hora
 
 function salvarNotifs() {
   // Remove notificacoes com mais de 4h antes de salvar
@@ -14550,6 +14587,9 @@ async function _fbFazerBackupAgora(btn) {
     <button onclick="admAbrirLiberarEmail()" style="width:36px;height:36px;border-radius:10px;background:rgba(80,200,255,0.08);border:1px solid rgba(80,200,255,0.2);color:#50c8ff;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;touch-action:manipulation;" title="Liberar email para novo cadastro">
       <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 9.9-1"/></svg>
     </button>
+    <button onclick="admAbrirLinkSeguro()" style="width:36px;height:36px;border-radius:10px;background:rgba(251,191,36,0.08);border:1px solid rgba(251,191,36,0.25);color:#fbbf24;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;touch-action:manipulation;" title="Gerar link seguro de acesso">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
+    </button>
     <button onclick="adminMostrarAba('app')" style="width:36px;height:36px;border-radius:10px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);color:rgba(255,255,255,0.6);cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;touch-action:manipulation;" title="Voltar ao app">
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
     </button>
@@ -14587,6 +14627,76 @@ async function _fbFazerBackupAgora(btn) {
   </div>
   <div id="adm-user-list" style="flex:1;overflow-y:auto;padding:10px 14px;display:flex;flex-direction:column;gap:6px;-webkit-overflow-scrolling:touch;">
     <div style="text-align:center;padding:60px 20px;color:rgba(255,255,255,0.2);font-size:13px;">Carregando...</div>
+  </div>
+</div>
+
+<!-- MODAL LINK SEGURO -->
+<div id="modal-link-seguro" style="display:none;position:fixed;inset:0;z-index:100020;background:rgba(0,0,0,0.94);align-items:center;justify-content:center;padding:20px;" onclick="if(event.target===this)admFecharLinkSeguro()">
+  <div style="background:#0e0e18;border:1px solid rgba(251,191,36,0.2);border-radius:20px;width:100%;max-width:420px;padding:24px 20px;display:flex;flex-direction:column;gap:18px;">
+
+    <!-- Header -->
+    <div style="display:flex;align-items:center;gap:12px;">
+      <div style="width:40px;height:40px;border-radius:12px;background:rgba(251,191,36,0.1);border:1px solid rgba(251,191,36,0.25);display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fbbf24" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
+      </div>
+      <div>
+        <div style="font-size:15px;font-weight:900;color:#fff;">Link de Acesso Seguro</div>
+        <div style="font-size:11px;color:rgba(255,255,255,0.3);margin-top:2px;">Uso único · Expira em 24h · Restrito a uma pessoa</div>
+      </div>
+      <button onclick="admFecharLinkSeguro()" style="margin-left:auto;background:none;border:none;color:rgba(255,255,255,0.3);font-size:20px;cursor:pointer;line-height:1;padding:0 4px;">&times;</button>
+    </div>
+
+    <!-- Descrição -->
+    <div style="background:rgba(251,191,36,0.05);border:1px solid rgba(251,191,36,0.12);border-radius:12px;padding:12px 14px;font-size:12px;color:rgba(255,255,255,0.45);line-height:1.6;">
+      Este link só pode ser usado <strong style="color:rgba(251,191,36,0.8);">uma vez</strong> por uma pessoa específica. Após o primeiro acesso, o link é invalidado automaticamente. Terceiros não conseguem entrar.
+    </div>
+
+    <!-- Código de acesso -->
+    <div style="display:flex;flex-direction:column;gap:8px;">
+      <label style="font-size:9px;font-weight:900;letter-spacing:2px;color:rgba(255,255,255,0.3);text-transform:uppercase;">Código de acesso</label>
+      <div style="display:flex;gap:8px;align-items:center;">
+        <input id="lseg-codigo-input" type="text" maxlength="20" placeholder="Ex: musica2024"
+          style="flex:1;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);border-radius:10px;color:#fff;font-size:14px;font-weight:800;padding:11px 14px;outline:none;font-family:monospace;letter-spacing:2px;"
+          onfocus="this.style.borderColor='rgba(251,191,36,0.4)'" onblur="this.style.borderColor='rgba(255,255,255,0.1)'"
+          oninput="document.getElementById('lseg-gerar-btn').disabled=this.value.trim().length<3">
+        <button onclick="admGerarCodigoAleatorio()" title="Gerar código aleatório"
+          style="width:40px;height:40px;border-radius:10px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);color:rgba(255,255,255,0.4);cursor:pointer;font-size:16px;flex-shrink:0;">
+          ↻
+        </button>
+      </div>
+      <div style="font-size:10px;color:rgba(255,255,255,0.2);">Mínimo 3 caracteres. A pessoa precisará digitar esse código ao acessar.</div>
+    </div>
+
+    <!-- Validade -->
+    <div style="display:flex;flex-direction:column;gap:8px;">
+      <label style="font-size:9px;font-weight:900;letter-spacing:2px;color:rgba(255,255,255,0.3);text-transform:uppercase;">Validade</label>
+      <div style="display:flex;gap:8px;">
+        <button class="lseg-val-btn ativo" id="lseg-val-1h" onclick="admSelValidade('1h')" style="flex:1;padding:9px;border-radius:10px;background:rgba(251,191,36,0.1);border:1px solid rgba(251,191,36,0.3);color:#fbbf24;font-size:11px;font-weight:800;cursor:pointer;font-family:inherit;">1h</button>
+        <button class="lseg-val-btn" id="lseg-val-6h" onclick="admSelValidade('6h')" style="flex:1;padding:9px;border-radius:10px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);color:rgba(255,255,255,0.35);font-size:11px;font-weight:800;cursor:pointer;font-family:inherit;">6h</button>
+        <button class="lseg-val-btn" id="lseg-val-24h" onclick="admSelValidade('24h')" style="flex:1;padding:9px;border-radius:10px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);color:rgba(255,255,255,0.35);font-size:11px;font-weight:800;cursor:pointer;font-family:inherit;">24h</button>
+        <button class="lseg-val-btn" id="lseg-val-7d" onclick="admSelValidade('7d')" style="flex:1;padding:9px;border-radius:10px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);color:rgba(255,255,255,0.35);font-size:11px;font-weight:800;cursor:pointer;font-family:inherit;">7d</button>
+      </div>
+    </div>
+
+    <!-- Botão gerar -->
+    <button id="lseg-gerar-btn" onclick="admGerarLinkSeguro()" disabled
+      style="width:100%;padding:14px;border-radius:999px;background:#92400e;border:none;color:rgba(255,255,255,0.3);font-size:13px;font-weight:900;cursor:not-allowed;font-family:inherit;transition:all 0.2s;"
+      onmouseenter="if(!this.disabled){this.style.background='#d97706'}" onmouseleave="if(!this.disabled){this.style.background='#b45309'}">
+      Gerar Link
+    </button>
+
+    <!-- Resultado -->
+    <div id="lseg-resultado" style="display:none;flex-direction:column;gap:10px;">
+      <div style="height:1px;background:rgba(255,255,255,0.06);"></div>
+      <div style="font-size:9px;font-weight:900;letter-spacing:2px;color:rgba(34,197,94,0.7);text-transform:uppercase;">✓ Link gerado</div>
+      <div id="lseg-link-box" style="background:#000;border:1px solid rgba(34,197,94,0.2);border-radius:12px;padding:12px 14px;font-family:monospace;font-size:11px;color:#22c55e;word-break:break-all;line-height:1.5;"></div>
+      <div style="display:flex;gap:8px;">
+        <button onclick="admCopiarLinkSeguro()" style="flex:1;padding:11px;border-radius:999px;background:#16a34a;border:none;color:#000;font-size:12px;font-weight:900;cursor:pointer;font-family:inherit;">Copiar Link</button>
+        <button onclick="admNovoLinkSeguro()" style="padding:11px 16px;border-radius:999px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);color:rgba(255,255,255,0.4);font-size:12px;font-weight:800;cursor:pointer;font-family:inherit;">Novo</button>
+      </div>
+      <div id="lseg-links-ativos" style="margin-top:4px;"></div>
+    </div>
+
   </div>
 </div>
 
@@ -16609,6 +16719,241 @@ function vocEvVoltarLista() {
   document.getElementById('voc-ev-lista-wrap').style.display = '';
   document.getElementById('voc-ev-set-wrap').style.display = 'none';
   vocEvRenderLista();
+}
+
+// ─── LINK SEGURO DE ACESSO ───────────────────────────────────────────────────
+var _lsegValidade = '1h';
+var _lsegLinkGerado = null;
+
+function admAbrirLinkSeguro() {
+  var modal = document.getElementById('modal-link-seguro');
+  if (!modal) return;
+  modal.style.display = 'flex';
+  // Reset
+  var inp = document.getElementById('lseg-codigo-input');
+  if (inp) inp.value = '';
+  var btn = document.getElementById('lseg-gerar-btn');
+  if (btn) { btn.disabled = true; btn.style.background = '#92400e'; btn.style.color = 'rgba(255,255,255,0.3)'; btn.style.cursor = 'not-allowed'; }
+  var res = document.getElementById('lseg-resultado');
+  if (res) res.style.display = 'none';
+  _lsegValidade = '1h';
+  admSelValidade('1h');
+  _lsegLinkGerado = null;
+  _admCarregarLinksAtivos();
+}
+
+function admFecharLinkSeguro() {
+  var modal = document.getElementById('modal-link-seguro');
+  if (modal) modal.style.display = 'none';
+}
+
+function admSelValidade(v) {
+  _lsegValidade = v;
+  ['1h','6h','24h','7d'].forEach(function(id) {
+    var btn = document.getElementById('lseg-val-' + id);
+    if (!btn) return;
+    var ativo = id === v;
+    btn.style.background = ativo ? 'rgba(251,191,36,0.1)' : 'rgba(255,255,255,0.04)';
+    btn.style.borderColor = ativo ? 'rgba(251,191,36,0.3)' : 'rgba(255,255,255,0.08)';
+    btn.style.color = ativo ? '#fbbf24' : 'rgba(255,255,255,0.35)';
+  });
+}
+
+function admGerarCodigoAleatorio() {
+  var chars = 'abcdefghjkmnpqrstuvwxyz23456789';
+  var code = '';
+  for (var i = 0; i < 8; i++) code += chars[Math.floor(Math.random() * chars.length)];
+  var inp = document.getElementById('lseg-codigo-input');
+  if (inp) {
+    inp.value = code;
+    var btn = document.getElementById('lseg-gerar-btn');
+    if (btn) { btn.disabled = false; btn.style.background = '#b45309'; btn.style.color = '#fff'; btn.style.cursor = 'pointer'; }
+  }
+}
+
+function _lsegMs(v) {
+  if (v === '1h')  return 1  * 60 * 60 * 1000;
+  if (v === '6h')  return 6  * 60 * 60 * 1000;
+  if (v === '24h') return 24 * 60 * 60 * 1000;
+  if (v === '7d')  return 7  * 24 * 60 * 60 * 1000;
+  return 24 * 60 * 60 * 1000;
+}
+
+async function admGerarLinkSeguro() {
+  var inp = document.getElementById('lseg-codigo-input');
+  var codigo = (inp ? inp.value.trim() : '').toLowerCase();
+  if (codigo.length < 3) { showToast('Código deve ter ao menos 3 caracteres'); return; }
+
+  var btn = document.getElementById('lseg-gerar-btn');
+  if (btn) { btn.disabled = true; btn.textContent = 'Gerando...'; }
+
+  // Gera token único de 16 chars
+  var chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+  var token = '';
+  for (var i = 0; i < 20; i++) token += chars[Math.floor(Math.random() * chars.length)];
+
+  var expiraEm = Date.now() + _lsegMs(_lsegValidade);
+  var codigoHash = btoa(codigo + ':' + token.slice(0,6)); // ofuscação simples
+
+  var dados = {
+    token: token,
+    codigoHash: codigoHash,
+    expiraEm: expiraEm,
+    usado: false,
+    criadoEm: Date.now(),
+    validade: _lsegValidade,
+    criadoPor: 'admin'
+  };
+
+  try {
+    await window._fb._set('links_seguros/' + token, dados, false);
+  } catch(e) {
+    showToast('Erro ao salvar no Firebase. Tente novamente.');
+    if (btn) { btn.disabled = false; btn.textContent = 'Gerar Link'; }
+    return;
+  }
+
+  var baseUrl = window.location.href.split('?')[0].split('#')[0];
+  var link = baseUrl + '?lseg=' + token;
+  _lsegLinkGerado = { link: link, codigo: codigo, token: token };
+
+  // Mostra resultado
+  var box = document.getElementById('lseg-link-box');
+  if (box) box.textContent = link;
+  var res = document.getElementById('lseg-resultado');
+  if (res) res.style.display = 'flex';
+  if (btn) { btn.textContent = 'Gerar Link'; btn.disabled = false; btn.style.background = '#b45309'; btn.style.color = '#fff'; btn.style.cursor = 'pointer'; }
+
+  _admCarregarLinksAtivos();
+}
+
+function admCopiarLinkSeguro() {
+  if (!_lsegLinkGerado) return;
+  navigator.clipboard.writeText(_lsegLinkGerado.link).then(function() {
+    showToast('Link copiado!');
+  }).catch(function() {
+    var ta = document.createElement('textarea');
+    ta.value = _lsegLinkGerado.link;
+    document.body.appendChild(ta); ta.select(); document.execCommand('copy'); document.body.removeChild(ta);
+    showToast('Link copiado!');
+  });
+}
+
+function admNovoLinkSeguro() {
+  var inp = document.getElementById('lseg-codigo-input');
+  if (inp) inp.value = '';
+  var res = document.getElementById('lseg-resultado');
+  if (res) res.style.display = 'none';
+  var btn = document.getElementById('lseg-gerar-btn');
+  if (btn) { btn.disabled = true; btn.style.background = '#92400e'; btn.style.color = 'rgba(255,255,255,0.3)'; btn.style.cursor = 'not-allowed'; }
+  _lsegLinkGerado = null;
+}
+
+async function _admCarregarLinksAtivos() {
+  var wrap = document.getElementById('lseg-links-ativos');
+  if (!wrap) return;
+  try {
+    var todos = await window._fb._query('links_seguros', [], null, 20);
+    var agora = Date.now();
+    var ativos = todos.filter(function(l) { return !l.usado && l.expiraEm > agora; });
+    if (!ativos.length) { wrap.innerHTML = ''; return; }
+    wrap.innerHTML = '<div style="font-size:9px;font-weight:900;letter-spacing:2px;color:rgba(255,255,255,0.2);text-transform:uppercase;margin-bottom:8px;">Links ativos (' + ativos.length + ')</div>'
+      + ativos.map(function(l) {
+        var resto = Math.round((l.expiraEm - agora) / 60000);
+        var tempoStr = resto > 60 ? Math.round(resto/60) + 'h' : resto + 'min';
+        return '<div style="display:flex;align-items:center;gap:8px;padding:8px 10px;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.06);border-radius:8px;margin-bottom:6px;">'
+          + '<div style="font-family:monospace;font-size:10px;color:rgba(255,255,255,0.4);flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + l.token.slice(0,10) + '…</div>'
+          + '<div style="font-size:9px;color:rgba(251,191,36,0.6);white-space:nowrap;">' + tempoStr + ' restante</div>'
+          + '<button data-token="' + l.token + '" onclick="admRevogarLink(this.dataset.token)" style="background:rgba(255,60,60,0.08);border:1px solid rgba(255,60,60,0.2);border-radius:6px;color:rgba(255,80,80,0.7);font-size:10px;font-weight:800;padding:3px 8px;cursor:pointer;font-family:inherit;">Revogar</button>'
+          + '</div>';
+      }).join('');
+  } catch(e) { wrap.innerHTML = ''; }
+}
+
+async function admRevogarLink(token) {
+  try {
+    await window._fb._set('links_seguros/' + token, { usado: true }, true);
+    showToast('Link revogado');
+    _admCarregarLinksAtivos();
+  } catch(e) { showToast('Erro ao revogar'); }
+}
+
+// ── Verificação do link seguro ao iniciar o app ───────────────────────────────
+async function _verificarLinkSeguro() {
+  var token = sessionStorage.getItem('_lseg_token');
+  if (!token) return false;
+  sessionStorage.removeItem('_lseg_token');
+
+  if (!window._fb) return false;
+
+  var dados;
+  try { dados = await window._fb._get('links_seguros/' + token); } catch(e) { dados = null; }
+
+  if (!dados || dados.usado || dados.expiraEm < Date.now()) {
+    _mostrarErroBloqueio('Link inválido ou expirado', 'Este link já foi utilizado ou expirou. Solicite um novo ao administrador.');
+    return true;
+  }
+
+  // Pede o código de acesso
+  return new Promise(function(resolve) {
+    var overlay = document.createElement('div');
+    overlay.style.cssText = 'position:fixed;inset:0;z-index:999999;background:#06060c;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:32px;';
+    overlay.innerHTML =
+      '<div style="width:100%;max-width:360px;display:flex;flex-direction:column;gap:20px;">'
+      + '<div style="text-align:center;">'
+      +   '<div style="width:64px;height:64px;border-radius:18px;background:rgba(251,191,36,0.1);border:1px solid rgba(251,191,36,0.25);display:flex;align-items:center;justify-content:center;margin:0 auto 16px;">'
+      +     '<svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#fbbf24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>'
+      +   '</div>'
+      +   '<div style="font-size:20px;font-weight:900;color:#fff;margin-bottom:8px;">Acesso Restrito</div>'
+      +   '<div style="font-size:13px;color:rgba(255,255,255,0.4);line-height:1.5;">Digite o código de acesso fornecido pelo administrador.</div>'
+      + '</div>'
+      + '<input id="_lseg-code-inp" type="password" placeholder="Código de acesso" maxlength="20"'
+      +   ' style="background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.12);border-radius:12px;color:#fff;font-size:16px;font-weight:800;padding:14px 16px;outline:none;font-family:monospace;letter-spacing:3px;text-align:center;width:100%;box-sizing:border-box;">'
+      + '<div id="_lseg-erro" style="text-align:center;font-size:12px;color:#ff5555;display:none;">Código incorreto. Tente novamente.</div>'
+      + '<button id="_lseg-btn" style="padding:14px;border-radius:999px;background:#b45309;border:none;color:#fff;font-size:14px;font-weight:900;cursor:pointer;font-family:inherit;">Entrar</button>'
+      + '</div>';
+    document.body.appendChild(overlay);
+
+    var tentativas = 0;
+    var confirmar = async function() {
+      var inp = document.getElementById('_lseg-code-inp');
+      var codigo = (inp ? inp.value.trim() : '').toLowerCase();
+      var esperado = atob(dados.codigoHash).split(':')[0];
+      if (codigo !== esperado) {
+        tentativas++;
+        var err = document.getElementById('_lseg-erro');
+        if (err) err.style.display = 'block';
+        if (tentativas >= 3) {
+          overlay.innerHTML = '<div style="text-align:center;color:#ff5555;font-size:14px;font-weight:700;padding:32px;">Muitas tentativas incorretas.<br>Acesso bloqueado.</div>';
+          setTimeout(function() { document.body.removeChild(overlay); }, 3000);
+          resolve(false);
+        }
+        return;
+      }
+      // Código correto — marca como usado
+      try { await window._fb._set('links_seguros/' + token, { usado: true, usadoEm: Date.now() }, true); } catch(e){}
+      document.body.removeChild(overlay);
+      showToast('Acesso autorizado!');
+      resolve(true);
+    };
+
+    document.getElementById('_lseg-btn').onclick = confirmar;
+    document.getElementById('_lseg-code-inp').addEventListener('keydown', function(e) {
+      if (e.key === 'Enter') confirmar();
+    });
+    setTimeout(function() { var i = document.getElementById('_lseg-code-inp'); if (i) i.focus(); }, 100);
+  });
+}
+
+function _mostrarErroBloqueio(titulo, msg) {
+  var overlay = document.createElement('div');
+  overlay.style.cssText = 'position:fixed;inset:0;z-index:999999;background:#06060c;display:flex;align-items:center;justify-content:center;padding:32px;';
+  overlay.innerHTML = '<div style="text-align:center;max-width:320px;">'
+    + '<div style="font-size:48px;margin-bottom:16px;">🔒</div>'
+    + '<div style="font-size:18px;font-weight:900;color:#fff;margin-bottom:10px;">' + titulo + '</div>'
+    + '<div style="font-size:13px;color:rgba(255,255,255,0.35);line-height:1.6;white-space:pre-line;">' + msg + '</div>'
+    + '</div>';
+  document.body.appendChild(overlay);
 }
 
 // ─── PAINEL SHOWS ────────────────────────────────────────────────────────────
