@@ -290,7 +290,9 @@ window.addEventListener('unhandledrejection', function(e) {
         errCount++;
       }
       if (!stopped) {
-        var delay = errCount > 3 ? Math.min(intervalMs * Math.pow(2, errCount - 3), 300000) : intervalMs;
+        // Em sala ativa, limitar backoff a 30s para reconectar mais rápido
+        var maxDelay = window._emSala ? 30000 : 300000;
+        var delay = errCount > 3 ? Math.min(intervalMs * Math.pow(2, errCount - 3), maxDelay) : intervalMs;
         setTimeout(check, delay);
       }
     }
@@ -655,7 +657,15 @@ window.addEventListener('unhandledrejection', function(e) {
       try { await _set('salas/' + codigo, { ativa: false }, true); } catch(e) {}
     },
     ouvirSala(codigo, callback) {
-      return _poll('salas/' + codigo, callback, 2000);
+      // Intervalo adaptativo: show ativo=800ms, normal=2000ms
+      var ms = (document.body && document.body.classList.contains('performance-mode')) ? 800 : 2000;
+      var stopFn = _poll('salas/' + codigo, callback, ms);
+      // Recriar poll com intervalo certo quando modo show muda
+      var _obs = setInterval(function() {
+        var novoMs = (document.body && document.body.classList.contains('performance-mode')) ? 800 : 2000;
+        if (novoMs !== ms) { ms = novoMs; stopFn(); stopFn = _poll('salas/' + codigo, callback, ms); }
+      }, 3000);
+      return function() { stopFn(); clearInterval(_obs); };
     },
     async entrarSalaFb(codigo, viewerUid, viewerNome) {
       try {
@@ -866,6 +876,8 @@ function obNomeInput() {
 }
 
 async function obVerificarNome() {
+  try {
+
   const val = (document.getElementById('ob-nome')?.value || '').trim();
   if (val.length < 2) return;
   const btn = document.getElementById('ob-btn-verificar');
@@ -888,6 +900,10 @@ async function obVerificarNome() {
     if (tag) tag.textContent = '@' + val;
   }
   _obValidarCta();
+
+  } catch(e) {
+    showToast('Erro ao verificar nome. Tente novamente.');
+  }
 }
 
 function _obGetPin() {
@@ -946,8 +962,14 @@ function _obValidarCta() {
 
 // ── Show step 2 after nome + email confirmed ─────────────────────────────────
 async function obVerificarNomeEAvancar() {
+  try {
+
   await obVerificarNome();
   if (_obNomeDisponivel) _obAvancarStep2();
+
+  } catch(e) {
+    showToast('Erro ao avançar. Tente novamente.');
+  }
 }
 
 function _obAvancarStep2() {
@@ -1505,6 +1527,32 @@ document.addEventListener('DOMContentLoaded', function() {
   const splash = document.getElementById('ob-splash');
   const skipSplash = sessionStorage.getItem('map_skip_splash') === '1';
 
+  // ── Splash informativo: anima steps de loading ──────────────────────────────
+  (function() {
+    function _splashStep(msg, pct) {
+      var bar = document.getElementById('ob-splash-bar');
+      var txt = document.getElementById('ob-splash-msg');
+      if(bar) bar.style.width = pct + '%';
+      if(txt) txt.textContent = msg;
+    }
+    // Step 1: imediato
+    _splashStep('Iniciando...', 10);
+    // Step 2: verificando Firebase
+    setTimeout(function() { _splashStep('Conectando ao servidor...', 35); }, 200);
+    // Step 3: autenticando
+    setTimeout(function() {
+      var uid = localStorage.getItem('map_uid_v1');
+      _splashStep(uid ? 'Autenticando...' : 'Preparando...', 60);
+    }, 600);
+    // Step 4: carregando dados
+    setTimeout(function() {
+      var perfil2 = JSON.parse(localStorage.getItem('map_perfil_v1') || '{}');
+      _splashStep(perfil2.nome ? ('Olá, ' + perfil2.nome.split(' ')[0] + '!') : 'Carregando dados...', 85);
+    }, 1100);
+    // Step 5: pronto (logo antes de fechar)
+    setTimeout(function() { _splashStep('Pronto!', 100); }, 1500);
+  })();
+
   // Admin com sessao activa: pula splash e PIN completamente
   if (perfil.isAdmin && perfil.uid === 'admin_local') {
     if (splash) splash.remove();
@@ -1799,13 +1847,134 @@ body.theme-light {
   --glass-border: rgba(0,0,0,0.08);
   --note-color: #0d0d14;
 }
-body.theme-light .app-header { background: rgba(244,244,248,0.95); }
-body.theme-light .chord-area { background: rgba(0,0,0,0.04); color: var(--text-primary); border-color: rgba(0,0,0,0.08); }
-body.theme-light .side-panel, body.theme-light .metronome-card { background: var(--bg-secondary); border-color: var(--border-color); }
-body.theme-light .biblioteca-overlay, body.theme-light .biblioteca-header { background: var(--bg-primary); }
-body.theme-light .dropdown-menu { background: var(--bg-secondary); border-color: var(--border-color); }
-body.theme-light .menu-item { color: var(--text-primary); }
-body.theme-light .menu-item:hover { background: var(--bg-tertiary); }
+/* ── Tema Claro — overrides completos ─────────────────────────────────────── */
+body.theme-light { background: #f4f4f8 !important; color: #0d0d14; }
+
+/* Header e navegação */
+body.theme-light .app-header {
+  background: rgba(240,240,246,0.92) !important;
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border-bottom: 1px solid rgba(0,0,0,0.1) !important;
+}
+body.theme-light .app-header .logo { color: #0d0d14; }
+body.theme-light .dropdown-menu {
+  background: rgba(245,245,250,0.96) !important;
+  border-color: rgba(0,0,0,0.12) !important;
+  box-shadow: 0 12px 40px rgba(0,0,0,0.15) !important;
+}
+body.theme-light .menu-item { color: #0d0d14 !important; }
+body.theme-light .menu-item:hover { background: rgba(0,0,0,0.05) !important; }
+body.theme-light .menu-separator { border-color: rgba(0,0,0,0.08) !important; }
+
+/* Cards de parte */
+body.theme-light .song-part {
+  background: #ffffff !important;
+  border-color: var(--accent-primary) !important;
+  box-shadow: 0 2px 12px rgba(0,0,0,0.08) !important;
+}
+body.theme-light .chord-area {
+  background: transparent !important;
+  color: #1a1a2e !important;
+}
+body.theme-light .song-part input[type="text"] {
+  color: var(--accent-primary) !important;
+}
+
+/* BPM e controles de tom */
+body.theme-light #bpm-display,
+body.theme-light .bpm-val { color: var(--accent-primary) !important; }
+body.theme-light #trans-val { color: #0d0d14 !important; }
+body.theme-light .bpm-btn,
+body.theme-light .trans-btn {
+  background: rgba(0,0,0,0.06) !important;
+  border-color: rgba(0,0,0,0.12) !important;
+  color: #0d0d14 !important;
+}
+body.theme-light .bpm-btn:active,
+body.theme-light .trans-btn:active { background: rgba(0,0,0,0.12) !important; }
+
+/* Barra de tom e + PARTE */
+body.theme-light #btn-save-vitro,
+body.theme-light #cifra-font-ctrl {
+  background: rgba(0,0,0,0.06) !important;
+  border-color: rgba(0,0,0,0.12) !important;
+  color: #0d0d14 !important;
+}
+
+/* Sync bar (sala) */
+body.theme-light .sync-bar {
+  background: rgba(10,158,110,0.08) !important;
+  border-color: rgba(10,158,110,0.25) !important;
+}
+body.theme-light .sync-bar.viewer {
+  background: rgba(180,140,0,0.1) !important;
+  border-color: rgba(180,140,0,0.3) !important;
+}
+
+/* Biblioteca / side panel */
+body.theme-light .side-panel,
+body.theme-light .metronome-card {
+  background: #f0f0f6 !important;
+  border-color: rgba(0,0,0,0.1) !important;
+}
+body.theme-light .biblioteca-overlay,
+body.theme-light .biblioteca-header {
+  background: #f4f4f8 !important;
+}
+body.theme-light .song-item {
+  background: #fff !important;
+  border-color: rgba(0,0,0,0.08) !important;
+  color: #0d0d14 !important;
+}
+body.theme-light .song-item:hover { background: #e8e8f0 !important; }
+body.theme-light .song-name { color: #0d0d14 !important; }
+body.theme-light .song-meta { color: #555566 !important; }
+
+/* Modal */
+body.theme-light .modal-overlay { background: rgba(0,0,0,0.5) !important; }
+body.theme-light .modal-box {
+  background: #ffffff !important;
+  border-color: rgba(0,0,0,0.12) !important;
+  color: #0d0d14 !important;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.2) !important;
+}
+body.theme-light .modal-box h2,
+body.theme-light .modal-box p { color: #0d0d14 !important; }
+body.theme-light .modal-box input[type="text"],
+body.theme-light .modal-box input[type="email"],
+body.theme-light .modal-box input[type="password"] {
+  background: #f0f0f6 !important;
+  border-color: rgba(0,0,0,0.15) !important;
+  color: #0d0d14 !important;
+}
+
+/* Buttons genéricos */
+body.theme-light button:not(.mode-show-container):not(.acc-btn):not([class*="voc-"]):not([class*="adm-"]):not(.modal-btn-primary) {
+  color: inherit;
+}
+body.theme-light .btn-secondary {
+  background: rgba(0,0,0,0.06) !important;
+  border-color: rgba(0,0,0,0.12) !important;
+  color: #0d0d14 !important;
+}
+
+/* Performance mode indicators */
+body.theme-light .perf-song-name,
+body.theme-light .perf-song-pos { color: #0d0d14 !important; }
+
+/* Input de busca da biblioteca */
+body.theme-light .search-input,
+body.theme-light input[type="search"] {
+  background: rgba(0,0,0,0.06) !important;
+  border-color: rgba(0,0,0,0.12) !important;
+  color: #0d0d14 !important;
+}
+body.theme-light .search-input::placeholder { color: rgba(0,0,0,0.3) !important; }
+
+/* Scrollbar */
+body.theme-light ::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.2) !important; }
+body.theme-light ::-webkit-scrollbar-track { background: rgba(0,0,0,0.05) !important; }
 body, body * { transition: background-color 0.25s, color 0.15s, border-color 0.15s; }
 body.performance-mode {
   --bg-primary: #050000;
@@ -1817,7 +1986,7 @@ body.performance-mode {
 body { font-family: -apple-system, 'Inter', BlinkMacSystemFont, 'Segoe UI', sans-serif; background: var(--bg-primary); color: var(--text-primary); min-height: 100vh; transition: background 0.4s ease; overflow-x: hidden; }
 
 /* HEADER */
-.app-header { background: rgba(10,10,20,0.55); backdrop-filter: blur(28px) saturate(1.6); -webkit-backdrop-filter: blur(28px) saturate(1.6); border-bottom: 1px solid rgba(138,92,246,0.08); padding: 15px 20px; position: sticky; top: 0; z-index: 1000; }
+.app-header { background: rgba(10,10,20,0.82); backdrop-filter: blur(32px) saturate(1.8); -webkit-backdrop-filter: blur(32px) saturate(1.8); border-bottom: 1px solid rgba(138,92,246,0.12); padding: 15px 20px; position: sticky; top: 0; z-index: 1000; }
 .app-header::after {
   content: '';
   position: absolute; bottom: 0; left: 0; right: 0;
@@ -1879,7 +2048,7 @@ body { font-family: -apple-system, 'Inter', BlinkMacSystemFont, 'Segoe UI', sans
 }
 .menu-container { position: relative; z-index: 9999; }
 .menu-btn { background: none; border: none; color: #fff; cursor: pointer; padding: 8px; border-radius: 50%; display: flex; align-items: center; }
-.dropdown-menu { position: absolute; top: 48px; right: 0; background: rgba(13,13,26,0.65); backdrop-filter: blur(28px) saturate(1.5); -webkit-backdrop-filter: blur(28px) saturate(1.5); border: 1px solid rgba(138,92,246,0.22); border-radius: 16px; width: 220px; display: none; flex-direction: column; z-index: 9999; box-shadow: 0 20px 60px rgba(0,0,0,0.8), 0 0 0 1px rgba(255,255,255,0.06); overflow: hidden; }
+.dropdown-menu { position: absolute; top: 48px; right: 0; background: rgba(13,13,26,0.88); backdrop-filter: blur(40px) saturate(1.8); -webkit-backdrop-filter: blur(40px) saturate(1.8); border: 1px solid rgba(138,92,246,0.25); border-radius: 16px; width: 220px; display: none; flex-direction: column; z-index: 9999; box-shadow: 0 20px 60px rgba(0,0,0,0.8), 0 0 0 1px rgba(255,255,255,0.06); overflow: hidden; }
 .dropdown-menu.show { display: flex; }
 .menu-item { padding: 15px 18px; color: rgba(255,255,255,0.75); font-size: 13px; font-weight: 600; letter-spacing: 0.2px; cursor: pointer; border-bottom: 1px solid rgba(255,255,255,0.05); transition: background 0.15s, color 0.15s; display: flex; align-items: center; gap: 12px; touch-action: manipulation; }
 .menu-item:last-child { border-bottom: none; }
@@ -2847,7 +3016,7 @@ body.performance-mode .scroll-controls { display: none; } /* movido para painel 
   border-radius: var(--radius-full); cursor: pointer;
   font-weight: 900; font-size: 11px; letter-spacing: 2px;
   text-transform: uppercase;
-  backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px);
+  backdrop-filter: blur(24px) saturate(1.6); -webkit-backdrop-filter: blur(24px) saturate(1.6);
   transition: all 0.2s;
   box-shadow: 0 4px 20px rgba(0,0,0,0.4);
   animation: pulseGreen 1.8s ease-in-out infinite;
@@ -3026,9 +3195,9 @@ body.performance-mode #perf-font-ctrl { display: flex; }
 .swipe-hint.show { opacity: 1; }
 
 /* MODAL SALA */
-.modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.70); backdrop-filter: blur(16px) saturate(1.3); -webkit-backdrop-filter: blur(16px) saturate(1.3); z-index: 5000; display: none; align-items: center; justify-content: center; }
+.modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.80); backdrop-filter: blur(20px) saturate(1.4); -webkit-backdrop-filter: blur(20px) saturate(1.4); z-index: 5000; display: none; align-items: center; justify-content: center; }
 .modal-overlay.show { display: flex; }
-.modal-box { background: rgba(13,13,26,0.72); backdrop-filter: blur(24px) saturate(1.4); -webkit-backdrop-filter: blur(24px) saturate(1.4); border: 1px solid rgba(138,92,246,0.18); border-radius: var(--radius-xl); padding: 35px; width: 90%; max-width: 420px; text-align: center; box-shadow: 0 30px 80px rgba(0,0,0,0.7), inset 0 1px 0 rgba(255,255,255,0.06); }
+.modal-box { background: rgba(13,13,26,0.90); backdrop-filter: blur(40px) saturate(1.8); -webkit-backdrop-filter: blur(40px) saturate(1.8); border: 1px solid rgba(138,92,246,0.22); border-radius: var(--radius-xl); padding: 35px; width: 90%; max-width: 420px; text-align: center; box-shadow: 0 30px 80px rgba(0,0,0,0.7), inset 0 1px 0 rgba(255,255,255,0.06); }
 .modal-box h2 { font-size: 18px; font-weight: 900; margin-bottom: 6px; }
 .modal-box p { font-size: 12px; color: var(--text-secondary); margin-bottom: 24px; line-height: 1.6; }
 .modal-tabs { display: flex; gap: 8px; margin-bottom: 24px; }
@@ -4309,6 +4478,12 @@ body.auth-pending #toast {
   <div id="ob-splash-name"><span class="logo-shimmer">Map Music</span><span>PRO</span></div>
   <div id="ob-splash-user"></div>
   <div id="ob-splash-sub">Para músicos ao vivo</div>
+  <div id="ob-splash-status" style="position:absolute;bottom:60px;left:0;right:0;display:flex;flex-direction:column;align-items:center;gap:8px;padding:0 40px;">
+    <div style="width:100%;max-width:200px;height:2px;background:rgba(255,255,255,0.08);border-radius:2px;overflow:hidden;">
+      <div id="ob-splash-bar" style="height:100%;width:0%;background:linear-gradient(90deg,#0A9E6E,#a78bfa);border-radius:2px;transition:width 0.4s ease;"></div>
+    </div>
+    <div id="ob-splash-msg" style="font-size:10px;color:rgba(255,255,255,0.25);letter-spacing:1px;font-weight:600;text-transform:uppercase;min-height:14px;"></div>
+  </div>
   <div style="position:absolute;bottom:20px;font-size:8px;color:rgba(255,255,255,0.12);letter-spacing:1px;font-weight:300;">por Jurandir Neto</div>
 </div>
 
@@ -5520,6 +5695,8 @@ function fecharAlterarSenha() {
 }
 
 async function confirmarAlterarSenha() {
+  try {
+
   const senhaAtual = (document.getElementById('alterar-senha-atual')?.value || '').trim();
   const senhaNova  = (document.getElementById('alterar-senha-nova')?.value  || '').trim();
   const senhaConf  = (document.getElementById('alterar-senha-conf')?.value  || '').trim();
@@ -5561,6 +5738,10 @@ async function confirmarAlterarSenha() {
   setMsg('Senha alterada com sucesso!', '#0A9E6E');
   if (btn) { btn.disabled = false; btn.textContent = 'Alterar senha'; }
   setTimeout(fecharAlterarSenha, 1500);
+
+  } catch(e) {
+    showToast('Erro ao alterar senha. Tente novamente.');
+  }
 }
 
 
@@ -6211,8 +6392,11 @@ async function entrarNaSala() {
   } catch(e) {}
 
   isViewer = true;
+  window._emSala = true;
   atualizarLetreiroDrumCam();
   setConnStatus('Conectado!', 'success');
+  // Disparar evento para solicitar permissão de notificação
+  document.dispatchEvent(new CustomEvent('map-sala-entrou'));
   fecharModal();
   document.getElementById('app-body').classList.add('viewer-mode');
   atualizarSyncBar(code);
@@ -6268,6 +6452,7 @@ async function _sairDaSala() {
   }
 
   isViewer = false;
+  window._emSala = false;
   document.getElementById('app-body').classList.remove('viewer-mode');
   atualizarSyncBar();
   atualizarLetreiroDrumCam();
@@ -6275,6 +6460,8 @@ async function _sairDaSala() {
 
 // ── Encerrar sala (host) ─────────────────────────────────────────────────────
 async function encerrarSala() {
+  try {
+
   if (!isHost) return;
   if (_mensagensListener) { _mensagensListener(); _mensagensListener = null; }
   clearInterval(_salaOnlineTimer);
@@ -6290,6 +6477,10 @@ async function encerrarSala() {
   atualizarSyncBar();
   atualizarLetreiroDrumCam();
   showToast('Sala encerrada');
+
+  } catch(e) {
+    showToast('Erro ao encerrar sala.');
+  }
 }
 
 // ── Sync Bar ─────────────────────────────────────────────────────────────────
@@ -6765,17 +6956,6 @@ function resetSection() {
   };
 }
 
-function compartilharSetlist() {
-  const nomes = songs.map((s,i) => `${i+1}. ${s.name} (${s.bpm} BPM)`).join('\n');
-  const texto = songs.length > 0 ? `Meu Setlist - Map Music Pro\n\n${nomes}` : 'Setlist vazio';
-  if (navigator.share) {
-    navigator.share({ title: 'Meu Setlist', text: texto }).catch(()=>{});
-  } else if (navigator.clipboard) {
-    navigator.clipboard.writeText(texto).then(() => showToast('Setlist copiado!'));
-  } else {
-    showToast('Copie o texto do setlist manualmente.', 'info');
-  }
-}
 
 // ─── TAP TEMPO ───────────────────────────────────────────────────────────
 var _tapBtn = document.getElementById('tap-btn');
@@ -7497,6 +7677,8 @@ function _gerarSlug() {
 }
 
 async function compartilharSetlist() {
+  try {
+
   var ev = eventos.find(function(e) { return e.id === eventoAbertoId; });
   if (!ev) return;
   var lista = (ev.musicIds || []).map(function(id) {
@@ -7550,6 +7732,10 @@ async function compartilharSetlist() {
       + '<span style="font-size:11px;font-weight:700;color:rgba(255,62,62,0.7);white-space:nowrap;">' + (s.bpm||'—') + ' BPM</span>'
       + '</div>';
   }).join('');
+
+  } catch(e) {
+    showToast('Erro ao compartilhar setlist.');
+  }
 }
 
 function copiarLinkSetlist() {
@@ -7564,6 +7750,8 @@ function copiarLinkSetlist() {
 
 // ── Carrega setlist público quando URL tem ?setlist=SLUG ──────────────────
 async function _verificarSetlistPublico() {
+  try {
+
   var params = new URLSearchParams(window.location.search);
   var slug = params.get('setlist');
   if (!slug) return false;
@@ -7604,6 +7792,10 @@ async function _verificarSetlistPublico() {
       + '</div>';
   }).join('');
   return true;
+
+  } catch(e) {
+    console.error('Erro ao verificar setlist público:', e);
+  }
 }
 
 function exportarSetlistPDF() {
@@ -9688,6 +9880,8 @@ async function _fbRestaurarBackup() {
 
 // ── Estatísticas ─────────────────────────────────────────────────────────────
 async function _fbAtualizarStats() {
+  try {
+
   if (!_isFbReady()) return;
   const uid = _getUid();
   const eventos = JSON.parse(localStorage.getItem('map_pro_eventos_v1') || '[]');
@@ -9705,6 +9899,10 @@ async function _fbAtualizarStats() {
     bpmMedio,
     ultimaMusica: songs.length ? songs[songs.length-1].name : null
   });
+
+  } catch(e) {
+    console.error('Erro ao atualizar stats:', e);
+  }
 }
 
 // ── Presença Online ───────────────────────────────────────────────────────────
@@ -9739,6 +9937,8 @@ document.addEventListener('visibilitychange', function() {
 
 // ── Modal de Estatísticas ─────────────────────────────────────────────────────
 async function abrirModalStats() {
+  try {
+
   document.getElementById('m-drop').classList.remove('show');
   const uid = _getUid();
   const eventos = JSON.parse(localStorage.getItem('map_pro_eventos_v1') || '[]');
@@ -9775,6 +9975,10 @@ async function abrirModalStats() {
 </div>`;
 
   document.body.insertAdjacentHTML('beforeend', html);
+
+  } catch(e) {
+    showToast('Erro ao carregar estatísticas.');
+  }
 }
 
 function _statCard(valor, label, cor) {
@@ -10064,12 +10268,18 @@ function _atualizarBadgesAmigos() {
 }
 
 async function abrirModalAmigos() {
+  try {
+
   document.getElementById('modal-amigos').classList.add('show');
   document.getElementById('m-drop').classList.remove('show');
   _atualizarBannerSala();
   await _renderAmigos();
   // Inicia listener se ainda não iniciado
   if (_fbReady && !_solicitacoesListener) _iniciarListenerSolicitacoes();
+
+  } catch(e) {
+    showToast('Erro ao carregar amigos.');
+  }
 }
 
 function fecharModalAmigos() {
@@ -10097,6 +10307,8 @@ function _atualizarBannerSala() {
 // ── Buscar usuários ──────────────────────────────────────────────────────────
 let _buscaTimer = null;
 async function buscarAmigosInput(val) {
+  try {
+
   clearTimeout(_buscaTimer);
   const trimmed = val.trim();
   if (trimmed.length < 2) {
@@ -10173,9 +10385,15 @@ async function buscarAmigosInput(val) {
       </div>`;
     }).join('');
   }, 400);
+
+  } catch(e) {
+    console.error('Erro na busca de amigos:', e);
+  }
 }
 
 async function enviarSolicitacaoFb(paraUid, paraNome, paraInst) {
+  try {
+
   if (!_isFbReady()) { showToast('Firebase indisponível. Verifique a conexão.'); return; }
   const perfil = _getPerfilLocal();
   const uid = _getUid();
@@ -10188,6 +10406,10 @@ async function enviarSolicitacaoFb(paraUid, paraNome, paraInst) {
     buscarAmigosInput(document.getElementById('amigos-add-input').value);
   } else {
     showToast('Erro ao enviar solicitação');
+  }
+
+  } catch(e) {
+    showToast('Erro ao enviar solicitação. Tente novamente.');
   }
 }
 
@@ -10438,7 +10660,7 @@ const _origSalvarPerfil = window.salvarPerfil;
 
 // ─── SISTEMA DE NOTIFICAÇÕES ──────────────────────────────────────────────────
 const APP_VERSION = '1.4.8';
-let notificacoes = (JSON.parse(localStorage.getItem('map_notifs_v1')) || []).filter(n => !n.ts || (Date.now() - n.ts) < (1 * 60 * 60 * 1000));
+let notificacoes = (JSON.parse(localStorage.getItem('map_notifs_v1') || '[]') || []).filter(n => !n.ts || (Date.now() - n.ts) < (1 * 60 * 60 * 1000));
 let notifPanelOpen = false;
 
 const NOTIF_EXPIRY_MS = 1 * 60 * 60 * 1000; // 1 hora
@@ -10842,12 +11064,17 @@ function aplicarEstado(estado) {
 
   // Nome e posição da música
   if (estado.currentSongName) {
+    var _nomeAnterior = currentSongIndex >= 0 && songs[currentSongIndex] ? songs[currentSongIndex].name : null;
     currentSongIndex = estado.currentSongIndex;
     if (window._vocSetlistRecebido) window._vocSetlistRecebido.pos = estado.currentSongIndex || 0;
     document.getElementById('perf-song-name').innerText = estado.currentSongName;
     document.getElementById('perf-song-pos').innerText =
       (estado.currentSongIndex + 1) + '/' + estado.songTotal;
     document.getElementById('dc-song-name').textContent = estado.currentSongName;
+    // Notificar mudança de música (apenas se mudou de fato)
+    if (_nomeAnterior && _nomeAnterior !== estado.currentSongName) {
+      _mapNotifMostrar(estado.currentSongName);
+    }
   } else {
     document.getElementById('perf-song-name').innerText = 'Nenhuma musica';
     document.getElementById('perf-song-pos').innerText = '—';
@@ -12963,6 +13190,8 @@ function _bpmBuscarLocal(termo) {
 }
 
 async function _bpmMicBuscar() {
+  try {
+
   var termo = ((document.getElementById('bpm-mic-input') || {}).value || '').trim();
   if (termo.length < 2) return;
 
@@ -13048,7 +13277,7 @@ async function _bpmMicBuscar() {
       if (_capaCache[key]) { _injetarCapa(key, _capaCache[key]); return; }
       // Busca na iTunes API
       var q = encodeURIComponent(r.titulo + ' ' + r.artista);
-      fetch('https://itunes.apple.com/search?term='+q+'&media=music&entity=song&limit=3&country=BR')
+      Promise.race([fetch('https://itunes.apple.com/search?term='+q+'&media=music&entity=song&limit=3&country=BR'),new Promise(function(_,rej){setTimeout(function(){rej(new Error('timeout'));},8000);})])
         .then(function(res){ return res.ok ? res.json() : null; })
         .then(function(data) {
           if (!data) return;
@@ -13099,6 +13328,10 @@ async function _bpmMicBuscar() {
   setStatus('Nao encontrado na base local', '#ff9944');
   mostrarVazio();
   resetBtn();
+
+  } catch(e) {
+    showToast('Erro na busca de BPM.');
+  }
 }
 function _bpmMicAplicar(bpmVal, titulo) {
   bpmVal = parseInt(bpmVal);
@@ -13485,6 +13718,7 @@ function admTabSel(id) { admNavSel(id); }
 
 // ── Mensagem global inline ────────────────────────────────────────────────────
 async function admEnviarMsgInline() {
+  try {
   var titulo = (document.getElementById('adm-msg-titulo') || {}).value || '';
   var texto  = ((document.getElementById('adm-msg-texto') || {}).value || '').trim();
   if (!texto) { showToast('Digite uma mensagem.'); return; }
@@ -13515,9 +13749,13 @@ async function admEnviarMsgInline() {
 
   if (prog) prog.style.display = 'none';
   document.getElementById('adm-msg-titulo').value = '';
-  document.getElementById('adm-msg-texto').value  = '';
+  document.getElementById('adm-msg-texto').value = '';
   document.getElementById('adm-msg-counter').textContent = '0/300';
   showToast(erros === 0 ? 'Enviada para ' + enviados + ' usuários!' : 'Enviada para ' + (enviados-erros) + '/' + enviados + ' (' + erros + ' erros)');
+
+  } catch(e) {
+    showToast('Erro ao enviar mensagem. Tente novamente.');
+  }
 }
 
 // ── Link seguro inline ────────────────────────────────────────────────────────
@@ -13935,6 +14173,7 @@ function admMensagemGlobal() {
 }
 
 async function admEnviarMensagemGlobal(totalAtivos) {
+  try {
   var titulo = ((document.getElementById('_admGlobalTitulo') || {}).value || '').trim();
   var texto  = ((document.getElementById('_admGlobalTexto')  || {}).value || '').trim();
   var btn    = document.getElementById('_admGlobalEnviar');
@@ -13983,6 +14222,10 @@ async function admEnviarMensagemGlobal(totalAtivos) {
   showToast(erros === 0
     ? 'Mensagem enviada para ' + enviados + ' usuarios!'
     : 'Enviada para ' + sucessos + '/' + enviados + ' usuarios (' + erros + ' erros)');
+
+  } catch(e) {
+    showToast('Erro ao enviar mensagem global.');
+  }
 }
 
 function admAcao(tipo) {
@@ -14097,6 +14340,8 @@ async function admBuscarPorEmail() {
 }
 
 async function admConfirmarLiberar(uid, email) {
+  try {
+
   var res = document.getElementById('_lib-resultado');
   if (res) res.innerHTML = '<span style="color:rgba(255,255,255,0.4);">Removendo...</span>';
   var ok = await window._fb.admRemoverConta(uid);
@@ -14115,10 +14360,16 @@ async function admConfirmarLiberar(uid, email) {
   } else {
     if (res) res.innerHTML = '<span style="color:#ff4444;">Erro ao remover. Verifique as regras do Firestore.</span>';
   }
+
+  } catch(e) {
+    showToast('Erro ao liberar usuário.');
+  }
 }
 
 // ── Abrir modal liberar email ─────────────────────────────────────────────────
 async function admReativarEmail() {
+  try {
+
   var u = _admSelected;
   if (!u) return;
   var email = u.email || '';
@@ -14162,6 +14413,10 @@ async function admReativarEmail() {
       showToast('Erro ao remover registro');
     }
   };
+
+  } catch(e) {
+    showToast('Erro ao reativar e-mail.');
+  }
 }
 
 // ─── EXCLUIR CONTA ────────────────────────────────────────────────────────────
@@ -14909,7 +15164,7 @@ async function _fbFazerBackupAgora(btn) {
       <textarea id="adm-msg-texto" placeholder="Digite o comunicado..." maxlength="300" rows="3"
         style="width:100%;box-sizing:border-box;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.07);border-radius:10px;color:#fff;font-size:12px;padding:9px 12px;outline:none;font-family:inherit;resize:none;line-height:1.5;margin-bottom:4px;"
         onfocus="this.style.borderColor='rgba(100,149,237,0.4)'" onblur="this.style.borderColor='rgba(255,255,255,0.07)'"
-        oninput="document.getElementById('adm-msg-counter').textContent=this.value.length+'/300'"></textarea>
+        oninput="document.getElementById('adm-msg-counter').textContent =this.value.length+'/300'"></textarea>
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
         <span id="adm-msg-counter" style="font-size:10px;color:rgba(255,255,255,0.2);">0/300</span>
         <span id="adm-msg-destino" style="font-size:10px;color:rgba(100,149,237,0.6);"></span>
@@ -15249,10 +15504,10 @@ body[data-ambiente="vocalista"] .swipe-hint { display: none !important; }
 .voc-hdr {
   display: flex; align-items: center; gap: 10px;
   padding: 0 18px; height: 58px; flex-shrink: 0;
-  background: rgba(5,5,15,0.60);
-  border-bottom: 1px solid rgba(138,92,246,0.18);
-  backdrop-filter: blur(28px) saturate(1.5);
-  -webkit-backdrop-filter: blur(28px) saturate(1.5);
+  background: rgba(5,5,15,0.85);
+  border-bottom: 1px solid rgba(138,92,246,0.20);
+  backdrop-filter: blur(36px) saturate(1.8);
+  -webkit-backdrop-filter: blur(36px) saturate(1.8);
   position: relative; z-index: 100;
 }
 .voc-hdr-logo { flex: 1; }
@@ -15338,8 +15593,8 @@ body[data-ambiente="vocalista"] .swipe-hint { display: none !important; }
   touch-action: manipulation;
   border: 1px solid rgba(255,255,255,0.10);
   box-shadow: 0 2px 24px rgba(0,0,0,0.35), inset 0 1px 0 rgba(255,255,255,0.07);
-  backdrop-filter: blur(12px) saturate(1.2);
-  -webkit-backdrop-filter: blur(12px) saturate(1.2);
+  backdrop-filter: blur(20px) saturate(1.5);
+  -webkit-backdrop-filter: blur(20px) saturate(1.5);
 }
 @media (hover: hover) and (pointer: fine) {
   .voc-alb:hover {
@@ -15599,9 +15854,9 @@ body[data-ambiente="vocalista"] .swipe-hint { display: none !important; }
 .voc-panel {
   display: none; position: absolute;
   top: 58px; left: 0; right: 0; bottom: 0;
-  background: rgba(7, 7, 18, 0.75);
-  backdrop-filter: blur(28px) saturate(1.4);
-  -webkit-backdrop-filter: blur(28px) saturate(1.4);
+  background: rgba(7, 7, 18, 0.88);
+  backdrop-filter: blur(40px) saturate(1.8);
+  -webkit-backdrop-filter: blur(40px) saturate(1.8);
   flex-direction: column; z-index: 10;
   overflow: hidden;
   opacity: 0;
@@ -15631,10 +15886,10 @@ body[data-ambiente="vocalista"] .swipe-hint { display: none !important; }
   padding: 0 14px 0 8px;
   height: 52px;
   flex-shrink: 0;
-  background: rgba(9, 9, 26, 0.65);
-  backdrop-filter: blur(20px) saturate(1.3);
-  -webkit-backdrop-filter: blur(20px) saturate(1.3);
-  border-bottom: 1px solid rgba(138, 92, 246, 0.1);
+  background: rgba(9, 9, 26, 0.88);
+  backdrop-filter: blur(36px) saturate(1.8);
+  -webkit-backdrop-filter: blur(36px) saturate(1.8);
+  border-bottom: 1px solid rgba(138, 92, 246, 0.15);
 }
 .voc-back-btn {
   width: 38px; height: 38px; border-radius: 11px;
@@ -15655,10 +15910,10 @@ body[data-ambiente="vocalista"] .swipe-hint { display: none !important; }
 /* ─── LETRAS ─────────────────────────────────────────────────────────────── */
 .voc-search-wrap {
   padding: 14px 16px 12px;
-  background: rgba(9,9,26,0.55);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
-  border-bottom: 1px solid rgba(138,92,246,0.10); flex-shrink: 0;
+  background: rgba(9,9,26,0.85);
+  backdrop-filter: blur(32px) saturate(1.6);
+  -webkit-backdrop-filter: blur(32px) saturate(1.6);
+  border-bottom: 1px solid rgba(138,92,246,0.14); flex-shrink: 0;
 }
 .voc-search-row { display: flex; gap: 10px; align-items: center; }
 .voc-search-field { flex: 1; position: relative; }
@@ -15743,9 +15998,9 @@ body[data-ambiente="vocalista"] .swipe-hint { display: none !important; }
 /* ─── TELA DE LETRA ──────────────────────────────────────────────────────── */
 #voc-letra-tela {
   display: none; position: absolute; inset: 0;
-  background: rgba(7,7,18,0.82);
-  backdrop-filter: blur(32px) saturate(1.5);
-  -webkit-backdrop-filter: blur(32px) saturate(1.5);
+  background: rgba(7,7,18,0.92);
+  backdrop-filter: blur(48px) saturate(1.8);
+  -webkit-backdrop-filter: blur(48px) saturate(1.8);
   flex-direction: column; z-index: 20; overflow: hidden;
 }
 /* ── Modo performance vocalista ── */
@@ -15815,7 +16070,7 @@ body[data-ambiente="vocalista"] .swipe-hint { display: none !important; }
 .voc-letra-topbar {
   display: flex; align-items: center; gap: 10px;
   padding: 0 12px 0 8px; height: 56px; flex-shrink: 0;
-  background: rgba(9,9,26,0.65); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); border-bottom: 1px solid rgba(138,92,246,0.15);
+  background: rgba(9,9,26,0.88); backdrop-filter: blur(36px) saturate(1.8); -webkit-backdrop-filter: blur(36px) saturate(1.8); border-bottom: 1px solid rgba(138,92,246,0.18);
 }
 .voc-icon-btn {
   width: 38px; height: 38px; border-radius: 11px;
@@ -15845,6 +16100,29 @@ body[data-ambiente="vocalista"] .swipe-hint { display: none !important; }
 .voc-letra-scroll { flex: 1; overflow-y: auto; -webkit-overflow-scrolling: touch; scrollbar-width: none; }
 .voc-letra-scroll::-webkit-scrollbar { display: none; }
 .voc-letra-texto { padding: 20px 20px 120px; word-break: break-word; }
+.voc-transp-bar {
+  display: none; align-items: center; justify-content: center; gap: 10px;
+  padding: 10px 16px;
+  background: rgba(138,92,246,0.08);
+  border-bottom: 1px solid rgba(138,92,246,0.12);
+  flex-shrink: 0;
+}
+.voc-transp-bar.visivel { display: flex; }
+.voc-transp-btn {
+  width: 36px; height: 36px; border-radius: 10px;
+  background: rgba(138,92,246,0.12); border: 1px solid rgba(138,92,246,0.25);
+  color: #a78bfa; font-size: 18px; font-weight: 900;
+  cursor: pointer; display: flex; align-items: center; justify-content: center;
+  touch-action: manipulation; transition: background 0.15s;
+}
+.voc-transp-btn:active { background: rgba(138,92,246,0.3); }
+.voc-transp-display {
+  min-width: 80px; text-align: center;
+  font-size: 13px; font-weight: 900; color: #fff;
+  letter-spacing: 0.5px;
+}
+.voc-transp-tom { font-size: 20px; color: #a78bfa; }
+.voc-transp-delta { font-size: 10px; color: rgba(255,255,255,0.35); margin-top: 1px; }
 .voc-secao-tag {
   display: inline-block; font-size: 9px; font-weight: 900;
   letter-spacing: 2px; text-transform: uppercase;
@@ -16009,6 +16287,30 @@ body[data-ambiente="vocalista"] .swipe-hint { display: none !important; }
 }
 
 /* ─── TOAST ──────────────────────────────────────────────────────────────── */
+/* ── Notificação de mudança de música ── */
+#map-notif-musica {
+  position: fixed; top: -80px; left: 0; right: 0; z-index: 99998;
+  background: rgba(10,158,110,0.92);
+  backdrop-filter: blur(20px) saturate(1.6);
+  -webkit-backdrop-filter: blur(20px) saturate(1.6);
+  border-bottom: 1px solid rgba(34,197,94,0.4);
+  padding: 12px 20px;
+  display: flex; align-items: center; gap: 12px;
+  transition: top 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+  cursor: pointer;
+}
+#map-notif-musica.visivel { top: 0; }
+#map-notif-musica.saindo { top: -80px; transition: top 0.3s ease-in; }
+.map-notif-icon {
+  width: 36px; height: 36px; border-radius: 10px; flex-shrink: 0;
+  background: rgba(255,255,255,0.15);
+  display: flex; align-items: center; justify-content: center;
+}
+.map-notif-texto { flex: 1; min-width: 0; }
+.map-notif-label { font-size: 9px; font-weight: 900; letter-spacing: 1.5px; color: rgba(255,255,255,0.65); text-transform: uppercase; }
+.map-notif-nome  { font-size: 14px; font-weight: 900; color: #fff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.map-notif-close { background: none; border: none; color: rgba(255,255,255,0.5); font-size: 20px; cursor: pointer; padding: 0 4px; flex-shrink: 0; line-height: 1; }
+
 .voc-toast {
   position: fixed; bottom: 28px; left: 50%;
   transform: translateX(-50%) translateY(80px);
@@ -16412,7 +16714,7 @@ body[data-ambiente="vocalista"] .swipe-hint { display: none !important; }
   </div>
 
   <!-- Player flutuante -->
-  <div id="voc-player-overlay" style="display:none;position:fixed;inset:0;z-index:99990;background:rgba(0,0,0,0.88);backdrop-filter:blur(10px);flex-direction:column;align-items:center;justify-content:flex-end;" onclick="if(event.target===this)vocFecharPlayer()">
+  <div id="voc-player-overlay" style="display:none;position:fixed;inset:0;z-index:99990;background:rgba(0,0,0,0.90);backdrop-filter:blur(32px) saturate(1.6);flex-direction:column;align-items:center;justify-content:flex-end;" onclick="if(event.target===this)vocFecharPlayer()">
     <div style="width:100%;max-width:560px;background:#0d0d1a;border-radius:24px 24px 0 0;overflow:hidden;box-shadow:0 -20px 60px rgba(0,0,0,0.8);">
       <div style="display:flex;align-items:center;justify-content:space-between;padding:16px 20px 10px;">
         <div style="flex:1;min-width:0;">
@@ -16573,6 +16875,16 @@ body[data-ambiente="vocalista"] .swipe-hint { display: none !important; }
         title="Velocidade do scroll"
         oninput="if(_voc.scrollTimer){_vocPararScroll();_vocIniciarScroll();}">
       <button class="voc-ctrl" onclick="vocIrParaTom()" style="margin-left:auto;"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>Tom</button>
+      <button class="voc-ctrl" id="voc-transp-toggle" onclick="vocToggleTransp()" title="Transpor tom da letra"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="17 1 21 5 17 9"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/><polyline points="7 23 3 19 7 15"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/></svg>Tom↕</button>
+    </div>
+    <div class="voc-transp-bar" id="voc-transp-bar">
+      <button class="voc-transp-btn" onclick="vocTransporLetra(-1)" title="-1 semitom">−</button>
+      <div class="voc-transp-display">
+        <div class="voc-transp-tom" id="voc-transp-tom">—</div>
+        <div class="voc-transp-delta" id="voc-transp-delta">tom original</div>
+      </div>
+      <button class="voc-transp-btn" onclick="vocTransporLetra(1)" title="+1 semitom">+</button>
+      <button onclick="vocResetarTransp()" style="margin-left:8px;background:none;border:none;color:rgba(255,255,255,0.25);font-size:11px;font-weight:700;cursor:pointer;padding:4px 8px;touch-action:manipulation;">reset</button>
     </div>
     <div class="voc-letra-scroll" id="voc-letra-scroll">
       <div class="voc-letra-texto" id="voc-letra-texto"></div>
@@ -16580,6 +16892,18 @@ body[data-ambiente="vocalista"] .swipe-hint { display: none !important; }
   </div>
 
   <div class="voc-toast" id="voc-toast"></div>
+</div>
+
+<!-- Banner de notificação de mudança de música -->
+<div id="map-notif-musica" onclick="_mapNotifFechar()">
+  <div class="map-notif-icon">
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>
+  </div>
+  <div class="map-notif-texto">
+    <div class="map-notif-label">Próxima música</div>
+    <div class="map-notif-nome" id="map-notif-nome">—</div>
+  </div>
+  <button class="map-notif-close" onclick="event.stopPropagation();_mapNotifFechar()">×</button>
 </div>
 
 <script>
@@ -16639,7 +16963,7 @@ body[data-ambiente="vocalista"] .swipe-hint { display: none !important; }
   }, 500);
 })();
 
-var _voc = { titulo:'', artista:'', letra:'', tomIdx:0, tomSel:null, isFav:false, fontSize:16, scrollTimer:null, favAba:'letras' };
+var _voc = { titulo:'', artista:'', letra:'', tomIdx:0, tomSel:null, isFav:false, fontSize:16, scrollTimer:null, favAba:'letras', transpDelta:0 };
 var _VOC_NOTAS    = ['C','C#','D','D#','E','F','F#','G','G#','A','A#','B'];
 var _VOC_NOTAS_PT = ['Dó','Dó#','Ré','Ré#','Mi','Fá','Fá#','Sol','Sol#','Lá','Lá#','Si'];
 
@@ -16758,16 +17082,19 @@ async function _vocClaude(prompt, maxTokens) {
   var key = _vocGetKey();
   if(!key) { _vocPedirChave(); return null; }
   try {
-    var r = await fetch('https://api.anthropic.com/v1/messages', {
-      method:'POST',
-      headers:{
-        'Content-Type':'application/json',
-        'anthropic-version':'2023-06-01',
-        'anthropic-dangerous-direct-browser-access':'true',
-        'x-api-key': key
-      },
-      body: JSON.stringify({ model:'claude-haiku-4-5', max_tokens:maxTokens||1000, messages:[{role:'user',content:prompt}] })
-    });
+    var r = await Promise.race([
+      fetch('https://api.anthropic.com/v1/messages', {
+        method:'POST',
+        headers:{
+          'Content-Type':'application/json',
+          'anthropic-version':'2023-06-01',
+          'anthropic-dangerous-direct-browser-access':'true',
+          'x-api-key': key
+        },
+        body: JSON.stringify({ model:'claude-haiku-4-5', max_tokens:maxTokens||1000, messages:[{role:'user',content:prompt}] })
+      }),
+      new Promise(function(_,rej){ setTimeout(function(){ rej(new Error('timeout')); }, 30000); })
+    ]);
     if(r.status === 401) { _vocSaveKey(''); _vocPedirChave('Chave inválida. Insira novamente.'); return null; }
     if(!r.ok){ var e=await r.text(); console.error('API erro:',r.status,e); return null; }
     var d=await r.json();
@@ -16783,7 +17110,7 @@ function _vocPedirChave(msgExtra) {
   var msg = msgExtra || 'Para usar Letras, Aulas e Vídeos, insira sua chave da API Anthropic.';
   var overlay = document.createElement('div');
   overlay.id = 'voc-key-modal';
-  overlay.style.cssText = 'position:fixed;inset:0;z-index:99999;background:rgba(0,0,0,0.85);backdrop-filter:blur(8px);display:flex;align-items:flex-end;justify-content:center;padding:0;';
+  overlay.style.cssText = 'position:fixed;inset:0;z-index:99999;background:rgba(0,0,0,0.88);backdrop-filter:blur(24px) saturate(1.6);display:flex;align-items:flex-end;justify-content:center;padding:0;';
   overlay.innerHTML =
     '<div style="background:#0d0d1a;border:1px solid rgba(138,92,246,0.25);border-radius:24px 24px 0 0;padding:28px 24px 40px;width:100%;max-width:480px;box-shadow:0 -20px 60px rgba(0,0,0,0.8);">'
     + '<div style="width:36px;height:4px;background:rgba(255,255,255,0.12);border-radius:2px;margin:0 auto 24px;"></div>'
@@ -16847,6 +17174,50 @@ async function vocBuscarLetras(){
   var area=document.getElementById('voc-hist-area');
   if(area)area.style.display='none';
   res.innerHTML='<div class="voc-spinner"></div>';
+
+  // Extrai título e artista do termo digitado (ex: "Título - Artista" ou só "Título")
+  var partes = q.split(/\s*[-–]\s*/);
+  var tituloGuess = partes[0].trim();
+  var artistaGuess = partes[1] ? partes[1].trim() : '';
+
+  // Tenta carregar direto pelo lyrics.ovh sem precisar de chave Claude
+  try {
+    var urlDireto = 'https://api.lyrics.ovh/v1/'
+      + encodeURIComponent(artistaGuess || 'gospel')
+      + '/' + encodeURIComponent(tituloGuess);
+    var rDireto = await Promise.race([
+      fetch(urlDireto),
+      new Promise(function(_,rej){ setTimeout(function(){ rej(new Error('timeout')); }, 6000); })
+    ]);
+    if(rDireto.ok) {
+      var dDireto = await rDireto.json();
+      if(dDireto.lyrics && dDireto.lyrics.trim().length > 30) {
+        var letraLimpa = dDireto.lyrics.trim().replace(/\r\n/g,'\n').replace(/\n{3,}/g,'\n\n');
+        _vocAddHist({titulo:tituloGuess, artista:artistaGuess, letra:letraLimpa});
+        _voc.titulo=tituloGuess; _voc.artista=artistaGuess; _voc.letra=letraLimpa;
+        _vocDefinirTom(tituloGuess, artistaGuess);
+        vocAbrirLetra(tituloGuess, artistaGuess, letraLimpa);
+        return;
+      }
+    }
+  } catch(e) { /* lyrics.ovh falhou — tenta Claude */ }
+
+  // Se não tem chave Claude, mostra links de busca externos
+  var chaveDisp = _vocGetKey();
+  if(!chaveDisp) {
+    res.innerHTML =
+      '<div class="voc-empty">'
+      + '<div class="voc-empty-ico"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="rgba(138,92,246,0.5)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></div>'
+      + '<div class="voc-empty-title">Letra não encontrada</div>'
+      + '<div class="voc-empty-sub" style="margin-bottom:12px;">Busque direto nos sites de letras</div>'
+      + '<a class="voc-link-btn" href="https://www.letras.mus.br/busca/?q='+encodeURIComponent(q)+'" target="_blank" style="margin-bottom:8px;display:block;">Buscar no Letras.mus.br</a>'
+      + '<a class="voc-link-btn" href="https://www.google.com/search?q=letra+'+encodeURIComponent(q)+'" target="_blank" style="background:rgba(255,255,255,0.04);border-color:rgba(255,255,255,0.1);color:rgba(255,255,255,0.4);">Buscar no Google</a>'
+      + '<button onclick="_vocPedirChave()" style="width:100%;margin-top:10px;padding:11px;border-radius:10px;background:rgba(138,92,246,0.08);border:1px solid rgba(138,92,246,0.2);color:rgba(138,92,246,0.7);font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;">Configurar API para busca avançada</button>'
+      + '</div>';
+    return;
+  }
+
+  // Com chave Claude: busca inteligente por lista de músicas
   try{
     var prompt='Liste ate 8 musicas que correspondam a busca: "'+q+'". '
       +'Priorize musicas gospel, cristao, worship, louvor ou hino, mas inclua qualquer musica relevante se nao houver opcoes gospel. '
@@ -16859,7 +17230,7 @@ async function vocBuscarLetras(){
     var jm=clean.match(/\{[\s\S]*\}/); if(!jm){ _vocSemRes(res,q); return; }
     var data; try{ data=JSON.parse(jm[0]); }catch(pe){ _vocSemRes(res,q); return; }
     var docs=data.results||[]; if(!docs.length){ _vocSemRes(res,q); return; }
-    // Resultado único — carrega letra diretamente, economiza uma chamada
+    // Resultado único — carrega letra diretamente
     if(docs.length===1){
       await _vocCarregarLetraDireto(docs[0].titulo, docs[0].artista, res);
       return;
@@ -16881,49 +17252,90 @@ function _vocSemRes(el,q){
   el.innerHTML='<div class="voc-empty"><div class="voc-empty-ico"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="rgba(138,92,246,0.5)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg></div><div class="voc-empty-title">Nenhum resultado</div><div class="voc-empty-sub">Tente buscar pelo nome da música ou artista</div></div>';
 }
 
-// Função central de carregamento de letra — reutilizada por busca direta e por clique no resultado
+// Função central de carregamento de letra — usa lyrics.ovh (gratuita, sem chave)
+// com fallback para Claude caso a API não encontre
 async function _vocCarregarLetraDireto(titulo, artista, resEl) {
+  // Spinner com nome da música
   resEl.innerHTML='<div class="voc-spinner"></div>'
     +'<div style="text-align:center;padding:10px 16px 0;">'
     +'<div style="font-size:13px;font-weight:700;color:rgba(255,255,255,0.65);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">'+_ve(titulo)+'</div>'
     +'<div style="font-size:11px;color:rgba(255,255,255,0.3);margin-top:2px;">'+_ve(artista)+'</div>'
     +'<div style="font-size:11px;color:rgba(138,92,246,0.5);margin-top:6px;">Buscando letra...</div>'
     +'</div>';
-  try{
-    var prompt='Voce e um banco de letras de musicas gospel brasileiras e internacionais.\n'
-      +'Escreva a letra COMPLETA da musica "'+titulo+'" de '+artista+'.\n'
-      +'REGRAS OBRIGATORIAS:\n'
-      +'- Escreva APENAS a letra cantada, sem introducao, sem explicacoes, sem comentarios\n'
-      +'- Separe as secoes com tags entre colchetes em linha propria: [Intro], [Verso 1], [Verso 2], [Pre-Refrao], [Refrao], [Ponte], [Outro], [Coda]\n'
-      +'- NAO inclua acordes, cifras, numeros de acorde ou qualquer notacao musical\n'
-      +'- Se conhecer parcialmente a letra, escreva o que souber\n'
-      +'- Somente se realmente nao conhecer NADA desta musica, escreva apenas: LETRA_NAO_ENCONTRADA\n'
-      +'Escreva a letra agora:';
-    var txt=await _vocClaude(prompt,3000);
-    if(!txt){
-      resEl.innerHTML='<div class="voc-empty"><div class="voc-empty-ico"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="rgba(138,92,246,0.5)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></div><div class="voc-empty-title">Erro de conexão</div><div class="voc-empty-sub">Verifique sua internet e tente novamente</div></div>';
-      return;
-    }
-    var txtLimpo = txt.trim();
-    if(txtLimpo === 'LETRA_NAO_ENCONTRADA' || txtLimpo.startsWith('LETRA_NAO_ENCONTRADA')){
-      resEl.innerHTML='<div class="voc-empty"><div class="voc-empty-ico"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="rgba(138,92,246,0.5)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></div><div class="voc-empty-title">Letra não encontrada</div><div class="voc-empty-sub" style="margin-bottom:12px;">Não encontrei a letra desta música</div><a class="voc-link-btn" href="https://www.letras.mus.br/busca/?q='+encodeURIComponent(titulo+' '+artista)+'" target="_blank">Buscar no Letras.mus.br</a></div>';
-      return;
-    }
-    var letraLimpa=txtLimpo.replace(/\r\n/g,'\n').replace(/\n{3,}/g,'\n\n').trim();
-    _vocAddHist({titulo:titulo,artista:artista,letra:letraLimpa});
-    _voc.titulo=titulo; _voc.artista=artista; _voc.letra=letraLimpa;
-    _vocDefinirTom(titulo,artista);
-    vocAbrirLetra(titulo,artista,letraLimpa);
-  }catch(e){
-    resEl.innerHTML='<div class="voc-empty"><div class="voc-empty-title">Erro ao carregar</div><div class="voc-empty-sub">Verifique sua conexão</div></div>';
+
+  function _mostrarNaoEncontrada() {
+    resEl.innerHTML='<div class="voc-empty">'
+      +'<div class="voc-empty-ico"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="rgba(138,92,246,0.5)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></div>'
+      +'<div class="voc-empty-title">Letra não encontrada</div>'
+      +'<div class="voc-empty-sub" style="margin-bottom:12px;">Tente buscar diretamente</div>'
+      +'<a class="voc-link-btn" href="https://www.letras.mus.br/busca/?q='+encodeURIComponent(titulo+' '+artista)+'" target="_blank" style="margin-bottom:8px;display:block;">Buscar no Letras.mus.br</a>'
+      +'<a class="voc-link-btn" href="https://www.google.com/search?q=letra+'+encodeURIComponent(titulo+' '+artista)+'" target="_blank" style="background:rgba(255,255,255,0.04);border-color:rgba(255,255,255,0.1);color:rgba(255,255,255,0.4);">Buscar no Google</a>'
+      +'</div>';
   }
+
+  function _limparLetra(txt) {
+    return txt.trim().replace(/\r\n/g,'\n').replace(/\n{3,}/g,'\n\n');
+  }
+
+  function _salvarEAbrir(letraLimpa) {
+    _vocAddHist({titulo:titulo, artista:artista, letra:letraLimpa});
+    _voc.titulo=titulo; _voc.artista=artista; _voc.letra=letraLimpa;
+    _vocDefinirTom(titulo, artista);
+    vocAbrirLetra(titulo, artista, letraLimpa);
+  }
+
+  // ── 1ª tentativa: lyrics.ovh (gratuita, sem chave, boa cobertura gospel) ─
+  try {
+    var r1 = await Promise.race([
+      fetch('https://api.lyrics.ovh/v1/' + encodeURIComponent(artista) + '/' + encodeURIComponent(titulo)),
+      new Promise(function(_,rej){ setTimeout(function(){ rej(new Error('timeout')); }, 8000); })
+    ]);
+    if(r1.ok) {
+      var d1 = await r1.json();
+      if(d1.lyrics && d1.lyrics.trim().length > 30) {
+        _salvarEAbrir(_limparLetra(d1.lyrics));
+        return;
+      }
+    }
+  } catch(e) { /* timeout ou CORS — tenta próxima fonte */ }
+
+  // ── 2ª tentativa: Claude (fallback inteligente) ───────────────────────────
+  var chave = _vocGetKey();
+  if(chave) {
+    try {
+      var prompt =
+        'Escreva a letra COMPLETA da musica "'+titulo+'" de '+artista+'.\n'
+        +'Regras:\n'
+        +'- Apenas a letra cantada, sem introducao nem explicacoes\n'
+        +'- Separe secoes com tags: [Verso 1], [Refrao], [Ponte], etc\n'
+        +'- Sem acordes, cifras ou notacao musical\n'
+        +'- Se realmente nao conhecer esta musica, responda apenas: LETRA_NAO_ENCONTRADA';
+      var txt = await _vocClaude(prompt, 3000);
+      if(txt) {
+        var limpo = txt.trim();
+        if(!limpo.startsWith('LETRA_NAO_ENCONTRADA') && limpo.length > 30) {
+          _salvarEAbrir(_limparLetra(limpo));
+          return;
+        }
+      }
+    } catch(e) { /* Claude falhou — mostra links */ }
+  }
+
+  // ── Fallback final: links externos ────────────────────────────────────────
+  _mostrarNaoEncontrada();
 }
 
 async function vocCarregarLetraEl(el){
+  try {
+
   var titulo=el.getAttribute('data-titulo'), artista=el.getAttribute('data-artista');
   if(!titulo||!artista)return;
   var res=document.getElementById('voc-resultados');
   await _vocCarregarLetraDireto(titulo, artista, res);
+
+  } catch(e) {
+    console.error('Erro ao carregar letra:', e);
+  }
 }
 
 // ── Tela de Letra ─────────────────────────────────────────────────────────────
@@ -16950,8 +17362,8 @@ function _vocAtualizarHdrTom(titulo){
 }
 
 function vocAbrirLetra(titulo,artista,letra){
-  document.getElementById('voc-letra-titulo').textContent=titulo;
-  document.getElementById('voc-letra-artista').textContent=artista;
+  document.getElementById('voc-letra-titulo').textContent =titulo;
+  document.getElementById('voc-letra-artista').textContent =artista;
   var el=document.getElementById('voc-letra-texto');
   // Só re-renderiza se mudou o conteúdo ou o tamanho de fonte
   if(_vocLetraRenderCache.titulo!==titulo||_vocLetraRenderCache.artista!==artista||_vocLetraRenderCache.fontSize!==_voc.fontSize){
@@ -16965,7 +17377,115 @@ function vocAbrirLetra(titulo,artista,letra){
   var vi=document.getElementById('voc-input-video'); if(vi)vi.value=titulo+' '+artista;
   _vocAtualizarHdrTom(titulo);
 }
-function vocFecharLetra(){ _vocPararScroll(); document.getElementById('voc-letra-tela').classList.remove('aberta'); _vocAtualizarHdrTom(null); }
+function vocFecharLetra(){
+  _vocPararScroll();
+  document.getElementById('voc-letra-tela').classList.remove('aberta');
+  _vocAtualizarHdrTom(null);
+  // Resetar transposição ao fechar
+  _voc.transpDelta = 0;
+  var bar = document.getElementById('voc-transp-bar');
+  if(bar) bar.classList.remove('visivel');
+}
+
+// ── Transposição de tom na tela da letra ──────────────────────────────────────
+var _VOC_ACORDES_REGEX = /([A-G](?:#|b)?(?:m|maj|min|dim|aug|sus|add)?(?:\d+)?(?:\/[A-G](?:#|b)?)?)/g;
+
+function _vocTransporAcorde(acorde, semis) {
+  var notas = ['C','C#','D','D#','E','F','F#','G','G#','A','A#','B'];
+  var notas_b= ['C','Db','D','Eb','E','F','Gb','G','Ab','A','Bb','B'];
+  var partes = acorde.match(/^([A-G](?:#|b)?)(.*?)(\/[A-G](?:#|b)?)?$/);
+  if(!partes) return acorde;
+  var raiz = partes[1], sufixo = partes[2]||'', baixo = partes[3]||'';
+  var usaB = raiz.indexOf('b') !== -1;
+  var tabela = usaB ? notas_b : notas;
+  var idx = notas.indexOf(raiz.replace('b','').replace('#',''));
+  if(idx === -1) {
+    // Tentar com b → equivalente #
+    var alt = raiz.replace('b','').replace('Db','C#').replace('Eb','D#').replace('Gb','F#').replace('Ab','G#').replace('Bb','A#');
+    idx = notas.indexOf(alt);
+  }
+  if(idx === -1) return acorde;
+  // Transpor raiz
+  var novoIdx = ((idx + semis) % 12 + 12) % 12;
+  var novaRaiz = usaB ? notas_b[novoIdx] : notas[novoIdx];
+  // Transpor baixo se houver
+  var novoBaixo = '';
+  if(baixo) {
+    var notaBaixo = baixo.slice(1);
+    var idxB = notas.indexOf(notaBaixo.replace('b','')) ;
+    if(idxB !== -1) {
+      var novoB = ((idxB + semis) % 12 + 12) % 12;
+      novoBaixo = '/' + (usaB ? notas_b[novoB] : notas[novoB]);
+    } else { novoBaixo = baixo; }
+  }
+  return novaRaiz + sufixo + novoBaixo;
+}
+
+function _vocTransporTexto(texto, semis) {
+  if(!semis) return texto;
+  // Transpõe acordes em linhas que contenham predominantemente acordes
+  var linhas = texto.split('\n');
+  return linhas.map(function(linha) {
+    // Detectar linha de acordes: maioria dos tokens são acordes válidos
+    var tokens = linha.trim().split(/\s+/);
+    if(!tokens.length || !tokens[0]) return linha;
+    var acCount = tokens.filter(function(t){ return /^[A-G](?:#|b)?(?:m|maj|min|dim|aug|sus|add|\d)*(?:\/[A-G](?:#|b)?)?$/.test(t); }).length;
+    if(acCount >= tokens.length * 0.5 && acCount >= 1) {
+      // Linha de acordes — transpor cada token
+      return tokens.map(function(t) {
+        if(/^[A-G](?:#|b)?/.test(t)) return _vocTransporAcorde(t, semis);
+        return t;
+      }).join(' ');
+    }
+    return linha;
+  }).join('\n');
+}
+
+function vocToggleTransp() {
+  var bar = document.getElementById('voc-transp-bar');
+  var btn = document.getElementById('voc-transp-toggle');
+  if(!bar) return;
+  var aberta = bar.classList.toggle('visivel');
+  if(btn) { btn.style.color = aberta ? '#a78bfa' : ''; btn.style.borderColor = aberta ? 'rgba(138,92,246,0.4)' : ''; }
+  _vocAtualizarBarraTransp();
+}
+
+function vocTransporLetra(delta) {
+  if(!_voc.letra) return;
+  _voc.transpDelta = ((_voc.transpDelta||0) + delta + 24) % 24;
+  if(_voc.transpDelta > 12) _voc.transpDelta -= 24; // manter entre -11 e +12
+  _vocAtualizarLetraTransposta();
+  _vocAtualizarBarraTransp();
+}
+
+function vocResetarTransp() {
+  _voc.transpDelta = 0;
+  _vocAtualizarLetraTransposta();
+  _vocAtualizarBarraTransp();
+}
+
+function _vocAtualizarLetraTransposta() {
+  var el = document.getElementById('voc-letra-texto');
+  if(!el || !_voc.letra) return;
+  var letraTransp = _vocTransporTexto(_voc.letra, _voc.transpDelta||0);
+  el.innerHTML = _vocRenderLetra(letraTransp, _voc.fontSize);
+}
+
+function _vocAtualizarBarraTransp() {
+  var tomEl   = document.getElementById('voc-transp-tom');
+  var deltaEl = document.getElementById('voc-transp-delta');
+  if(!tomEl || !deltaEl) return;
+  var delta = _voc.transpDelta || 0;
+  // Tom base detectado
+  var tomBase = _voc.tomSel || (vocTons ? (vocTons()||[]).find(function(t){return t.titulo===_voc.titulo;}) || null : null);
+  var tomNome = tomBase ? (typeof tomBase === 'string' ? tomBase : tomBase.tom) : '—';
+  tomEl.textContent = tomNome;
+  if(delta === 0) {
+    deltaEl.textContent = 'tom original';
+  } else {
+    deltaEl.textContent = (delta > 0 ? '+' : '') + delta + ' semitom' + (Math.abs(delta)===1?'':'s');
+  }
+}
 function vocFonteMais(){ if(_voc.fontSize>=28)return; _voc.fontSize+=2; _vocLetraRenderCache.fontSize=null; document.querySelectorAll('.voc-secao-bloco').forEach(function(b){b.style.fontSize=_voc.fontSize+'px';}); }
 function vocFonteMenos(){ if(_voc.fontSize<=12)return; _voc.fontSize-=2; _vocLetraRenderCache.fontSize=null; document.querySelectorAll('.voc-secao-bloco').forEach(function(b){b.style.fontSize=_voc.fontSize+'px';}); }
 function vocToggleScroll(){ if(_voc.scrollTimer)_vocPararScroll(); else _vocIniciarScroll(); }
@@ -17657,6 +18177,8 @@ function _vocSheetCarregarLetraEl(el) {
 }
 
 async function _vocSheetCarregarLetra(titulo, artista, resEl) {
+  try {
+
   await _vocCarregarLetraDireto(titulo, artista, resEl);
   // Se letra foi carregada com sucesso, monitorar save e retornar ao evento
   var sheet = document.getElementById('voc-busca-sheet');
@@ -17682,6 +18204,10 @@ async function _vocSheetCarregarLetra(titulo, artista, resEl) {
   };
   // Sobrescreve temporariamente o toggle para capturar o save
   window.vocToggleFav = window._vocSheetSaveHook;
+
+  } catch(e) {
+    console.error('Erro ao carregar letra do sheet:', e);
+  }
 }
 
 // ── Sala ao vivo ──────────────────────────────────────────────────────────────
@@ -17996,9 +18522,9 @@ function vocMostrarInfo(e, tipo) {
   if (!tip || !data) return;
 
   // Preenche conteúdo
-  document.getElementById('voc-tip-ico').innerHTML   = '<div style="width:34px;height:34px;border-radius:10px;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.1);display:flex;align-items:center;justify-content:center;">' + data.ico + '</div>';
+  document.getElementById('voc-tip-ico').innerHTML = '<div style="width:34px;height:34px;border-radius:10px;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.1);display:flex;align-items:center;justify-content:center;">' + data.ico + '</div>';
   document.getElementById('voc-tip-title').textContent = data.title;
-  document.getElementById('voc-tip-steps').innerHTML  = data.steps.map(function(s,i){
+  document.getElementById('voc-tip-steps').innerHTML = data.steps.map(function(s,i){
     return '<div class="voc-info-tip-step">'
       + '<div class="voc-info-tip-num" style="background:rgba(255,255,255,0.06);border:1px solid ' + data.cor + '33;color:' + data.cor + ';">' + (i+1) + '</div>'
       + '<div class="voc-info-tip-text">' + s + '</div>'
@@ -18090,6 +18616,8 @@ function vocFecharPlayer(){
 // ── Busca de vídeos (YouTube Data API v3) ─────────────────────────────────────
 var _vocVideosBuscaAtual = null;
 async function vocBuscarVideos(){
+  try {
+
   var q = (document.getElementById('voc-input-video').value||'').trim();
   if(!q) return;
   var res = document.getElementById('voc-videos-res');
@@ -18149,6 +18677,10 @@ async function vocBuscarVideos(){
   if(filtrosEl){ filtrosEl.style.display = 'flex'; }
   // Reset filtro para "Todos"
   vocVideoFiltrar('todos');
+
+  } catch(e) {
+    console.error('Erro ao buscar vídeos:', e);
+  }
 }
 
 async function _vocGerarVideosViaClaude(q){
@@ -18261,8 +18793,6 @@ function _vocMostrarSplashSeNecessario(){
 }
 
 // ── _rotearAmbiente hook ──────────────────────────────────────────────────────
-function toggleVocalMenu(e){ if(e)e.stopPropagation(); var d=document.getElementById('vocal-drop'); if(d)d.style.display=d.style.display==='block'?'none':'block'; }
-function fecharVocalMenu(){ var d=document.getElementById('vocal-drop'); if(d)d.style.display='none'; }
 
 // ── Init ──────────────────────────────────────────────────────────────────────
 setTimeout(function(){ _vocRenderHist(); _vocAtualizarBadgeSalvos(); _cifraFontSincLabel(); _themeInit(); }, 300);
@@ -18913,6 +19443,8 @@ function _afinadorAutoCorr(buf, sampleRate) {
 }
 
 async function vocAbrirAfinador() {
+  try {
+
   // Injeta o painel na tela de aulas do vocalista
   var container = document.getElementById('voc-panel-aulas') || document.getElementById('voc-aulas-corpo');
   if (!container) {
@@ -18955,6 +19487,10 @@ async function vocAbrirAfinador() {
   + '<button id="_afin-btn" onclick="vocToggleAfinador()" style="padding:10px 28px;border-radius:999px;background:rgba(138,92,246,0.2);border:1.5px solid rgba(138,92,246,0.4);color:#a78bfa;font-size:12px;font-weight:900;cursor:pointer;font-family:inherit;letter-spacing:1px;touch-action:manipulation;">LIGAR MIC</button>'
   + '<div id="_afin-status" style="font-size:10px;color:rgba(255,255,255,0.2);text-align:center;min-height:14px;"></div>'
   + '</div>';
+
+  } catch(e) {
+    console.error('Erro ao abrir afinador:', e);
+  }
 }
 
 async function vocToggleAfinador() {
@@ -19288,6 +19824,342 @@ function _tomAutoMostrarResultado(r, final) {
   // Verifica estado inicial após boot
   setTimeout(_offlineAtualizar, 1000);
 })();
+
+// ── Sistema de Notificação de Mudança de Música ───────────────────────────────
+var _mapNotifTimer = null;
+var _mapNotifVibTimer = null;
+
+function _mapNotifMostrar(nomeMusica) {
+  var el = document.getElementById('map-notif-musica');
+  var nomeEl = document.getElementById('map-notif-nome');
+  if(!el || !nomeEl) return;
+
+  // Atualiza nome
+  nomeEl.textContent = nomeMusica;
+
+  // Cancela timers anteriores
+  if(_mapNotifTimer) { clearTimeout(_mapNotifTimer); _mapNotifTimer = null; }
+
+  // Mostrar
+  el.classList.remove('saindo');
+  el.classList.add('visivel');
+
+  // Vibrar no dispositivo (feedback tátil)
+  try {
+    if(navigator.vibrate) navigator.vibrate([80, 40, 80]);
+  } catch(e) {}
+
+  // Tentar notificação do sistema (se permitido)
+  _mapNotifSistema(nomeMusica);
+
+  // Auto-fechar após 4s
+  _mapNotifTimer = setTimeout(_mapNotifFechar, 4000);
+}
+
+function _mapNotifFechar() {
+  var el = document.getElementById('map-notif-musica');
+  if(!el) return;
+  el.classList.add('saindo');
+  setTimeout(function() {
+    if(el) el.classList.remove('visivel', 'saindo');
+  }, 350);
+  if(_mapNotifTimer) { clearTimeout(_mapNotifTimer); _mapNotifTimer = null; }
+}
+
+// ════════════════════════════════════════════════════════════════════════════
+// SISTEMA COMPLETO DE NOTIFICAÇÕES NATIVAS — Map Music PRO
+// Suporta: Chrome/Edge desktop, Chrome Android, Firefox, Safari 16.4+
+// ════════════════════════════════════════════════════════════════════════════
+
+// ── 1. Ícone SVG em base64 para notificações ─────────────────────────────────
+var _NOTIF_ICON_SVG = 'data:image/svg+xml;base64,' + btoa('<svg xmlns="http://www.w3.org/2000/svg" width="192" height="192" viewBox="0 0 192 192"><rect width="192" height="192" rx="40" fill="#0A9E6E"/><path d="M60 140 L60 60 L152 44 L152 124" stroke="#fff" stroke-width="12" stroke-linecap="round" stroke-linejoin="round" fill="none"/><circle cx="44" cy="140" r="20" fill="#fff"/><circle cx="136" cy="124" r="20" fill="#fff"/></svg>');
+
+// ── 2. Service Worker via Blob (funciona em file:// e https://) ───────────────
+var _SW_CODE = `
+self.addEventListener('install', function(e) { self.skipWaiting(); });
+self.addEventListener('activate', function(e) { e.waitUntil(clients.claim()); });
+
+// Recebe mensagens do app principal
+self.addEventListener('message', function(e) {
+  if (!e.data || e.data.type !== 'MAP_NOTIF') return;
+  var opts = {
+    body:    e.data.body    || '',
+    icon:    e.data.icon    || '',
+    badge:   e.data.badge   || '',
+    tag:     e.data.tag     || 'map-music',
+    vibrate: e.data.vibrate || [100, 50, 100],
+    silent:  false,
+    requireInteraction: false,
+    data:    e.data.data    || {},
+    actions: e.data.actions || []
+  };
+  e.waitUntil(self.registration.showNotification(e.data.title || 'Map Music PRO', opts));
+});
+
+// Clique na notificação — foca a aba do app
+self.addEventListener('notificationclick', function(e) {
+  e.notification.close();
+  var action = e.action;
+  e.waitUntil(
+    clients.matchAll({ type: 'window', includeUncontrolled: true }).then(function(list) {
+      for (var i = 0; i < list.length; i++) {
+        if (list[i].url && list[i].focus) { list[i].focus(); return; }
+      }
+      if (clients.openWindow) return clients.openWindow('/');
+    })
+  );
+});
+`;
+
+var _swRegistration = null;
+var _swReady = false;
+
+async function _mapNotifRegistrarSW() {
+  try {
+    if (!('serviceWorker' in navigator)) return false;
+    // Criar blob do SW
+    var blob = new Blob([_SW_CODE], { type: 'application/javascript' });
+    var swUrl = URL.createObjectURL(blob);
+    _swRegistration = await navigator.serviceWorker.register(swUrl, { scope: './' });
+    await navigator.serviceWorker.ready;
+    _swReady = true;
+    console.log('[MapNotif] Service Worker registrado via Blob');
+    return true;
+  } catch(e) {
+    console.warn('[MapNotif] SW falhou (normal em file://):', e.message);
+    return false;
+  }
+}
+
+// ── 3. Inicializar SW ao carregar ─────────────────────────────────────────────
+_mapNotifRegistrarSW();
+
+// ── 4. Pedir permissão com UI amigável ────────────────────────────────────────
+function _mapNotifPedirPermissao() {
+  if (!('Notification' in window)) return;
+  if (Notification.permission === 'granted' || Notification.permission === 'denied') return;
+
+  // Criar modal de permissão
+  var old = document.getElementById('_notif-perm-modal');
+  if (old) old.remove();
+
+  var modal = document.createElement('div');
+  modal.id = '_notif-perm-modal';
+  modal.style.cssText = 'position:fixed;inset:0;z-index:999999;background:rgba(0,0,0,0.75);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);display:flex;align-items:flex-end;justify-content:center;padding:0;';
+  modal.innerHTML =
+    '<div style="background:#0d0d1a;border:1px solid rgba(10,158,110,0.3);border-radius:24px 24px 0 0;padding:28px 24px 44px;width:100%;max-width:480px;display:flex;flex-direction:column;gap:16px;">'
+    + '<div style="width:36px;height:4px;background:rgba(255,255,255,0.12);border-radius:2px;margin:0 auto 8px;"></div>'
+    + '<div style="display:flex;align-items:center;gap:14px;">'
+    +   '<div style="width:48px;height:48px;border-radius:14px;background:rgba(10,158,110,0.15);border:1px solid rgba(10,158,110,0.3);display:flex;align-items:center;justify-content:center;flex-shrink:0;">'
+    +     '<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#0A9E6E" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>'
+    +   '</div>'
+    +   '<div>'
+    +     '<div style="font-size:16px;font-weight:900;color:#fff;">Ativar notificações</div>'
+    +     '<div style="font-size:12px;color:rgba(255,255,255,0.4);margin-top:2px;">Map Music PRO</div>'
+    +   '</div>'
+    + '</div>'
+    + '<div style="font-size:13px;color:rgba(255,255,255,0.55);line-height:1.7;">'
+    +   'Receba uma notificação no dispositivo toda vez que o host mudar de música — mesmo com o app em segundo plano.'
+    + '</div>'
+    + '<div style="background:rgba(10,158,110,0.07);border:1px solid rgba(10,158,110,0.15);border-radius:14px;padding:14px 16px;display:flex;flex-direction:column;gap:8px;">'
+    +   '<div style="display:flex;align-items:center;gap:10px;font-size:12px;color:rgba(255,255,255,0.5);">'
+    +     '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#0A9E6E" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>'
+    +     'Notificação no celular com nome da música'
+    +   '</div>'
+    +   '<div style="display:flex;align-items:center;gap:10px;font-size:12px;color:rgba(255,255,255,0.5);">'
+    +     '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#0A9E6E" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>'
+    +     'Funciona com app em segundo plano'
+    +   '</div>'
+    +   '<div style="display:flex;align-items:center;gap:10px;font-size:12px;color:rgba(255,255,255,0.5);">'
+    +     '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#0A9E6E" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>'
+    +     'Vibração + som de alerta'
+    +   '</div>'
+    + '</div>'
+    + '<button onclick="_mapNotifSolicitarPermissao()" style="padding:15px;border-radius:14px;background:linear-gradient(135deg,#0A9E6E,#0d7a55);border:none;color:#fff;font-size:14px;font-weight:900;cursor:pointer;font-family:inherit;letter-spacing:0.5px;touch-action:manipulation;">Ativar notificações</button>'
+    + '<button onclick="document.getElementById(\'_notif-perm-modal\').remove()" style="padding:12px;border-radius:14px;background:none;border:none;color:rgba(255,255,255,0.25);font-size:13px;cursor:pointer;font-family:inherit;touch-action:manipulation;">Agora não</button>'
+    + '</div>';
+  document.body.appendChild(modal);
+}
+
+async function _mapNotifSolicitarPermissao() {
+  var modal = document.getElementById('_notif-perm-modal');
+  if (modal) modal.remove();
+  try {
+    var perm = await Notification.requestPermission();
+    if (perm === 'granted') {
+      // Confirmar com notificação de teste
+      _mapNotifEnviar('Map Music PRO', 'Notificações ativadas! Você será avisado quando a música mudar.', { tag: 'map-notif-setup' });
+      showToast('Notificações ativadas!', 'success');
+    } else {
+      showToast('Notificações bloqueadas. Ative nas configurações do navegador.');
+    }
+  } catch(e) {}
+}
+
+// ── 5. Enviar notificação — via SW (melhor) ou Notification direta (fallback) ─
+async function _mapNotifEnviar(titulo, corpo, opts) {
+  opts = opts || {};
+  var perfil = JSON.parse(localStorage.getItem('map_perfil_v1') || '{}');
+  var nomeApp = 'Map Music PRO' + (perfil.nome ? ' · ' + perfil.nome : '');
+
+  var notifOpts = {
+    body:    corpo,
+    icon:    _NOTIF_ICON_SVG,
+    badge:   _NOTIF_ICON_SVG,
+    tag:     opts.tag     || 'map-musica-' + Date.now(),
+    vibrate: opts.vibrate || [80, 40, 80, 40, 80],
+    silent:  false,
+    requireInteraction: opts.requireInteraction || false,
+    data:    opts.data    || { url: window.location.href, ts: Date.now() },
+    actions: opts.actions || []
+  };
+
+  try {
+    // Tentativa 1: via Service Worker (suporta ações, badge, funciona em background)
+    if (_swReady && _swRegistration && _swRegistration.active) {
+      _swRegistration.active.postMessage({
+        type:    'MAP_NOTIF',
+        title:   titulo,
+        body:    notifOpts.body,
+        icon:    notifOpts.icon,
+        badge:   notifOpts.badge,
+        tag:     notifOpts.tag,
+        vibrate: notifOpts.vibrate,
+        actions: notifOpts.actions,
+        data:    notifOpts.data
+      });
+      return;
+    }
+    // Tentativa 2: showNotification via SW registration (sem postMessage)
+    if (_swRegistration) {
+      await _swRegistration.showNotification(titulo, notifOpts);
+      return;
+    }
+  } catch(e) {}
+
+  // Tentativa 3: Notification API direta (funciona quando aba está visível)
+  try {
+    if ('Notification' in window && Notification.permission === 'granted') {
+      new Notification(titulo, notifOpts);
+    }
+  } catch(e) {}
+}
+
+// ── 6. Função principal chamada quando música muda ───────────────────────────
+function _mapNotifSistema(nomeMusica) {
+  try {
+    if (!('Notification' in window)) return;
+
+    if (Notification.permission === 'granted') {
+      // Já tem permissão — enviar notificação completa
+      _mapNotifEnviar(
+        'Próxima música',
+        nomeMusica,
+        {
+          tag:     'map-musica',
+          vibrate: [80, 40, 80],
+          requireInteraction: false,
+          actions: [
+            { action: 'ok', title: 'Ok' }
+          ]
+        }
+      );
+    } else if (Notification.permission === 'default') {
+      // Nunca pediu — mostrar UI amigável na primeira mudança de música
+      if (!window._mapNotifPediu) {
+        window._mapNotifPediu = true;
+        // Pequeno delay para não aparecer em cima do banner
+        setTimeout(_mapNotifPedirPermissao, 1500);
+      }
+    }
+    // 'denied' → não fazer nada (usuário recusou)
+  } catch(e) {}
+}
+
+// ── 7. Botão de configuração nas configurações do app ─────────────────────────
+window._mapNotifConfigAbrir = function() {
+  if (!('Notification' in window)) {
+    showToast('Seu navegador não suporta notificações.');
+    return;
+  }
+  var perm = Notification.permission;
+  if (perm === 'denied') {
+    // Abrir modal explicando como desbloquear
+    var modal = document.createElement('div');
+    modal.style.cssText = 'position:fixed;inset:0;z-index:999999;background:rgba(0,0,0,0.75);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);display:flex;align-items:center;justify-content:center;padding:24px;';
+    var isMobile = /iPhone|Android/i.test(navigator.userAgent);
+    modal.innerHTML =
+      '<div style="background:#0d0d1a;border:1px solid rgba(255,100,100,0.25);border-radius:20px;padding:24px 20px;width:100%;max-width:360px;display:flex;flex-direction:column;gap:14px;" onclick="event.stopPropagation()">'
+      + '<div style="font-size:15px;font-weight:900;color:#fff;">Notificações bloqueadas</div>'
+      + '<div style="font-size:12px;color:rgba(255,255,255,0.45);line-height:1.7;">'
+      + (isMobile
+          ? 'Para ativar: <b style="color:#fff;">Ajustes → Safari → Notificações</b> e permita para este site.'
+          : 'Clique no <b style="color:#fff;">cadeado 🔒</b> na barra de endereços e mude as notificações para <b style="color:#fff;">Permitir</b>.')
+      + '</div>'
+      + '<button onclick="this.closest(\'div[style]\').parentElement.remove()" style="padding:12px;border-radius:12px;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.1);color:#fff;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;">Entendi</button>'
+      + '</div>';
+    modal.onclick = function() { modal.remove(); };
+    document.body.appendChild(modal);
+  } else if (perm === 'granted') {
+    showToast('Notificações já estão ativadas!', 'success');
+  } else {
+    _mapNotifPedirPermissao();
+  }
+};
+
+// ── 8. Injetar botão de notificações no menu de configurações ─────────────────
+(function() {
+  function _injetarBtnNotif() {
+    // Tentar injetar no dropdown menu
+    var drop = document.getElementById('m-drop');
+    if (!drop || document.getElementById('_btn-notif-config')) return;
+    var sep = document.createElement('div');
+    sep.className = 'menu-separator';
+    var btn = document.createElement('button');
+    btn.id = '_btn-notif-config';
+    btn.className = 'menu-item';
+    btn.style.cssText = 'display:flex;align-items:center;gap:10px;width:100%;';
+    btn.onclick = function() {
+      drop.classList.remove('show');
+      window._mapNotifConfigAbrir();
+    };
+    btn.innerHTML =
+      '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>'
+      + '<span>Notificações</span>'
+      + '<span id="_notif-status-badge" style="margin-left:auto;font-size:9px;font-weight:800;padding:2px 7px;border-radius:6px;background:rgba(10,158,110,0.15);border:1px solid rgba(10,158,110,0.3);color:#0A9E6E;"></span>';
+    drop.appendChild(sep);
+    drop.appendChild(btn);
+    _mapNotifAtualizarBadge();
+  }
+
+  function _mapNotifAtualizarBadge() {
+    var badge = document.getElementById('_notif-status-badge');
+    if (!badge || !('Notification' in window)) return;
+    var p = Notification.permission;
+    badge.textContent    = p === 'granted' ? 'ATIVA' : p === 'denied' ? 'BLOQUEADA' : 'INATIVA';
+    badge.style.color    = p === 'granted' ? '#0A9E6E' : p === 'denied' ? '#ff6060' : 'rgba(255,255,255,0.3)';
+    badge.style.background   = p === 'granted' ? 'rgba(10,158,110,0.12)' : p === 'denied' ? 'rgba(255,60,60,0.1)' : 'rgba(255,255,255,0.04)';
+    badge.style.borderColor  = p === 'granted' ? 'rgba(10,158,110,0.25)' : p === 'denied' ? 'rgba(255,60,60,0.2)' : 'rgba(255,255,255,0.08)';
+  }
+  window._mapNotifAtualizarBadge = _mapNotifAtualizarBadge;
+
+  // Injetar quando DOM estiver pronto
+  var _nInj = setInterval(function() {
+    if (document.getElementById('m-drop')) { _injetarBtnNotif(); clearInterval(_nInj); }
+  }, 500);
+})();
+
+// ── 9. Solicitar permissão ao entrar na sala (momento ideal) ──────────────────
+var _origEntrarSala = window.entrarSala;
+document.addEventListener('map-sala-entrou', function() {
+  setTimeout(function() {
+    if ('Notification' in window && Notification.permission === 'default' && !window._mapNotifPediu) {
+      window._mapNotifPediu = true;
+      setTimeout(_mapNotifPedirPermissao, 800);
+    }
+  }, 2000);
+});
+
 </script>
 </body>
 </html>
