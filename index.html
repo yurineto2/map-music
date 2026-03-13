@@ -1817,7 +1817,7 @@ body.performance-mode {
 body { font-family: -apple-system, 'Inter', BlinkMacSystemFont, 'Segoe UI', sans-serif; background: var(--bg-primary); color: var(--text-primary); min-height: 100vh; transition: background 0.4s ease; overflow-x: hidden; }
 
 /* HEADER */
-.app-header { background: rgba(18,18,26,0.95); backdrop-filter: blur(20px); border-bottom: none; padding: 15px 20px; position: sticky; top: 0; z-index: 1000; }
+.app-header { background: rgba(10,10,20,0.55); backdrop-filter: blur(28px) saturate(1.6); -webkit-backdrop-filter: blur(28px) saturate(1.6); border-bottom: 1px solid rgba(138,92,246,0.08); padding: 15px 20px; position: sticky; top: 0; z-index: 1000; }
 .app-header::after {
   content: '';
   position: absolute; bottom: 0; left: 0; right: 0;
@@ -1879,7 +1879,7 @@ body { font-family: -apple-system, 'Inter', BlinkMacSystemFont, 'Segoe UI', sans
 }
 .menu-container { position: relative; z-index: 9999; }
 .menu-btn { background: none; border: none; color: #fff; cursor: pointer; padding: 8px; border-radius: 50%; display: flex; align-items: center; }
-.dropdown-menu { position: absolute; top: 48px; right: 0; background: #0d0d1a; backdrop-filter: blur(20px); border: 1px solid rgba(138,92,246,0.18); border-radius: 16px; width: 220px; display: none; flex-direction: column; z-index: 9999; box-shadow: 0 20px 50px rgba(0,0,0,0.95), 0 0 0 1px rgba(255,255,255,0.04); overflow: hidden; }
+.dropdown-menu { position: absolute; top: 48px; right: 0; background: rgba(13,13,26,0.65); backdrop-filter: blur(28px) saturate(1.5); -webkit-backdrop-filter: blur(28px) saturate(1.5); border: 1px solid rgba(138,92,246,0.22); border-radius: 16px; width: 220px; display: none; flex-direction: column; z-index: 9999; box-shadow: 0 20px 60px rgba(0,0,0,0.8), 0 0 0 1px rgba(255,255,255,0.06); overflow: hidden; }
 .dropdown-menu.show { display: flex; }
 .menu-item { padding: 15px 18px; color: rgba(255,255,255,0.75); font-size: 13px; font-weight: 600; letter-spacing: 0.2px; cursor: pointer; border-bottom: 1px solid rgba(255,255,255,0.05); transition: background 0.15s, color 0.15s; display: flex; align-items: center; gap: 12px; touch-action: manipulation; }
 .menu-item:last-child { border-bottom: none; }
@@ -3026,9 +3026,9 @@ body.performance-mode #perf-font-ctrl { display: flex; }
 .swipe-hint.show { opacity: 1; }
 
 /* MODAL SALA */
-.modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.85); backdrop-filter: blur(8px); z-index: 5000; display: none; align-items: center; justify-content: center; }
+.modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.70); backdrop-filter: blur(16px) saturate(1.3); -webkit-backdrop-filter: blur(16px) saturate(1.3); z-index: 5000; display: none; align-items: center; justify-content: center; }
 .modal-overlay.show { display: flex; }
-.modal-box { background: var(--bg-secondary); border: 1px solid var(--glass-border); border-radius: var(--radius-xl); padding: 35px; width: 90%; max-width: 420px; text-align: center; box-shadow: 0 30px 80px rgba(0,0,0,0.8); }
+.modal-box { background: rgba(13,13,26,0.72); backdrop-filter: blur(24px) saturate(1.4); -webkit-backdrop-filter: blur(24px) saturate(1.4); border: 1px solid rgba(138,92,246,0.18); border-radius: var(--radius-xl); padding: 35px; width: 90%; max-width: 420px; text-align: center; box-shadow: 0 30px 80px rgba(0,0,0,0.7), inset 0 1px 0 rgba(255,255,255,0.06); }
 .modal-box h2 { font-size: 18px; font-weight: 900; margin-bottom: 6px; }
 .modal-box p { font-size: 12px; color: var(--text-secondary); margin-bottom: 24px; line-height: 1.6; }
 .modal-tabs { display: flex; gap: 8px; margin-bottom: 24px; }
@@ -4182,7 +4182,9 @@ body.auth-pending #toast {
   position: fixed;
   inset: 0;
   z-index: 100;
-  background: #06060c;
+  background: rgba(6,6,12,0.97);
+  backdrop-filter: blur(0px);
+  -webkit-backdrop-filter: blur(0px);
   flex-direction: column;
   overflow: hidden;
 }
@@ -15247,9 +15249,10 @@ body[data-ambiente="vocalista"] .swipe-hint { display: none !important; }
 .voc-hdr {
   display: flex; align-items: center; gap: 10px;
   padding: 0 18px; height: 58px; flex-shrink: 0;
-  background: rgba(5,5,15,0.98);
-  border-bottom: 1px solid rgba(138,92,246,0.12);
-  backdrop-filter: blur(20px);
+  background: rgba(5,5,15,0.60);
+  border-bottom: 1px solid rgba(138,92,246,0.18);
+  backdrop-filter: blur(28px) saturate(1.5);
+  -webkit-backdrop-filter: blur(28px) saturate(1.5);
   position: relative; z-index: 100;
 }
 .voc-hdr-logo { flex: 1; }
@@ -15333,7 +15336,10 @@ body[data-ambiente="vocalista"] .swipe-hint { display: none !important; }
   transition: transform 0.3s cubic-bezier(0.34,1.3,0.64,1), box-shadow 0.3s ease;
   -webkit-tap-highlight-color: transparent;
   touch-action: manipulation;
-  border: 1px solid rgba(255,255,255,0.06);
+  border: 1px solid rgba(255,255,255,0.10);
+  box-shadow: 0 2px 24px rgba(0,0,0,0.35), inset 0 1px 0 rgba(255,255,255,0.07);
+  backdrop-filter: blur(12px) saturate(1.2);
+  -webkit-backdrop-filter: blur(12px) saturate(1.2);
 }
 @media (hover: hover) and (pointer: fine) {
   .voc-alb:hover {
@@ -15344,12 +15350,12 @@ body[data-ambiente="vocalista"] .swipe-hint { display: none !important; }
 .voc-alb:active { transform: scale(0.97); }
 
 /* Fundos únicos por módulo */
-.voc-alb-letras  { background: linear-gradient(145deg, #0f0c24, #1a1040); }
-.voc-alb-tom     { background: linear-gradient(145deg, #0c1a14, #0a2618); }
-.voc-alb-aulas   { background: linear-gradient(145deg, #1a0c10, #2a0e16); }
-.voc-alb-videos  { background: linear-gradient(145deg, #0c0f1a, #101830); }
-.voc-alb-salvos  { background: linear-gradient(145deg, #1a140a, #261c08); }
-.voc-alb-shows   { background: linear-gradient(145deg, #08131a, #0a1e2a); }
+.voc-alb-letras  { background: linear-gradient(145deg, rgba(15,12,36,0.82), rgba(26,16,64,0.78)); }
+.voc-alb-tom     { background: linear-gradient(145deg, rgba(12,26,20,0.82), rgba(10,38,24,0.78)); }
+.voc-alb-aulas   { background: linear-gradient(145deg, rgba(26,12,16,0.82), rgba(42,14,22,0.78)); }
+.voc-alb-videos  { background: linear-gradient(145deg, rgba(12,15,26,0.82), rgba(16,24,48,0.78)); }
+.voc-alb-salvos  { background: linear-gradient(145deg, rgba(26,20,10,0.82), rgba(38,28,8,0.78)); }
+.voc-alb-shows   { background: linear-gradient(145deg, rgba(8,19,26,0.82), rgba(10,30,42,0.78)); }
 
 /* ── Painel Shows ── */
 .voc-panel#voc-panel-ev-musicas { z-index: 12; }
@@ -15593,7 +15599,10 @@ body[data-ambiente="vocalista"] .swipe-hint { display: none !important; }
 .voc-panel {
   display: none; position: absolute;
   top: 58px; left: 0; right: 0; bottom: 0;
-  background: #07070e; flex-direction: column; z-index: 10;
+  background: rgba(7, 7, 18, 0.75);
+  backdrop-filter: blur(28px) saturate(1.4);
+  -webkit-backdrop-filter: blur(28px) saturate(1.4);
+  flex-direction: column; z-index: 10;
   overflow: hidden;
   opacity: 0;
   transform: scale(0.88);
@@ -15622,8 +15631,10 @@ body[data-ambiente="vocalista"] .swipe-hint { display: none !important; }
   padding: 0 14px 0 8px;
   height: 52px;
   flex-shrink: 0;
-  background: #09091a;
-  border-bottom: 1px solid rgba(255,255,255,0.05);
+  background: rgba(9, 9, 26, 0.65);
+  backdrop-filter: blur(20px) saturate(1.3);
+  -webkit-backdrop-filter: blur(20px) saturate(1.3);
+  border-bottom: 1px solid rgba(138, 92, 246, 0.1);
 }
 .voc-back-btn {
   width: 38px; height: 38px; border-radius: 11px;
@@ -15644,7 +15655,10 @@ body[data-ambiente="vocalista"] .swipe-hint { display: none !important; }
 /* ─── LETRAS ─────────────────────────────────────────────────────────────── */
 .voc-search-wrap {
   padding: 14px 16px 12px;
-  border-bottom: 1px solid rgba(255,255,255,0.05); flex-shrink: 0;
+  background: rgba(9,9,26,0.55);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border-bottom: 1px solid rgba(138,92,246,0.10); flex-shrink: 0;
 }
 .voc-search-row { display: flex; gap: 10px; align-items: center; }
 .voc-search-field { flex: 1; position: relative; }
@@ -15729,7 +15743,10 @@ body[data-ambiente="vocalista"] .swipe-hint { display: none !important; }
 /* ─── TELA DE LETRA ──────────────────────────────────────────────────────── */
 #voc-letra-tela {
   display: none; position: absolute; inset: 0;
-  background: #07070e; flex-direction: column; z-index: 20; overflow: hidden;
+  background: rgba(7,7,18,0.82);
+  backdrop-filter: blur(32px) saturate(1.5);
+  -webkit-backdrop-filter: blur(32px) saturate(1.5);
+  flex-direction: column; z-index: 20; overflow: hidden;
 }
 /* ── Modo performance vocalista ── */
 #voc-perf-overlay {
@@ -15798,7 +15815,7 @@ body[data-ambiente="vocalista"] .swipe-hint { display: none !important; }
 .voc-letra-topbar {
   display: flex; align-items: center; gap: 10px;
   padding: 0 12px 0 8px; height: 56px; flex-shrink: 0;
-  background: #09091a; border-bottom: 1px solid rgba(138,92,246,0.08);
+  background: rgba(9,9,26,0.65); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); border-bottom: 1px solid rgba(138,92,246,0.15);
 }
 .voc-icon-btn {
   width: 38px; height: 38px; border-radius: 11px;
@@ -16749,7 +16766,7 @@ async function _vocClaude(prompt, maxTokens) {
         'anthropic-dangerous-direct-browser-access':'true',
         'x-api-key': key
       },
-      body: JSON.stringify({ model:'claude-haiku-4-5-20251001', max_tokens:maxTokens||1000, messages:[{role:'user',content:prompt}] })
+      body: JSON.stringify({ model:'claude-haiku-4-5', max_tokens:maxTokens||1000, messages:[{role:'user',content:prompt}] })
     });
     if(r.status === 401) { _vocSaveKey(''); _vocPedirChave('Chave inválida. Insira novamente.'); return null; }
     if(!r.ok){ var e=await r.text(); console.error('API erro:',r.status,e); return null; }
@@ -18084,56 +18101,35 @@ async function vocBuscarVideos(){
   _vocVideoHistAdd(q);
   _vocVideoHistRender();
 
-  // Usar IA para gerar queries melhores
-  var queries = await _vocGerarQueriesVideos(q);
+  // Usar Claude para gerar lista de vídeos com videoIds reais
+  var videosData = await _vocGerarVideosViaClaude(q);
 
-  // Buscar em paralelo na YouTube API
-  var apiKey = _API_KEY;
-  var categorias = [
-    { id:'letra',   label:'Com Letra',     badge:'COM LETRA',    q: queries.letra    || q+' letra oficial gospel' },
-    { id:'lyric',   label:'Lyric Video',   badge:'LYRIC',        q: queries.lyric    || q+' lyric video' },
-    { id:'karaoke', label:'Karaokê',       badge:'KARAOKÊ',      q: queries.karaoke  || q+' karaoke' },
-    { id:'aovivo',  label:'Ao Vivo',       badge:'AO VIVO',      q: queries.aovivo   || q+' ao vivo worship' },
-    { id:'tutorial',label:'Tutorial Vocal',badge:'TUTORIAL',     q: queries.tutorial || q+' como cantar tutorial vocal' },
-  ];
-
-  var promises = categorias.map(function(cat){
-    var url = 'https://www.googleapis.com/youtube/v3/search?part=snippet&type=video&maxResults=2&q='
-      + encodeURIComponent(cat.q)
-      + '&key=' + apiKey;
-    return fetch(url).then(function(r){ return r.json(); }).then(function(d){
-      return { cat: cat, items: (d.items || []) };
-    }).catch(function(){ return { cat: cat, items: [] }; });
-  });
-
-  var resultados = await Promise.all(promises);
-
-  // Montar HTML
-  var html = '';
-  resultados.forEach(function(r){
-    r.items.forEach(function(item){
-      var vid   = item.id && item.id.videoId;
-      if(!vid) return;
-      var titulo = item.snippet.title;
-      var canal  = item.snippet.channelTitle;
-      var thumb  = (item.snippet.thumbnails.medium || item.snippet.thumbnails.default || {}).url || '';
-      html += '<div class="voc-video-card" data-filtro="'+r.cat.id+'" onclick="vocAbrirPlayer(\x27'+vid+'\x27,\x27'+titulo.replace(/'/g,"\'").replace(/"/g,'\"')+'\x27,\x27'+canal.replace(/'/g,"\\'")+'\x27)">'        + '<div class="voc-video-thumb" style="'+(thumb?'background:#000;':'')+'">'
-        + (thumb ? '<img src="'+thumb+'" style="width:100%;height:100%;object-fit:cover;display:block;">' : '<svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="rgba(138,92,246,0.25)" stroke-width="1.8"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>')
-        + '<div class="voc-video-play-btn"><svg width="16" height="16" viewBox="0 0 24 24" fill="#fff" stroke="none"><polygon points="5 3 19 12 5 21 5 3"/></svg></div>'
-        + '<div class="voc-video-badge">'+_ve(r.cat.badge)+'</div>'
-        + '</div>'
-        + '<div class="voc-video-info">'
-        + '<div class="voc-video-name">'+_ve(titulo)+'</div>'
-        + '<div class="voc-video-chan"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="rgba(255,80,80,0.6)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2"/></svg> '+_ve(canal)+'</div>'
-        + '</div>'
-        + '</div>';
-    });
-  });
-
-  if(!html){
-    res.innerHTML = '<div class="voc-empty"><div class="voc-empty-title">Nenhum vídeo encontrado</div><div class="voc-empty-sub">Tente outro termo</div></div>';
+  if(!videosData || !videosData.length){
+    res.innerHTML = '<div class="voc-empty"><div class="voc-empty-title">Nenhum vídeo encontrado</div><div class="voc-empty-sub">Verifique sua chave da API e tente novamente</div></div>';
     return;
   }
+
+  // Montar HTML — videoId null → botão de busca no YouTube
+  var html = '';
+  videosData.forEach(function(v){
+    var vid    = (v.videoId && v.videoId !== 'null') ? v.videoId : null;
+    var titulo = v.titulo || '';
+    var canal  = v.canal  || '';
+    var badge  = v.badge  || '';
+    var filtro = v.filtro || 'todos';
+    var queryBusca = v.query || (titulo + ' ' + canal).trim() || q;
+
+    if(vid){
+      // Vídeo com ID conhecido — abre player embutido
+      var thumb = 'https://img.youtube.com/vi/' + vid + '/mqdefault.jpg';
+      var tEsc  = titulo.replace(/'/g,"\'").replace(/"/g,'&quot;');
+      var cEsc  = canal.replace(/'/g,"\'");
+      html += '<div class="voc-video-card" data-filtro="'+_ve(filtro)+'" onclick="vocAbrirPlayer(\x27'+vid+'\x27,\x27'+tEsc+'\x27,\x27'+cEsc+'\x27)">'        + '<div class="voc-video-thumb" style="background:#000;">'        + '<img src="'+thumb+'" style="width:100%;height:100%;object-fit:cover;display:block;" onerror="this.parentNode.style.background=\'#111\'">'        + '<div class="voc-video-play-btn"><svg width="16" height="16" viewBox="0 0 24 24" fill="#fff" stroke="none"><polygon points="5 3 19 12 5 21 5 3"/></svg></div>'        + '<div class="voc-video-badge">'+_ve(badge)+'</div>'        + '</div>'        + '<div class="voc-video-info">'        + '<div class="voc-video-name">'+_ve(titulo)+'</div>'        + '<div class="voc-video-chan"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="rgba(255,80,80,0.6)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2"/></svg> '+_ve(canal)+'</div>'        + '</div>'        + '</div>';
+    } else {
+      // Sem ID — mostra card de busca que abre no YouTube
+      html += '<div class="voc-video-card" data-filtro="'+_ve(filtro)+'" onclick="window.open(\'https://www.youtube.com/results?search_query='+encodeURIComponent(queryBusca)+'\',\'_blank\')">'        + '<div class="voc-video-thumb" style="background:rgba(255,0,0,0.06);display:flex;align-items:center;justify-content:center;flex-direction:column;gap:4px;">'        + '<svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="rgba(255,80,80,0.5)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>'        + '<div style="font-size:8px;color:rgba(255,80,80,0.5);font-weight:800;letter-spacing:1px;">BUSCAR</div>'        + '<div class="voc-video-badge" style="background:rgba(255,0,0,0.12);border-color:rgba(255,0,0,0.2);">'+_ve(badge)+'</div>'        + '</div>'        + '<div class="voc-video-info">'        + '<div class="voc-video-name">'+_ve(titulo)+'</div>'        + '<div class="voc-video-chan" style="color:rgba(255,80,80,0.5);">Buscar no YouTube →</div>'        + '</div>'        + '</div>';
+    }
+  });
 
   html += '<div style="padding:12px 16px 8px;"><a href="https://www.youtube.com/results?search_query='+encodeURIComponent(q)+'" target="_blank" style="display:block;text-align:center;padding:13px;border-radius:14px;background:rgba(255,0,0,0.05);border:1px solid rgba(255,0,0,0.09);color:rgba(255,100,100,0.7);font-size:13px;font-weight:800;text-decoration:none;">Ver todos no YouTube</a></div>';
   res.innerHTML = html;
@@ -18142,18 +18138,33 @@ async function vocBuscarVideos(){
   vocVideoFiltrar('todos');
 }
 
-async function _vocGerarQueriesVideos(q){
+async function _vocGerarVideosViaClaude(q){
   var key = _vocGetKey();
-  if(!key) return {};
+  if(!key) { _vocPedirChave(); return null; }
   try {
-    var prompt = 'Para a música gospel "'+q+'", gere queries de busca otimizadas para YouTube. '
-      + 'Responda SOMENTE com JSON válido, sem markdown. Formato: '
-      + '{"letra":"query para versão com letra na tela","lyric":"query para lyric video","karaoke":"query para karaokê","aovivo":"query para apresentação ao vivo","tutorial":"query para tutorial de como cantar"}';
-    var txt = await _vocClaude(prompt, 300);
-    if(!txt) return {};
+    var prompt =
+      'Você é um especialista em músicas gospel brasileiras e internacionais. '
+      + 'Para a música "'+q+'", retorne vídeos do YouTube seguindo estas REGRAS RÍGIDAS:\n'
+      + '1. Só inclua um videoId se tiver CERTEZA ABSOLUTA de que ele existe e é desta música.\n'
+      + '2. Se tiver qualquer dúvida sobre um videoId, coloque videoId como null — nunca invente.\n'
+      + '3. Quando videoId for null, o app vai mostrar um botão de busca no YouTube automaticamente.\n'
+      + '4. É melhor retornar poucos vídeos certos do que muitos errados.\n'
+      + '5. Inclua variações: com letra na tela, lyric video, karaokê, ao vivo, tutorial vocal.\n'
+      + 'Responda SOMENTE com JSON válido, sem markdown. '
+      + 'Formato: {"videos":[{"videoId":"ID_CERTO_OU_null","titulo":"Título","canal":"Canal","badge":"COM LETRA","filtro":"letra","query":"termo de busca alternativo caso videoId seja null"}]} '
+      + 'Valores de filtro: letra, lyric, karaoke, aovivo, tutorial.';
+    var txt = await _vocClaude(prompt, 900);
+    if(!txt) return null;
     var clean = txt.replace(/```json|```/g,'').trim();
-    return JSON.parse(clean);
-  } catch(e){ return {}; }
+    var m = clean.match(/\{[\s\S]*\}/);
+    if(!m) return null;
+    var data = JSON.parse(m[0]);
+    return data.videos || null;
+  } catch(e){ return null; }
+}
+
+async function _vocGerarQueriesVideos(q){
+  return {};
 }
 
 
