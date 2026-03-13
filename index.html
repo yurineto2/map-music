@@ -8251,11 +8251,11 @@ document.addEventListener('visibilitychange', function() {
 
 // ── Modal de Estatísticas ─────────────────────────────────────────────────────
 async function abrirModalStats() {
-  if (!_isFbReady()) { showToast('Firebase indisponível. Verifique a conexão.'); return; }
   document.getElementById('m-drop').classList.remove('show');
   const uid = _getUid();
-  const stats = await window._fb.carregarEstatistica(uid);
   const eventos = JSON.parse(localStorage.getItem('map_pro_eventos_v1') || '[]');
+  // Abre modal IMEDIATAMENTE com dados locais (sem esperar Firebase)
+  const stats = null;
 
   const bpms = songs.map(s => s.bpm).filter(Boolean);
   const bpmMedio = bpms.length ? Math.round(bpms.reduce((a,b)=>a+b,0)/bpms.length) : 0;
@@ -14488,7 +14488,7 @@ function _vocPedirChave(msgExtra) {
     +   'style="width:100%;padding:12px;border-radius:12px;background:none;border:none;color:rgba(255,255,255,0.25);font-size:13px;cursor:pointer;font-family:inherit;margin-top:8px;touch-action:manipulation;">'
     +   'Agora não'
     + '</button>'
-    + '<p style="font-size:11px;color:rgba(255,255,255,0.18);text-align:center;margin-top:16px;line-height:1.5;">A chave fica salva apenas neste dispositivo.<br>Obtenha em <span style="color:rgba(138,92,246,0.6);">console.anthropic.com</span></p>'
+    + '<p style="font-size:11px;color:rgba(255,255,255,0.18);text-align:center;margin-top:16px;line-height:1.5;">A chave fica salva apenas neste dispositivo.</p>'    + '<div style="margin-top:14px;background:rgba(138,92,246,0.07);border:1px solid rgba(138,92,246,0.18);border-radius:14px;padding:16px 18px;">'    +   '<div style="font-size:11px;font-weight:900;color:rgba(138,92,246,0.8);letter-spacing:1px;margin-bottom:12px;">COMO OBTER SUA CHAVE</div>'    +   '<div style="font-size:12px;color:rgba(255,255,255,0.5);line-height:2;">'    +     '<span style="color:#a78bfa;font-weight:800;">1.</span> Acesse <a href="https://console.anthropic.com" target="_blank" style="color:#a78bfa;text-decoration:none;font-weight:700;">console.anthropic.com</a><br>'    +     '<span style="color:#a78bfa;font-weight:800;">2.</span> Faça login ou crie uma conta gratuita<br>'    +     '<span style="color:#a78bfa;font-weight:800;">3.</span> No menu lateral, toque em <span style="color:#fff;font-weight:700;">API Keys</span><br>'    +     '<span style="color:#a78bfa;font-weight:800;">4.</span> Toque em <span style="color:#fff;font-weight:700;">Create Key</span> e dê um nome<br>'    +     '<span style="color:#a78bfa;font-weight:800;">5.</span> Copie a chave (começa com <span style="color:#fff;font-weight:700;">sk-ant-</span>)<br>'    +     '<span style="color:#a78bfa;font-weight:800;">6.</span> Cole no campo acima e toque em Salvar'    +   '</div>'    + '</div>'
     + '</div>';
   document.body.appendChild(overlay);
   setTimeout(function(){ var i=document.getElementById('voc-key-input'); if(i)i.focus(); }, 300);
@@ -14832,32 +14832,116 @@ setTimeout(function(){ _vocRenderHist(); _vocAtualizarBadgeSalvos(); }, 300);
 
 
 <script>
-// ─── HAPTIC FEEDBACK — vibração leve nos botões (seguro para Safari) ──────────
+// ─── HAPTIC FEEDBACK ─────────────────────────────────────────────────────────
 (function() {
-  if (!navigator.vibrate) return; // iOS Safari não suporta — sai silenciosamente
+  var isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent) ||
+              (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
 
-  var BOTOES = [
+  // ── CSS para feedback visual (ambas plataformas) ──────────────────────────
+  var style = document.createElement('style');
+  style.textContent = '.hap-press{transform:scale(0.94)!important;transition:transform 0.08s ease!important;filter:brightness(1.15)!important}'
+    + '.hap-press-light{transform:scale(0.97)!important;transition:transform 0.06s ease!important;filter:brightness(1.1)!important}'
+    + '.hap-press-heavy{transform:scale(0.91)!important;transition:transform 0.1s ease!important;filter:brightness(1.2)!important}'
+    + '.hap-release{transition:transform 0.2s cubic-bezier(0.34,1.56,0.64,1)!important,filter 0.15s ease!important}';
+  document.head.appendChild(style);
+
+  // ── Vibração (iOS 12+ e Android) ──────────────────────────────────────────
+  // iOS 13+ suporta navigator.vibrate em Safari quando executado via HTTPS
+  function vibrar(tipo) {
+    if (!navigator.vibrate) return;
+    if (tipo === 'light')      navigator.vibrate(8);
+    else if (tipo === 'heavy') navigator.vibrate([15, 30, 15]);
+    else if (tipo === 'pin')   navigator.vibrate(5);
+    else                       navigator.vibrate(12);
+  }
+
+  // ── Feedback visual ────────────────────────────────────────────────────────
+  function pressVisual(el, tipo) {
+    var cls = tipo === 'light' ? 'hap-press-light'
+            : tipo === 'heavy' ? 'hap-press-heavy'
+            : 'hap-press';
+    el.classList.remove('hap-release');
+    el.classList.add(cls);
+  }
+
+  function releaseVisual(el, tipo) {
+    var cls = tipo === 'light' ? 'hap-press-light'
+            : tipo === 'heavy' ? 'hap-press-heavy'
+            : 'hap-press';
+    el.classList.remove(cls);
+    el.classList.add('hap-release');
+    setTimeout(function() { el.classList.remove('hap-release'); }, 250);
+  }
+
+  // ── Seletores completos ───────────────────────────────────────────────────
+  var SEL_NORMAL = [
     '#btn-login', '#ob-cta', '#ob-btn-verificar',
     '.modal-evento-save', '.modal-editar-save', '.modal-addmusica-plus',
     '.evento-btn-open', '.biblioteca-close', '.modal-btn',
-    '#btn-save-vitro', '.voc-search-btn', '.ob-tab',
-    '.pin-key', '.menu-item'
+    '#btn-save-vitro', '.voc-search-btn', '.ob-tab', '.menu-item',
+    '.ob-chip', '.ob-cta', 'button.ob-cta',
+    '.btn-acao', '.btn-pad', '.btn-pad-flutuante',
+    '.perf-btn', '.sync-btn', '.bpm-btn',
+    '.voc-search-btn', '.voc-alb', '.voc-result-item',
+    '.hist-item', '.voc-hist-item', '.voc-fav-item',
+    '.evento-card', '.song-card', '.setlist-item',
+    '.toolbar-btn', '.tab-btn', '.nav-btn',
+    '.modal-close', '.sheet-close',
+    '.chip', '.filter-chip',
+    'button[onclick]'
   ].join(',');
 
+  var SEL_LIGHT = [
+    '.pin-key', '.pin-dot',
+    '.scroll-chip', '.tom-chip',
+    '.voc-font-btn', '.voc-scroll-btn'
+  ].join(',');
+
+  var SEL_HEAVY = [
+    '.danger', '[data-danger]',
+    '.btn-deletar', '.btn-excluir', '.btn-remover',
+    '.modal-btn.danger'
+  ].join(',');
+
+  // ── Listener principal ────────────────────────────────────────────────────
   document.addEventListener('touchstart', function(e) {
     try {
       var t = e.target;
-      var btn = (t && t.matches && t.matches(BOTOES)) ? t
-              : (t && t.closest ? t.closest(BOTOES) : null);
-      if (!btn) return;
+      if (!t) return;
 
-      if (btn.classList.contains('pin-key')) {
-        navigator.vibrate(8);
-      } else if (btn.classList.contains('danger')) {
-        navigator.vibrate([20, 30, 20]);
-      } else {
-        navigator.vibrate(15);
+      var tipo = null;
+      var el   = null;
+
+      // Verifica heavy primeiro (ações destrutivas)
+      var heavy = (t.matches && t.matches(SEL_HEAVY)) ? t : (t.closest ? t.closest(SEL_HEAVY) : null);
+      if (heavy) { tipo = 'heavy'; el = heavy; }
+
+      // Light (teclas PIN, chips pequenos)
+      if (!el) {
+        var light = (t.matches && t.matches(SEL_LIGHT)) ? t : (t.closest ? t.closest(SEL_LIGHT) : null);
+        if (light) { tipo = 'light'; el = light; }
       }
+
+      // Normal (todos os outros botões)
+      if (!el) {
+        var norm = (t.matches && t.matches(SEL_NORMAL)) ? t : (t.closest ? t.closest(SEL_NORMAL) : null);
+        if (norm) { tipo = 'normal'; el = norm; }
+      }
+
+      if (!el) return;
+
+      // Vibração: iOS 13+ via HTTPS + Android
+      vibrar(tipo);
+
+      // Feedback visual em todas as plataformas
+      pressVisual(el, tipo);
+      function onUp() {
+        releaseVisual(el, tipo);
+        el.removeEventListener('touchend', onUp);
+        el.removeEventListener('touchcancel', onUp);
+      }
+      el.addEventListener('touchend', onUp, { once: true, passive: true });
+      el.addEventListener('touchcancel', onUp, { once: true, passive: true });
     } catch(e) {}
   }, { passive: true });
 })();
