@@ -4472,7 +4472,8 @@ body.auth-pending #toast {
           <div style="display:flex;align-items:center;gap:10px;">
             <span style="font-size:10px;color:rgba(255,255,255,0.2);font-weight:800;width:12px;text-align:center;">A</span>
             <input type="range" id="perfil-fonte-slider" min="13" max="32" step="1" value="19"
-              style="flex:1;accent-color:#22c55e;height:4px;"
+              class="perfil-fonte-slider"
+              style="background:linear-gradient(to right,#22c55e 40%,rgba(255,255,255,0.12) 40%);"
               oninput="_previewFontePartes(this.value)">
             <span style="font-size:17px;color:rgba(255,255,255,0.2);font-weight:800;width:12px;text-align:center;">A</span>
           </div>
@@ -4493,7 +4494,8 @@ body.auth-pending #toast {
           <div style="display:flex;align-items:center;gap:10px;">
             <span style="font-size:10px;color:rgba(255,255,255,0.2);font-weight:800;width:12px;text-align:center;">A</span>
             <input type="range" id="perfil-fonte-show-slider" min="28" max="72" step="2" value="48"
-              style="flex:1;accent-color:#22c55e;height:4px;"
+              class="perfil-fonte-slider"
+              style="background:linear-gradient(to right,#22c55e 45%,rgba(255,255,255,0.12) 45%);"
               oninput="_previewFonteShow(this.value)">
             <span style="font-size:17px;color:rgba(255,255,255,0.2);font-weight:800;width:12px;text-align:center;">A</span>
           </div>
@@ -5219,8 +5221,17 @@ function abrirModalPerfil() {
   var sliderShow = document.getElementById('perfil-fonte-show-slider');
   var lblShow    = document.getElementById('perfil-fonte-show-val');
   var _fs = parseInt(localStorage.getItem(_FONTE_SHOW_KEY) || '48');
-  if (sliderShow) { sliderShow.value = _fs; }
-  if (lblShow)    { lblShow.innerText = _fs + 'px'; }
+  if (sliderShow) {
+    sliderShow.value = _fs;
+    var pctS = Math.round((_fs - 28) / (72 - 28) * 100);
+    sliderShow.style.background = 'linear-gradient(to right,#22c55e ' + pctS + '%,rgba(255,255,255,0.12) ' + pctS + '%)';
+  }
+  if (lblShow) { lblShow.innerText = _fs + 'px'; }
+  // Sync cifras bg
+  if (slider) {
+    var pctC = Math.round((_fontePartes - 13) / (32 - 13) * 100);
+    slider.style.background = 'linear-gradient(to right,#22c55e ' + pctC + '%,rgba(255,255,255,0.12) ' + pctC + '%)';
+  }
   _renderHistoricoShow();
   const perfil = JSON.parse(localStorage.getItem('map_perfil_v1') || '{}');
   const nome = perfil.nome || perfil.nomeUsuario || '';
@@ -7253,7 +7264,11 @@ function _aplicarFontePartes(size) {
 
 function _previewFontePartes(val) {
   val = parseInt(val);
-  document.getElementById('perfil-fonte-val').innerText = val + 'px';
+  var lbl = document.getElementById('perfil-fonte-val');
+  if (lbl) lbl.innerText = val + 'px';
+  var pct = Math.round((val - 13) / (32 - 13) * 100);
+  var sl = document.getElementById('perfil-fonte-slider');
+  if (sl) sl.style.background = 'linear-gradient(to right,#22c55e ' + pct + '%,rgba(255,255,255,0.12) ' + pct + '%)';
   _aplicarFontePartes(val);
 }
 
@@ -7261,8 +7276,11 @@ function _previewFonteShow(val) {
   val = parseInt(val);
   var lbl = document.getElementById('perfil-fonte-show-val');
   if (lbl) lbl.innerText = val + 'px';
+  var pct = Math.round((val - 28) / (72 - 28) * 100);
+  var sl = document.getElementById('perfil-fonte-show-slider');
+  if (sl) sl.style.background = 'linear-gradient(to right,#22c55e ' + pct + '%,rgba(255,255,255,0.12) ' + pct + '%)';
   _fonteShow = val;
-  _aplicarFontePartes(_fontePartes); // re-aplica para atualizar o !important do show
+  _aplicarFontePartes(_fontePartes);
 }
 
 function _salvarFontePartes() {
@@ -14711,6 +14729,38 @@ body[data-ambiente="vocalista"] .swipe-hint { display: none !important; }
 .voc-alb-videos  { background: linear-gradient(145deg, #0c0f1a, #101830); }
 .voc-alb-salvos  { background: linear-gradient(145deg, #1a140a, #261c08); }
 .voc-alb-shows   { background: linear-gradient(145deg, #08131a, #0a1e2a); }
+
+/* ── Sliders de fonte do perfil ── */
+.perfil-fonte-slider {
+  -webkit-appearance: none;
+  appearance: none;
+  height: 4px;
+  border-radius: 999px;
+  outline: none;
+  cursor: pointer;
+  flex: 1;
+}
+.perfil-fonte-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: #16a34a;
+  border: 3px solid #22c55e;
+  box-shadow: 0 0 0 3px rgba(34,197,94,0.15);
+  cursor: pointer;
+  transition: transform 0.15s, box-shadow 0.15s;
+}
+.perfil-fonte-slider::-webkit-slider-thumb:active {
+  transform: scale(1.2);
+  box-shadow: 0 0 0 6px rgba(34,197,94,0.2);
+}
+.perfil-fonte-slider::-moz-range-thumb {
+  width: 22px; height: 22px; border-radius: 50%;
+  background: #16a34a; border: 3px solid #22c55e;
+  cursor: pointer;
+}
 /* ── Painel Shows ── */
 .voc-panel#voc-panel-ev-musicas { z-index: 12; }
 .voc-panel#voc-panel-ev-musicas.ativo { display: flex; }
