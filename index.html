@@ -503,6 +503,7 @@ window.addEventListener('unhandledrejection', function(e) {
       return _pollQuery('solicitacoes', [['para','==',uid],['status','==','pendente']], callback, 20000);
     },
     async listarAmigos(uid) {
+      const _ADMIN = ['admin_local', 'admin'];
       try {
         const [s1, s2] = await Promise.all([
           _query('solicitacoes', [['de','==',uid],['status','==','aceito']], null, 50),
@@ -510,7 +511,7 @@ window.addEventListener('unhandledrejection', function(e) {
         ]);
         const amigos = [];
         // s1: eu enviei — o amigo é x.para, nome dele é x.paraNome
-        s1.forEach(x => amigos.push({ solId: x.id, uid: x.para, nome: x.paraNome || x.deNome, inst: x.paraInst || x.deInst }));
+        s1.forEach(x => { if (!_ADMIN.includes(x.para)) amigos.push({ solId: x.id, uid: x.para, nome: x.paraNome || x.deNome, inst: x.paraInst || x.deInst }); });
         // s2: recebi — o amigo é x.de, nome dele é x.deNome
         s2.forEach(x => amigos.push({ solId: x.id, uid: x.de, nome: x.deNome, inst: x.deInst }));
         return amigos;
@@ -541,7 +542,7 @@ window.addEventListener('unhandledrejection', function(e) {
     async sugestoes(uid) {
       try {
         const rows = await _query('usuarios', [], 'atualizadoEm', 20);
-        return rows.filter(u => u.uid !== uid);
+        return rows.filter(u => u.uid !== uid && u.uid !== 'admin_local' && u.uid !== 'admin' && u.nomeUsuario !== 'admin' && u.nome !== 'Admin');
       } catch(e) { return []; }
     },
 
@@ -1162,6 +1163,18 @@ function _pinVerificar() {
         if (aside)    aside.style.display     = '';
         if (bibMain)  bibMain.style.display   = '';
         document.body.dataset.ambiente = 'instrumentista';
+        // Avisa vocalistas que estão no app errado
+        if (instrumento === 'voz') {
+          setTimeout(function() {
+            if (typeof adicionarNotif === 'function') {
+              adicionarNotif('alert', 'Este espaço é para instrumentistas',
+                'Você escolheu Voz como instrumento. O Espaço Vocalista tem tudo pensado para você — letras, tonalidade, aulas e modo performance.',
+                'voz_app_errado_v1',
+                { label: 'Ir para o Espaço Vocalista', fn: 'adminEscolherModo(&quot;vocalista&quot;);fecharNotifPanel()' }
+              );
+            }
+          }, 2000);
+        }
       }
     } catch(e) {}
   }
@@ -9887,7 +9900,7 @@ async function aceitarSolicitacaoFb(solId, deNome) {
     adicionarNotif('event', deNome + ' é agora seu amigo!', 'Pode convidar para salas.', 'acc_' + solId);
     _solicitacoesPendentes = _solicitacoesPendentes.filter(s => s.id !== solId);
     _atualizarBadgesAmigos();
-    _amigosCache = await window._fb.listarAmigos(_getUid());
+    _amigosCache = (await window._fb.listarAmigos(_getUid())).filter(function(a){ return a.uid !== 'admin_local' && a.uid !== 'admin'; });
     amigoTab('amigos');
   }
 }
@@ -9984,8 +9997,9 @@ async function _renderAmigos() {
     const solEnviadasUids = (window._solEnviadas || []).map(s => s.para);
     let sugs = [];
     try { sugs = await window._fb.sugestoes(uid); } catch(e) {}
-    // Filtrar amigos e ja enviados
-    sugs = sugs.filter(u => u.uid !== uid && !amigosUids.includes(u.uid));
+    // Filtrar amigos, já enviados e admin
+    const _ADM = ['admin_local', 'admin'];
+    sugs = sugs.filter(u => u.uid !== uid && !amigosUids.includes(u.uid) && !_ADM.includes(u.uid) && u.nomeUsuario !== 'admin' && u.nome !== 'Admin');
     if (!sugs.length) {
       lista.innerHTML = '<div class="amigos-empty"><svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg><p>Nenhuma sugestao disponivel</p><small style="color:rgba(255,255,255,0.2);font-size:10px;">Use a busca acima para encontrar musicos</small></div>';
       return;
@@ -10056,7 +10070,8 @@ async function _renderAmigos() {
 
   if (_amigosCache.length === 0) {
     // Mostra sugestões se não tem amigos
-    const sugs = await window._fb.sugestoes(_getUid());
+    const _sugsRaw = await window._fb.sugestoes(_getUid());
+    const sugs = _sugsRaw.filter(function(u){ return u.uid !== 'admin_local' && u.uid !== 'admin' && u.nomeUsuario !== 'admin' && u.nome !== 'Admin'; });
     if (sugs.length === 0) {
       lista.innerHTML = '<div class="amigos-empty"><svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg><p>Busca músicos pelo nome acima</p></div>';
       return;
@@ -10132,7 +10147,7 @@ function salvarNotifs() {
   localStorage.setItem('map_notifs_v1', JSON.stringify(notificacoes));
 }
 
-function adicionarNotif(tipo, titulo, desc, id) {
+function adicionarNotif(tipo, titulo, desc, id, action) {
   const agora = Date.now();
   // Evita duplicados pelo mesmo id
   if (id && notificacoes.find(n => n.id === id)) return;
@@ -10149,6 +10164,7 @@ function adicionarNotif(tipo, titulo, desc, id) {
     ts: agora,
     lida: false
   };
+  if (action) notif.action = action;
   notificacoes.unshift(notif);
   if (notificacoes.length > 30) notificacoes = notificacoes.slice(0, 30);
   salvarNotifs();
@@ -10220,17 +10236,22 @@ function renderNotifPanel() {
     alert:     '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>',
     admin_msg: '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>'
   };
-  list.innerHTML = notificacoes.map(n => `
-    <div class="notif-item ${n.lida ? '' : 'unread'}">
-      <div class="notif-icon ${n.tipo}">${icons[n.tipo] || icons.alert}</div>
-      <div class="notif-body">
-        <div class="notif-title">${escapeHtml(n.titulo)}</div>
-        <div class="notif-desc">${escapeHtml(n.desc)}</div>
-        <div class="notif-time">${formatNotifTime(n.ts)}</div>
-      </div>
-      ${!n.lida ? '<div class="notif-dot"></div>' : ''}
-    </div>
-  `).join('');
+  list.innerHTML = notificacoes.map(n => {
+    var actionBtn = '';
+    if (n.action && n.action.label && n.action.fn) {
+      actionBtn = '<button onclick="' + escapeHtml(n.action.fn) + '" style="margin-top:8px;padding:6px 14px;border-radius:8px;background:rgba(138,92,246,0.15);border:1px solid rgba(138,92,246,0.3);color:#a78bfa;font-size:11px;font-weight:800;font-family:inherit;cursor:pointer;display:block;">' + escapeHtml(n.action.label) + '</button>';
+    }
+    return '<div class="notif-item ' + (n.lida ? '' : 'unread') + '">'
+      + '<div class="notif-icon ' + n.tipo + '">' + (icons[n.tipo] || icons.alert) + '</div>'
+      + '<div class="notif-body">'
+      +   '<div class="notif-title">' + escapeHtml(n.titulo) + '</div>'
+      +   '<div class="notif-desc">' + escapeHtml(n.desc) + '</div>'
+      +   actionBtn
+      +   '<div class="notif-time">' + formatNotifTime(n.ts) + '</div>'
+      + '</div>'
+      + (!n.lida ? '<div class="notif-dot"></div>' : '')
+      + '</div>';
+  }).join('');
 }
 
 function formatNotifTime(ts) {
