@@ -18104,8 +18104,21 @@ async function vocBuscarVideos(){
   // Usar Claude para gerar lista de vídeos com videoIds reais
   var videosData = await _vocGerarVideosViaClaude(q);
 
-  if(!videosData || !videosData.length){
-    res.innerHTML = '<div class="voc-empty"><div class="voc-empty-title">Nenhum vídeo encontrado</div><div class="voc-empty-sub">Verifique sua chave da API e tente novamente</div></div>';
+  // null = sem chave (já pediu a chave), [] = Claude não conhece os videoIds
+  if(videosData === null){
+    res.innerHTML = '';
+    return; // _vocPedirChave já foi chamado dentro de _vocGerarVideosViaClaude
+  }
+  if(!videosData.length){
+    // Claude não conhece vídeos desta música — mostra botão de busca no YouTube
+    res.innerHTML =
+      '<div class="voc-empty">'
+      + '<div class="voc-empty-ico"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="rgba(255,80,80,0.5)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2"/></svg></div>'
+      + '<div class="voc-empty-title">Sem vídeos cadastrados</div>'
+      + '<div class="voc-empty-sub" style="margin-bottom:14px;">Não encontrei vídeos salvos para esta música, mas você pode buscar direto no YouTube</div>'
+      + '<a href="https://www.youtube.com/results?search_query='+encodeURIComponent(q)+' gospel" target="_blank" style="display:block;margin:0 16px;text-align:center;padding:13px;border-radius:14px;background:rgba(255,0,0,0.08);border:1px solid rgba(255,0,0,0.2);color:rgba(255,100,100,0.85);font-size:13px;font-weight:800;text-decoration:none;">🔍 Buscar no YouTube</a>'
+      + '<a href="https://www.youtube.com/results?search_query='+encodeURIComponent(q)+' letra gospel" target="_blank" style="display:block;margin:8px 16px 0;text-align:center;padding:13px;border-radius:14px;background:rgba(255,0,0,0.04);border:1px solid rgba(255,0,0,0.1);color:rgba(255,100,100,0.5);font-size:12px;font-weight:700;text-decoration:none;">🎵 Com letra</a>'
+      + '</div>';
     return;
   }
 
@@ -18159,7 +18172,8 @@ async function _vocGerarVideosViaClaude(q){
     var m = clean.match(/\{[\s\S]*\}/);
     if(!m) return null;
     var data = JSON.parse(m[0]);
-    return data.videos || null;
+    // Retorna [] (array vazio) quando Claude não conhece — distinto de null (sem chave/erro)
+    return Array.isArray(data.videos) ? data.videos : null;
   } catch(e){ return null; }
 }
 
