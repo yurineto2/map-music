@@ -1351,6 +1351,7 @@ async function obFazerLogin() {
         try { eventos = JSON.parse(localStorage.getItem('map_pro_eventos_v1') || '[]'); } catch(e) {}
       }
       if (typeof renderBiblioteca === 'function') renderBiblioteca();
+      if (typeof _renderHistoricoShow === 'function') _renderHistoricoShow();
       if (typeof renderSetlist === 'function') renderSetlist();
     }, 600);
   } else {
@@ -4588,13 +4589,16 @@ body.auth-pending #toast {
       </div>
 
     </div>
-    <!-- Histórico de Shows -->
-    <div style="padding:4px 20px 16px;border-top:1px solid rgba(255,255,255,0.05);margin-top:4px;">
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;margin-top:14px;">
-        <div style="font-size:9px;font-weight:900;letter-spacing:2px;color:rgba(255,255,255,0.3);text-transform:uppercase;">Histórico de Shows</div>
-        <button onclick="_limparHistoricoShow()" style="background:none;border:none;color:rgba(255,80,80,0.45);font-size:10px;font-weight:700;cursor:pointer;letter-spacing:0.5px;padding:2px 0;">Limpar</button>
-      </div>
-      <div id="perfil-historico-lista" style="display:flex;flex-direction:column;gap:7px;max-height:220px;overflow-y:auto;"></div>
+    <!-- Histórico de Shows — botão discreto -->
+    <div style="padding:6px 20px 10px;border-top:1px solid rgba(255,255,255,0.05);">
+      <button id="btn-historico-shows" onclick="abrirHistoricoShows()" style="width:100%;padding:9px 14px;border-radius:10px;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.06);color:rgba(255,255,255,0.3);font-size:11px;font-weight:700;cursor:pointer;font-family:inherit;display:flex;align-items:center;justify-content:space-between;touch-action:manipulation;transition:background 0.15s;" onmouseenter="this.style.background='rgba(255,255,255,0.065)'" onmouseleave="this.style.background='rgba(255,255,255,0.03)'">
+        <span style="display:flex;align-items:center;gap:7px;">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+          Histórico de shows
+          <span id="hist-shows-count" style="font-size:9px;font-weight:800;color:rgba(255,255,255,0.18);"></span>
+        </span>
+        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+      </button>
     </div>
 
     <!-- Rodapé fixo com botões de conta -->
@@ -4604,6 +4608,30 @@ body.auth-pending #toast {
     </div>
     <!-- hidden badge for compat -->
     <div id="perfil-google-badge" style="display:none !important;"></div>
+  </div>
+</div>
+
+<!-- MODAL HISTÓRICO DE SHOWS -->
+<div id="modal-historico-shows" style="position:fixed;inset:0;z-index:100050;background:rgba(0,0,0,0.92);display:none;align-items:flex-end;justify-content:center;padding:0;" onclick="if(event.target===this)fecharHistoricoShows()" ontouchend="if(event.target===this){event.preventDefault();fecharHistoricoShows();}">
+  <div style="background:#0c0c14;border:1px solid rgba(255,255,255,0.08);border-radius:24px 24px 0 0;width:100%;max-width:480px;display:flex;flex-direction:column;max-height:88vh;animation:slideUpModal 0.28s cubic-bezier(0.34,1.56,0.64,1);">
+    <!-- Header -->
+    <div style="padding:18px 20px 14px;border-bottom:1px solid rgba(255,255,255,0.06);display:flex;align-items:center;justify-content:space-between;flex-shrink:0;">
+      <div style="display:flex;align-items:center;gap:10px;">
+        <div style="width:32px;height:32px;border-radius:9px;background:rgba(10,158,110,0.1);border:1px solid rgba(10,158,110,0.2);display:flex;align-items:center;justify-content:center;">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#0A9E6E" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+        </div>
+        <div>
+          <div style="font-size:14px;font-weight:900;color:#fff;">Histórico de Shows</div>
+          <div id="hist-modal-count" style="font-size:10px;color:rgba(255,255,255,0.3);margin-top:1px;"></div>
+        </div>
+      </div>
+      <div style="display:flex;align-items:center;gap:8px;">
+        <button onclick="_limparHistoricoShow()" style="padding:6px 12px;border-radius:8px;background:rgba(255,60,60,0.07);border:1px solid rgba(255,60,60,0.15);color:rgba(255,100,100,0.6);font-size:10px;font-weight:800;cursor:pointer;font-family:inherit;letter-spacing:0.5px;touch-action:manipulation;transition:0.15s;" onmouseenter="this.style.background='rgba(255,60,60,0.14)'" onmouseleave="this.style.background='rgba(255,60,60,0.07)'">Limpar</button>
+        <button onclick="fecharHistoricoShows()" style="width:30px;height:30px;border-radius:50%;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.08);color:rgba(255,255,255,0.4);font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center;line-height:1;font-family:inherit;">×</button>
+      </div>
+    </div>
+    <!-- Lista -->
+    <div id="perfil-historico-lista" style="overflow-y:auto;flex:1;padding:14px 16px 24px;display:flex;flex-direction:column;gap:8px;"></div>
   </div>
 </div>
 
@@ -5733,22 +5761,48 @@ function _renderHistoricoShow() {
   if (!lista) return;
   var hist = [];
   try { hist = JSON.parse(localStorage.getItem('map_historico_shows_v1') || '[]'); } catch(e) {}
+
+  // Atualiza contagem no botão do perfil e no header do modal
+  var countEl = document.getElementById('hist-shows-count');
+  if (countEl) countEl.textContent = hist.length ? '(' + hist.length + ')' : '';
+  var modalCount = document.getElementById('hist-modal-count');
+  if (modalCount) modalCount.textContent = hist.length ? hist.length + ' show' + (hist.length !== 1 ? 's' : '') + ' registrado' + (hist.length !== 1 ? 's' : '') : 'Nenhum show registrado ainda';
+
   if (!hist.length) {
-    lista.innerHTML = '<div style="font-size:11px;color:rgba(255,255,255,0.2);text-align:center;padding:12px 0;">Nenhum show registrado ainda</div>';
+    lista.innerHTML = '<div style="text-align:center;padding:32px 16px;">'
+      + '<svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.12)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="margin-bottom:12px;display:block;margin-left:auto;margin-right:auto;"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>'
+      + '<div style="font-size:12px;color:rgba(255,255,255,0.2);font-weight:600;">Nenhum show registrado ainda</div>'
+      + '<div style="font-size:10px;color:rgba(255,255,255,0.12);margin-top:5px;">Finalize um show para ele aparecer aqui</div>'
+      + '</div>';
     return;
   }
   lista.innerHTML = hist.map(function(h) {
     var nomes = h.musicas.map(function(m) { return m.nome; }).join(', ');
     var titulo = h.eventoNome ? h.eventoNome : 'Show livre';
-    return '<div style="background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.07);border-radius:10px;padding:10px 12px;">'
-      + '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;">'
-      + '<div style="font-size:12px;font-weight:800;color:#fff;">' + titulo + '</div>'
-      + '<div style="font-size:10px;color:rgba(255,255,255,0.3);">' + h.data + ' · ' + h.hora + '</div>'
+    var totalMusicas = h.musicas.length;
+    return '<div style="background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.07);border-radius:12px;padding:12px 14px;">'
+      + '<div style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px;margin-bottom:6px;">'
+      +   '<div style="font-size:12px;font-weight:800;color:#fff;line-height:1.3;">' + titulo + '</div>'
+      +   '<div style="font-size:9px;color:rgba(255,255,255,0.25);white-space:nowrap;flex-shrink:0;margin-top:1px;">' + h.data + ' · ' + h.hora + '</div>'
       + '</div>'
-      + '<div style="font-size:10px;color:rgba(10,158,110,0.8);font-weight:700;margin-bottom:3px;">' + h.musicas.length + ' música' + (h.musicas.length !== 1 ? 's' : '') + '</div>'
-      + '<div style="font-size:10px;color:rgba(255,255,255,0.25);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + nomes + '</div>'
+      + '<div style="display:flex;align-items:center;gap:6px;margin-bottom:5px;">'
+      +   '<div style="font-size:10px;color:rgba(10,158,110,0.8);font-weight:800;">' + totalMusicas + ' música' + (totalMusicas !== 1 ? 's' : '') + '</div>'
+      + '</div>'
+      + '<div style="font-size:10px;color:rgba(255,255,255,0.22);overflow:hidden;text-overflow:ellipsis;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;line-height:1.5;">' + nomes + '</div>'
       + '</div>';
   }).join('');
+}
+
+function abrirHistoricoShows() {
+  var modal = document.getElementById('modal-historico-shows');
+  if (!modal) return;
+  _renderHistoricoShow();
+  modal.style.display = 'flex';
+}
+
+function fecharHistoricoShows() {
+  var modal = document.getElementById('modal-historico-shows');
+  if (modal) modal.style.display = 'none';
 }
 
 function _limparHistoricoShow() {
@@ -5768,6 +5822,7 @@ function _limparHistoricoShow() {
     localStorage.removeItem('map_historico_shows_v1');
     overlay.remove();
     _renderHistoricoShow();
+    fecharHistoricoShows();
     showToast('Histórico apagado.');
   };
   overlay.addEventListener('click', function(e) { if (e.target === overlay) overlay.remove(); });
@@ -10543,14 +10598,25 @@ function verificarEventosProximos() {
   });
 }
 
+// ── Changelog por versão ──────────────────────────────────────────────────────
+const APP_CHANGELOG = {
+  '1.4.8': 'Busca de letras melhorada (não apenas gospel), correção de erros de script e ajustes de estabilidade.',
+  '1.4.7': 'Histórico de shows no perfil, detecção de tom por microfone e modo offline completo.',
+  '1.4.6': 'Menu de contexto nos álbuns, presença online na sala e melhorias de performance.',
+  '1.4.5': 'Vocalista: aulas, letras e vídeos integrados. Busca com API Claude.',
+  '1.4.4': 'Setlist compartilhável por link público e exportação em PDF.',
+  '1.4.3': 'Sistema de amigos, sala colaborativa e notificações de eventos.',
+};
+
 // ── Verificar versão / novidades ──────────────────────────────────────────────
 function verificarAtualizacoes() {
   const lastVer = localStorage.getItem('map_last_version');
   if (lastVer !== APP_VERSION) {
     localStorage.setItem('map_last_version', APP_VERSION);
     if (lastVer) { // Não é primeira abertura
-      adicionarNotif('update', 'Versão ' + APP_VERSION + ' disponível',
-        'Menu de contexto nos álbuns, presença online na sala e melhorias de estabilidade.',
+      const preview = APP_CHANGELOG[APP_VERSION] || 'Melhorias gerais e correções de estabilidade.';
+      adicionarNotif('update', 'Atualizado para v' + APP_VERSION,
+        preview,
         'update_' + APP_VERSION);
     }
   }
@@ -16765,12 +16831,12 @@ async function vocBuscarLetras(){
   if(area)area.style.display='none';
   res.innerHTML='<div class="voc-spinner"></div>';
   try{
-    var prompt='Liste ate 8 musicas GOSPEL que correspondam a busca: "'+q+'". '
-      +'Retorne SOMENTE musicas gospel, cristao, worship, louvor ou hino. '
+    var prompt='Liste ate 8 musicas que correspondam a busca: "'+q+'". '
+      +'Priorize musicas gospel, cristao, worship, louvor ou hino, mas inclua qualquer musica relevante se nao houver opcoes gospel. '
       +'Responda SOMENTE com JSON valido, sem texto extra, sem markdown. '
       +'Formato exato: {"results":[{"titulo":"nome da musica","artista":"nome do artista"}]}. '
-      +'Se nao encontrar nada gospel, retorne {"results":[]}.';
-    var txt=await _vocClaude(prompt,500);
+      +'Se realmente nao encontrar nenhuma correspondencia, retorne {"results":[]}.';
+    var txt=await _vocClaude(prompt,600);
     if(!txt){ _vocSemRes(res,q); return; }
     var clean=txt.replace(/```json|```/g,'').trim();
     var jm=clean.match(/\{[\s\S]*\}/); if(!jm){ _vocSemRes(res,q); return; }
@@ -16795,7 +16861,7 @@ async function vocBuscarLetras(){
 }
 
 function _vocSemRes(el,q){
-  el.innerHTML='<div class="voc-empty"><div class="voc-empty-ico"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="rgba(138,92,246,0.5)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg></div><div class="voc-empty-title">Nenhum resultado</div><div class="voc-empty-sub">Tente outro nome ou artista gospel</div></div>';
+  el.innerHTML='<div class="voc-empty"><div class="voc-empty-ico"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="rgba(138,92,246,0.5)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg></div><div class="voc-empty-title">Nenhum resultado</div><div class="voc-empty-sub">Tente buscar pelo nome da música ou artista</div></div>';
 }
 
 // Função central de carregamento de letra — reutilizada por busca direta e por clique no resultado
@@ -17544,18 +17610,18 @@ async function _vocSheetBuscar() {
   var res = document.getElementById('voc-sheet-res');
   res.innerHTML = '<div class="voc-spinner" style="margin-top:32px;"></div>';
   try {
-    var prompt = 'Liste ate 8 musicas GOSPEL que correspondam a busca: "'+q+'". '
-      +'Retorne SOMENTE musicas gospel, cristao, worship, louvor ou hino. '
+    var prompt = 'Liste ate 8 musicas que correspondam a busca: "'+q+'". '
+      +'Priorize musicas gospel, cristao, worship, louvor ou hino, mas inclua qualquer musica relevante se nao houver opcoes gospel. '
       +'Responda SOMENTE com JSON valido, sem texto extra, sem markdown. '
       +'Formato exato: {"results":[{"titulo":"nome da musica","artista":"nome do artista"}]}. '
-      +'Se nao encontrar nada gospel, retorne {"results":[]}.';
-    var txt = await _vocClaude(prompt, 500);
+      +'Se realmente nao encontrar nenhuma correspondencia, retorne {"results":[]}.';
+    var txt = await _vocClaude(prompt, 600);
     if (!txt) { res.innerHTML='<div class="voc-empty"><div class="voc-empty-title">Sem resultado</div></div>'; return; }
     var clean = txt.replace(/```json|```/g,'').trim();
     var jm = clean.match(/\{[\s\S]*\}/); if (!jm) { res.innerHTML='<div class="voc-empty"><div class="voc-empty-title">Sem resultado</div></div>'; return; }
     var data; try { data=JSON.parse(jm[0]); } catch(e) { res.innerHTML='<div class="voc-empty"><div class="voc-empty-title">Sem resultado</div></div>'; return; }
     var docs = data.results || [];
-    if (!docs.length) { res.innerHTML='<div class="voc-empty"><div class="voc-empty-title">Nenhum resultado gospel</div><div class="voc-empty-sub">Tente outro nome</div></div>'; return; }
+    if (!docs.length) { res.innerHTML='<div class="voc-empty"><div class="voc-empty-title">Nenhum resultado</div><div class="voc-empty-sub">Tente buscar pelo nome da música ou artista</div></div>'; return; }
     if (docs.length === 1) { await _vocSheetCarregarLetra(docs[0].titulo, docs[0].artista, res); return; }
     res.innerHTML = docs.map(function(doc){
       var ini = (doc.artista||'?').charAt(0).toUpperCase();
