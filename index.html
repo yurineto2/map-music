@@ -15349,36 +15349,15 @@ body[data-ambiente="vocalista"] .swipe-hint { display: none !important; }
   padding: 11px 16px; border-bottom: 1px solid rgba(255,255,255,0.04);
   cursor: pointer; transition: background 0.15s;
 }
-.voc-set-item.atual {
-  background: rgba(96,165,250,0.10);
-  border-left: 3px solid #60a5fa;
-  padding-left: 13px;
-}
+.voc-set-item.atual { background: rgba(96,165,250,0.07); }
 .voc-set-item:active { background: rgba(96,165,250,0.1); }
 .voc-set-num {
   font-size: 12px; font-weight: 800; color: rgba(255,255,255,0.2);
   min-width: 22px; text-align: center; flex-shrink: 0;
 }
-.voc-set-item.atual .voc-set-num { display: none; }
-.voc-set-agora {
-  display: none; align-items: center; gap: 3px; flex-shrink: 0;
-  min-width: 22px; justify-content: center;
-}
-.voc-set-item.atual .voc-set-agora { display: flex; }
-.voc-set-agora span {
-  display: inline-block; width: 3px; border-radius: 2px;
-  background: #60a5fa;
-  animation: voc-bar-pulse 1s ease-in-out infinite alternate;
-}
-.voc-set-agora span:nth-child(1) { height: 8px; animation-delay: 0s; }
-.voc-set-agora span:nth-child(2) { height: 12px; animation-delay: 0.2s; }
-.voc-set-agora span:nth-child(3) { height: 6px; animation-delay: 0.4s; }
-@keyframes voc-bar-pulse {
-  from { opacity: 0.4; transform: scaleY(0.6); }
-  to   { opacity: 1;   transform: scaleY(1); }
-}
+.voc-set-item.atual .voc-set-num { color: #60a5fa; }
 .voc-set-nome { font-size: 14px; font-weight: 700; color: #fff; flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.voc-set-item.atual .voc-set-nome { color: #93c5fd; font-weight: 800; }
+.voc-set-item.atual .voc-set-nome { color: #93c5fd; }
 .voc-set-tag {
   font-size: 10px; font-weight: 800; padding: 3px 8px;
   border-radius: 7px; flex-shrink: 0;
@@ -15864,18 +15843,6 @@ body[data-ambiente="vocalista"] .swipe-hint { display: none !important; }
   touch-action: manipulation; transition: border-color 0.2s;
 }
 .voc-video-card:active { border-color: rgba(138,92,246,0.28); }
-.voc-video-card[data-filtro] { transition: opacity 0.2s, border-color 0.2s; }
-.voc-video-card.filtro-oculto { display: none; }
-.voc-vfiltro {
-  padding: 6px 13px; border-radius: 20px; font-size: 11px; font-weight: 800;
-  border: 1px solid rgba(255,255,255,0.08); background: rgba(255,255,255,0.04);
-  color: rgba(255,255,255,0.4); cursor: pointer; font-family: inherit;
-  touch-action: manipulation; transition: all 0.15s;
-}
-.voc-vfiltro.ativo {
-  background: rgba(138,92,246,0.18); border-color: rgba(138,92,246,0.4);
-  color: #a78bfa;
-}
 .voc-video-thumb {
   width: 100%; aspect-ratio: 16/9;
   background: linear-gradient(135deg,#0d0c22,#0f1030);
@@ -15975,10 +15942,6 @@ body[data-ambiente="vocalista"] .swipe-hint { display: none !important; }
     <div class="voc-hdr-logo">
       <div class="voc-hdr-title"><span>Map Music</span> PRO</div>
       <div class="voc-hdr-sub">Espaço Vocalista</div>
-    </div>
-    <div id="voc-hdr-tom" style="display:none;align-items:center;gap:6px;background:rgba(138,92,246,0.12);border:1px solid rgba(138,92,246,0.25);border-radius:10px;padding:5px 11px;cursor:pointer;" onclick="vocAbrirPainel('tom')" title="Ver tonalidade">
-      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#a78bfa" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>
-      <span id="voc-hdr-tom-nota" style="font-size:13px;font-weight:900;color:#a78bfa;letter-spacing:0.5px;"></span>
     </div>
     <button class="voc-hdr-btn" onclick="toggleNotifPanel(event)" title="Notificações">
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
@@ -16309,45 +16272,12 @@ body[data-ambiente="vocalista"] .swipe-hint { display: none !important; }
       <div class="voc-search-row">
         <div class="voc-search-field">
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.22)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-          <input class="voc-search-input" id="voc-input-video" type="text" placeholder="Música ou artista..." onkeydown="if(event.key==='Enter')vocBuscarVideos()">
+          <input class="voc-search-input" id="voc-input-video" type="text" placeholder="Música ou artista...">
         </div>
         <button class="voc-search-btn" onclick="vocBuscarVideos()">Buscar</button>
       </div>
-      <!-- Filtros -->
-      <div id="voc-video-filtros" style="display:none;flex-wrap:wrap;gap:6px;padding:0 16px 12px;">
-        <button class="voc-vfiltro ativo" data-filtro="todos" onclick="vocVideoFiltrar('todos')">Todos</button>
-        <button class="voc-vfiltro" data-filtro="letra" onclick="vocVideoFiltrar('letra')">Com Letra</button>
-        <button class="voc-vfiltro" data-filtro="lyric" onclick="vocVideoFiltrar('lyric')">Lyric Video</button>
-        <button class="voc-vfiltro" data-filtro="karaoke" onclick="vocVideoFiltrar('karaoke')">Karaokê</button>
-        <button class="voc-vfiltro" data-filtro="aovivo" onclick="vocVideoFiltrar('aovivo')">Ao Vivo</button>
-        <button class="voc-vfiltro" data-filtro="tutorial" onclick="vocVideoFiltrar('tutorial')">Tutorial Vocal</button>
-      </div>
-      <!-- Histórico -->
-      <div id="voc-video-hist" style="padding:0 16px 10px;"></div>
     </div>
     <div class="voc-panel-body"><div id="voc-videos-res" style="padding-bottom:40px;"></div></div>
-  </div>
-
-  <!-- Player flutuante -->
-  <div id="voc-player-overlay" style="display:none;position:fixed;inset:0;z-index:99990;background:rgba(0,0,0,0.88);backdrop-filter:blur(10px);flex-direction:column;align-items:center;justify-content:flex-end;" onclick="if(event.target===this)vocFecharPlayer()">
-    <div style="width:100%;max-width:560px;background:#0d0d1a;border-radius:24px 24px 0 0;overflow:hidden;box-shadow:0 -20px 60px rgba(0,0,0,0.8);">
-      <div style="display:flex;align-items:center;justify-content:space-between;padding:16px 20px 10px;">
-        <div style="flex:1;min-width:0;">
-          <div id="voc-player-titulo" style="font-size:14px;font-weight:900;color:#fff;line-height:1.3;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;"></div>
-          <div id="voc-player-canal" style="font-size:11px;color:rgba(255,255,255,0.35);margin-top:2px;"></div>
-        </div>
-        <button onclick="vocFecharPlayer()" style="margin-left:12px;width:34px;height:34px;border-radius:50%;background:rgba(255,255,255,0.07);border:none;color:rgba(255,255,255,0.5);font-size:18px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;">✕</button>
-      </div>
-      <div style="width:100%;aspect-ratio:16/9;background:#000;">
-        <iframe id="voc-player-iframe" width="100%" height="100%" frameborder="0" allow="accelerometer;autoplay;clipboard-write;encrypted-media;gyroscope;picture-in-picture" allowfullscreen style="display:block;"></iframe>
-      </div>
-      <div style="padding:14px 20px 40px;display:flex;gap:10px;">
-        <a id="voc-player-yt-link" href="#" target="_blank" style="flex:1;display:flex;align-items:center;justify-content:center;gap:6px;padding:13px;border-radius:12px;background:rgba(255,0,0,0.08);border:1px solid rgba(255,0,0,0.18);color:rgba(255,100,100,0.85);font-size:13px;font-weight:800;text-decoration:none;">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2"/></svg>
-          Abrir no YouTube
-        </a>
-      </div>
-    </div>
   </div>
 
   <!-- SALVOS -->
@@ -16622,7 +16552,7 @@ function vocAbrirPainel(id, originEl) {
   if(id === 'tom') _vocRenderTons();
   if(id === 'shows') _vocRenderShows();
   if(id === 'eventos') { _vocAtualizarBadgeSala(); vocEvRenderLista(); }
-  if(id === 'videos') { var vi=document.getElementById('voc-input-video'); if(vi&&_voc.titulo) vi.value=_voc.titulo+' '+_voc.artista; _vocVideoHistRender(); if(vi&&vi.value.trim()) setTimeout(vocBuscarVideos, 100); }
+  if(id === 'videos') { var vi=document.getElementById('voc-input-video'); if(vi&&_voc.titulo) vi.value=_voc.titulo+' '+_voc.artista; }
 
   // Mostrar e animar
   pan.classList.add('open');
@@ -16742,12 +16672,7 @@ function _vocConfirmarChave() {
   _vocSaveKey(key);
   var modal = document.getElementById('voc-key-modal');
   if(modal) modal.remove();
-  showToast('Chave salva!', 'success');
-  // Reexecuta a busca automaticamente se houver termo digitado
-  var inputBusca = document.getElementById('voc-input-busca');
-  if(inputBusca && inputBusca.value.trim()) {
-    vocBuscarLetras();
-  }
+  showToast('Chave salva! Tente buscar novamente.', 'success');
 }
 
 // ── Busca de letras ───────────────────────────────────────────────────────────
@@ -16855,17 +16780,6 @@ function _vocRenderLetra(letra,fontSize){
 
 var _vocLetraRenderCache = { titulo: null, artista: null, fontSize: null, html: null };
 
-function _vocAtualizarHdrTom(titulo){
-  var hdrTom = document.getElementById('voc-hdr-tom');
-  var hdrNota = document.getElementById('voc-hdr-tom-nota');
-  if(!hdrTom || !hdrNota) return;
-  if(!titulo){ hdrTom.style.display='none'; return; }
-  var tons = vocTons() || [];
-  var salvo = tons.find(function(t){ return t.titulo === titulo; });
-  if(salvo){ hdrNota.textContent = salvo.tom; hdrTom.style.display='flex'; }
-  else { hdrTom.style.display='none'; }
-}
-
 function vocAbrirLetra(titulo,artista,letra){
   document.getElementById('voc-letra-titulo').textContent=titulo;
   document.getElementById('voc-letra-artista').textContent=artista;
@@ -16880,9 +16794,8 @@ function vocAbrirLetra(titulo,artista,letra){
   _vocPararScroll();
   document.getElementById('voc-letra-tela').classList.add('aberta');
   var vi=document.getElementById('voc-input-video'); if(vi)vi.value=titulo+' '+artista;
-  _vocAtualizarHdrTom(titulo);
 }
-function vocFecharLetra(){ _vocPararScroll(); document.getElementById('voc-letra-tela').classList.remove('aberta'); _vocAtualizarHdrTom(null); }
+function vocFecharLetra(){ _vocPararScroll(); document.getElementById('voc-letra-tela').classList.remove('aberta'); }
 function vocFonteMais(){ if(_voc.fontSize>=28)return; _voc.fontSize+=2; _vocLetraRenderCache.fontSize=null; document.querySelectorAll('.voc-secao-bloco').forEach(function(b){b.style.fontSize=_voc.fontSize+'px';}); }
 function vocFonteMenos(){ if(_voc.fontSize<=12)return; _voc.fontSize-=2; _vocLetraRenderCache.fontSize=null; document.querySelectorAll('.voc-secao-bloco').forEach(function(b){b.style.fontSize=_voc.fontSize+'px';}); }
 function vocToggleScroll(){ if(_voc.scrollTimer)_vocPararScroll(); else _vocIniciarScroll(); }
@@ -17054,9 +16967,7 @@ function vocEvMostrarSet() {
     var atual = (i === posAtual);
     return '<div class="voc-set-item' + (atual ? ' atual' : '') + '" onclick="vocEvClicarMusica(' + i + ')">'
       + '<span class="voc-set-num">' + (i + 1) + '</span>'
-      + '<span class="voc-set-agora"><span></span><span></span><span></span></span>'
       + '<span class="voc-set-nome">' + _ve(m.nome) + '</span>'
-      + (atual ? '<span style="font-size:9px;font-weight:800;color:#60a5fa;letter-spacing:0.5px;flex-shrink:0;background:rgba(96,165,250,0.12);border:1px solid rgba(96,165,250,0.25);border-radius:6px;padding:2px 7px;">AGORA</span>' : '')
       + '<span class="voc-set-tag ' + (m.temLetra ? 'tem-letra' : 'sem-letra') + '">' + (m.temLetra ? 'Letra' : 'Buscar') + '</span>'
       + '</div>';
   }).join('');
@@ -17868,7 +17779,7 @@ function _vocRenderTons(){
   var salva=document.getElementById('voc-tom-salva'); if(salva){ var tons=vocTons()||[]; var s=tons.find(function(t){return t.titulo===_voc.titulo;}); salva.textContent=s?s.tom+' — '+s.artista:'Nenhum salvo ainda'; }
 }
 function vocSelTom(nota){ _voc.tomSel=nota; _vocRenderTons(); }
-function vocSalvarTom(){ if(!_voc.tomSel||!_voc.titulo)return; var tons=(vocTons()||[]).filter(function(t){return t.titulo!==_voc.titulo;}); tons.unshift({titulo:_voc.titulo,artista:_voc.artista,tom:_voc.tomSel,at:Date.now()}); vocTons(tons); vocToast('Tom '+_voc.tomSel+' salvo'); _vocRenderTons(); _vocAtualizarBadgeSalvos(); _vocAtualizarHdrTom(_voc.titulo); }
+function vocSalvarTom(){ if(!_voc.tomSel||!_voc.titulo)return; var tons=(vocTons()||[]).filter(function(t){return t.titulo!==_voc.titulo;}); tons.unshift({titulo:_voc.titulo,artista:_voc.artista,tom:_voc.tomSel,at:Date.now()}); vocTons(tons); vocToast('Tom '+_voc.tomSel+' salvo'); _vocRenderTons(); _vocAtualizarBadgeSalvos(); }
 
 // ── Aulas toggle ──────────────────────────────────────────────────────────────
 // ── Info tooltip dos cards ────────────────────────────────────────────────────
@@ -17950,146 +17861,19 @@ document.addEventListener('click', function(){
 function vocToggleAula(id){ var body=document.getElementById('voc-body-'+id),arr=document.getElementById('voc-arr-'+id); if(!body)return; var open=body.classList.toggle('open'); if(arr)arr.classList.toggle('open',open); }
 
 // ── Vídeos ────────────────────────────────────────────────────────────────────
-// ── Histórico de vídeos ───────────────────────────────────────────────────────
-var _vocVideoHistKey = 'voc_video_hist_v1';
-function _vocVideoHistGet(){ try{ return JSON.parse(localStorage.getItem(_vocVideoHistKey)||'[]'); }catch(e){ return []; } }
-function _vocVideoHistAdd(q){ try{ var h=_vocVideoHistGet().filter(function(x){return x!==q;}); h.unshift(q); localStorage.setItem(_vocVideoHistKey, JSON.stringify(h.slice(0,8))); }catch(e){} }
-function _vocVideoHistRender(){
-  var hist = _vocVideoHistGet();
-  var el = document.getElementById('voc-video-hist');
-  if(!el) return;
-  if(!hist.length){ el.innerHTML=''; return; }
-  el.innerHTML = '<div style="font-size:10px;font-weight:800;color:rgba(255,255,255,0.2);letter-spacing:1px;margin-bottom:8px;">BUSCAS RECENTES</div>'
-    + '<div style="display:flex;flex-wrap:wrap;gap:6px;">'
-    + hist.map(function(q){
-        return '<button onclick="vocVideoHistAbrir(''+q.replace(/'/g,"\'")+'')" style="padding:5px 12px;border-radius:20px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.07);color:rgba(255,255,255,0.45);font-size:11px;font-weight:700;cursor:pointer;font-family:inherit;touch-action:manipulation;">'+_ve(q)+'</button>';
-      }).join('')
-    + '</div>';
-}
-function vocVideoHistAbrir(q){
-  var input = document.getElementById('voc-input-video');
-  if(input){ input.value = q; }
-  vocBuscarVideos();
-}
-
-// ── Filtro de vídeos ──────────────────────────────────────────────────────────
-var _vocVideosTodos = [];
-function vocVideoFiltrar(filtro){
-  document.querySelectorAll('.voc-vfiltro').forEach(function(b){ b.classList.toggle('ativo', b.dataset.filtro === filtro); });
-  document.querySelectorAll('.voc-video-card[data-filtro]').forEach(function(card){
-    var f = card.dataset.filtro;
-    var vis = filtro === 'todos' || f === filtro;
-    card.classList.toggle('filtro-oculto', !vis);
-  });
-}
-
-// ── Player flutuante ──────────────────────────────────────────────────────────
-function vocAbrirPlayer(videoId, titulo, canal){
-  var overlay = document.getElementById('voc-player-overlay');
-  var iframe   = document.getElementById('voc-player-iframe');
-  var titEl    = document.getElementById('voc-player-titulo');
-  var canEl    = document.getElementById('voc-player-canal');
-  var linkEl   = document.getElementById('voc-player-yt-link');
-  if(!overlay || !iframe) return;
-  iframe.src = 'https://www.youtube.com/embed/' + videoId + '?autoplay=1&rel=0&modestbranding=1';
-  if(titEl) titEl.textContent = titulo || '';
-  if(canEl) canEl.textContent = canal || '';
-  if(linkEl) linkEl.href = 'https://www.youtube.com/watch?v=' + videoId;
-  overlay.style.display = 'flex';
-}
-function vocFecharPlayer(){
-  var overlay = document.getElementById('voc-player-overlay');
-  var iframe   = document.getElementById('voc-player-iframe');
-  if(iframe) iframe.src = '';
-  if(overlay) overlay.style.display = 'none';
-}
-
-// ── Busca de vídeos (YouTube Data API v3) ─────────────────────────────────────
-var _vocVideosBuscaAtual = null;
 async function vocBuscarVideos(){
-  var q = (document.getElementById('voc-input-video').value||'').trim();
-  if(!q) return;
-  var res = document.getElementById('voc-videos-res');
-  var filtrosEl = document.getElementById('voc-video-filtros');
-  res.innerHTML = '<div class="voc-spinner"></div>';
-  if(filtrosEl) filtrosEl.style.display = 'none';
-
-  // Salvar histórico
-  _vocVideoHistAdd(q);
-  _vocVideoHistRender();
-
-  // Usar IA para gerar queries melhores
-  var queries = await _vocGerarQueriesVideos(q);
-
-  // Buscar em paralelo na YouTube API
-  var apiKey = _API_KEY;
-  var categorias = [
-    { id:'letra',   label:'Com Letra',     badge:'COM LETRA',    q: queries.letra    || q+' letra oficial gospel' },
-    { id:'lyric',   label:'Lyric Video',   badge:'LYRIC',        q: queries.lyric    || q+' lyric video' },
-    { id:'karaoke', label:'Karaokê',       badge:'KARAOKÊ',      q: queries.karaoke  || q+' karaoke' },
-    { id:'aovivo',  label:'Ao Vivo',       badge:'AO VIVO',      q: queries.aovivo   || q+' ao vivo worship' },
-    { id:'tutorial',label:'Tutorial Vocal',badge:'TUTORIAL',     q: queries.tutorial || q+' como cantar tutorial vocal' },
-  ];
-
-  var promises = categorias.map(function(cat){
-    var url = 'https://www.googleapis.com/youtube/v3/search?part=snippet&type=video&maxResults=2&q='
-      + encodeURIComponent(cat.q)
-      + '&key=' + apiKey;
-    return fetch(url).then(function(r){ return r.json(); }).then(function(d){
-      return { cat: cat, items: (d.items || []) };
-    }).catch(function(){ return { cat: cat, items: [] }; });
-  });
-
-  var resultados = await Promise.all(promises);
-
-  // Montar HTML
-  var html = '';
-  resultados.forEach(function(r){
-    r.items.forEach(function(item){
-      var vid   = item.id && item.id.videoId;
-      if(!vid) return;
-      var titulo = item.snippet.title;
-      var canal  = item.snippet.channelTitle;
-      var thumb  = (item.snippet.thumbnails.medium || item.snippet.thumbnails.default || {}).url || '';
-      html += '<div class="voc-video-card" data-filtro="'+r.cat.id+'" onclick="vocAbrirPlayer(''+vid+'',''+titulo.replace(/'/g,"\'").replace(/"/g,'\"')+'',''+canal.replace(/'/g,"\'")+'')">'        + '<div class="voc-video-thumb" style="'+(thumb?'background:#000;':'')+'">'
-        + (thumb ? '<img src="'+thumb+'" style="width:100%;height:100%;object-fit:cover;display:block;">' : '<svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="rgba(138,92,246,0.25)" stroke-width="1.8"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>')
-        + '<div class="voc-video-play-btn"><svg width="16" height="16" viewBox="0 0 24 24" fill="#fff" stroke="none"><polygon points="5 3 19 12 5 21 5 3"/></svg></div>'
-        + '<div class="voc-video-badge">'+_ve(r.cat.badge)+'</div>'
-        + '</div>'
-        + '<div class="voc-video-info">'
-        + '<div class="voc-video-name">'+_ve(titulo)+'</div>'
-        + '<div class="voc-video-chan"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="rgba(255,80,80,0.6)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2"/></svg> '+_ve(canal)+'</div>'
-        + '</div>'
-        + '</div>';
-    });
-  });
-
-  if(!html){
-    res.innerHTML = '<div class="voc-empty"><div class="voc-empty-title">Nenhum vídeo encontrado</div><div class="voc-empty-sub">Tente outro termo</div></div>';
-    return;
-  }
-
-  html += '<div style="padding:12px 16px 8px;"><a href="https://www.youtube.com/results?search_query='+encodeURIComponent(q)+'" target="_blank" style="display:block;text-align:center;padding:13px;border-radius:14px;background:rgba(255,0,0,0.05);border:1px solid rgba(255,0,0,0.09);color:rgba(255,100,100,0.7);font-size:13px;font-weight:800;text-decoration:none;">Ver todos no YouTube</a></div>';
-  res.innerHTML = html;
-  if(filtrosEl){ filtrosEl.style.display = 'flex'; }
-  // Reset filtro para "Todos"
-  vocVideoFiltrar('todos');
+  var q=(document.getElementById('voc-input-video').value||'').trim(); if(!q)return;
+  var res=document.getElementById('voc-videos-res');
+  res.innerHTML='<div class="voc-spinner"></div>';
+  var tipos=[{label:'Com Letra',badge:'COM LETRA',query:q+' letra oficial'},{label:'Lyric Video',badge:'LYRIC',query:q+' lyric video'},{label:'Karaokê',badge:'KARAOKÊ',query:q+' karaoke'},{label:'Ao Vivo',badge:'AO VIVO',query:q+' ao vivo'}];
+  var svg='<svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="rgba(138,92,246,0.25)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>';
+  res.innerHTML=tipos.map(function(v){
+    return '<a href="https://www.youtube.com/results?search_query='+encodeURIComponent(v.query)+'" target="_blank" class="voc-video-card">'
+      +'<div class="voc-video-thumb">'+svg+'<div class="voc-video-play-btn"><svg width="16" height="16" viewBox="0 0 24 24" fill="#fff" stroke="none"><polygon points="5 3 19 12 5 21 5 3"/></svg></div><div class="voc-video-badge">'+_ve(v.badge)+'</div></div>'
+      +'<div class="voc-video-info"><div class="voc-video-name">'+_ve(q)+' — '+_ve(v.label)+'</div><div class="voc-video-chan"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="rgba(255,80,80,0.6)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2"/></svg> YouTube · Toque para abrir</div></div>'
+      +'</a>';
+  }).join('')+'<div style="padding:12px 16px 8px;"><a href="https://www.youtube.com/results?search_query='+encodeURIComponent(q)+'" target="_blank" style="display:block;text-align:center;padding:13px;border-radius:14px;background:rgba(255,0,0,0.05);border:1px solid rgba(255,0,0,0.09);color:rgba(255,100,100,0.7);font-size:13px;font-weight:800;text-decoration:none;">Ver todos no YouTube</a></div>';
 }
-
-async function _vocGerarQueriesVideos(q){
-  var key = _vocGetKey();
-  if(!key) return {};
-  try {
-    var prompt = 'Para a música gospel "'+q+'", gere queries de busca otimizadas para YouTube. '
-      + 'Responda SOMENTE com JSON válido, sem markdown. Formato: '
-      + '{"letra":"query para versão com letra na tela","lyric":"query para lyric video","karaoke":"query para karaokê","aovivo":"query para apresentação ao vivo","tutorial":"query para tutorial de como cantar"}';
-    var txt = await _vocClaude(prompt, 300);
-    if(!txt) return {};
-    var clean = txt.replace(/```json|```/g,'').trim();
-    return JSON.parse(clean);
-  } catch(e){ return {}; }
-}
-
 
 // ── Splash ────────────────────────────────────────────────────────────────────
 function _vocMostrarSplashSeNecessario(){
