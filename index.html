@@ -20,13 +20,13 @@
   <div style="font-size:22px;font-weight:900;margin-bottom:10px;">Abrir no Safari</div>
   <div style="font-size:14px;color:rgba(255,255,255,0.5);line-height:1.8;margin-bottom:32px;">
     Este app precisa ser aberto no <strong style="color:#fff;">Safari</strong> para funcionar.<br>
-    Toque no botão <strong style="color:#a78bfa;">Compartilhar ⬆</strong> e escolha<br>
+    Toque no botão <strong style="color:#a78bfa;">Compartilhar</strong> e escolha<br>
     <strong style="color:#a78bfa;">"Abrir no Safari"</strong>
   </div>
   <div style="background:rgba(138,92,246,0.1);border:1px solid rgba(138,92,246,0.3);border-radius:16px;padding:20px 24px;font-size:13px;color:rgba(255,255,255,0.6);line-height:2;max-width:320px;">
-    <span style="color:#fff;font-weight:700;">1.</span> Toque em <strong style="color:#a78bfa;">⬆ Compartilhar</strong> (barra inferior)<br>
+    <span style="color:#fff;font-weight:700;">1.</span> Toque em <strong style="color:#a78bfa;">Compartilhar</strong> (barra inferior)<br>
     <span style="color:#fff;font-weight:700;">2.</span> Role e toque em <strong style="color:#a78bfa;">"Abrir no Safari"</strong><br>
-    <span style="color:#fff;font-weight:700;">3.</span> O app abrirá normalmente ✓
+    <span style="color:#fff;font-weight:700;">3.</span> O app abrirá normalmente
   </div>
 </div>
 <script>
@@ -1232,7 +1232,7 @@ async function obFazerLogin() {
   // Detectar about:/file: — Safari bloqueia fetch cross-origin nesses contextos
   var _proto = window.location.protocol;
   if (_proto === 'file:' || _proto === 'about:' || _proto === 'blob:') {
-    if (msg) msg.textContent = '⚠️ Abra o arquivo diretamente no Safari (não em preview). Role para baixo e toque em "Abrir no Safari".';
+    if (msg) msg.textContent = '⚠ Abra o arquivo diretamente no Safari (não em preview). Role para baixo e toque em "Abrir no Safari".';
     if (btn) { btn.disabled = false; btn.textContent = 'Entrar'; }
     return;
   }
@@ -2211,7 +2211,7 @@ body { font-family: -apple-system, 'Inter', BlinkMacSystemFont, 'Segoe UI', sans
   font-size: 7px; letter-spacing: 1.5px; opacity: 0.7;
 }
 
-/* ★ Favorito */
+/* Favorito */
 .album-cover-fav {
   position: absolute; top: 8px; left: 9px; z-index: 5;
   font-size: 14px; color: #ffd700; opacity: 0;
@@ -2794,6 +2794,7 @@ body { font-family: -apple-system, 'Inter', BlinkMacSystemFont, 'Segoe UI', sans
 
 /* PERFORMANCE MODE */
 body.performance-mode .btn-save-vitro,
+body.performance-mode #cifra-font-ctrl,
 body.performance-mode .app-header,
 body.performance-mode .side-panel,
 body.performance-mode .metronome-card,
@@ -3566,7 +3567,8 @@ body.performance-mode #perf-font-ctrl { display: flex; }
 
 /* VIEWER MODE: bloqueia edição */
 body.viewer-mode .chord-area { pointer-events: none; }
-body.viewer-mode .btn-save-vitro { display: none; }
+body.viewer-mode .btn-save-vitro,
+body.viewer-mode #cifra-font-ctrl { display: none; }
 body.viewer-mode input[type="text"] { pointer-events: none; }
 
 /* Menu de contexto do álbum */
@@ -4339,7 +4341,7 @@ body.auth-pending #toast {
       </button>
       <button onclick="obDiagnosticarConexao()"
         style="width:100%;background:none;border:none;color:rgba(138,92,246,0.4);font-size:11px;font-family:inherit;cursor:pointer;padding:8px;touch-action:manipulation;">
-        🔍 Testar conexão com servidor
+        Testar conexão com servidor
       </button>
     </div><!-- /ob-painel-login -->
 
@@ -4556,48 +4558,7 @@ body.auth-pending #toast {
         
       </div>
 
-      <!-- Tamanhos de fonte -->
-      <div style="background:#000;border-radius:16px;padding:16px;display:flex;flex-direction:column;gap:14px;">
-
-        <!-- Cifras (modo normal) -->
-        <div style="display:flex;flex-direction:column;gap:8px;">
-          <div style="display:flex;align-items:center;justify-content:space-between;">
-            <label style="font-size:9px;font-weight:900;letter-spacing:2px;color:rgba(255,255,255,0.35);text-transform:uppercase;">Cifras</label>
-            <span id="perfil-fonte-val" style="font-size:11px;font-weight:900;color:#22c55e;min-width:30px;text-align:right;">19px</span>
-          </div>
-          <div style="display:flex;align-items:center;gap:10px;">
-            <span style="font-size:10px;color:rgba(255,255,255,0.2);font-weight:800;width:12px;text-align:center;">A</span>
-            <input type="range" id="perfil-fonte-slider" min="13" max="32" step="1" value="19"
-              class="perfil-fonte-slider"
-              style="background:linear-gradient(to right,#22c55e 40%,rgba(255,255,255,0.12) 40%);"
-              oninput="_previewFontePartes(this.value)">
-            <span style="font-size:17px;color:rgba(255,255,255,0.2);font-weight:800;width:12px;text-align:center;">A</span>
-          </div>
-        </div>
-
-        <!-- Divisor -->
-        <div style="height:1px;background:rgba(255,255,255,0.06);"></div>
-
-        <!-- Modo Show -->
-        <div style="display:flex;flex-direction:column;gap:8px;">
-          <div style="display:flex;align-items:center;justify-content:space-between;">
-            <div style="display:flex;align-items:center;gap:6px;">
-              <label style="font-size:9px;font-weight:900;letter-spacing:2px;color:rgba(255,255,255,0.35);text-transform:uppercase;">Modo Show</label>
-              <span style="font-size:8px;font-weight:900;padding:2px 6px;border-radius:5px;background:rgba(239,68,68,0.15);border:1px solid rgba(239,68,68,0.25);color:#f87171;letter-spacing:1px;">SHOW</span>
-            </div>
-            <span id="perfil-fonte-show-val" style="font-size:11px;font-weight:900;color:#22c55e;min-width:30px;text-align:right;">48px</span>
-          </div>
-          <div style="display:flex;align-items:center;gap:10px;">
-            <span style="font-size:10px;color:rgba(255,255,255,0.2);font-weight:800;width:12px;text-align:center;">A</span>
-            <input type="range" id="perfil-fonte-show-slider" min="28" max="72" step="2" value="48"
-              class="perfil-fonte-slider"
-              style="background:linear-gradient(to right,#22c55e 45%,rgba(255,255,255,0.12) 45%);"
-              oninput="_previewFonteShow(this.value)">
-            <span style="font-size:17px;color:rgba(255,255,255,0.2);font-weight:800;width:12px;text-align:center;">A</span>
-          </div>
-        </div>
-
-      </div>
+      <!-- Tamanhos de fonte removidos daqui — agora ficam nos painéis individuais -->
 
       <!-- Botões ação -->
       <div style="display:flex;align-items:center;gap:12px;padding-top:4px;">
@@ -4690,7 +4651,7 @@ body.auth-pending #toast {
     <p id="srv-data" style="font-size:12px;color:rgba(255,255,255,0.35);margin:0 0 28px;"></p>
     <div id="srv-lista" style="display:flex;flex-direction:column;gap:8px;"></div>
     <div style="margin-top:40px;padding-top:20px;border-top:1px solid rgba(255,255,255,0.07);text-align:center;">
-      <a href="." style="font-size:11px;color:#0A9E6E;font-weight:800;letter-spacing:1px;text-decoration:none;">Abrir Map Music Pro ↗</a>
+      <a href="." style="font-size:11px;color:#0A9E6E;font-weight:800;letter-spacing:1px;text-decoration:none;">Abrir Map Music Pro</a>
     </div>
   </div>
 </div>
@@ -5075,6 +5036,13 @@ body.auth-pending #toast {
 </div>
 <button class="btn-save-vitro" id="btn-save-vitro" onclick="saveSong()">Salvar Música</button>
 
+<!-- Controle de fonte das cifras — painel individual -->
+<div id="cifra-font-ctrl" style="position:fixed;bottom:30px;right:20px;z-index:900;display:flex;align-items:center;gap:6px;background:var(--glass-bg);backdrop-filter:blur(10px);border:1px solid var(--glass-border);border-radius:999px;padding:6px 12px;">
+  <button onclick="_cifraFontAjustar(-1)" style="background:none;border:none;color:rgba(255,255,255,0.4);font-size:12px;font-weight:900;cursor:pointer;padding:2px 4px;line-height:1;touch-action:manipulation;" title="Diminuir fonte">A<sup style="font-size:7px">−</sup></button>
+  <span id="cifra-font-val" style="font-size:10px;font-weight:900;color:rgba(255,255,255,0.35);min-width:28px;text-align:center;letter-spacing:0.5px;"></span>
+  <button onclick="_cifraFontAjustar(+1)" style="background:none;border:none;color:rgba(255,255,255,0.4);font-size:15px;font-weight:900;cursor:pointer;padding:2px 4px;line-height:1;touch-action:manipulation;" title="Aumentar fonte">A<sup style="font-size:7px">+</sup></button>
+</div>
+
 
 <!-- BIBLIOTECA -->
 <div class="biblioteca-overlay" id="biblioteca-overlay">
@@ -5280,6 +5248,7 @@ let perfilFotoBase64 = null; // foto atual em edição
   // Aplica tamanho de fonte salvo
   _fonteShow = parseInt(localStorage.getItem(_FONTE_SHOW_KEY) || '48');
   _aplicarFontePartes(_fontePartes);
+  _cifraFontSincLabel();
   // Verifica se URL tem ?setlist= (view pública)
   _verificarSetlistPublico();
     try {
@@ -5320,25 +5289,7 @@ let perfilFotoBase64 = null; // foto atual em edição
 
 
 function abrirModalPerfil() {
-  // Sincroniza slider com valor salvo
-  var slider = document.getElementById('perfil-fonte-slider');
-  var lbl    = document.getElementById('perfil-fonte-val');
-  if (slider) { slider.value = _fontePartes; }
-  if (lbl)    { lbl.innerText = _fontePartes + 'px'; }
-  var sliderShow = document.getElementById('perfil-fonte-show-slider');
-  var lblShow    = document.getElementById('perfil-fonte-show-val');
-  var _fs = parseInt(localStorage.getItem(_FONTE_SHOW_KEY) || '48');
-  if (sliderShow) {
-    sliderShow.value = _fs;
-    var pctS = Math.round((_fs - 28) / (72 - 28) * 100);
-    sliderShow.style.background = 'linear-gradient(to right,#22c55e ' + pctS + '%,rgba(255,255,255,0.12) ' + pctS + '%)';
-  }
-  if (lblShow) { lblShow.innerText = _fs + 'px'; }
-  // Sync cifras bg
-  if (slider) {
-    var pctC = Math.round((_fontePartes - 13) / (32 - 13) * 100);
-    slider.style.background = 'linear-gradient(to right,#22c55e ' + pctC + '%,rgba(255,255,255,0.12) ' + pctC + '%)';
-  }
+  // Sliders de fonte foram movidos para os painéis individuais — nada a sincronizar aqui
   _renderHistoricoShow();
   const perfil = JSON.parse(localStorage.getItem('map_perfil_v1') || '{}');
   const nome = perfil.nome || perfil.nomeUsuario || '';
@@ -6313,7 +6264,7 @@ function togglePerf() {
   overlay.style.cssText = 'position:fixed;inset:0;z-index:100030;background:rgba(0,0,0,0.88);display:flex;align-items:center;justify-content:center;padding:24px;';
   overlay.innerHTML =
     '<div style="background:#111119;border:1px solid rgba(255,255,255,0.1);border-radius:20px;padding:28px 24px;width:100%;max-width:300px;display:flex;flex-direction:column;gap:14px;text-align:center;">'
-  + '<div style="font-size:32px;line-height:1;">🎤</div>'
+  + '<div style="font-size:32px;line-height:1;"></div>'
   + '<div style="font-size:16px;font-weight:900;color:#fff;">Encerrar o show?</div>'
   + '<div style="font-size:13px;color:rgba(255,255,255,0.4);line-height:1.5;">O modo show será desativado e o scroll parado.</div>'
   + '<div style="display:flex;gap:10px;margin-top:4px;">'
@@ -7031,12 +6982,25 @@ function _perfFontAplicar(size) {
 
 function perfFontAjustar(delta) {
   var atual = _perfFontAtual();
-  var novo = Math.min(96, Math.max(20, atual + delta));
+  var novo = Math.min(96, Math.max(20, atual + delta));  // limites expandidos: 20–96
   if (currentSongIndex >= 0 && songs[currentSongIndex]) {
     songs[currentSongIndex].fonteShow = novo;
     updateStorage();
   }
   _perfFontAplicar(novo);
+}
+
+function _cifraFontAjustar(delta) {
+  var novo = Math.min(32, Math.max(13, _fontePartes + delta));
+  _fontePartes = novo;
+  localStorage.setItem(_FONTE_KEY, String(_fontePartes));
+  _aplicarFontePartes(_fontePartes);
+  _cifraFontSincLabel();
+}
+
+function _cifraFontSincLabel() {
+  var lbl = document.getElementById('cifra-font-val');
+  if (lbl) lbl.textContent = _fontePartes + 'px';
 }
 
 function _perfFontCarregar() {
@@ -7178,7 +7142,7 @@ function renderSetlist() {
     document.getElementById('song-list').innerHTML =
       '<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;padding:28px 16px;gap:10px;">'
       + '<svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.18)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>'
-      + '<div style="color:rgba(255,255,255,0.25);font-size:12px;font-weight:700;text-align:center;">Nenhuma música salva<br><span style="font-size:11px;font-weight:400;opacity:0.7;">Salve sua primeira música ↑</span></div>'
+      + '<div style="color:rgba(255,255,255,0.25);font-size:12px;font-weight:700;text-align:center;">Nenhuma música salva<br><span style="font-size:11px;font-weight:400;opacity:0.7;">Salve sua primeira música</span></div>'
       + '</div>';
     return;
   }
@@ -7417,38 +7381,22 @@ function _aplicarFontePartes(size) {
 }
 
 function _previewFontePartes(val) {
-  val = parseInt(val);
-  var lbl = document.getElementById('perfil-fonte-val');
-  if (lbl) lbl.innerText = val + 'px';
-  var pct = Math.round((val - 13) / (32 - 13) * 100);
-  var sl = document.getElementById('perfil-fonte-slider');
-  if (sl) sl.style.background = 'linear-gradient(to right,#22c55e ' + pct + '%,rgba(255,255,255,0.12) ' + pct + '%)';
-  _aplicarFontePartes(val);
+  // Mantido por compatibilidade — redireciona para o controle inline
+  _cifraFontAjustar(parseInt(val) - _fontePartes);
 }
 
 function _previewFonteShow(val) {
   val = parseInt(val);
-  var lbl = document.getElementById('perfil-fonte-show-val');
-  if (lbl) lbl.innerText = val + 'px';
-  var pct = Math.round((val - 28) / (72 - 28) * 100);
-  var sl = document.getElementById('perfil-fonte-show-slider');
-  if (sl) sl.style.background = 'linear-gradient(to right,#22c55e ' + pct + '%,rgba(255,255,255,0.12) ' + pct + '%)';
   _fonteShow = val;
   _aplicarFontePartes(_fontePartes);
 }
 
 function _salvarFontePartes() {
-  var slider     = document.getElementById('perfil-fonte-slider');
-  var sliderShow = document.getElementById('perfil-fonte-show-slider');
-  if (slider) {
-    _fontePartes = parseInt(slider.value);
-    localStorage.setItem(_FONTE_KEY, String(_fontePartes));
-  }
-  if (sliderShow) {
-    _fonteShow = parseInt(sliderShow.value);
-    localStorage.setItem(_FONTE_SHOW_KEY, String(_fonteShow));
-  }
+  // Sliders do perfil foram removidos — usa os valores em memória diretamente
+  localStorage.setItem(_FONTE_KEY, String(_fontePartes));
+  localStorage.setItem(_FONTE_SHOW_KEY, String(_fonteShow));
   _aplicarFontePartes(_fontePartes);
+  _cifraFontSincLabel();
 }
 
 // ─── EXPORT / IMPORT ───────────────────────────────────────────────────────
@@ -8255,7 +8203,7 @@ function renderBiblioteca(filtro) {
 
   if (!lista.length) {
     grid.innerHTML = '<div class="biblioteca-vazia" style="grid-column:1/-1">'
-      + '<div class="biblioteca-vazia-icon">♪</div>'
+      + '<div class="biblioteca-vazia-icon" style="font-size:28px;opacity:0.3;"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg></div>'
       + '<div>' + (filtro ? 'Nenhum resultado' : 'Biblioteca vazia') + '</div>'
       + '<div style="font-size:10px;opacity:0.6;font-weight:500;">Salve músicas para vê-las aqui</div>'
       + '</div>';
@@ -8279,7 +8227,7 @@ function renderBiblioteca(filtro) {
       +     '<div class="album-cover-initials">' + ini + '<span class="album-cover-initial2">' + ini2 + '</span></div>'
       +     '<div class="album-cover-bpm">' + bpm + ' <span>BPM</span></div>'
       +   '</div>'
-      +   (s.favorite ? '<div class="album-cover-fav">★</div>' : '')
+      +   (s.favorite ? '<div class="album-cover-fav"><svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor" stroke="none"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg></div>' : '')
       +   '<button class="album-menu-btn" onclick="event.stopPropagation();abrirCtxMenu(event,' + s.id + ',\'biblioteca\')" title="Opções">'
       +     '<svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="12" cy="19" r="2"/></svg>'
       +   '</button>'
@@ -8504,7 +8452,7 @@ function favoritarBiblioteca(id, e) {
   if (s) {
     s.favorite = !s.favorite;
     updateStorage();
-    showToast(s.favorite ? '★ Favorita!' : 'Removida dos favoritos.');
+    showToast(s.favorite ? 'Favorita!' : 'Removida dos favoritos.');
     var filtro = (document.getElementById('biblioteca-search') || {}).value || '';
     renderBiblioteca(filtro);
   }
@@ -8559,7 +8507,7 @@ function renderEventos(filtro = '') {
 
   if (!lista.length) {
     grid.innerHTML = btnCriar + `<div class="biblioteca-vazia" style="grid-column:1/-1">
-      <div class="biblioteca-vazia-icon">♩</div>
+      <div class="biblioteca-vazia-icon"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg></div>
       <div>Nenhum evento</div>
       <div style="font-size:10px;opacity:0.6;font-weight:500;">Crie eventos para organizar repertórios</div>
     </div>`;
@@ -8724,7 +8672,7 @@ function renderEventoDetalhe() {
 
   if (!lista.length) {
     grid.innerHTML = '<div class="biblioteca-vazia" style="grid-column:1/-1">'
-      + '<div class="biblioteca-vazia-icon">♪</div>'
+      + '<div class="biblioteca-vazia-icon" style="font-size:28px;opacity:0.3;"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg></div>'
       + '<div>' + (filtro ? 'Nenhum resultado' : 'Evento vazio') + '</div>'
       + '<div style="font-size:10px;opacity:0.6;font-weight:500;">Toque em + para adicionar músicas</div>'
       + '</div>';
@@ -10404,7 +10352,7 @@ const _origSalvarPerfil = window.salvarPerfil;
 
 
 // ─── SISTEMA DE NOTIFICAÇÕES ──────────────────────────────────────────────────
-const APP_VERSION = '1.4.6';
+const APP_VERSION = '1.4.7';
 let notificacoes = (JSON.parse(localStorage.getItem('map_notifs_v1')) || []).filter(n => !n.ts || (Date.now() - n.ts) < (1 * 60 * 60 * 1000));
 let notifPanelOpen = false;
 
@@ -13397,6 +13345,189 @@ function admInicializar() {
   } catch(e) {}
 }
 
+// Destaca aba ativa na tab bar inferior do admin
+// ── Tab/nav seleção unificada ─────────────────────────────────────────────────
+var _admNavVal2 = '1h'; // validade padrão do link inline
+
+function admNavSel(id) {
+  var tabs  = ['usuarios','msg','link','email','voltar'];
+  var cores = { usuarios:'#0A9E6E', msg:'cornflowerblue', link:'#fbbf24', email:'#50c8ff', voltar:'rgba(255,255,255,0.4)' };
+  var subs  = ['msg','link','email'];
+
+  // Atualiza visual dos botões
+  tabs.forEach(function(t) {
+    var btn  = document.getElementById('adm-tab-' + t);
+    if (!btn) return;
+    var ativo = (t === id);
+    btn.style.borderTopColor = ativo ? (cores[t] || '#fff') : 'transparent';
+    var svg  = btn.querySelector('svg');
+    var span = btn.querySelector('span');
+    if (svg)  svg.setAttribute('stroke',  ativo ? (cores[t] || '#fff') : 'rgba(255,255,255,0.25)');
+    if (span) span.style.color = ativo ? (cores[t] || '#fff') : 'rgba(255,255,255,0.25)';
+  });
+
+  // Mostra/oculta sub-painéis
+  subs.forEach(function(s) {
+    var sub = document.getElementById('adm-sub-' + s);
+    if (sub) sub.style.display = (s === id) ? 'block' : 'none';
+  });
+
+  // Ajusta padding da lista para sub-painel aberto
+  var lista = document.getElementById('adm-user-list');
+  if (lista) lista.style.paddingBottom = (subs.indexOf(id) >= 0) ? '220px' : '80px';
+
+  // Popula destino na mensagem
+  if (id === 'msg') {
+    var total = Array.isArray(_admCache) ? _admCache.filter(function(u){ return !u.status || u.status === 'ativo'; }).length : 0;
+    var dest  = document.getElementById('adm-msg-destino');
+    if (dest) dest.textContent = total ? total + ' usuários ativos' : 'Carregue os usuários primeiro';
+  }
+}
+
+// mantido para compatibilidade com código existente
+function admTabSel(id) { admNavSel(id); }
+
+// ── Mensagem global inline ────────────────────────────────────────────────────
+async function admEnviarMsgInline() {
+  var titulo = (document.getElementById('adm-msg-titulo') || {}).value || '';
+  var texto  = ((document.getElementById('adm-msg-texto') || {}).value || '').trim();
+  if (!texto) { showToast('Digite uma mensagem.'); return; }
+  if (!window._fb) { showToast('Firebase indisponível.'); return; }
+  var alvo = Array.isArray(_admCache) ? _admCache.filter(function(u){ return !u.status || u.status === 'ativo'; }) : [];
+  if (!alvo.length) { showToast('Nenhum usuário ativo encontrado.'); return; }
+
+  var prog  = document.getElementById('adm-msg-prog');
+  var doneEl= document.getElementById('adm-msg-done');
+  var totEl = document.getElementById('adm-msg-total-span');
+  var barEl = document.getElementById('adm-msg-bar');
+  if (prog)  { prog.style.display = 'block'; }
+  if (totEl) totEl.textContent = alvo.length;
+
+  var dados = { tipo:'admin_msg', titulo: titulo.trim() || 'Mensagem do Administrador', desc:texto, icone:'msg', origem:'admin_global', ts:Date.now() };
+  var enviados = 0, erros = 0;
+
+  for (var i = 0; i < alvo.length; i += 5) {
+    var lote = alvo.slice(i, i + 5);
+    var res  = await Promise.all(lote.map(function(u){
+      return window._fb.enviarNotifParaUsuario(u.uid, dados).then(function(ok){ return !!ok; }).catch(function(){ return false; });
+    }));
+    res.forEach(function(ok){ if (!ok) erros++; });
+    enviados += lote.length;
+    if (doneEl) doneEl.textContent = enviados;
+    if (barEl)  barEl.style.width  = Math.round((enviados / alvo.length) * 100) + '%';
+  }
+
+  if (prog) prog.style.display = 'none';
+  document.getElementById('adm-msg-titulo').value = '';
+  document.getElementById('adm-msg-texto').value  = '';
+  document.getElementById('adm-msg-counter').textContent = '0/300';
+  showToast(erros === 0 ? 'Enviada para ' + enviados + ' usuários!' : 'Enviada para ' + (enviados-erros) + '/' + enviados + ' (' + erros + ' erros)');
+}
+
+// ── Link seguro inline ────────────────────────────────────────────────────────
+function admSelVal2(v) {
+  _admNavVal2 = v;
+  ['1h','6h','24h','7d'].forEach(function(x) {
+    var b = document.getElementById('adlv-' + x);
+    if (!b) return;
+    var ativo = (x === v);
+    b.style.background = ativo ? 'rgba(251,191,36,0.12)' : 'rgba(255,255,255,0.03)';
+    b.style.borderColor= ativo ? 'rgba(251,191,36,0.3)'  : 'rgba(255,255,255,0.07)';
+    b.style.color      = ativo ? '#fbbf24'                : 'rgba(255,255,255,0.3)';
+  });
+}
+
+function admGerarCodigoAleatorio2() {
+  var chars = 'abcdefghijklmnopqrstuvwxyz0123456789';
+  var cod   = '';
+  for (var i=0;i<8;i++) cod += chars[Math.floor(Math.random()*chars.length)];
+  var inp = document.getElementById('adm-link-codigo');
+  if (inp) inp.value = cod;
+}
+
+async function admGerarLinkInline() {
+  var inp = document.getElementById('adm-link-codigo');
+  var codigo = (inp ? inp.value.trim() : '');
+  if (codigo.length < 3) { showToast('Mínimo 3 caracteres no código.'); return; }
+  if (!window._fb || !window._fb.admCriarLinkSeguro) { showToast('Firebase indisponível.'); return; }
+
+  var btn = document.getElementById('adm-link-gerar-btn');
+  if (btn) { btn.disabled = true; btn.textContent = 'Gerando…'; }
+
+  try {
+    var valMs = { '1h':3600000, '6h':21600000, '24h':86400000, '7d':604800000 };
+    var expTs = Date.now() + (valMs[_admNavVal2] || 3600000);
+    var link  = await window._fb.admCriarLinkSeguro(codigo, expTs);
+
+    var res = document.getElementById('adm-link-resultado');
+    var box = document.getElementById('adm-link-box');
+    if (box) box.textContent = link || ('?' + codigo);
+    if (res) res.style.display = 'block';
+    window._admLinkGerado = link;
+    if (btn) { btn.textContent = 'Gerar Novo'; btn.disabled = false; }
+  } catch(e) {
+    showToast('Erro ao gerar link.');
+    if (btn) { btn.textContent = 'Gerar Link'; btn.disabled = false; }
+  }
+}
+
+function admCopiarLink2() {
+  var link = window._admLinkGerado || (document.getElementById('adm-link-box') || {}).textContent || '';
+  if (!link) return;
+  navigator.clipboard ? navigator.clipboard.writeText(link).then(function(){ showToast('Link copiado!'); }) : showToast(link);
+}
+
+function admNovoLink2() {
+  var res = document.getElementById('adm-link-resultado');
+  if (res) res.style.display = 'none';
+  var inp = document.getElementById('adm-link-codigo');
+  if (inp) inp.value = '';
+  var btn = document.getElementById('adm-link-gerar-btn');
+  if (btn) { btn.disabled = false; btn.textContent = 'Gerar Link'; }
+}
+
+// ── Liberar email inline ──────────────────────────────────────────────────────
+var _admLibUID = null;
+
+async function admLibBuscarInline() {
+  var inp = document.getElementById('adm-lib-email');
+  var email = (inp ? inp.value.trim() : '');
+  var res   = document.getElementById('adm-lib-resultado');
+  var btn   = document.getElementById('adm-lib-remover-btn');
+  _admLibUID = null;
+  if (btn) btn.style.display = 'none';
+  if (!email) { if (res) res.textContent = 'Digite um e-mail.'; return; }
+  if (!window._fb) { if (res) res.textContent = 'Firebase indisponível.'; return; }
+  if (res) res.textContent = 'Buscando…';
+  try {
+    var u = await window._fb.admBuscarPorEmail(email);
+    if (!u) { if (res) res.textContent = 'Nenhum usuário encontrado com esse e-mail.'; return; }
+    _admLibUID = u.uid;
+    if (res) res.innerHTML = '<span style="color:#fff;font-weight:700;">' + (u.nome || u.nomeUsuario || 'Sem nome') + '</span> &nbsp;<span style="color:rgba(255,255,255,0.35);">@' + (u.nomeUsuario || '—') + '</span>';
+    if (btn) btn.style.display = 'block';
+  } catch(e) { if (res) res.textContent = 'Erro na busca.'; }
+}
+
+async function admLibRemoverInline() {
+  if (!_admLibUID) return;
+  var res = document.getElementById('adm-lib-resultado');
+  if (!window._fb) return;
+  if (res) res.textContent = 'Removendo…';
+  try {
+    var ok = await window._fb.admRemoverConta(_admLibUID);
+    if (ok) {
+      _admCache = _admCache.filter(function(x){ return x.uid !== _admLibUID; });
+      admAtualizarStats(); admBuscar();
+      if (res) res.textContent = 'Conta removida. Delete no Firebase Auth Console.';
+      var inp = document.getElementById('adm-lib-email');
+      if (inp) inp.value = '';
+      var btn = document.getElementById('adm-lib-remover-btn');
+      if (btn) btn.style.display = 'none';
+      _admLibUID = null;
+    } else { if (res) res.textContent = 'Erro ao remover — verifique as regras do Firestore.'; }
+  } catch(e) { if (res) res.textContent = 'Erro: ' + e.message; }
+}
+
 function adminMostrarAba(aba) {
   var painel = document.getElementById('admin-painel');
   if (aba === 'painel') {
@@ -13404,6 +13535,7 @@ function adminMostrarAba(aba) {
     // fecha vocalista se estiver aberto
     var vApp = document.getElementById('vocal-app');
     if (vApp) vApp.classList.remove('ativo');
+    admTabSel('usuarios');
     var agora = Date.now();
     if (!_admCache.length || !_admLastLoad || (agora - _admLastLoad) > 60000) {
       _admLastLoad = agora;
@@ -14583,27 +14715,31 @@ async function _fbFazerBackupAgora(btn) {
 
 <!-- PAINEL ADMIN -->
 <div id="admin-painel" style="display:none;position:fixed;inset:0;z-index:8000;background:#09090f;flex-direction:column;overflow:hidden;">
-  <div style="background:#101018;border-bottom:1px solid rgba(255,255,255,0.07);padding:14px 18px;display:flex;align-items:center;gap:12px;flex-shrink:0;">
-    <button onclick="admAbrirLiberarEmail()" style="width:36px;height:36px;border-radius:10px;background:rgba(80,200,255,0.08);border:1px solid rgba(80,200,255,0.2);color:#50c8ff;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;touch-action:manipulation;" title="Liberar email para novo cadastro">
-      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 9.9-1"/></svg>
-    </button>
-    <button onclick="admAbrirLinkSeguro()" style="width:36px;height:36px;border-radius:10px;background:rgba(251,191,36,0.08);border:1px solid rgba(251,191,36,0.25);color:#fbbf24;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;touch-action:manipulation;" title="Gerar link seguro de acesso">
-      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
-    </button>
-    <button onclick="adminMostrarAba('app')" style="width:36px;height:36px;border-radius:10px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);color:rgba(255,255,255,0.6);cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;touch-action:manipulation;" title="Voltar ao app">
-      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
-    </button>
-    <div style="flex:1;">
-      <div style="font-size:15px;font-weight:900;color:#fff;">Administração</div>
-      <div style="font-size:10px;color:rgba(255,255,255,0.28);margin-top:2px;letter-spacing:0.5px;">MAP MUSIC PRO · CONTROLE DE USUÁRIOS</div>
+
+  <!-- Header: título + stats -->
+  <div style="background:#101018;border-bottom:1px solid rgba(255,255,255,0.07);padding:14px 18px;display:flex;align-items:center;gap:14px;flex-shrink:0;">
+    <div style="flex:1;min-width:0;">
+      <div style="font-size:16px;font-weight:900;color:#fff;letter-spacing:-0.3px;">Administração</div>
+      <div style="font-size:10px;color:rgba(255,255,255,0.25);margin-top:2px;letter-spacing:0.5px;">MAP MUSIC PRO · CONTROLE DE USUÁRIOS</div>
     </div>
-    <div style="display:flex;gap:14px;flex-shrink:0;">
-      <div style="text-align:center;"><div id="adm-stat-total" style="font-size:20px;font-weight:900;color:#0A9E6E;">—</div><div style="font-size:8px;color:rgba(255,255,255,0.28);letter-spacing:1px;">TOTAL</div></div>
-      <div style="text-align:center;"><div id="adm-stat-ativos" style="font-size:20px;font-weight:900;color:#fff;">—</div><div style="font-size:8px;color:rgba(255,255,255,0.28);letter-spacing:1px;">ATIVOS</div></div>
-      <div style="text-align:center;"><div id="adm-stat-banidos" style="font-size:20px;font-weight:900;color:#ff4444;">—</div><div style="font-size:8px;color:rgba(255,255,255,0.28);letter-spacing:1px;">BANIDOS</div></div>
+    <div style="display:flex;gap:16px;flex-shrink:0;">
+      <div style="text-align:center;">
+        <div id="adm-stat-total" style="font-size:22px;font-weight:900;color:#0A9E6E;line-height:1;">—</div>
+        <div style="font-size:8px;color:rgba(255,255,255,0.25);letter-spacing:1px;margin-top:2px;">TOTAL</div>
+      </div>
+      <div style="text-align:center;">
+        <div id="adm-stat-ativos" style="font-size:22px;font-weight:900;color:#fff;line-height:1;">—</div>
+        <div style="font-size:8px;color:rgba(255,255,255,0.25);letter-spacing:1px;margin-top:2px;">ATIVOS</div>
+      </div>
+      <div style="text-align:center;">
+        <div id="adm-stat-banidos" style="font-size:22px;font-weight:900;color:#ff4444;line-height:1;">—</div>
+        <div style="font-size:8px;color:rgba(255,255,255,0.25);letter-spacing:1px;margin-top:2px;">BANIDOS</div>
+      </div>
     </div>
   </div>
-  <div style="padding:10px 16px;background:#0c0c14;border-bottom:1px solid rgba(255,255,255,0.05);flex-shrink:0;display:flex;gap:8px;align-items:center;">
+
+  <!-- Barra de busca + filtro + recarregar -->
+  <div style="padding:10px 14px;background:#0c0c14;border-bottom:1px solid rgba(255,255,255,0.05);flex-shrink:0;display:flex;gap:8px;align-items:center;">
     <div style="position:relative;flex:1;">
       <svg style="position:absolute;left:11px;top:50%;transform:translateY(-50%);pointer-events:none;" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.25)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
       <input id="adm-search" type="text" placeholder="Buscar por nome, @usuario ou e-mail..."
@@ -14621,14 +14757,127 @@ async function _fbFazerBackupAgora(btn) {
     <button onclick="admCarregar()" style="width:36px;height:36px;border-radius:10px;background:rgba(10,158,110,0.08);border:1px solid rgba(10,158,110,0.2);color:#0A9E6E;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;touch-action:manipulation;" title="Recarregar">
       <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
     </button>
-    <button onclick="admMensagemGlobal()" style="width:36px;height:36px;border-radius:10px;background:rgba(100,149,237,0.1);border:1px solid rgba(100,149,237,0.3);color:cornflowerblue;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;touch-action:manipulation;" title="Mensagem para todos">
-      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/><line x1="9" y1="10" x2="15" y2="10"/><line x1="9" y1="14" x2="13" y2="14"/></svg>
-    </button>
   </div>
-  <div id="adm-user-list" style="flex:1;overflow-y:auto;padding:10px 14px;display:flex;flex-direction:column;gap:6px;-webkit-overflow-scrolling:touch;">
+
+  <!-- Lista de usuários -->
+  <div id="adm-user-list" style="flex:1;overflow-y:auto;padding:10px 14px 80px;display:flex;flex-direction:column;gap:6px;-webkit-overflow-scrolling:touch;">
     <div style="text-align:center;padding:60px 20px;color:rgba(255,255,255,0.2);font-size:13px;">Carregando...</div>
   </div>
+
+  <!-- ── Tab bar inferior redesenhada ── -->
+  <div id="adm-bottom-nav" style="position:absolute;bottom:0;left:0;right:0;background:#0c0c14;border-top:1px solid rgba(255,255,255,0.07);padding-bottom:env(safe-area-inset-bottom,0px);z-index:10;">
+
+    <!-- Botões de navegação -->
+    <div style="display:flex;align-items:stretch;">
+
+      <button id="adm-tab-usuarios" onclick="admNavSel('usuarios')"
+        style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;padding:10px 4px 9px;background:none;border:none;border-top:2px solid #0A9E6E;cursor:pointer;touch-action:manipulation;">
+        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#0A9E6E" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+        <span style="font-size:8px;font-weight:800;color:#0A9E6E;letter-spacing:0.3px;">Usuários</span>
+      </button>
+
+      <button id="adm-tab-msg" onclick="admNavSel('msg')"
+        style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;padding:10px 4px 9px;background:none;border:none;border-top:2px solid transparent;cursor:pointer;touch-action:manipulation;">
+        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.25)" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/><line x1="9" y1="10" x2="15" y2="10"/><line x1="9" y1="14" x2="13" y2="14"/></svg>
+        <span style="font-size:8px;font-weight:800;color:rgba(255,255,255,0.25);letter-spacing:0.3px;">Mensagem</span>
+      </button>
+
+      <button id="adm-tab-link" onclick="admNavSel('link')"
+        style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;padding:10px 4px 9px;background:none;border:none;border-top:2px solid transparent;cursor:pointer;touch-action:manipulation;">
+        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.25)" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
+        <span style="font-size:8px;font-weight:800;color:rgba(255,255,255,0.25);letter-spacing:0.3px;">Link</span>
+      </button>
+
+      <button id="adm-tab-email" onclick="admNavSel('email')"
+        style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;padding:10px 4px 9px;background:none;border:none;border-top:2px solid transparent;cursor:pointer;touch-action:manipulation;">
+        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.25)" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 9.9-1"/></svg>
+        <span style="font-size:8px;font-weight:800;color:rgba(255,255,255,0.25);letter-spacing:0.3px;">Liberar</span>
+      </button>
+
+      <button id="adm-tab-voltar" onclick="adminMostrarAba('app')"
+        style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;padding:10px 4px 9px;background:none;border:none;border-top:2px solid transparent;cursor:pointer;touch-action:manipulation;">
+        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.25)" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+        <span style="font-size:8px;font-weight:800;color:rgba(255,255,255,0.25);letter-spacing:0.3px;">Voltar</span>
+      </button>
+
+    </div>
+
+    <!-- ── Sub-painéis inline ── -->
+
+    <!-- Mensagem global -->
+    <div id="adm-sub-msg" style="display:none;border-top:1px solid rgba(100,149,237,0.12);background:#0e0e1a;padding:16px 16px 4px;animation:admSubIn 0.18s ease;">
+      <div style="font-size:9px;font-weight:900;letter-spacing:2px;color:rgba(100,149,237,0.6);text-transform:uppercase;margin-bottom:10px;">Mensagem Global</div>
+      <input id="adm-msg-titulo" type="text" placeholder="Título (opcional)" maxlength="60"
+        style="width:100%;box-sizing:border-box;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.07);border-radius:10px;color:#fff;font-size:12px;padding:9px 12px;outline:none;font-family:inherit;margin-bottom:8px;"
+        onfocus="this.style.borderColor='rgba(100,149,237,0.4)'" onblur="this.style.borderColor='rgba(255,255,255,0.07)'">
+      <textarea id="adm-msg-texto" placeholder="Digite o comunicado..." maxlength="300" rows="3"
+        style="width:100%;box-sizing:border-box;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.07);border-radius:10px;color:#fff;font-size:12px;padding:9px 12px;outline:none;font-family:inherit;resize:none;line-height:1.5;margin-bottom:4px;"
+        onfocus="this.style.borderColor='rgba(100,149,237,0.4)'" onblur="this.style.borderColor='rgba(255,255,255,0.07)'"
+        oninput="document.getElementById('adm-msg-counter').textContent=this.value.length+'/300'"></textarea>
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
+        <span id="adm-msg-counter" style="font-size:10px;color:rgba(255,255,255,0.2);">0/300</span>
+        <span id="adm-msg-destino" style="font-size:10px;color:rgba(100,149,237,0.6);"></span>
+      </div>
+      <div id="adm-msg-prog" style="display:none;background:rgba(255,255,255,0.03);border-radius:8px;padding:8px 12px;margin-bottom:10px;">
+        <div style="font-size:11px;color:rgba(255,255,255,0.4);">Enviando… <span id="adm-msg-done">0</span>/<span id="adm-msg-total-span">0</span></div>
+        <div style="margin-top:5px;height:3px;background:rgba(255,255,255,0.06);border-radius:3px;overflow:hidden;">
+          <div id="adm-msg-bar" style="height:100%;background:cornflowerblue;width:0%;transition:width 0.3s;border-radius:3px;"></div>
+        </div>
+      </div>
+      <button onclick="admEnviarMsgInline()" style="width:100%;padding:11px;border-radius:10px;background:rgba(100,149,237,0.15);border:1.5px solid rgba(100,149,237,0.35);color:cornflowerblue;font-size:12px;font-weight:900;cursor:pointer;font-family:inherit;margin-bottom:12px;touch-action:manipulation;">Enviar para todos</button>
+    </div>
+
+    <!-- Link seguro inline -->
+    <div id="adm-sub-link" style="display:none;border-top:1px solid rgba(251,191,36,0.12);background:#0e0e1a;padding:16px 16px 4px;animation:admSubIn 0.18s ease;">
+      <div style="font-size:9px;font-weight:900;letter-spacing:2px;color:rgba(251,191,36,0.6);text-transform:uppercase;margin-bottom:10px;">Link de Acesso Seguro</div>
+      <div style="display:flex;gap:8px;margin-bottom:8px;">
+        <input id="adm-link-codigo" type="text" maxlength="20" placeholder="Código de acesso (mín. 3 chars)"
+          style="flex:1;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.07);border-radius:10px;color:#fff;font-size:12px;font-weight:700;padding:9px 12px;outline:none;font-family:monospace;letter-spacing:1px;"
+          onfocus="this.style.borderColor='rgba(251,191,36,0.4)'" onblur="this.style.borderColor='rgba(255,255,255,0.07)'">
+        <button onclick="admGerarCodigoAleatorio2()" title="Gerar aleatório"
+          style="width:36px;height:36px;border-radius:10px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.07);color:rgba(255,255,255,0.35);cursor:pointer;font-size:16px;flex-shrink:0;">↻</button>
+      </div>
+      <div style="display:flex;gap:6px;margin-bottom:10px;">
+        <button class="adm-val-btn2 ativo" id="adlv-1h" onclick="admSelVal2('1h')" style="flex:1;padding:7px 4px;border-radius:8px;background:rgba(251,191,36,0.12);border:1px solid rgba(251,191,36,0.3);color:#fbbf24;font-size:10px;font-weight:800;cursor:pointer;font-family:inherit;">1h</button>
+        <button class="adm-val-btn2"        id="adlv-6h" onclick="admSelVal2('6h')" style="flex:1;padding:7px 4px;border-radius:8px;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.07);color:rgba(255,255,255,0.3);font-size:10px;font-weight:800;cursor:pointer;font-family:inherit;">6h</button>
+        <button class="adm-val-btn2"        id="adlv-24h" onclick="admSelVal2('24h')" style="flex:1;padding:7px 4px;border-radius:8px;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.07);color:rgba(255,255,255,0.3);font-size:10px;font-weight:800;cursor:pointer;font-family:inherit;">24h</button>
+        <button class="adm-val-btn2"        id="adlv-7d" onclick="admSelVal2('7d')" style="flex:1;padding:7px 4px;border-radius:8px;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.07);color:rgba(255,255,255,0.3);font-size:10px;font-weight:800;cursor:pointer;font-family:inherit;">7d</button>
+      </div>
+      <div id="adm-link-resultado" style="display:none;margin-bottom:8px;">
+        <div style="font-size:9px;font-weight:900;letter-spacing:1.5px;color:rgba(34,197,94,0.7);margin-bottom:6px;">Link gerado</div>
+        <div id="adm-link-box" style="background:#000;border:1px solid rgba(34,197,94,0.2);border-radius:8px;padding:10px 12px;font-family:monospace;font-size:10px;color:#22c55e;word-break:break-all;line-height:1.5;margin-bottom:8px;"></div>
+        <div style="display:flex;gap:8px;margin-bottom:8px;">
+          <button onclick="admCopiarLink2()" style="flex:1;padding:9px;border-radius:9px;background:#16a34a;border:none;color:#000;font-size:11px;font-weight:900;cursor:pointer;font-family:inherit;">Copiar</button>
+          <button onclick="admNovoLink2()" style="padding:9px 14px;border-radius:9px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);color:rgba(255,255,255,0.4);font-size:11px;font-weight:700;cursor:pointer;font-family:inherit;">Novo</button>
+        </div>
+      </div>
+      <button onclick="admGerarLinkInline()" id="adm-link-gerar-btn"
+        style="width:100%;padding:11px;border-radius:10px;background:rgba(251,191,36,0.12);border:1.5px solid rgba(251,191,36,0.3);color:#fbbf24;font-size:12px;font-weight:900;cursor:pointer;font-family:inherit;margin-bottom:12px;touch-action:manipulation;">Gerar Link</button>
+    </div>
+
+    <!-- Liberar email inline -->
+    <div id="adm-sub-email" style="display:none;border-top:1px solid rgba(80,200,255,0.12);background:#0e0e1a;padding:16px 16px 4px;animation:admSubIn 0.18s ease;">
+      <div style="font-size:9px;font-weight:900;letter-spacing:2px;color:rgba(80,200,255,0.6);text-transform:uppercase;margin-bottom:10px;">Liberar Email para Novo Cadastro</div>
+      <div style="font-size:11px;color:rgba(255,255,255,0.3);line-height:1.5;margin-bottom:10px;">Busca e remove o registro do Firestore para liberar o e-mail.</div>
+      <input id="adm-lib-email" type="email" inputmode="email" placeholder="email@exemplo.com"
+        style="width:100%;box-sizing:border-box;background:rgba(255,255,255,0.04);border:1px solid rgba(80,200,255,0.2);border-radius:10px;color:#fff;font-size:12px;padding:9px 12px;outline:none;font-family:inherit;margin-bottom:8px;"
+        onfocus="this.style.borderColor='rgba(80,200,255,0.5)'" onblur="this.style.borderColor='rgba(80,200,255,0.2)'">
+      <div id="adm-lib-resultado" style="min-height:32px;font-size:11px;color:rgba(255,255,255,0.35);margin-bottom:8px;"></div>
+      <div style="display:flex;gap:8px;margin-bottom:12px;">
+        <button onclick="admLibBuscarInline()" style="flex:1;padding:10px;border-radius:10px;background:rgba(80,200,255,0.1);border:1.5px solid rgba(80,200,255,0.25);color:#50c8ff;font-size:12px;font-weight:900;cursor:pointer;font-family:inherit;touch-action:manipulation;">Buscar</button>
+        <button id="adm-lib-remover-btn" onclick="admLibRemoverInline()" style="display:none;flex:1;padding:10px;border-radius:10px;background:rgba(255,50,50,0.12);border:1.5px solid rgba(255,50,50,0.3);color:#ff6666;font-size:12px;font-weight:900;cursor:pointer;font-family:inherit;touch-action:manipulation;">Remover</button>
+      </div>
+    </div>
+
+  </div><!-- fim adm-bottom-nav -->
 </div>
+
+<style>
+@keyframes admSubIn {
+  from { opacity:0; transform:translateY(6px); }
+  to   { opacity:1; transform:translateY(0); }
+}
+</style>
 
 <!-- MODAL LINK SEGURO -->
 <div id="modal-link-seguro" style="display:none;position:fixed;inset:0;z-index:100020;background:rgba(0,0,0,0.94);align-items:center;justify-content:center;padding:20px;" onclick="if(event.target===this)admFecharLinkSeguro()">
@@ -14688,7 +14937,7 @@ async function _fbFazerBackupAgora(btn) {
     <!-- Resultado -->
     <div id="lseg-resultado" style="display:none;flex-direction:column;gap:10px;">
       <div style="height:1px;background:rgba(255,255,255,0.06);"></div>
-      <div style="font-size:9px;font-weight:900;letter-spacing:2px;color:rgba(34,197,94,0.7);text-transform:uppercase;">✓ Link gerado</div>
+      <div style="font-size:9px;font-weight:900;letter-spacing:2px;color:rgba(34,197,94,0.7);text-transform:uppercase;">Link gerado</div>
       <div id="lseg-link-box" style="background:#000;border:1px solid rgba(34,197,94,0.2);border-radius:12px;padding:12px 14px;font-family:monospace;font-size:11px;color:#22c55e;word-break:break-all;line-height:1.5;"></div>
       <div style="display:flex;gap:8px;">
         <button onclick="admCopiarLinkSeguro()" style="flex:1;padding:11px;border-radius:999px;background:#16a34a;border:none;color:#000;font-size:12px;font-weight:900;cursor:pointer;font-family:inherit;">Copiar Link</button>
@@ -14878,6 +15127,7 @@ async function _fbFazerBackupAgora(btn) {
 <style>
 /* ─── Esconder elementos fixos do instrumentista no ambiente vocalista ─────── */
 body[data-ambiente="vocalista"] #btn-save-vitro,
+body[data-ambiente="vocalista"] #cifra-font-ctrl,
 body[data-ambiente="vocalista"] #show-proxima-alerta,
 body[data-ambiente="vocalista"] .perf-bottom-panel,
 body[data-ambiente="vocalista"] .btn-pad-flutuante,
@@ -15007,37 +15257,6 @@ body[data-ambiente="vocalista"] .swipe-hint { display: none !important; }
 .voc-alb-salvos  { background: linear-gradient(145deg, #1a140a, #261c08); }
 .voc-alb-shows   { background: linear-gradient(145deg, #08131a, #0a1e2a); }
 
-/* ── Sliders de fonte do perfil ── */
-.perfil-fonte-slider {
-  -webkit-appearance: none;
-  appearance: none;
-  height: 4px;
-  border-radius: 999px;
-  outline: none;
-  cursor: pointer;
-  flex: 1;
-}
-.perfil-fonte-slider::-webkit-slider-thumb {
-  -webkit-appearance: none;
-  appearance: none;
-  width: 22px;
-  height: 22px;
-  border-radius: 50%;
-  background: #16a34a;
-  border: 3px solid #22c55e;
-  box-shadow: 0 0 0 3px rgba(34,197,94,0.15);
-  cursor: pointer;
-  transition: transform 0.15s, box-shadow 0.15s;
-}
-.perfil-fonte-slider::-webkit-slider-thumb:active {
-  transform: scale(1.2);
-  box-shadow: 0 0 0 6px rgba(34,197,94,0.2);
-}
-.perfil-fonte-slider::-moz-range-thumb {
-  width: 22px; height: 22px; border-radius: 50%;
-  background: #16a34a; border: 3px solid #22c55e;
-  cursor: pointer;
-}
 /* ── Painel Shows ── */
 .voc-panel#voc-panel-ev-musicas { z-index: 12; }
 .voc-panel#voc-panel-ev-musicas.ativo { display: flex; }
@@ -16041,7 +16260,7 @@ body[data-ambiente="vocalista"] .swipe-hint { display: none !important; }
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
       </button>
       <span class="voc-panel-title" id="voc-ev-panel-titulo">Eventos</span>
-      <button id="voc-ev-back-btn" onclick="vocEvVoltarLista()" style="display:none;margin-left:auto;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.08);border-radius:9px;color:rgba(255,255,255,0.4);font-size:11px;font-weight:800;padding:6px 12px;cursor:pointer;font-family:inherit;">↩ Eventos</button>
+      <button id="voc-ev-back-btn" onclick="vocEvVoltarLista()" style="display:none;margin-left:auto;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.08);border-radius:9px;color:rgba(255,255,255,0.4);font-size:11px;font-weight:800;padding:6px 12px;cursor:pointer;font-family:inherit;">← Eventos</button>
     </div>
     <!-- Badge sala ao vivo -->
     <div class="voc-sala-badge" id="voc-sala-badge">
@@ -16168,6 +16387,10 @@ body[data-ambiente="vocalista"] .swipe-hint { display: none !important; }
       <button class="voc-ctrl" onclick="vocFonteMenos()"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="5" y1="12" x2="19" y2="12"/></svg>A</button>
       <button class="voc-ctrl" onclick="vocFonteMais()"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>A</button>
       <button class="voc-ctrl" id="voc-scroll-btn" onclick="vocToggleScroll()"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="6 9 12 15 18 9"/></svg>Auto</button>
+      <input id="voc-letra-vel" type="range" min="15" max="120" value="55" step="5"
+        style="width:60px;height:3px;accent-color:#a78bfa;cursor:pointer;opacity:0.6;vertical-align:middle;"
+        title="Velocidade do scroll"
+        oninput="if(_voc.scrollTimer){_vocPararScroll();_vocIniciarScroll();}">
       <button class="voc-ctrl" onclick="vocIrParaTom()" style="margin-left:auto;"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>Tom</button>
     </div>
     <div class="voc-letra-scroll" id="voc-letra-scroll">
@@ -16184,9 +16407,16 @@ body[data-ambiente="vocalista"] .swipe-hint { display: none !important; }
 // ── Clarão aleatório nos álbuns ───────────────────────────────────────────────
 (function vocShineInit(){
   var ultimo = -1;
+  var _cardsCache = null;
+
+  function getCards(){
+    if(_cardsCache&&_cardsCache.length) return _cardsCache;
+    _cardsCache=Array.from(document.querySelectorAll('.voc-alb'));
+    return _cardsCache;
+  }
 
   function injetarShines(){
-    document.querySelectorAll('.voc-alb').forEach(function(card){
+    getCards().forEach(function(card){
       if(!card.querySelector('.voc-alb-shine')){
         var s = document.createElement('div');
         s.className = 'voc-alb-shine';
@@ -16196,24 +16426,21 @@ body[data-ambiente="vocalista"] .swipe-hint { display: none !important; }
   }
 
   function disparar(){
-    var cards = document.querySelectorAll('.voc-alb');
+    var cards = getCards();
     if(!cards.length){ setTimeout(disparar, 1000); return; }
 
     var idx;
     do { idx = Math.floor(Math.random() * cards.length); } while(idx === ultimo && cards.length > 1);
     ultimo = idx;
 
-    injetarShines();
     var card = cards[idx];
     var shine = card.querySelector('.voc-alb-shine');
     if(!shine){ agendar(); return; }
 
-    // Remove classe, força reflow, re-adiciona
     shine.classList.remove('run');
-    void shine.offsetWidth; // força reflow
+    void shine.offsetWidth;
     shine.classList.add('run');
 
-    // Após animação, limpa e agenda próximo
     shine.addEventListener('animationend', function handler(){
       shine.removeEventListener('animationend', handler);
       shine.classList.remove('run');
@@ -16222,11 +16449,9 @@ body[data-ambiente="vocalista"] .swipe-hint { display: none !important; }
   }
 
   function agendar(){
-    // Entre 8s e 14s aleatório
     setTimeout(disparar, 8000 + Math.random() * 6000);
   }
 
-  // Primeiro disparo após 2s
   setTimeout(function(){
     injetarShines();
     setTimeout(disparar, 2000);
@@ -16237,8 +16462,20 @@ var _voc = { titulo:'', artista:'', letra:'', tomIdx:0, tomSel:null, isFav:false
 var _VOC_NOTAS    = ['C','C#','D','D#','E','F','F#','G','G#','A','A#','B'];
 var _VOC_NOTAS_PT = ['Dó','Dó#','Ré','Ré#','Mi','Fá','Fá#','Sol','Sol#','Lá','Lá#','Si'];
 
-// ── Storage ───────────────────────────────────────────────────────────────────
-function _vocLS(k,v){ try{ if(v===undefined)return JSON.parse(localStorage.getItem(k)||'null'); localStorage.setItem(k,JSON.stringify(v)); }catch(e){ return null; } }
+// ── Storage — com cache em memória para evitar JSON.parse repetido ────────────
+var _vocCache = {};
+function _vocLS(k,v){
+  try{
+    if(v===undefined){
+      if(_vocCache[k]!==undefined) return _vocCache[k];
+      var raw=localStorage.getItem(k);
+      _vocCache[k]=raw?JSON.parse(raw):null;
+      return _vocCache[k];
+    }
+    _vocCache[k]=v;
+    localStorage.setItem(k,JSON.stringify(v));
+  }catch(e){ return null; }
+}
 function vocFavs(v){ return _vocLS('voc_favs_v2',v); }
 function vocTons(v){ return _vocLS('voc_tons_v2',v); }
 function vocHist(v){ return _vocLS('voc_hist_v2',v); }
@@ -16389,7 +16626,7 @@ function _vocPedirChave(msgExtra) {
     +   'style="width:100%;padding:12px;border-radius:12px;background:none;border:none;color:rgba(255,255,255,0.25);font-size:13px;cursor:pointer;font-family:inherit;margin-top:8px;touch-action:manipulation;">'
     +   'Agora não'
     + '</button>'
-    + '<p style="font-size:11px;color:rgba(255,255,255,0.18);text-align:center;margin-top:16px;line-height:1.5;">A chave fica salva apenas neste dispositivo.</p>'    + '<div style="margin-top:14px;background:rgba(138,92,246,0.07);border:1px solid rgba(138,92,246,0.18);border-radius:14px;padding:16px 18px;">'    +   '<div style="font-size:11px;font-weight:900;color:rgba(138,92,246,0.8);letter-spacing:1px;margin-bottom:12px;">COMO OBTER SUA CHAVE</div>'    +   '<div style="font-size:12px;color:rgba(255,255,255,0.5);line-height:2;">'    +     '<span style="color:#a78bfa;font-weight:800;">1.</span> Acesse <a href="https://console.anthropic.com" target="_blank" style="color:#a78bfa;text-decoration:none;font-weight:700;">console.anthropic.com</a><br>'    +     '<span style="color:#a78bfa;font-weight:800;">2.</span> Faça login ou crie uma conta gratuita<br>'    +     '<span style="color:#a78bfa;font-weight:800;">3.</span> No menu lateral, toque em <span style="color:#fff;font-weight:700;">API Keys</span><br>'    +     '<span style="color:#a78bfa;font-weight:800;">4.</span> Toque em <span style="color:#fff;font-weight:700;">Create Key</span> e dê um nome<br>'    +     '<span style="color:#a78bfa;font-weight:800;">5.</span> Copie a chave (começa com <span style="color:#fff;font-weight:700;">sk-ant-</span>)<br>'    +     '<span style="color:#a78bfa;font-weight:800;">6.</span> Cole no campo acima e toque em Salvar'    +   '</div>'    + '</div>'
+    + '<p style="font-size:11px;color:rgba(255,255,255,0.18);text-align:center;margin-top:16px;line-height:1.5;">A chave fica salva apenas neste dispositivo.</p>'    + '<div style="margin-top:10px;background:rgba(251,191,36,0.05);border:1px solid rgba(251,191,36,0.15);border-radius:12px;padding:11px 14px;display:flex;gap:8px;align-items:flex-start;">'    +   '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="rgba(251,191,36,0.6)" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="margin-top:1px;flex-shrink:0;"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>'    +   '<span style="font-size:11px;color:rgba(251,191,36,0.55);line-height:1.6;">Recomendamos criar uma chave com <strong style="color:rgba(251,191,36,0.75);">limite de gasto baixo</strong> no console Anthropic, pois ela fica salva no armazenamento local do navegador.</span>'    + '</div>'    + '<div style="margin-top:14px;background:rgba(138,92,246,0.07);border:1px solid rgba(138,92,246,0.18);border-radius:14px;padding:16px 18px;">'    +   '<div style="font-size:11px;font-weight:900;color:rgba(138,92,246,0.8);letter-spacing:1px;margin-bottom:12px;">COMO OBTER SUA CHAVE</div>'    +   '<div style="font-size:12px;color:rgba(255,255,255,0.5);line-height:2;">'    +     '<span style="color:#a78bfa;font-weight:800;">1.</span> Acesse <a href="https://console.anthropic.com" target="_blank" style="color:#a78bfa;text-decoration:none;font-weight:700;">console.anthropic.com</a><br>'    +     '<span style="color:#a78bfa;font-weight:800;">2.</span> Faça login ou crie uma conta gratuita<br>'    +     '<span style="color:#a78bfa;font-weight:800;">3.</span> No menu lateral, toque em <span style="color:#fff;font-weight:700;">API Keys</span><br>'    +     '<span style="color:#a78bfa;font-weight:800;">4.</span> Toque em <span style="color:#fff;font-weight:700;">Create Key</span> e dê um nome<br>'    +     '<span style="color:#a78bfa;font-weight:800;">5.</span> Copie a chave (começa com <span style="color:#fff;font-weight:700;">sk-ant-</span>)<br>'    +     '<span style="color:#a78bfa;font-weight:800;">6.</span> Cole no campo acima e toque em Salvar'    +   '</div>'    + '</div>'
     + '</div>';
   document.body.appendChild(overlay);
   setTimeout(function(){ var i=document.getElementById('voc-key-input'); if(i)i.focus(); }, 300);
@@ -16411,7 +16648,14 @@ function _vocConfirmarChave() {
 }
 
 // ── Busca de letras ───────────────────────────────────────────────────────────
+var _vocBuscaTimer = null;
+function vocBuscarLetrasDebounce(){
+  clearTimeout(_vocBuscaTimer);
+  _vocBuscaTimer = setTimeout(vocBuscarLetras, 300);
+}
+
 async function vocBuscarLetras(){
+  clearTimeout(_vocBuscaTimer);
   var q=(document.getElementById('voc-input-busca').value||'').trim(); if(!q)return;
   var res=document.getElementById('voc-resultados');
   var area=document.getElementById('voc-hist-area');
@@ -16429,6 +16673,11 @@ async function vocBuscarLetras(){
     var jm=clean.match(/\{[\s\S]*\}/); if(!jm){ _vocSemRes(res,q); return; }
     var data; try{ data=JSON.parse(jm[0]); }catch(pe){ _vocSemRes(res,q); return; }
     var docs=data.results||[]; if(!docs.length){ _vocSemRes(res,q); return; }
+    // Resultado único — carrega letra diretamente, economiza uma chamada
+    if(docs.length===1){
+      await _vocCarregarLetraDireto(docs[0].titulo, docs[0].artista, res);
+      return;
+    }
     var html='';
     docs.forEach(function(doc){
       var ini=(doc.artista||'?').charAt(0).toUpperCase();
@@ -16446,11 +16695,14 @@ function _vocSemRes(el,q){
   el.innerHTML='<div class="voc-empty"><div class="voc-empty-ico"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="rgba(138,92,246,0.5)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg></div><div class="voc-empty-title">Nenhum resultado</div><div class="voc-empty-sub">Tente outro nome ou artista gospel</div></div>';
 }
 
-async function vocCarregarLetraEl(el){
-  var titulo=el.getAttribute('data-titulo'), artista=el.getAttribute('data-artista');
-  if(!titulo||!artista)return;
-  var res=document.getElementById('voc-resultados');
-  res.innerHTML='<div class="voc-spinner"></div><div style="text-align:center;font-size:12px;color:rgba(255,255,255,0.22);padding:8px;">Carregando letra...</div>';
+// Função central de carregamento de letra — reutilizada por busca direta e por clique no resultado
+async function _vocCarregarLetraDireto(titulo, artista, resEl) {
+  resEl.innerHTML='<div class="voc-spinner"></div>'
+    +'<div style="text-align:center;padding:10px 16px 0;">'
+    +'<div style="font-size:13px;font-weight:700;color:rgba(255,255,255,0.65);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">'+_ve(titulo)+'</div>'
+    +'<div style="font-size:11px;color:rgba(255,255,255,0.3);margin-top:2px;">'+_ve(artista)+'</div>'
+    +'<div style="font-size:11px;color:rgba(138,92,246,0.5);margin-top:6px;">Buscando letra...</div>'
+    +'</div>';
   try{
     var prompt='Voce e um banco de letras de musicas gospel brasileiras e internacionais.\n'
       +'Escreva a letra COMPLETA da musica "'+titulo+'" de '+artista+'.\n'
@@ -16462,13 +16714,13 @@ async function vocCarregarLetraEl(el){
       +'- Somente se realmente nao conhecer NADA desta musica, escreva apenas: LETRA_NAO_ENCONTRADA\n'
       +'Escreva a letra agora:';
     var txt=await _vocClaude(prompt,3000);
-    if(!txt){ 
-      res.innerHTML='<div class="voc-empty"><div class="voc-empty-ico"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="rgba(138,92,246,0.5)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></div><div class="voc-empty-title">Erro de conexão</div><div class="voc-empty-sub">Verifique sua internet e tente novamente</div></div>';
+    if(!txt){
+      resEl.innerHTML='<div class="voc-empty"><div class="voc-empty-ico"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="rgba(138,92,246,0.5)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></div><div class="voc-empty-title">Erro de conexão</div><div class="voc-empty-sub">Verifique sua internet e tente novamente</div></div>';
       return;
     }
     var txtLimpo = txt.trim();
     if(txtLimpo === 'LETRA_NAO_ENCONTRADA' || txtLimpo.startsWith('LETRA_NAO_ENCONTRADA')){
-      res.innerHTML='<div class="voc-empty"><div class="voc-empty-ico"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="rgba(138,92,246,0.5)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></div><div class="voc-empty-title">Letra não encontrada</div><div class="voc-empty-sub" style="margin-bottom:12px;">Não encontrei a letra desta música</div><a class="voc-link-btn" href="https://www.letras.mus.br/busca/?q='+encodeURIComponent(titulo+' '+artista)+'" target="_blank">Buscar no Letras.mus.br</a></div>';
+      resEl.innerHTML='<div class="voc-empty"><div class="voc-empty-ico"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="rgba(138,92,246,0.5)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></div><div class="voc-empty-title">Letra não encontrada</div><div class="voc-empty-sub" style="margin-bottom:12px;">Não encontrei a letra desta música</div><a class="voc-link-btn" href="https://www.letras.mus.br/busca/?q='+encodeURIComponent(titulo+' '+artista)+'" target="_blank">Buscar no Letras.mus.br</a></div>';
       return;
     }
     var letraLimpa=txtLimpo.replace(/\r\n/g,'\n').replace(/\n{3,}/g,'\n\n').trim();
@@ -16477,8 +16729,15 @@ async function vocCarregarLetraEl(el){
     _vocDefinirTom(titulo,artista);
     vocAbrirLetra(titulo,artista,letraLimpa);
   }catch(e){
-    res.innerHTML='<div class="voc-empty"><div class="voc-empty-title">Erro ao carregar</div><div class="voc-empty-sub">Verifique sua conexão</div></div>';
+    resEl.innerHTML='<div class="voc-empty"><div class="voc-empty-title">Erro ao carregar</div><div class="voc-empty-sub">Verifique sua conexão</div></div>';
   }
+}
+
+async function vocCarregarLetraEl(el){
+  var titulo=el.getAttribute('data-titulo'), artista=el.getAttribute('data-artista');
+  if(!titulo||!artista)return;
+  var res=document.getElementById('voc-resultados');
+  await _vocCarregarLetraDireto(titulo, artista, res);
 }
 
 // ── Tela de Letra ─────────────────────────────────────────────────────────────
@@ -16491,22 +16750,51 @@ function _vocRenderLetra(letra,fontSize){
   flush(); return html;
 }
 
+var _vocLetraRenderCache = { titulo: null, artista: null, fontSize: null, html: null };
+
 function vocAbrirLetra(titulo,artista,letra){
   document.getElementById('voc-letra-titulo').textContent=titulo;
   document.getElementById('voc-letra-artista').textContent=artista;
   var el=document.getElementById('voc-letra-texto');
-  el.innerHTML=_vocRenderLetra(letra,_voc.fontSize);
+  // Só re-renderiza se mudou o conteúdo ou o tamanho de fonte
+  if(_vocLetraRenderCache.titulo!==titulo||_vocLetraRenderCache.artista!==artista||_vocLetraRenderCache.fontSize!==_voc.fontSize){
+    var html=_vocRenderLetra(letra,_voc.fontSize);
+    el.innerHTML=html;
+    _vocLetraRenderCache={titulo:titulo,artista:artista,fontSize:_voc.fontSize,html:html};
+  }
   var favs=vocFavs()||[]; _voc.isFav=favs.some(function(f){ return f.titulo===titulo&&f.artista===artista; }); _vocAtualizarFavBtn();
   _vocPararScroll();
   document.getElementById('voc-letra-tela').classList.add('aberta');
   var vi=document.getElementById('voc-input-video'); if(vi)vi.value=titulo+' '+artista;
 }
 function vocFecharLetra(){ _vocPararScroll(); document.getElementById('voc-letra-tela').classList.remove('aberta'); }
-function vocFonteMais(){ if(_voc.fontSize>=28)return; _voc.fontSize+=2; document.querySelectorAll('.voc-secao-bloco').forEach(function(b){b.style.fontSize=_voc.fontSize+'px';}); }
-function vocFonteMenos(){ if(_voc.fontSize<=12)return; _voc.fontSize-=2; document.querySelectorAll('.voc-secao-bloco').forEach(function(b){b.style.fontSize=_voc.fontSize+'px';}); }
+function vocFonteMais(){ if(_voc.fontSize>=28)return; _voc.fontSize+=2; _vocLetraRenderCache.fontSize=null; document.querySelectorAll('.voc-secao-bloco').forEach(function(b){b.style.fontSize=_voc.fontSize+'px';}); }
+function vocFonteMenos(){ if(_voc.fontSize<=12)return; _voc.fontSize-=2; _vocLetraRenderCache.fontSize=null; document.querySelectorAll('.voc-secao-bloco').forEach(function(b){b.style.fontSize=_voc.fontSize+'px';}); }
 function vocToggleScroll(){ if(_voc.scrollTimer)_vocPararScroll(); else _vocIniciarScroll(); }
-function _vocIniciarScroll(){ var a=document.getElementById('voc-letra-scroll'),btn=document.getElementById('voc-scroll-btn'); if(!a)return; if(btn)btn.classList.add('ativo'); _voc.scrollTimer=setInterval(function(){ a.scrollTop+=1; if(a.scrollTop+a.clientHeight>=a.scrollHeight-5)_vocPararScroll(); },55); }
-function _vocPararScroll(){ if(_voc.scrollTimer){clearInterval(_voc.scrollTimer);_voc.scrollTimer=null;} var btn=document.getElementById('voc-scroll-btn'); if(btn)btn.classList.remove('ativo'); }
+function _vocIniciarScroll(){
+  var a=document.getElementById('voc-letra-scroll'),btn=document.getElementById('voc-scroll-btn');
+  if(!a)return;
+  if(btn)btn.classList.add('ativo');
+  var vel = parseInt((document.getElementById('voc-letra-vel')||{}).value||55);
+  var pxPerMs = vel / 1000;
+  var last=null;
+  function tick(ts){
+    if(!_voc.scrollTimer)return;
+    if(last!==null){
+      var velAtual = parseInt((document.getElementById('voc-letra-vel')||{}).value||55);
+      var delta=(ts-last)*(velAtual/1000);
+      a.scrollTop+=delta;
+      if(a.scrollTop+a.clientHeight>=a.scrollHeight-5){_vocPararScroll();return;}
+    }
+    last=ts;
+    _voc.scrollTimer=requestAnimationFrame(tick);
+  }
+  _voc.scrollTimer=requestAnimationFrame(tick);
+}
+function _vocPararScroll(){
+  if(_voc.scrollTimer){cancelAnimationFrame(_voc.scrollTimer);_voc.scrollTimer=null;}
+  var btn=document.getElementById('voc-scroll-btn'); if(btn)btn.classList.remove('ativo');
+}
 function vocIrParaTom(){ vocFecharLetra(); vocAbrirPainel('tom'); }
 
 // ─── PAINEL EVENTOS VOCALISTA ────────────────────────────────────────────────
@@ -16949,7 +17237,7 @@ function _mostrarErroBloqueio(titulo, msg) {
   var overlay = document.createElement('div');
   overlay.style.cssText = 'position:fixed;inset:0;z-index:999999;background:#06060c;display:flex;align-items:center;justify-content:center;padding:32px;';
   overlay.innerHTML = '<div style="text-align:center;max-width:320px;">'
-    + '<div style="font-size:48px;margin-bottom:16px;">🔒</div>'
+    + '<div style="font-size:48px;margin-bottom:16px;"></div>'
     + '<div style="font-size:18px;font-weight:900;color:#fff;margin-bottom:10px;">' + titulo + '</div>'
     + '<div style="font-size:13px;color:rgba(255,255,255,0.35);line-height:1.6;white-space:pre-line;">' + msg + '</div>'
     + '</div>';
@@ -17081,7 +17369,6 @@ function vocClicarMusicaEv(idx, nome, evId) {
     // Tem letra — abre modo performance com contexto do evento
     var ev = (typeof eventos !== 'undefined' ? eventos : []).find(function(e) { return e.id === evId; });
     var favIdx = favs.indexOf(fav);
-    // Calcula próxima com letra no setlist
     var proxNome = null;
     if (ev) {
       var musicas = (ev.musicIds || []).map(function(id) {
@@ -17095,15 +17382,106 @@ function vocClicarMusicaEv(idx, nome, evId) {
     }
     vocAbrirPerformanceComContexto(fav, proxNome);
   } else {
-    // Não tem letra — abre busca pré-preenchida
-    vocFecharEvMusicas();
-    vocFecharPainel();
-    vocAbrirPainel('letras');
-    setTimeout(function() {
-      var inp = document.getElementById('voc-input-busca');
-      if (inp) { inp.value = nome; vocBuscarLetras(); }
-    }, 300);
+    // Não tem letra — abre busca em sheet flutuante SOBRE o painel do evento
+    _vocAbrirBuscaSobrePainel(nome, evId, idx);
   }
+}
+
+// Abre um sheet de busca flutuante sobre o painel atual — ao salvar, fecha e refresca o evento
+function _vocAbrirBuscaSobrePainel(nomeMusica, evId, idx) {
+  var sheet = document.getElementById('voc-busca-sheet');
+  if (sheet) sheet.remove();
+  sheet = document.createElement('div');
+  sheet.id = 'voc-busca-sheet';
+  sheet.style.cssText = 'position:fixed;inset:0;z-index:99990;background:rgba(6,6,12,0.97);display:flex;flex-direction:column;';
+  sheet.innerHTML =
+    '<div style="display:flex;align-items:center;gap:12px;padding:16px 16px 12px;border-bottom:1px solid rgba(255,255,255,0.06);">'
+    + '<button onclick="document.getElementById(\'voc-busca-sheet\').remove()" style="background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.1);border-radius:999px;color:rgba(255,255,255,0.6);font-size:12px;font-weight:700;padding:6px 14px;cursor:pointer;font-family:inherit;white-space:nowrap;">← Voltar</button>'
+    + '<div style="flex:1;min-width:0;">'
+    +   '<div style="font-size:13px;font-weight:800;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">Buscar letra</div>'
+    +   '<div style="font-size:11px;color:rgba(138,92,246,0.7);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">'+_ve(nomeMusica)+'</div>'
+    + '</div>'
+    + '</div>'
+    + '<div style="padding:12px 16px;">'
+    +   '<div style="display:flex;gap:8px;">'
+    +     '<input id="voc-sheet-busca-input" type="text" value="'+_ve(nomeMusica)+'" placeholder="Nome da música ou artista" style="flex:1;background:rgba(255,255,255,0.06);border:1px solid rgba(138,92,246,0.25);border-radius:12px;color:#fff;font-size:14px;padding:12px 14px;outline:none;font-family:inherit;" onkeydown="if(event.key===\'Enter\')_vocSheetBuscar()">'
+    +     '<button onclick="_vocSheetBuscar()" style="padding:12px 18px;border-radius:12px;background:linear-gradient(135deg,#7c3aed,#8a5cf6);border:none;color:#fff;font-size:13px;font-weight:800;cursor:pointer;font-family:inherit;">Buscar</button>'
+    +   '</div>'
+    + '</div>'
+    + '<div id="voc-sheet-res" style="flex:1;overflow-y:auto;padding:0 16px 24px;"></div>';
+  document.body.appendChild(sheet);
+  // Guarda contexto para retorno após salvar
+  sheet._evId = evId;
+  sheet._idx = idx;
+  setTimeout(function(){
+    var inp = document.getElementById('voc-sheet-busca-input');
+    if(inp){ inp.focus(); inp.select(); }
+    _vocSheetBuscar();
+  }, 100);
+}
+
+async function _vocSheetBuscar() {
+  var inp = document.getElementById('voc-sheet-busca-input');
+  var q = (inp ? inp.value.trim() : '');
+  if (!q) return;
+  var res = document.getElementById('voc-sheet-res');
+  res.innerHTML = '<div class="voc-spinner" style="margin-top:32px;"></div>';
+  try {
+    var prompt = 'Liste ate 8 musicas GOSPEL que correspondam a busca: "'+q+'". '
+      +'Retorne SOMENTE musicas gospel, cristao, worship, louvor ou hino. '
+      +'Responda SOMENTE com JSON valido, sem texto extra, sem markdown. '
+      +'Formato exato: {"results":[{"titulo":"nome da musica","artista":"nome do artista"}]}. '
+      +'Se nao encontrar nada gospel, retorne {"results":[]}.';
+    var txt = await _vocClaude(prompt, 500);
+    if (!txt) { res.innerHTML='<div class="voc-empty"><div class="voc-empty-title">Sem resultado</div></div>'; return; }
+    var clean = txt.replace(/```json|```/g,'').trim();
+    var jm = clean.match(/\{[\s\S]*\}/); if (!jm) { res.innerHTML='<div class="voc-empty"><div class="voc-empty-title">Sem resultado</div></div>'; return; }
+    var data; try { data=JSON.parse(jm[0]); } catch(e) { res.innerHTML='<div class="voc-empty"><div class="voc-empty-title">Sem resultado</div></div>'; return; }
+    var docs = data.results || [];
+    if (!docs.length) { res.innerHTML='<div class="voc-empty"><div class="voc-empty-title">Nenhum resultado gospel</div><div class="voc-empty-sub">Tente outro nome</div></div>'; return; }
+    if (docs.length === 1) { await _vocSheetCarregarLetra(docs[0].titulo, docs[0].artista, res); return; }
+    res.innerHTML = docs.map(function(doc){
+      var ini = (doc.artista||'?').charAt(0).toUpperCase();
+      return '<div class="voc-result-item" data-titulo="'+_ve(doc.titulo)+'" data-artista="'+_ve(doc.artista)+'" onclick="_vocSheetCarregarLetraEl(this)">'
+        +'<div class="voc-result-art"><span style="font-size:15px;font-weight:900;color:#a78bfa;">'+_ve(ini)+'</span></div>'
+        +'<div style="flex:1;min-width:0;"><div class="voc-result-name">'+_ve(doc.titulo)+'</div><div class="voc-result-artist">'+_ve(doc.artista)+'</div></div>'
+        +'<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.13)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>'
+        +'</div>';
+    }).join('');
+  } catch(e) { res.innerHTML='<div class="voc-empty"><div class="voc-empty-title">Erro</div><div class="voc-empty-sub">Verifique sua conexão</div></div>'; }
+}
+
+function _vocSheetCarregarLetraEl(el) {
+  var t = el.getAttribute('data-titulo'), a = el.getAttribute('data-artista');
+  _vocSheetCarregarLetra(t, a, document.getElementById('voc-sheet-res'));
+}
+
+async function _vocSheetCarregarLetra(titulo, artista, resEl) {
+  await _vocCarregarLetraDireto(titulo, artista, resEl);
+  // Se letra foi carregada com sucesso, monitorar save e retornar ao evento
+  var sheet = document.getElementById('voc-busca-sheet');
+  if (!sheet) return;
+  var evId = sheet._evId;
+  // Substituir vocToggleFav original para detectar quando salvar e fechar o sheet
+  var _origToggleFav = window.vocToggleFav;
+  window._vocSheetSaveHook = function() {
+    _origToggleFav && _origToggleFav();
+    // Só fecha se acabou de salvar (isFav agora true)
+    if (_voc.isFav) {
+      setTimeout(function() {
+        var s = document.getElementById('voc-busca-sheet');
+        if (s) s.remove();
+        window.vocToggleFav = _origToggleFav;
+        // Refresca lista do evento
+        if (evId && typeof vocAbrirEvMusicas === 'function') {
+          var ev = (typeof eventos !== 'undefined' ? eventos : []).find(function(e){ return e.id===evId; });
+          if (ev) _vocRenderEvMusicasLista(ev, null);
+        }
+      }, 400);
+    }
+  };
+  // Sobrescreve temporariamente o toggle para capturar o save
+  window.vocToggleFav = window._vocSheetSaveHook;
 }
 
 // ── Sala ao vivo ──────────────────────────────────────────────────────────────
@@ -17239,8 +17617,26 @@ function vocAbrirPerformance(favIdx) {
 }
 
 function vocFecharPerformance() {
+  // Confirmação rápida para evitar fechamento acidental durante o show
+  var overlay = document.getElementById('voc-perf-overlay');
+  if (!overlay || !overlay.classList.contains('ativo')) return;
+  var conf = document.createElement('div');
+  conf.id = 'voc-perf-conf';
+  conf.style.cssText = 'position:absolute;inset:0;z-index:10;background:rgba(0,0,0,0.75);backdrop-filter:blur(6px);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;';
+  conf.innerHTML =
+    '<div style="font-size:15px;font-weight:800;color:#fff;">Sair da performance?</div>'
+    + '<div style="font-size:12px;color:rgba(255,255,255,0.4);">O scroll automático será parado.</div>'
+    + '<div style="display:flex;gap:10px;margin-top:4px;">'
+    +   '<button onclick="document.getElementById(\'voc-perf-conf\').remove()" style="padding:11px 24px;border-radius:999px;background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.12);color:rgba(255,255,255,0.7);font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;">Continuar</button>'
+    +   '<button onclick="_vocConfirmarFecharPerf()" style="padding:11px 24px;border-radius:999px;background:rgba(255,60,60,0.15);border:1px solid rgba(255,60,60,0.3);color:#ff7070;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;">Sair</button>'
+    + '</div>';
+  overlay.appendChild(conf);
+}
+function _vocConfirmarFecharPerf() {
   vocPerfPararScroll();
   document.getElementById('voc-perf-overlay').classList.remove('ativo');
+  var conf = document.getElementById('voc-perf-conf');
+  if (conf) conf.remove();
 }
 
 function vocPerfToggleScroll() {
@@ -17254,15 +17650,23 @@ function vocPerfIniciarScroll() {
   var vel = parseInt((document.getElementById('voc-perf-vel') || {}).value || 55);
   if (!a) return;
   if (btn) btn.classList.add('ativo');
-  var delay = Math.round(110 - vel); // vel 20→90ms, vel 120→10ms
-  _vocPerfTimer = setInterval(function() {
-    a.scrollTop += 1;
-    if (a.scrollTop + a.clientHeight >= a.scrollHeight - 5) vocPerfPararScroll();
-  }, delay);
+  var pxPerMs = vel / 1000; // vel 55 → ~55px/s
+  var last = null;
+  function tick(ts) {
+    if (!_vocPerfTimer) return;
+    if (last !== null) {
+      var delta = (ts - last) * pxPerMs;
+      a.scrollTop += delta;
+      if (a.scrollTop + a.clientHeight >= a.scrollHeight - 5) { vocPerfPararScroll(); return; }
+    }
+    last = ts;
+    _vocPerfTimer = requestAnimationFrame(tick);
+  }
+  _vocPerfTimer = requestAnimationFrame(tick);
 }
 
 function vocPerfPararScroll() {
-  if (_vocPerfTimer) { clearInterval(_vocPerfTimer); _vocPerfTimer = null; }
+  if (_vocPerfTimer) { cancelAnimationFrame(_vocPerfTimer); _vocPerfTimer = null; }
   var btn = document.getElementById('voc-perf-scroll-btn');
   if (btn) btn.classList.remove('ativo');
 }
@@ -17286,14 +17690,29 @@ function vocFavAba(aba){
 }
 function _vocAtualizarBadgeSalvos(){
   var favs=vocFavs()||[],tons=vocTons()||[];
-  var total=favs.length+tons.length;
   var badge=document.getElementById('voc-salvos-badge');
   if(!badge)return;
-  if(total>0){badge.textContent=total;badge.style.display='flex';}else{badge.style.display='none';}
+  var nLetras=favs.length, nTons=tons.length;
+  if(nLetras>0||nTons>0){
+    // Mostra "3L · 2T" para diferenciar letras de tons
+    var txt = nLetras>0&&nTons>0 ? nLetras+'L · '+nTons+'T'
+            : nLetras>0 ? nLetras
+            : nTons+'T';
+    badge.textContent=txt;
+    badge.style.display='flex';
+  }else{
+    badge.style.display='none';
+  }
 }
 function _vocRenderFavs(){
   var favs=vocFavs()||[],tons=vocTons()||[];
-  var cnt=document.getElementById('voc-fav-count'); if(cnt)cnt.textContent=(favs.length+tons.length)+' itens salvos';
+  var cnt=document.getElementById('voc-fav-count');
+  if(cnt){
+    var partes=[];
+    if(favs.length)partes.push(favs.length+' letra'+(favs.length!==1?'s':''));
+    if(tons.length)partes.push(tons.length+' tom'+(tons.length!==1?'s':''));
+    cnt.textContent=partes.length?partes.join(' · '):'Nenhum item salvo';
+  }
   _vocAtualizarBadgeSalvos();
   var fl=document.getElementById('voc-fav-letras');
   if(fl){
@@ -17310,7 +17729,19 @@ function _vocDelFav(i){ var f=vocFavs()||[]; f.splice(i,1); vocFavs(f); _vocRend
 function _vocDelTon(i){ var t=vocTons()||[]; t.splice(i,1); vocTons(t); _vocRenderFavs(); vocToast('Removido'); }
 
 // ── Tonalidades ───────────────────────────────────────────────────────────────
-function _vocDefinirTom(titulo,artista){ var hash=0; for(var i=0;i<titulo.length;i++)hash=(hash*31+titulo.charCodeAt(i))&0xffffff; _voc.tomIdx=hash%12; _voc.tomSel=null; var el=document.getElementById('voc-tom-nome'),ea=document.getElementById('voc-tom-artista'); if(el)el.textContent=titulo; if(ea)ea.textContent=artista; var elO=document.getElementById('voc-tom-orig'); if(elO)elO.textContent=_VOC_NOTAS[_voc.tomIdx]+' ('+_VOC_NOTAS_PT[_voc.tomIdx]+')'; }
+function _vocDefinirTom(titulo,artista){
+  // Não sugere tom automático (seria aleatório) — apenas prepara o contexto para o painel
+  _voc.tomIdx=0; _voc.tomSel=null;
+  var el=document.getElementById('voc-tom-nome'),ea=document.getElementById('voc-tom-artista');
+  if(el)el.textContent=titulo; if(ea)ea.textContent=artista;
+  var elO=document.getElementById('voc-tom-orig');
+  if(elO){
+    var tons=vocTons()||[];
+    var salvo=tons.find(function(t){return t.titulo===titulo;});
+    if(salvo){ elO.textContent=salvo.tom; elO.style.color=''; }
+    else{ elO.textContent='Não definido'; elO.style.color='rgba(255,255,255,0.3)'; }
+  }
+}
 function _vocRenderTons(){
   if(!_voc.titulo)return; var base=_voc.tomIdx;
   function makeGrid(deltas,el){ if(!el)return; el.innerHTML=deltas.map(function(d){ var i=(base+d+12)%12; var sel=_voc.tomSel===_VOC_NOTAS[i]; return '<div class="voc-tom-pill'+(sel?' sel':'')+'" onclick="vocSelTom(\''+_VOC_NOTAS[i]+'\')"><div class="voc-tom-pill-nota">'+_VOC_NOTAS[i]+'</div><div class="voc-tom-pill-info">'+_VOC_NOTAS_PT[i]+(d<0?' ('+d+')':' (+'+d+')')+'</div></div>'; }).join(''); }
@@ -17330,7 +17761,7 @@ var _vocInfoData = {
     title: 'Letras Gospel',
     cor: '#a78bfa',
     ico: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#a78bfa" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>',
-    steps: ['Digite o nome da música ou artista gospel', 'Escolha na lista de resultados', 'Leia a letra com scroll automático', 'Toque ★ para salvar nos favoritos']
+    steps: ['Digite o nome da música ou artista gospel', 'Escolha na lista de resultados', 'Leia a letra com scroll automático', 'Toque o ícone de estrela para salvar nos favoritos']
   },
   tom: {
     title: 'Tonalidade',
@@ -17485,7 +17916,7 @@ function toggleVocalMenu(e){ if(e)e.stopPropagation(); var d=document.getElement
 function fecharVocalMenu(){ var d=document.getElementById('vocal-drop'); if(d)d.style.display='none'; }
 
 // ── Init ──────────────────────────────────────────────────────────────────────
-setTimeout(function(){ _vocRenderHist(); _vocAtualizarBadgeSalvos(); }, 300);
+setTimeout(function(){ _vocRenderHist(); _vocAtualizarBadgeSalvos(); _cifraFontSincLabel(); }, 300);
 </script>
 
 
