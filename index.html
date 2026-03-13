@@ -1785,6 +1785,27 @@ function adminEscolherModo(modo) {
   --radius-full: 9999px;
   --note-color: #ffffff;
 }
+body.theme-light {
+  --bg-primary: #f4f4f8;
+  --bg-secondary: #eaeaf0;
+  --bg-tertiary: #dfdfe8;
+  --accent-primary: #0A9E6E;
+  --accent-glow: rgba(10,158,110,0.2);
+  --text-primary: #0d0d14;
+  --text-secondary: #555566;
+  --border-color: rgba(0,0,0,0.1);
+  --glass-bg: rgba(0,0,0,0.03);
+  --glass-border: rgba(0,0,0,0.08);
+  --note-color: #0d0d14;
+}
+body.theme-light .app-header { background: rgba(244,244,248,0.95); }
+body.theme-light .chord-area { background: rgba(0,0,0,0.04); color: var(--text-primary); border-color: rgba(0,0,0,0.08); }
+body.theme-light .side-panel, body.theme-light .metronome-card { background: var(--bg-secondary); border-color: var(--border-color); }
+body.theme-light .biblioteca-overlay, body.theme-light .biblioteca-header { background: var(--bg-primary); }
+body.theme-light .dropdown-menu { background: var(--bg-secondary); border-color: var(--border-color); }
+body.theme-light .menu-item { color: var(--text-primary); }
+body.theme-light .menu-item:hover { background: var(--bg-tertiary); }
+body, body * { transition: background-color 0.25s, color 0.15s, border-color 0.15s; }
 body.performance-mode {
   --bg-primary: #050000;
   --accent-primary: #ff3e3e;
@@ -4723,6 +4744,12 @@ body.auth-pending #toast {
       <button id="admin-tab-painel" style="display:none;"></button>
     </div>
     <div style="display:flex; align-items:center; gap:12px;">
+      <!-- Botão Tema -->
+      <button id="btn-theme" onclick="toggleTheme()" title="Alternar tema"
+        style="background:none;border:none;color:rgba(255,255,255,0.45);cursor:pointer;padding:8px;border-radius:10px;transition:0.2s;display:flex;align-items:center;justify-content:center;">
+        <svg id="theme-icon-dark" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+        <svg id="theme-icon-light" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="display:none"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+      </button>
       <!-- Botão rápido de sala -->
       <button onclick="abrirModalSala()" id="btn-sala" style="background:rgba(10,158,110,0.12); border:1px solid rgba(10,158,110,0.3); color:var(--accent-primary); padding:8px 16px; border-radius:var(--radius-full); font-size:10px; font-weight:800; cursor:pointer; letter-spacing:1px; text-transform:uppercase; transition:0.2s;">
         SALA
@@ -4753,6 +4780,7 @@ body.auth-pending #toast {
           <div class="menu-item" onclick="abrirModalStats()">Estatísticas</div>
           <div class="menu-item" onclick="abrirModalCifra()">Importar Cifra</div>
           <div class="menu-item" onclick="abrirConfigAudio()">Configurações de Áudio</div>
+          <div class="menu-item" onclick="mostrarAtalhosApp && mostrarAtalhosApp()">Atalhos de teclado</div>
           <div class="menu-item danger" onclick="resetSection()">Limpar Seção</div>
         </div>
       </div>
@@ -10352,7 +10380,7 @@ const _origSalvarPerfil = window.salvarPerfil;
 
 
 // ─── SISTEMA DE NOTIFICAÇÕES ──────────────────────────────────────────────────
-const APP_VERSION = '1.4.7';
+const APP_VERSION = '1.4.8';
 let notificacoes = (JSON.parse(localStorage.getItem('map_notifs_v1')) || []).filter(n => !n.ts || (Date.now() - n.ts) < (1 * 60 * 60 * 1000));
 let notifPanelOpen = false;
 
@@ -17916,7 +17944,7 @@ function toggleVocalMenu(e){ if(e)e.stopPropagation(); var d=document.getElement
 function fecharVocalMenu(){ var d=document.getElementById('vocal-drop'); if(d)d.style.display='none'; }
 
 // ── Init ──────────────────────────────────────────────────────────────────────
-setTimeout(function(){ _vocRenderHist(); _vocAtualizarBadgeSalvos(); _cifraFontSincLabel(); }, 300);
+setTimeout(function(){ _vocRenderHist(); _vocAtualizarBadgeSalvos(); _cifraFontSincLabel(); _themeInit(); }, 300);
 </script>
 
 
@@ -18062,6 +18090,882 @@ setTimeout(function(){ _vocRenderHist(); _vocAtualizarBadgeSalvos(); _cifraFontS
       el.addEventListener('touchcancel', onUp, { once: true, passive: true });
     } catch(e) {}
   }, { passive: true });
+})();
+</script>
+
+<script>
+// ═══════════════════════════════════════════════════════════════════════════════
+// VERSÃO 108 — MELHORIAS
+// ═══════════════════════════════════════════════════════════════════════════════
+
+// ── 1. TEMA CLARO / ESCURO ────────────────────────────────────────────────────
+var _MAP_THEME_KEY = 'map_theme_v1';
+
+function _themeInit() {
+  var saved = localStorage.getItem(_MAP_THEME_KEY) || 'dark';
+  _themeAplicar(saved, false);
+}
+
+function _themeAplicar(tema, salvar) {
+  var body  = document.getElementById('app-body') || document.body;
+  var iconD = document.getElementById('theme-icon-dark');
+  var iconL = document.getElementById('theme-icon-light');
+  if (tema === 'light') {
+    body.classList.add('theme-light');
+    if (iconD) iconD.style.display = 'none';
+    if (iconL) iconL.style.display = '';
+  } else {
+    body.classList.remove('theme-light');
+    if (iconD) iconD.style.display = '';
+    if (iconL) iconL.style.display = 'none';
+  }
+  if (salvar !== false) localStorage.setItem(_MAP_THEME_KEY, tema);
+}
+
+function toggleTheme() {
+  var body  = document.getElementById('app-body') || document.body;
+  var atual = body.classList.contains('theme-light') ? 'light' : 'dark';
+  _themeAplicar(atual === 'light' ? 'dark' : 'light');
+  showToast(atual === 'light' ? 'Tema escuro' : 'Tema claro');
+}
+
+// ── 2. LAZY LOAD DE IMAGENS ───────────────────────────────────────────────────
+(function() {
+  if (!('IntersectionObserver' in window)) return; // fallback: carrega normal
+
+  var _lazyObs = new IntersectionObserver(function(entries) {
+    entries.forEach(function(e) {
+      if (!e.isIntersecting) return;
+      var img = e.target;
+      if (img.dataset.src) {
+        img.src = img.dataset.src;
+        img.removeAttribute('data-src');
+      }
+      _lazyObs.unobserve(img);
+    });
+  }, { rootMargin: '120px' });
+
+  // Observa imagens já no DOM com data-src
+  function _lazyObserveAll() {
+    document.querySelectorAll('img[data-src]').forEach(function(img) {
+      _lazyObs.observe(img);
+    });
+  }
+
+  // Hook: substitui src por data-src em imagens de banner/perfil geradas dinamicamente
+  var _origInnerHTML = Object.getOwnPropertyDescriptor(Element.prototype, 'innerHTML');
+  // Observa mutações no DOM para pegar imagens injetadas via innerHTML
+  var _mutObs = new MutationObserver(function(muts) {
+    muts.forEach(function(m) {
+      m.addedNodes.forEach(function(n) {
+        if (n.nodeType !== 1) return;
+        var imgs = n.tagName === 'IMG' ? [n] : Array.from(n.querySelectorAll('img'));
+        imgs.forEach(function(img) {
+          // Apenas imagens de banner/perfil/capa (não ícones SVG inline)
+          if (!img.src || img.src.startsWith('data:') || img.dataset.lazyDone) return;
+          if (img.src.includes('firebasestorage') || img.src.includes('googleusercontent') || img.src.includes('ytimg') || img.src.includes('lastfm') || img.src.includes('itunes')) {
+            img.dataset.src = img.src;
+            img.src = '';
+            img.dataset.lazyDone = '1';
+            _lazyObs.observe(img);
+          }
+        });
+      });
+    });
+  });
+  _mutObs.observe(document.body, { childList: true, subtree: true });
+  window._lazyObserveAll = _lazyObserveAll;
+})();
+
+// ── 3. ATALHOS DE TECLADO (modo normal + show) ────────────────────────────────
+(function() {
+  // O listener existente só funciona em performance-mode.
+  // Este adiciona atalhos no modo normal também.
+  document.addEventListener('keydown', function(e) {
+    // Ignora se foco está num input/textarea
+    var tag = document.activeElement && document.activeElement.tagName;
+    if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return;
+
+    var isPerf = (document.getElementById('app-body') || document.body).classList.contains('performance-mode');
+
+    // ── Modo normal ──────────────────────────────────────────────
+    if (!isPerf) {
+      // Ctrl/Cmd+S → Salvar música
+      if ((e.ctrlKey || e.metaKey) && e.key === 's') {
+        e.preventDefault();
+        if (typeof saveSong === 'function') saveSong();
+        return;
+      }
+      // Ctrl/Cmd+B → Abrir biblioteca
+      if ((e.ctrlKey || e.metaKey) && e.key === 'b') {
+        e.preventDefault();
+        if (typeof abrirBiblioteca === 'function') abrirBiblioteca();
+        return;
+      }
+      // [ / ] → transpor -1 / +1 semitom
+      if (e.key === '[') { if (typeof transpor === 'function') transpor(-1); return; }
+      if (e.key === ']') { if (typeof transpor === 'function') transpor(1); return; }
+      // Espaço → toggle metrônomo se foco não for no app
+      if (e.key === ' ' && !e.shiftKey) {
+        e.preventDefault();
+        if (typeof togglePlay === 'function') togglePlay();
+        return;
+      }
+      // T → toggle modo show
+      if (e.key === 't' || e.key === 'T') {
+        if (typeof togglePerf === 'function') togglePerf();
+        return;
+      }
+    }
+
+    // ── Modo show (complementa o listener original) ──────────────
+    if (isPerf) {
+      // Espaço → iniciar/parar scroll
+      if (e.key === ' ') {
+        e.preventDefault();
+        var sl = document.getElementById('scroll-speed');
+        if (sl) {
+          sl.value = sl.value > 0 ? 0 : 30;
+          sl.dispatchEvent(new Event('input'));
+        }
+        return;
+      }
+      // +/- → ajustar fonte show
+      if (e.key === '+' || e.key === '=') { if (typeof perfFontAjustar === 'function') perfFontAjustar(2); return; }
+      if (e.key === '-')                   { if (typeof perfFontAjustar === 'function') perfFontAjustar(-2); return; }
+      // PgUp/PgDn → navegação setlist (além de ArrowLeft/Right já existentes)
+      if (e.key === 'PageUp')   { if (typeof navegarSetlist === 'function') navegarSetlist(-1); return; }
+      if (e.key === 'PageDown') { if (typeof navegarSetlist === 'function') navegarSetlist(1);  return; }
+    }
+
+    // ? → mostra painel de atalhos (qualquer modo)
+    if (e.key === '?' && !e.ctrlKey && !e.metaKey) {
+      _mostrarAtalhos();
+    }
+  });
+
+  function _mostrarAtalhos() {
+    if (document.getElementById('_atalhos-overlay')) return;
+    var ov = document.createElement('div');
+    ov.id = '_atalhos-overlay';
+    ov.style.cssText = 'position:fixed;inset:0;z-index:100050;background:rgba(0,0,0,0.88);display:flex;align-items:center;justify-content:center;padding:20px;';
+    ov.onclick = function(e) { if (e.target === ov) ov.remove(); };
+
+    var linhas = [
+      ['Modo normal', ''],
+      ['Ctrl+S',      'Salvar música'],
+      ['Ctrl+B',      'Abrir biblioteca'],
+      ['[ / ]',       'Transpor -1 / +1 semitom'],
+      ['Espaço',      'Play/Pausa metrônomo'],
+      ['T',           'Entrar no Modo Show'],
+      ['Modo show', ''],
+      ['Espaço',      'Iniciar / parar scroll'],
+      ['+ / -',       'Aumentar / diminuir fonte'],
+      ['← →',         'Música anterior / próxima'],
+      ['PgUp / PgDn', 'Música anterior / próxima'],
+      ['Esc',         'Sair do Modo Show'],
+      ['',            ''],
+      ['?',           'Mostrar esta janela'],
+    ];
+
+    var rows = linhas.map(function(l) {
+      if (!l[1]) return '<tr><td colspan="2" style="padding:12px 0 4px;font-size:9px;font-weight:900;letter-spacing:2px;color:rgba(255,255,255,0.25);text-transform:uppercase;">' + l[0] + '</td></tr>';
+      return '<tr>'
+        + '<td style="padding:5px 16px 5px 0;"><kbd style="background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.15);border-radius:6px;padding:3px 8px;font-size:11px;font-weight:700;color:#fff;font-family:monospace;white-space:nowrap;">' + l[0] + '</kbd></td>'
+        + '<td style="padding:5px 0;font-size:12px;color:rgba(255,255,255,0.6);">' + l[1] + '</td>'
+        + '</tr>';
+    }).join('');
+
+    ov.innerHTML =
+      '<div style="background:#111119;border:1px solid rgba(255,255,255,0.1);border-radius:20px;padding:24px 22px;width:100%;max-width:360px;">'
+    + '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;">'
+    +   '<div style="font-size:15px;font-weight:900;color:#fff;">Atalhos de teclado</div>'
+    +   '<button onclick="document.getElementById(\'_atalhos-overlay\').remove()" style="background:none;border:none;color:rgba(255,255,255,0.3);font-size:20px;cursor:pointer;line-height:1;padding:0;">×</button>'
+    + '</div>'
+    + '<table style="width:100%;border-collapse:collapse;">' + rows + '</table>'
+    + '</div>';
+    document.body.appendChild(ov);
+  }
+  window.mostrarAtalhosApp = _mostrarAtalhos;
+})();
+
+// ── 4. LOG DE AÇÕES ADMIN ─────────────────────────────────────────────────────
+var _ADM_LOG_KEY = 'map_adm_log_v1';
+var _admLogMax   = 100; // máximo de entradas
+
+function _admLogAdd(tipo, alvo, detalhes) {
+  try {
+    var log  = JSON.parse(localStorage.getItem(_ADM_LOG_KEY) || '[]');
+    var entrada = {
+      ts:       Date.now(),
+      tipo:     tipo,          // 'bloquear' | 'banir' | 'desbloquear' | 'remover' | 'msg' | 'msg_global' | 'link' | 'liberar_email'
+      alvo:     alvo || '',    // nome/email do usuário afetado
+      detalhes: detalhes || '' // info extra
+    };
+    log.unshift(entrada); // mais recente primeiro
+    if (log.length > _admLogMax) log = log.slice(0, _admLogMax);
+    localStorage.setItem(_ADM_LOG_KEY, JSON.stringify(log));
+  } catch(e) {}
+}
+
+function admRenderLog() {
+  var container = document.getElementById('adm-log-lista');
+  if (!container) return;
+  var log = [];
+  try { log = JSON.parse(localStorage.getItem(_ADM_LOG_KEY) || '[]'); } catch(e) {}
+
+  if (!log.length) {
+    container.innerHTML = '<div style="text-align:center;padding:24px 0;font-size:12px;color:rgba(255,255,255,0.2);">Nenhuma ação registrada ainda.</div>';
+    return;
+  }
+
+  var labels = {
+    bloquear:     { txt: 'Bloqueou',         cor: '#ffaa00' },
+    banir:        { txt: 'Baniu',             cor: '#ff4444' },
+    desbloquear:  { txt: 'Desbloqueou',       cor: '#0A9E6E' },
+    remover:      { txt: 'Removeu conta',     cor: '#ff6666' },
+    msg:          { txt: 'Msg para usuário',  cor: 'cornflowerblue' },
+    msg_global:   { txt: 'Msg global',        cor: 'cornflowerblue' },
+    link:         { txt: 'Gerou link seguro', cor: '#fbbf24' },
+    liberar_email:{ txt: 'Liberou email',     cor: '#50c8ff' },
+  };
+
+  container.innerHTML = log.map(function(e) {
+    var l   = labels[e.tipo] || { txt: e.tipo, cor: '#fff' };
+    var dt  = new Date(e.ts);
+    var hm  = dt.getDate().toString().padStart(2,'0') + '/' + (dt.getMonth()+1).toString().padStart(2,'0') + ' ' + dt.getHours().toString().padStart(2,'0') + ':' + dt.getMinutes().toString().padStart(2,'0');
+    return '<div style="display:flex;align-items:flex-start;gap:10px;padding:8px 0;border-bottom:1px solid rgba(255,255,255,0.05);">'
+      + '<span style="font-size:10px;font-weight:900;padding:3px 8px;border-radius:6px;background:rgba(0,0,0,0.3);border:1px solid rgba(255,255,255,0.06);color:' + l.cor + ';white-space:nowrap;flex-shrink:0;">' + l.txt + '</span>'
+      + '<div style="flex:1;min-width:0;">'
+      +   '<div style="font-size:12px;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + (e.alvo || '—') + '</div>'
+      +   (e.detalhes ? '<div style="font-size:10px;color:rgba(255,255,255,0.3);margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + e.detalhes + '</div>' : '')
+      + '</div>'
+      + '<span style="font-size:10px;color:rgba(255,255,255,0.2);white-space:nowrap;flex-shrink:0;">' + hm + '</span>'
+      + '</div>';
+  }).join('');
+}
+
+function admLimparLog() {
+  localStorage.removeItem(_ADM_LOG_KEY);
+  admRenderLog();
+}
+
+// Adiciona aba "Log" ao painel admin
+(function() {
+  function _injetarLogTab() {
+    var nav = document.querySelector('#adm-bottom-nav > div');
+    if (!nav || document.getElementById('adm-tab-log')) return;
+
+    // Insere botão antes do "Voltar"
+    var btnVoltar = document.getElementById('adm-tab-voltar');
+    if (!btnVoltar) return;
+    var btnLog = document.createElement('button');
+    btnLog.id = 'adm-tab-log';
+    btnLog.setAttribute('onclick', "admNavSel('log')");
+    btnLog.style.cssText = 'flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;padding:10px 4px 9px;background:none;border:none;border-top:2px solid transparent;cursor:pointer;touch-action:manipulation;';
+    btnLog.innerHTML =
+      '<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.25)" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="8" y1="13" x2="16" y2="13"/><line x1="8" y1="17" x2="12" y2="17"/></svg>'
+      + '<span style="font-size:8px;font-weight:800;color:rgba(255,255,255,0.25);letter-spacing:0.3px;">Log</span>';
+    nav.insertBefore(btnLog, btnVoltar);
+
+    // Cria sub-painel de log
+    var subPanel = document.createElement('div');
+    subPanel.id = 'adm-sub-log';
+    subPanel.style.cssText = 'display:none;border-top:1px solid rgba(255,255,255,0.07);background:#0e0e1a;padding:14px 16px 4px;animation:admSubIn 0.18s ease;max-height:260px;overflow-y:auto;';
+    subPanel.innerHTML =
+      '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">'
+    +   '<div style="font-size:9px;font-weight:900;letter-spacing:2px;color:rgba(255,255,255,0.3);text-transform:uppercase;">Log de ações</div>'
+    +   '<button onclick="admLimparLog()" style="background:none;border:none;color:rgba(255,80,80,0.45);font-size:10px;font-weight:700;cursor:pointer;letter-spacing:0.5px;">Limpar</button>'
+    + '</div>'
+    + '<div id="adm-log-lista"></div>';
+
+    var admBottomNav = document.getElementById('adm-bottom-nav');
+    if (admBottomNav) admBottomNav.insertBefore(subPanel, admBottomNav.querySelector('style') || admBottomNav.lastChild);
+
+    // Registra no admNavSel: adiciona 'log' à lista de subs e cores
+    var _origNavSel = window.admNavSel;
+    window.admNavSel = function(id) {
+      _origNavSel(id);
+      var logSub = document.getElementById('adm-sub-log');
+      var logBtn = document.getElementById('adm-tab-log');
+      if (!logSub || !logBtn) return;
+      if (id === 'log') {
+        logSub.style.display = 'block';
+        logBtn.style.borderTopColor = 'rgba(255,255,255,0.5)';
+        logBtn.querySelector('svg').setAttribute('stroke','rgba(255,255,255,0.6)');
+        logBtn.querySelector('span').style.color = 'rgba(255,255,255,0.6)';
+        admRenderLog();
+      } else {
+        logSub.style.display = 'none';
+        logBtn.style.borderTopColor = 'transparent';
+        logBtn.querySelector('svg').setAttribute('stroke','rgba(255,255,255,0.25)');
+        logBtn.querySelector('span').style.color = 'rgba(255,255,255,0.25)';
+      }
+    };
+  }
+
+  // Aguarda DOM do painel admin ficar pronto
+  var _logInterval = setInterval(function() {
+    if (document.getElementById('adm-bottom-nav')) {
+      _injetarLogTab();
+      clearInterval(_logInterval);
+    }
+  }, 300);
+})();
+
+// Intercepta admAcao para registrar no log
+(function() {
+  var _origAdmAcao = window.admAcao;
+  if (!_origAdmAcao) return;
+  window.admAcao = function(tipo) {
+    var u = window._admSelected;
+    if (u) {
+      var alvo = (u.nome || u.nomeUsuario || u.email || u.uid || '?');
+      _admLogAdd(tipo, alvo, u.email || '');
+    }
+    return _origAdmAcao.apply(this, arguments);
+  };
+})();
+
+// Intercepta admEnviarMensagem para log
+(function() {
+  var _origEnviar = window.admEnviarMensagem;
+  if (!_origEnviar) return;
+  window.admEnviarMensagem = function(uid) {
+    var u = (window._admSelected || {});
+    _admLogAdd('msg', u.nome || u.nomeUsuario || uid, '');
+    return _origEnviar.apply(this, arguments);
+  };
+})();
+
+// Log na mensagem global inline
+(function() {
+  var _origGlobal = window.admEnviarMsgInline;
+  if (!_origGlobal) return;
+  window.admEnviarMsgInline = function() {
+    var total = Array.isArray(window._admCache) ? window._admCache.filter(function(u){ return !u.status||u.status==='ativo'; }).length : 0;
+    _admLogAdd('msg_global', 'Todos os usuários (' + total + ')', '');
+    return _origGlobal.apply(this, arguments);
+  };
+})();
+
+// Log no link seguro inline
+(function() {
+  var _origLink = window.admGerarLinkInline;
+  if (!_origLink) return;
+  window.admGerarLinkInline = function() {
+    var cod = (document.getElementById('adm-link-codigo') || {}).value || '';
+    _admLogAdd('link', 'Código: ' + cod, 'Validade: ' + (window._admNavVal2 || '?'));
+    return _origLink.apply(this, arguments);
+  };
+})();
+
+// Log no liberar email inline
+(function() {
+  var _origLib = window.admLibRemoverInline;
+  if (!_origLib) return;
+  window.admLibRemoverInline = function() {
+    var email = (document.getElementById('adm-lib-email') || {}).value || '';
+    _admLogAdd('liberar_email', email, '');
+    return _origLib.apply(this, arguments);
+  };
+})();
+
+// ── 5. NOTIFICAÇÃO DE NOVO USUÁRIO PARA O ADMIN ───────────────────────────────
+(function() {
+  var _origTerminar = window.terminarOnboarding;
+  if (!_origTerminar) return;
+
+  window.terminarOnboarding = async function() {
+    // Executa o onboarding normal
+    var result = await _origTerminar.apply(this, arguments);
+
+    // Tenta notificar o admin via Firestore
+    try {
+      if (!window._fb || !window._fb.admNotificarNovoUsuario) return result;
+      var perfil = JSON.parse(localStorage.getItem('map_perfil_v1') || '{}');
+      var nomeNovo = perfil.nome || perfil.nomeUsuario || 'Novo usuário';
+      var emailNovo = perfil.email || '';
+      // Grava um documento em /admin_notifs/ que o admin verá ao carregar o painel
+      await window._fb._set('admin_notifs/' + Date.now(), {
+        tipo:    'novo_usuario',
+        nome:    nomeNovo,
+        email:   emailNovo,
+        uid:     perfil.uid || '',
+        criadoEm: Date.now()
+      });
+    } catch(e) {}
+    return result;
+  };
+})();
+
+// Ao abrir o painel admin, verifica novas notificações de cadastro
+(function() {
+  var _origCarregar = window.admCarregar;
+  if (!_origCarregar) return;
+  window.admCarregar = async function() {
+    var r = await _origCarregar.apply(this, arguments);
+    _admVerificarNovosUsuarios();
+    return r;
+  };
+
+  async function _admVerificarNovosUsuarios() {
+    try {
+      if (!window._fb) return;
+      var ult = parseInt(localStorage.getItem('adm_notif_ult_check') || '0');
+      var agora = Date.now();
+      if (agora - ult < 60000) return; // checa no máximo 1x/min
+      localStorage.setItem('adm_notif_ult_check', String(agora));
+
+      var snap = await window._fb._query('admin_notifs', [], 'criadoEm', 20).catch(function(){ return []; });
+      if (!snap || !snap.length) return;
+      var novos = snap.filter(function(n){ return n.criadoEm > ult && n.tipo === 'novo_usuario'; });
+      if (!novos.length) return;
+
+      novos.forEach(function(n) {
+        if (typeof adicionarNotif === 'function') {
+          adicionarNotif('update',
+            'Novo cadastro: ' + (n.nome || 'Usuário'),
+            (n.email || '') + (n.uid ? ' · ' + n.uid.slice(0,8) : ''),
+            'novo_usr_' + n.uid
+          );
+        }
+        _admLogAdd('novo_cadastro', n.nome || 'Usuário', n.email || '');
+      });
+      if (novos.length > 0 && typeof showToast === 'function') {
+        showToast(novos.length === 1
+          ? 'Novo usuário: ' + (novos[0].nome || 'alguém')
+          : novos.length + ' novos usuários cadastrados');
+      }
+    } catch(e) {}
+  }
+  window._admVerificarNovosUsuarios = _admVerificarNovosUsuarios;
+})();
+
+// ── 6. AFINADOR DE VOZ (VOCALISTA) ────────────────────────────────────────────
+var _afinadorAtivo    = false;
+var _afinadorCtx      = null;
+var _afinadorAnalyser = null;
+var _afinadorSource   = null;
+var _afinadorStream   = null;
+var _afinadorRAF      = null;
+
+var _NOTAS = ['C','C#','D','D#','E','F','F#','G','G#','A','A#','B'];
+
+function _afinadorFreqParaNota(freq) {
+  if (freq < 60 || freq > 1500) return null;
+  var semitono = Math.round(12 * Math.log2(freq / 440)) + 69; // MIDI
+  var nota     = _NOTAS[((semitono % 12) + 12) % 12];
+  var oitava   = Math.floor(semitono / 12) - 1;
+  var freqIdeal = 440 * Math.pow(2, (semitono - 69) / 12);
+  var cents     = Math.round(1200 * Math.log2(freq / freqIdeal));
+  return { nota: nota, oitava: oitava, cents: cents, freqIdeal: freqIdeal };
+}
+
+function _afinadorAutoCorr(buf, sampleRate) {
+  var SIZE    = buf.length;
+  var rms     = 0;
+  for (var i = 0; i < SIZE; i++) rms += buf[i] * buf[i];
+  rms = Math.sqrt(rms / SIZE);
+  if (rms < 0.015) return -1; // silêncio
+
+  var r = new Float32Array(SIZE);
+  for (var lag = 0; lag < SIZE; lag++) {
+    var s = 0;
+    for (var j = 0; j < SIZE - lag; j++) s += buf[j] * buf[j + lag];
+    r[lag] = s;
+  }
+  // Encontra primeiro mínimo local
+  var d = 0;
+  while (d < SIZE && r[d] > r[d + 1]) d++;
+  // Encontra máximo após o mínimo
+  var maxVal = -1, maxPos = -1;
+  for (var k = d; k < SIZE; k++) {
+    if (r[k] > maxVal) { maxVal = r[k]; maxPos = k; }
+  }
+  if (maxPos === -1 || r[0] === 0) return -1;
+  // Interpolação parabólica para precisão sub-sample
+  var prev  = r[maxPos - 1] || r[maxPos];
+  var next  = r[maxPos + 1] || r[maxPos];
+  var shift = (next - prev) / (2 * (2 * r[maxPos] - next - prev));
+  return sampleRate / (maxPos + shift);
+}
+
+async function vocAbrirAfinador() {
+  // Injeta o painel na tela de aulas do vocalista
+  var container = document.getElementById('voc-panel-aulas') || document.getElementById('voc-aulas-corpo');
+  if (!container) {
+    // Cria overlay flutuante
+    container = document.createElement('div');
+    container.id = '_afinador-float';
+    container.style.cssText = 'position:fixed;bottom:80px;left:50%;transform:translateX(-50%);z-index:9500;width:min(340px,calc(100vw - 32px));background:#0d0d18;border:1px solid rgba(138,92,246,0.3);border-radius:20px;padding:20px;box-shadow:0 8px 32px rgba(0,0,0,0.6);';
+    document.body.appendChild(container);
+  }
+
+  container.innerHTML =
+    '<div id="_afinador-painel" style="display:flex;flex-direction:column;align-items:center;gap:14px;">'
+  + '<div style="display:flex;align-items:center;justify-content:space-between;width:100%;">'
+  +   '<div style="font-size:13px;font-weight:900;color:#a78bfa;letter-spacing:1px;">AFINADOR</div>'
+  +   '<button onclick="vocFecharAfinador()" style="background:none;border:none;color:rgba(255,255,255,0.3);font-size:18px;cursor:pointer;line-height:1;padding:0 4px;">×</button>'
+  + '</div>'
+  // Display da nota
+  + '<div style="text-align:center;">'
+  +   '<div id="_afin-nota" style="font-size:64px;font-weight:900;color:#fff;line-height:1;letter-spacing:-2px;">—</div>'
+  +   '<div id="_afin-oitava" style="font-size:14px;color:rgba(255,255,255,0.3);margin-top:2px;"> </div>'
+  + '</div>'
+  // Medidor de cents
+  + '<div style="width:100%;position:relative;">'
+  +   '<div style="height:6px;background:rgba(255,255,255,0.07);border-radius:3px;position:relative;overflow:visible;">'
+  +     '<div style="position:absolute;left:50%;top:-4px;width:2px;height:14px;background:rgba(255,255,255,0.2);transform:translateX(-50%);border-radius:1px;"></div>'
+  +     '<div id="_afin-ponteiro" style="position:absolute;top:-5px;width:16px;height:16px;background:#a78bfa;border-radius:50%;transform:translateX(-50%);left:50%;transition:left 0.1s,background 0.15s;box-shadow:0 0 8px rgba(167,139,250,0.5);"></div>'
+  +   '</div>'
+  +   '<div style="display:flex;justify-content:space-between;margin-top:5px;">'
+  +     '<span style="font-size:9px;color:rgba(255,255,255,0.2);">-50¢</span>'
+  +     '<span style="font-size:9px;color:rgba(255,255,255,0.4);">afinado</span>'
+  +     '<span style="font-size:9px;color:rgba(255,255,255,0.2);">+50¢</span>'
+  +   '</div>'
+  + '</div>'
+  // Frequência e cents
+  + '<div style="display:flex;gap:20px;">'
+  +   '<div style="text-align:center;"><div id="_afin-freq" style="font-size:16px;font-weight:700;color:rgba(255,255,255,0.6);">—</div><div style="font-size:9px;color:rgba(255,255,255,0.2);margin-top:2px;letter-spacing:1px;">Hz</div></div>'
+  +   '<div style="text-align:center;"><div id="_afin-cents" style="font-size:16px;font-weight:700;color:rgba(255,255,255,0.6);">—</div><div style="font-size:9px;color:rgba(255,255,255,0.2);margin-top:2px;letter-spacing:1px;">cents</div></div>'
+  + '</div>'
+  // Botão ligar/desligar
+  + '<button id="_afin-btn" onclick="vocToggleAfinador()" style="padding:10px 28px;border-radius:999px;background:rgba(138,92,246,0.2);border:1.5px solid rgba(138,92,246,0.4);color:#a78bfa;font-size:12px;font-weight:900;cursor:pointer;font-family:inherit;letter-spacing:1px;touch-action:manipulation;">LIGAR MIC</button>'
+  + '<div id="_afin-status" style="font-size:10px;color:rgba(255,255,255,0.2);text-align:center;min-height:14px;"></div>'
+  + '</div>';
+}
+
+async function vocToggleAfinador() {
+  if (_afinadorAtivo) {
+    _afinadorParar();
+  } else {
+    await _afinadorIniciar();
+  }
+}
+
+async function _afinadorIniciar() {
+  var status = document.getElementById('_afin-status');
+  var btn    = document.getElementById('_afin-btn');
+  if (status) status.textContent = 'Solicitando microfone...';
+  try {
+    _afinadorStream = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: false, noiseSuppression: false, autoGainControl: false } });
+    _afinadorCtx      = new (window.AudioContext || window.webkitAudioContext)();
+    _afinadorAnalyser = _afinadorCtx.createAnalyser();
+    _afinadorAnalyser.fftSize = 2048;
+    _afinadorSource   = _afinadorCtx.createMediaStreamSource(_afinadorStream);
+    _afinadorSource.connect(_afinadorAnalyser);
+    _afinadorAtivo = true;
+    if (btn)    { btn.textContent = 'DESLIGAR'; btn.style.background = 'rgba(255,80,80,0.15)'; btn.style.borderColor = 'rgba(255,80,80,0.4)'; btn.style.color = '#ff8080'; }
+    if (status) status.textContent = 'Cante ou toque uma nota...';
+    _afinadorLoop();
+  } catch(e) {
+    if (status) status.textContent = 'Microfone negado ou indisponível.';
+  }
+}
+
+function _afinadorParar() {
+  _afinadorAtivo = false;
+  if (_afinadorRAF)    { cancelAnimationFrame(_afinadorRAF); _afinadorRAF = null; }
+  if (_afinadorSource) { try { _afinadorSource.disconnect(); } catch(e){} _afinadorSource = null; }
+  if (_afinadorCtx)    { try { _afinadorCtx.close(); } catch(e){} _afinadorCtx = null; }
+  if (_afinadorStream) { _afinadorStream.getTracks().forEach(function(t){ t.stop(); }); _afinadorStream = null; }
+  var btn = document.getElementById('_afin-btn');
+  if (btn) { btn.textContent = 'LIGAR MIC'; btn.style.background = 'rgba(138,92,246,0.2)'; btn.style.borderColor = 'rgba(138,92,246,0.4)'; btn.style.color = '#a78bfa'; }
+  var status = document.getElementById('_afin-status');
+  if (status) status.textContent = '';
+  var nota = document.getElementById('_afin-nota');
+  if (nota) nota.textContent = '—';
+  var pont = document.getElementById('_afin-ponteiro');
+  if (pont) { pont.style.left = '50%'; pont.style.background = '#a78bfa'; }
+}
+
+function _afinadorLoop() {
+  if (!_afinadorAtivo || !_afinadorAnalyser) return;
+  var buf = new Float32Array(_afinadorAnalyser.fftSize);
+  _afinadorAnalyser.getFloatTimeDomainData(buf);
+  var freq = _afinadorAutoCorr(buf, _afinadorCtx.sampleRate);
+  _afinadorAtualizarUI(freq);
+  _afinadorRAF = requestAnimationFrame(_afinadorLoop);
+}
+
+function _afinadorAtualizarUI(freq) {
+  var notaEl   = document.getElementById('_afin-nota');
+  var oitEl    = document.getElementById('_afin-oitava');
+  var freqEl   = document.getElementById('_afin-freq');
+  var centsEl  = document.getElementById('_afin-cents');
+  var pontEl   = document.getElementById('_afin-ponteiro');
+  if (!notaEl) return;
+
+  if (freq < 60) {
+    notaEl.textContent  = '—';
+    if (oitEl)   oitEl.textContent  = ' ';
+    if (freqEl)  freqEl.textContent = '—';
+    if (centsEl) centsEl.textContent= '—';
+    if (pontEl)  { pontEl.style.left = '50%'; pontEl.style.background = '#a78bfa'; }
+    return;
+  }
+
+  var r = _afinadorFreqParaNota(freq);
+  if (!r) return;
+
+  notaEl.textContent = r.nota;
+  if (oitEl)   oitEl.textContent  = 'Oitava ' + r.oitava;
+  if (freqEl)  freqEl.textContent = Math.round(freq);
+  if (centsEl) centsEl.textContent = (r.cents >= 0 ? '+' : '') + r.cents;
+
+  // Ponteiro: 50 cents = 50% de deslocamento
+  var clampedCents = Math.max(-50, Math.min(50, r.cents));
+  var pct          = 50 + clampedCents;  // 0–100%
+  if (pontEl) {
+    pontEl.style.left       = pct + '%';
+    var afinado = Math.abs(r.cents) <= 5;
+    var quase   = Math.abs(r.cents) <= 15;
+    pontEl.style.background = afinado ? '#22c55e' : quase ? '#fbbf24' : '#f87171';
+    pontEl.style.boxShadow  = afinado ? '0 0 10px rgba(34,197,94,0.6)' : quase ? '0 0 8px rgba(251,191,36,0.4)' : '0 0 8px rgba(248,113,113,0.4)';
+  }
+
+  // Cor da nota principal
+  var afinCor = Math.abs(r.cents) <= 5 ? '#22c55e' : Math.abs(r.cents) <= 15 ? '#fbbf24' : '#fff';
+  notaEl.style.color = afinCor;
+}
+
+function vocFecharAfinador() {
+  _afinadorParar();
+  var float = document.getElementById('_afinador-float');
+  if (float) float.remove();
+}
+
+// Adiciona botão "Afinador" no header do espaço vocalista
+(function() {
+  function _injetarBtnAfinador() {
+    var header = document.querySelector('#vocal-app .voc-header-right, #vocal-app .voc-header > div:last-child');
+    if (!header || document.getElementById('btn-voc-afinador')) return;
+    var btn = document.createElement('button');
+    btn.id = 'btn-voc-afinador';
+    btn.title = 'Afinador';
+    btn.onclick = vocAbrirAfinador;
+    btn.style.cssText = 'background:rgba(138,92,246,0.12);border:1px solid rgba(138,92,246,0.3);color:#a78bfa;padding:7px 13px;border-radius:999px;font-size:10px;font-weight:800;cursor:pointer;font-family:inherit;letter-spacing:0.5px;touch-action:manipulation;';
+    btn.textContent = 'Afinador';
+    header.appendChild(btn);
+  }
+  var _afinInt = setInterval(function() {
+    if (document.getElementById('vocal-app')) { _injetarBtnAfinador(); clearInterval(_afinInt); }
+  }, 400);
+})();
+
+// ── 7. TOM AUTOMÁTICO POR VOZ ─────────────────────────────────────────────────
+// Detecta tonalidade por análise de cromatograma durante ~3s e sugere o tom ideal
+
+var _tomAutoAtivo = false;
+var _tomAutoCtx   = null;
+var _tomAutoStream= null;
+var _tomAutoNotes = new Array(12).fill(0); // acumulador energia por semitom
+var _tomAutoTicks = 0;
+var _tomAutoRAF   = null;
+
+var _TOM_NOMES_MAJ = ['C','Db','D','Eb','E','F','F#','G','Ab','A','Bb','B'];
+var _TOM_NOMES_MIN = ['Am','Bbm','Bm','Cm','C#m','Dm','Ebm','Em','Fm','F#m','Gm','G#m'];
+// Perfil de Krumhansl-Schmuckler para maior e menor
+var _KK_MAJ = [6.35,2.23,3.48,2.33,4.38,4.09,2.52,5.19,2.39,3.66,2.29,2.88];
+var _KK_MIN = [6.33,2.68,3.52,5.38,2.60,3.53,2.54,4.75,3.98,2.69,3.34,3.17];
+
+function _tomAutoCorrelacao(profile, weights) {
+  var best = -Infinity, bestShift = 0;
+  var mu_p = profile.reduce(function(a,b){return a+b;},0)/12;
+  var mu_w = weights.reduce(function(a,b){return a+b;},0)/12;
+  var sp = 0, sw = 0;
+  for (var i=0;i<12;i++){sp+=(profile[i]-mu_p)*(profile[i]-mu_p);sw+=(weights[i]-mu_w)*(weights[i]-mu_w);}
+  var denom = Math.sqrt(sp*sw);
+  for (var shift=0; shift<12; shift++) {
+    var r=0;
+    for (var j=0;j<12;j++) r+=(profile[(j+shift)%12]-mu_p)*(weights[j]-mu_w);
+    var val = denom>0 ? r/denom : 0;
+    if (val > best) { best = val; bestShift = shift; }
+  }
+  return { shift: bestShift, score: best };
+}
+
+function _tomAutoDetectar(acumulado) {
+  // Normaliza
+  var max = Math.max.apply(null, acumulado);
+  if (max === 0) return null;
+  var norm = acumulado.map(function(v){return v/max;});
+
+  var resMaj = _tomAutoCorrelacao(norm, _KK_MAJ);
+  var resMin = _tomAutoCorrelacao(norm, _KK_MIN);
+
+  if (resMaj.score >= resMin.score) {
+    return { tom: _TOM_NOMES_MAJ[resMaj.shift], modo: 'Maior', confianca: Math.round(resMaj.score * 100) };
+  } else {
+    return { tom: _TOM_NOMES_MIN[resMin.shift], modo: 'Menor', confianca: Math.round(resMin.score * 100) };
+  }
+}
+
+async function vocDetectarTomVoz() {
+  if (_tomAutoAtivo) { _tomAutoParar(); return; }
+
+  var btn = document.getElementById('btn-detectar-tom-voz');
+  if (btn) { btn.textContent = 'Parar'; btn.style.background = 'rgba(255,80,80,0.15)'; btn.style.borderColor = 'rgba(255,80,80,0.4)'; btn.style.color = '#ff8080'; }
+
+  try {
+    _tomAutoStream = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: false, noiseSuppression: false } });
+    _tomAutoCtx    = new (window.AudioContext || window.webkitAudioContext)();
+    var analyser   = _tomAutoCtx.createAnalyser();
+    analyser.fftSize = 4096;
+    _tomAutoCtx.createMediaStreamSource(_tomAutoStream).connect(analyser);
+    _tomAutoAtivo  = true;
+    _tomAutoNotes  = new Array(12).fill(0);
+    _tomAutoTicks  = 0;
+
+    var freqBuf = new Float32Array(analyser.fftSize);
+    var sr      = _tomAutoCtx.sampleRate;
+
+    function tick() {
+      if (!_tomAutoAtivo) return;
+      analyser.getFloatTimeDomainData(freqBuf);
+      var freq = _afinadorAutoCorr(freqBuf, sr);
+      if (freq > 60 && freq < 1500) {
+        var midi = Math.round(12 * Math.log2(freq / 440)) + 69;
+        var classe = ((midi % 12) + 12) % 12;
+        _tomAutoNotes[classe] += 1;
+      }
+      _tomAutoTicks++;
+
+      // Mostra resultado parcial a cada 30 ticks
+      if (_tomAutoTicks % 30 === 0) {
+        var r = _tomAutoDetectar(_tomAutoNotes);
+        _tomAutoMostrarResultado(r, false);
+      }
+
+      // Para automaticamente após 5s (~300 frames a 60fps)
+      if (_tomAutoTicks > 300) { _tomAutoFinalizar(); return; }
+      _tomAutoRAF = requestAnimationFrame(tick);
+    }
+    _tomAutoRAF = requestAnimationFrame(tick);
+
+  } catch(e) {
+    if (btn) { btn.textContent = 'Detectar tom'; btn.style.cssText = ''; }
+    showToast('Microfone indisponível.');
+    _tomAutoAtivo = false;
+  }
+}
+
+function _tomAutoParar() {
+  _tomAutoAtivo = false;
+  if (_tomAutoRAF) { cancelAnimationFrame(_tomAutoRAF); _tomAutoRAF = null; }
+  if (_tomAutoStream) { _tomAutoStream.getTracks().forEach(function(t){t.stop();}); _tomAutoStream = null; }
+  if (_tomAutoCtx)    { try{_tomAutoCtx.close();}catch(e){} _tomAutoCtx = null; }
+  var btn = document.getElementById('btn-detectar-tom-voz');
+  if (btn) { btn.textContent = 'Detectar tom'; btn.style.background=''; btn.style.borderColor=''; btn.style.color=''; }
+}
+
+function _tomAutoFinalizar() {
+  var resultado = _tomAutoDetectar(_tomAutoNotes);
+  _tomAutoParar();
+  _tomAutoMostrarResultado(resultado, true);
+}
+
+function _tomAutoMostrarResultado(r, final) {
+  var el = document.getElementById('_tom-auto-resultado');
+  if (!el) return;
+  if (!r) { el.textContent = 'Cante mais alto para detectar...'; return; }
+  el.innerHTML =
+    (final ? '<span style="font-size:9px;color:rgba(255,255,255,0.3);display:block;margin-bottom:4px;letter-spacing:1px;">TOM DETECTADO</span>' : '<span style="font-size:9px;color:rgba(255,255,255,0.3);display:block;margin-bottom:4px;letter-spacing:1px;">ANALISANDO...</span>')
+  + '<span style="font-size:28px;font-weight:900;color:#22c55e;">' + r.tom + '</span>'
+  + '<span style="font-size:12px;color:rgba(255,255,255,0.4);margin-left:8px;">' + r.modo + '</span>'
+  + (final ? '<span style="font-size:10px;color:rgba(255,255,255,0.2);display:block;margin-top:4px;">' + r.confianca + '% confiança</span>' : '');
+}
+
+// Injeta botão "Detectar tom" no painel de Ton do vocalista
+(function() {
+  function _injetarBtnTom() {
+    var painel = document.getElementById('voc-panel-tom');
+    if (!painel || document.getElementById('btn-detectar-tom-voz')) return;
+    var div = document.createElement('div');
+    div.style.cssText = 'padding:12px 16px;border-top:1px solid rgba(255,255,255,0.06);';
+    div.innerHTML =
+      '<div style="font-size:9px;font-weight:900;letter-spacing:2px;color:rgba(255,255,255,0.25);text-transform:uppercase;margin-bottom:10px;">Detectar por microfone</div>'
+    + '<div id="_tom-auto-resultado" style="min-height:36px;font-size:12px;color:rgba(255,255,255,0.35);margin-bottom:10px;">Cante uma música por ~5 segundos.</div>'
+    + '<button id="btn-detectar-tom-voz" onclick="vocDetectarTomVoz()" style="width:100%;padding:10px;border-radius:10px;background:rgba(34,197,94,0.1);border:1.5px solid rgba(34,197,94,0.25);color:#22c55e;font-size:12px;font-weight:900;cursor:pointer;font-family:inherit;touch-action:manipulation;">Detectar tom</button>';
+    painel.appendChild(div);
+  }
+  var _tomInt = setInterval(function() {
+    if (document.getElementById('voc-panel-tom')) { _injetarBtnTom(); clearInterval(_tomInt); }
+  }, 400);
+})();
+
+// ── 8. MODO OFFLINE COMPLETO ──────────────────────────────────────────────────
+(function() {
+  var _offlineBanner = null;
+
+  function _criarBannerOffline() {
+    if (_offlineBanner) return;
+    _offlineBanner = document.createElement('div');
+    _offlineBanner.id = '_offline-banner';
+    _offlineBanner.style.cssText = 'position:fixed;top:0;left:0;right:0;z-index:99999;background:#92400e;color:#fde68a;font-size:11px;font-weight:800;padding:6px 16px;display:flex;align-items:center;justify-content:space-between;letter-spacing:0.5px;transform:translateY(-100%);transition:transform 0.3s;';
+    _offlineBanner.innerHTML =
+      '<span>Sem conexão — usando dados locais</span>'
+    + '<button onclick="_offlineMostrarDetalhes()" style="background:rgba(0,0,0,0.2);border:1px solid rgba(255,255,255,0.2);border-radius:5px;color:#fde68a;font-size:10px;font-weight:700;padding:3px 8px;cursor:pointer;font-family:inherit;">Detalhes</button>';
+    document.body.appendChild(_offlineBanner);
+  }
+
+  function _offlineAtualizar() {
+    _criarBannerOffline();
+    if (!navigator.onLine) {
+      _offlineBanner.style.transform = 'translateY(0)';
+      // Empurra o header para baixo
+      var header = document.querySelector('.app-header');
+      if (header) header.style.top = (_offlineBanner.offsetHeight || 28) + 'px';
+    } else {
+      _offlineBanner.style.transform = 'translateY(-100%)';
+      var header2 = document.querySelector('.app-header');
+      if (header2) header2.style.top = '';
+    }
+  }
+
+  window.addEventListener('online',  _offlineAtualizar);
+  window.addEventListener('offline', _offlineAtualizar);
+
+  function _contarMusicasCache() {
+    var songs = [];
+    try { songs = JSON.parse(localStorage.getItem('map_songs_v1') || '[]'); } catch(e) {}
+    return songs.length;
+  }
+
+  window._offlineMostrarDetalhes = function() {
+    var total = _contarMusicasCache();
+    var ov = document.createElement('div');
+    ov.style.cssText = 'position:fixed;inset:0;z-index:100060;background:rgba(0,0,0,0.88);display:flex;align-items:center;justify-content:center;padding:20px;';
+    ov.onclick = function(e) { if (e.target===ov) ov.remove(); };
+    ov.innerHTML =
+      '<div style="background:#111119;border:1px solid rgba(146,64,14,0.4);border-radius:20px;padding:24px 20px;width:100%;max-width:320px;display:flex;flex-direction:column;gap:14px;">'
+    + '<div style="display:flex;align-items:center;justify-content:space-between;">'
+    +   '<div style="font-size:15px;font-weight:900;color:#fff;">Modo offline</div>'
+    +   '<button onclick="this.closest(\'div[style]\').parentElement.remove()" style="background:none;border:none;color:rgba(255,255,255,0.3);font-size:20px;cursor:pointer;line-height:1;padding:0;">×</button>'
+    + '</div>'
+    + '<div style="background:rgba(146,64,14,0.15);border:1px solid rgba(146,64,14,0.25);border-radius:12px;padding:14px;">'
+    +   '<div style="font-size:12px;color:#fde68a;margin-bottom:4px;font-weight:700;">Sem conexão com a internet</div>'
+    +   '<div style="font-size:11px;color:rgba(255,255,255,0.4);line-height:1.5;">O sync com Firebase está pausado. Alterações serão salvas localmente.</div>'
+    + '</div>'
+    + '<div style="display:flex;gap:12px;">'
+    +   '<div style="flex:1;background:rgba(255,255,255,0.04);border-radius:12px;padding:12px;text-align:center;">'
+    +     '<div style="font-size:24px;font-weight:900;color:#fff;">' + total + '</div>'
+    +     '<div style="font-size:10px;color:rgba(255,255,255,0.3);margin-top:2px;">músicas salvas</div>'
+    +   '</div>'
+    +   '<div style="flex:1;background:rgba(255,255,255,0.04);border-radius:12px;padding:12px;text-align:center;">'
+    +     '<div style="font-size:24px;font-weight:900;color:' + (!navigator.onLine ? '#ff8080' : '#22c55e') + ';">' + (!navigator.onLine ? 'Off' : 'On') + '</div>'
+    +     '<div style="font-size:10px;color:rgba(255,255,255,0.3);margin-top:2px;">status</div>'
+    +   '</div>'
+    + '</div>'
+    + '<div style="font-size:11px;color:rgba(255,255,255,0.3);line-height:1.5;">Todas as suas cifras ficam armazenadas localmente e funcionam sem internet. O sync acontece automaticamente ao reconectar.</div>'
+    + '<button onclick="this.closest(\'div[style]\').parentElement.remove()" style="padding:11px;border-radius:10px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.08);color:rgba(255,255,255,0.4);font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;">Fechar</button>'
+    + '</div>';
+    document.body.appendChild(ov);
+  };
+
+  // Verifica estado inicial após boot
+  setTimeout(_offlineAtualizar, 1000);
 })();
 </script>
 </body>
