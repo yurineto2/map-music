@@ -363,7 +363,8 @@ window.addEventListener('unhandledrejection', function(e) {
     async buscarUsuarios(termo) {
       try {
         const t = termo.toLowerCase().trim();
-        return await _query('usuarios', [['nomeLower','>=',t],['nomeLower','<=',t+'']], 'nomeLower', 15);
+        const _res = await _query('usuarios', [['nomeLower','>=',t],['nomeLower','<=',t+'\uf8ff']], 'nomeLower', 15);
+        return _res.filter(function(u){ return u.uid !== 'admin_local' && u.uid !== 'admin' && u.nomeUsuario !== 'admin'; });
       } catch(e) { return []; }
     },
 
@@ -376,6 +377,7 @@ window.addEventListener('unhandledrejection', function(e) {
     },
 
     async carregarPerfilPorUid(uid) {
+      if (uid === 'admin_local' || uid === 'admin') return null;
       try {
         return await _get('usuarios/' + uid);
       } catch(e) { return null; }
@@ -471,6 +473,7 @@ window.addEventListener('unhandledrejection', function(e) {
     },
 
     async salvarPerfilCompleto(uid, dados) {
+      if (uid === 'admin_local' || uid === 'admin') return true; // admin nunca vai para o Firestore
       try {
         await _set('usuarios/' + uid, {
           ...dados, uid,
@@ -9812,8 +9815,9 @@ async function buscarAmigosInput(val) {
       resultados = await window._fb.buscarUsuarios(trimmed);
     }
 
-    // Filtra o próprio utilizador
-    const filtrados = resultados.filter(u => u.uid !== uid);
+    // Filtra o próprio utilizador e o admin
+    const _ADMIN_UIDS = ['admin_local', 'admin'];
+    const filtrados = resultados.filter(u => u.uid !== uid && !_ADMIN_UIDS.includes(u.uid) && u.nomeUsuario !== 'admin' && u.nome !== 'Admin');
 
     if (filtrados.length === 0) {
       const msg = isIdSearch
@@ -10915,7 +10919,10 @@ function salvarPerfil() {
     if (perfil.bannerZoom !== undefined) fbData.bannerZoom = perfil.bannerZoom;
     if (perfil.bannerPosX !== undefined) fbData.bannerPosX = perfil.bannerPosX;
     if (perfil.bannerPosY !== undefined) fbData.bannerPosY = perfil.bannerPosY;
-    window._fb.salvarPerfilCompleto(perfil.uid || _getUid(), fbData).catch(function(){});
+    const _uid = perfil.uid || _getUid();
+    if (_uid !== 'admin_local' && _uid !== 'admin') {
+      window._fb.salvarPerfilCompleto(_uid, fbData).catch(function(){});
+    }
   }
 
   showToast('Perfil salvo!');
