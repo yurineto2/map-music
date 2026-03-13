@@ -4460,25 +4460,51 @@ body.auth-pending #toast {
         
       </div>
 
-      <!-- Tamanho de fonte das partes -->
-      <div style="display:flex;flex-direction:column;gap:8px;padding-top:4px;padding-bottom:4px;">
-        <div style="display:flex;align-items:center;justify-content:space-between;">
-          <label style="font-size:9px;font-weight:800;letter-spacing:2px;color:rgba(255,255,255,0.3);text-transform:uppercase;">Fonte das cifras</label>
-          <span id="perfil-fonte-val" style="font-size:11px;font-weight:800;color:rgba(255,255,255,0.5);min-width:28px;text-align:right;">19px</span>
+      <!-- Tamanhos de fonte -->
+      <div style="background:#000;border-radius:16px;padding:16px;display:flex;flex-direction:column;gap:14px;">
+
+        <!-- Cifras (modo normal) -->
+        <div style="display:flex;flex-direction:column;gap:8px;">
+          <div style="display:flex;align-items:center;justify-content:space-between;">
+            <label style="font-size:9px;font-weight:900;letter-spacing:2px;color:rgba(255,255,255,0.35);text-transform:uppercase;">Cifras</label>
+            <span id="perfil-fonte-val" style="font-size:11px;font-weight:900;color:#22c55e;min-width:30px;text-align:right;">19px</span>
+          </div>
+          <div style="display:flex;align-items:center;gap:10px;">
+            <span style="font-size:10px;color:rgba(255,255,255,0.2);font-weight:800;width:12px;text-align:center;">A</span>
+            <input type="range" id="perfil-fonte-slider" min="13" max="32" step="1" value="19"
+              style="flex:1;accent-color:#22c55e;height:4px;"
+              oninput="_previewFontePartes(this.value)">
+            <span style="font-size:17px;color:rgba(255,255,255,0.2);font-weight:800;width:12px;text-align:center;">A</span>
+          </div>
         </div>
-        <div style="display:flex;align-items:center;gap:10px;">
-          <span style="font-size:10px;color:rgba(255,255,255,0.25);font-weight:700;">A</span>
-          <input type="range" id="perfil-fonte-slider" min="13" max="32" step="1" value="19"
-            style="flex:1;accent-color:#0A9E6E;"
-            oninput="_previewFontePartes(this.value)">
-          <span style="font-size:15px;color:rgba(255,255,255,0.25);font-weight:700;">A</span>
+
+        <!-- Divisor -->
+        <div style="height:1px;background:rgba(255,255,255,0.06);"></div>
+
+        <!-- Modo Show -->
+        <div style="display:flex;flex-direction:column;gap:8px;">
+          <div style="display:flex;align-items:center;justify-content:space-between;">
+            <div style="display:flex;align-items:center;gap:6px;">
+              <label style="font-size:9px;font-weight:900;letter-spacing:2px;color:rgba(255,255,255,0.35);text-transform:uppercase;">Modo Show</label>
+              <span style="font-size:8px;font-weight:900;padding:2px 6px;border-radius:5px;background:rgba(239,68,68,0.15);border:1px solid rgba(239,68,68,0.25);color:#f87171;letter-spacing:1px;">SHOW</span>
+            </div>
+            <span id="perfil-fonte-show-val" style="font-size:11px;font-weight:900;color:#22c55e;min-width:30px;text-align:right;">48px</span>
+          </div>
+          <div style="display:flex;align-items:center;gap:10px;">
+            <span style="font-size:10px;color:rgba(255,255,255,0.2);font-weight:800;width:12px;text-align:center;">A</span>
+            <input type="range" id="perfil-fonte-show-slider" min="28" max="72" step="2" value="48"
+              style="flex:1;accent-color:#22c55e;height:4px;"
+              oninput="_previewFonteShow(this.value)">
+            <span style="font-size:17px;color:rgba(255,255,255,0.2);font-weight:800;width:12px;text-align:center;">A</span>
+          </div>
         </div>
+
       </div>
 
       <!-- Botões ação -->
-      <div style="display:flex;gap:10px;padding-top:4px;">
-        <button onclick="fecharModalPerfil()" style="flex:1;padding:13px;border-radius:12px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);color:rgba(255,255,255,0.4);font-size:11px;font-weight:700;cursor:pointer;letter-spacing:1px;text-transform:uppercase;font-family:inherit;transition:0.2s;" onmouseenter="this.style.background='rgba(255,255,255,0.08)'" onmouseleave="this.style.background='rgba(255,255,255,0.04)'">Cancelar</button>
-        <button onclick="salvarPerfil()" style="flex:2;padding:13px;border-radius:12px;background:#0A9E6E;border:none;color:#000;font-size:12px;font-weight:900;cursor:pointer;letter-spacing:1px;text-transform:uppercase;font-family:inherit;transition:0.2s;" onmouseenter="this.style.background='#22d461'" onmouseleave="this.style.background='#0A9E6E'">Salvar Perfil</button>
+      <div style="display:flex;align-items:center;gap:12px;padding-top:4px;">
+        <button onclick="fecharModalPerfil()" style="padding:12px 18px;border-radius:999px;background:#000;border:1px solid rgba(255,255,255,0.1);color:rgba(255,255,255,0.4);font-size:11px;font-weight:800;cursor:pointer;letter-spacing:1px;text-transform:uppercase;font-family:inherit;white-space:nowrap;">Cancelar</button>
+        <button onclick="salvarPerfil()" style="flex:1;padding:14px;border-radius:999px;background:#16a34a;border:none;color:#000;font-size:13px;font-weight:900;cursor:pointer;letter-spacing:0.5px;font-family:inherit;transition:background 0.2s;" onmouseenter="this.style.background='#22c55e'" onmouseleave="this.style.background='#16a34a'">Salvar Perfil</button>
       </div>
 
     </div>
@@ -5147,6 +5173,7 @@ let perfilFotoBase64 = null; // foto atual em edição
   var CHECK_MS = 5 * 60 * 1000; // 5 minutos
   async function _checarStatus() {
   // Aplica tamanho de fonte salvo
+  _fonteShow = parseInt(localStorage.getItem(_FONTE_SHOW_KEY) || '48');
   _aplicarFontePartes(_fontePartes);
   // Verifica se URL tem ?setlist= (view pública)
   _verificarSetlistPublico();
@@ -5189,6 +5216,11 @@ function abrirModalPerfil() {
   var lbl    = document.getElementById('perfil-fonte-val');
   if (slider) { slider.value = _fontePartes; }
   if (lbl)    { lbl.innerText = _fontePartes + 'px'; }
+  var sliderShow = document.getElementById('perfil-fonte-show-slider');
+  var lblShow    = document.getElementById('perfil-fonte-show-val');
+  var _fs = parseInt(localStorage.getItem(_FONTE_SHOW_KEY) || '48');
+  if (sliderShow) { sliderShow.value = _fs; }
+  if (lblShow)    { lblShow.innerText = _fs + 'px'; }
   _renderHistoricoShow();
   const perfil = JSON.parse(localStorage.getItem('map_perfil_v1') || '{}');
   const nome = perfil.nome || perfil.nomeUsuario || '';
@@ -7197,8 +7229,10 @@ function stopScroll() {
 }
 
 // ─── FONTE DAS PARTES ────────────────────────────────────────────────────────
-var _FONTE_KEY = 'map_fonte_partes_v1';
-var _fontePartes = parseInt(localStorage.getItem(_FONTE_KEY) || '19');
+var _FONTE_KEY      = 'map_fonte_partes_v1';
+var _FONTE_SHOW_KEY = 'map_fonte_show_v1';
+var _fontePartes    = parseInt(localStorage.getItem(_FONTE_KEY) || '19');
+var _fonteShow      = parseInt(localStorage.getItem(_FONTE_SHOW_KEY) || '48');
 
 function _aplicarFontePartes(size) {
   var el = document.getElementById('font-parts-css');
@@ -7209,7 +7243,7 @@ function _aplicarFontePartes(size) {
   }
   // Modo show sobrescreve com !important — só aplica no modo normal
   el.textContent = '.chord-area { font-size: ' + size + 'px !important; }'
-    + 'body.performance-mode .chord-area { font-size: 48px !important; }';
+    + 'body.performance-mode .chord-area { font-size: ' + (_fonteShow || 48) + 'px !important; }';
   // Reajusta alturas de todos os textareas visíveis
   document.querySelectorAll('.chord-area').forEach(function(ta) {
     ta.style.height = '';
@@ -7223,11 +7257,25 @@ function _previewFontePartes(val) {
   _aplicarFontePartes(val);
 }
 
+function _previewFonteShow(val) {
+  val = parseInt(val);
+  var lbl = document.getElementById('perfil-fonte-show-val');
+  if (lbl) lbl.innerText = val + 'px';
+  _fonteShow = val;
+  _aplicarFontePartes(_fontePartes); // re-aplica para atualizar o !important do show
+}
+
 function _salvarFontePartes() {
-  var slider = document.getElementById('perfil-fonte-slider');
-  if (!slider) return;
-  _fontePartes = parseInt(slider.value);
-  localStorage.setItem(_FONTE_KEY, String(_fontePartes));
+  var slider     = document.getElementById('perfil-fonte-slider');
+  var sliderShow = document.getElementById('perfil-fonte-show-slider');
+  if (slider) {
+    _fontePartes = parseInt(slider.value);
+    localStorage.setItem(_FONTE_KEY, String(_fontePartes));
+  }
+  if (sliderShow) {
+    _fonteShow = parseInt(sliderShow.value);
+    localStorage.setItem(_FONTE_SHOW_KEY, String(_fonteShow));
+  }
   _aplicarFontePartes(_fontePartes);
 }
 
