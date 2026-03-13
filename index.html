@@ -18104,10 +18104,10 @@ async function vocBuscarVideos(){
   // Usar Claude para gerar lista de vídeos com videoIds reais
   var videosData = await _vocGerarVideosViaClaude(q);
 
-  // null = sem chave (já pediu a chave), [] = Claude não conhece os videoIds
+  // null = sem chave (modal já foi aberto) — limpa e sai
   if(videosData === null){
     res.innerHTML = '';
-    return; // _vocPedirChave já foi chamado dentro de _vocGerarVideosViaClaude
+    return;
   }
   if(!videosData.length){
     // Claude não conhece vídeos desta música — mostra botão de busca no YouTube
@@ -18155,26 +18155,40 @@ async function _vocGerarVideosViaClaude(q){
   var key = _vocGetKey();
   if(!key) { _vocPedirChave(); return null; }
   try {
+    // Prompt direto e simples — menos chance de resposta fora do formato
     var prompt =
-      'Você é um especialista em músicas gospel brasileiras e internacionais. '
-      + 'Para a música "'+q+'", retorne vídeos do YouTube seguindo estas REGRAS RÍGIDAS:\n'
-      + '1. Só inclua um videoId se tiver CERTEZA ABSOLUTA de que ele existe e é desta música.\n'
-      + '2. Se tiver qualquer dúvida sobre um videoId, coloque videoId como null — nunca invente.\n'
-      + '3. Quando videoId for null, o app vai mostrar um botão de busca no YouTube automaticamente.\n'
-      + '4. É melhor retornar poucos vídeos certos do que muitos errados.\n'
-      + '5. Inclua variações: com letra na tela, lyric video, karaokê, ao vivo, tutorial vocal.\n'
-      + 'Responda SOMENTE com JSON válido, sem markdown. '
-      + 'Formato: {"videos":[{"videoId":"ID_CERTO_OU_null","titulo":"Título","canal":"Canal","badge":"COM LETRA","filtro":"letra","query":"termo de busca alternativo caso videoId seja null"}]} '
-      + 'Valores de filtro: letra, lyric, karaoke, aovivo, tutorial.';
-    var txt = await _vocClaude(prompt, 900);
-    if(!txt) return null;
-    var clean = txt.replace(/```json|```/g,'').trim();
-    var m = clean.match(/\{[\s\S]*\}/);
-    if(!m) return null;
-    var data = JSON.parse(m[0]);
-    // Retorna [] (array vazio) quando Claude não conhece — distinto de null (sem chave/erro)
-    return Array.isArray(data.videos) ? data.videos : null;
-  } catch(e){ return null; }
+      'Responda SOMENTE com JSON, sem nenhum texto antes ou depois.\n'
+      + 'Liste até 6 vídeos reais do YouTube sobre a música gospel "' + q + '".\n'
+      + 'Para cada vídeo, inclua o videoId real do YouTube (11 caracteres).\n'
+      + 'Se não tiver certeza do videoId, use null e preencha o campo query.\n'
+      + 'Formato obrigatório:\n'
+      + '{"videos":[{"videoId":"ABC123defGH","titulo":"Nome do video","canal":"Nome do canal","badge":"COM LETRA","filtro":"letra","query":"' + q + ' letra gospel"}]}\n'
+      + 'filtro pode ser: letra, lyric, karaoke, aovivo, tutorial\n'
+      + 'badge pode ser: COM LETRA, LYRIC, KARAOKÊ, AO VIVO, TUTORIAL';
+
+    var txt = await _vocClaude(prompt, 1000);
+    if(!txt) return [];  // erro de API → fallback para busca YouTube
+
+    // Tenta extrair JSON de várias formas
+    var clean = txt.replace(/```json/g,'').replace(/```/g,'').trim();
+    var parsed = null;
+
+    // Tentativa 1: parse direto
+    try { parsed = JSON.parse(clean); } catch(e1) {}
+
+    // Tentativa 2: extrair objeto JSON com regex
+    if(!parsed) {
+      var m = clean.match(/\{[\s\S]*\}/);
+      if(m) { try { parsed = JSON.parse(m[0]); } catch(e2) {} }
+    }
+
+    // Se parse falhou, retorna [] para mostrar fallback YouTube
+    if(!parsed || !Array.isArray(parsed.videos)) return [];
+
+    return parsed.videos;
+  } catch(e) {
+    return [];  // qualquer erro → fallback para busca YouTube
+  }
 }
 
 async function _vocGerarQueriesVideos(q){
