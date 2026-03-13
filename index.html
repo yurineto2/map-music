@@ -1,7 +1,7 @@
 <!DOCTYPE html>
-<html lang="pt-BR">
+<html lang="pt-BR" style="background:#06060c;color:#fff;">
 <head>
-<style>*{margin:0;padding:0;box-sizing:border-box;}html,body{background:#06060c!important;color:#fff;}#ob-splash{position:fixed;inset:0;z-index:100010;background:#06060c;display:flex;flex-direction:column;align-items:center;justify-content:center;}</style>
+<style>*{margin:0;padding:0;box-sizing:border-box;}html,body{background:#06060c!important;color:#fff;min-height:100%;}body{visibility:hidden;}body.pronto{visibility:visible;}#ob-splash{position:fixed;inset:0;z-index:100010;background:#06060c;display:flex;flex-direction:column;align-items:center;justify-content:center;visibility:visible!important;}</style>
 <style>
 #ios-open-safari {
   position: fixed; inset: 0; z-index: 99999999;
@@ -266,6 +266,12 @@ window.addEventListener('unhandledrejection', function(e) {
   }
 
   // ── Polling realtime (onSnapshot simulado) ───────────────────────────────────
+  // ── Pausa de background: polls ficam suspensos com app minimizado ────────────
+  window._appPaused = false;
+  document.addEventListener('visibilitychange', function() {
+    window._appPaused = document.visibilityState === 'hidden';
+  });
+
   function _poll(path, callback, intervalMs) {
     intervalMs = intervalMs || 3000;
     let last = null;
@@ -273,6 +279,8 @@ window.addEventListener('unhandledrejection', function(e) {
     let errCount = 0;
     async function check() {
       if (stopped) return;
+      // Pausa quando app está em background — resgenda para verificar novamente
+      if (window._appPaused) { setTimeout(check, 2000); return; }
       try {
         const data = await _get(path);
         errCount = 0;
@@ -297,6 +305,8 @@ window.addEventListener('unhandledrejection', function(e) {
     let errCount = 0;
     async function check() {
       if (stopped) return;
+      // Pausa quando app está em background — resgenda para verificar novamente
+      if (window._appPaused) { setTimeout(check, 2000); return; }
       try {
         const rows = await _query(col, filters);
         errCount = 0;
@@ -646,6 +656,7 @@ window.addEventListener('unhandledrejection', function(e) {
         await _set('salas/' + codigo, { viewers, onlineCount }, true);
       } catch(e) {}
     },
+    _set, _get, // expostos para setlist público e outras features internas
     async enviarMensagemSala(codigo, msg) {
       try { return await _add('salas/' + codigo + '/mensagens', msg); } catch(e) { return false; }
     },
@@ -1248,28 +1259,44 @@ async function obFazerLogin() {
     localStorage.setItem('map_perfil_v1', JSON.stringify(perfilCompleto));
     localStorage.setItem('map_uid_v1', uid);
 
-    // Restaurar backup da nuvem automaticamente
+    // Restaurar backup da nuvem — só busca se local pode estar desatualizado
     try {
-      const backup = await window._fb.restaurarMusicas(uid);
-      if (backup) {
-        // Usa timestamp para decidir qual versão é mais recente
-        const backupTs = backup.updatedAt || 0;
-        const localTs  = parseInt(localStorage.getItem('map_backup_ts_v1') || '0');
-        if (backup.musicas && backup.musicas.length > 0) {
-          const localMusicas = JSON.parse(localStorage.getItem('map_pro_elite_v1') || '[]');
-          // Prioriza nuvem se: local vazio OU backup é mais recente que último save local
-          if (localMusicas.length === 0 || backupTs > localTs) {
-            localStorage.setItem('map_pro_elite_v1', JSON.stringify(backup.musicas));
+      const localTs     = parseInt(localStorage.getItem('map_backup_ts_v1') || '0');
+      const localMusicas = JSON.parse(localStorage.getItem('map_pro_elite_v1') || '[]');
+      const localEventos = JSON.parse(localStorage.getItem('map_pro_eventos_v1') || '[]');
+      const semDadosLocais = localMusicas.length === 0 && localEventos.length === 0;
+      // Só vai à nuvem se: não há dados locais, OU não há timestamp (primeira vez)
+      // Caso contrário, confia no localStorage e sincroniza em background silenciosamente
+      if (semDadosLocais || localTs === 0) {
+        const backup = await window._fb.restaurarMusicas(uid);
+        if (backup) {
+          const backupTs = backup.updatedAt || 0;
+          if (backup.musicas && backup.musicas.length > 0) {
+            if (localMusicas.length === 0 || backupTs > localTs) {
+              localStorage.setItem('map_pro_elite_v1', JSON.stringify(backup.musicas));
+            }
           }
-        }
-        if (backup.eventos && backup.eventos.length > 0) {
-          const localEventos = JSON.parse(localStorage.getItem('map_pro_eventos_v1') || '[]');
-          if (localEventos.length === 0 || backupTs > localTs) {
-            localStorage.setItem('map_pro_eventos_v1', JSON.stringify(backup.eventos));
+          if (backup.eventos && backup.eventos.length > 0) {
+            if (localEventos.length === 0 || backupTs > localTs) {
+              localStorage.setItem('map_pro_eventos_v1', JSON.stringify(backup.eventos));
+            }
           }
+          if (backupTs) localStorage.setItem('map_backup_ts_v1', String(backupTs));
         }
-        // Salva timestamp do backup restaurado
-        if (backupTs) localStorage.setItem('map_backup_ts_v1', String(backupTs));
+      } else {
+        // Sync em background: verifica nuvem sem bloquear o login
+        setTimeout(async function() {
+          try {
+            const backup = await window._fb.restaurarMusicas(uid);
+            if (backup && backup.updatedAt && backup.updatedAt > localTs) {
+              if (backup.musicas && backup.musicas.length > 0)
+                localStorage.setItem('map_pro_elite_v1', JSON.stringify(backup.musicas));
+              if (backup.eventos && backup.eventos.length > 0)
+                localStorage.setItem('map_pro_eventos_v1', JSON.stringify(backup.eventos));
+              localStorage.setItem('map_backup_ts_v1', String(backup.updatedAt));
+            }
+          } catch(e) {}
+        }, 4000);
       }
     } catch(e) {}
 
@@ -1360,6 +1387,7 @@ document.addEventListener('DOMContentLoaded', function() {
     document.body.classList.remove('auth-pending');
     var _splashEl = document.getElementById('ob-splash');
     if (_splashEl) _splashEl.style.display = 'none';
+    document.body.classList.add('pronto');
 
     var ov = document.createElement('div');
     ov.id = 'proto-warn-overlay';
@@ -1433,6 +1461,7 @@ document.addEventListener('DOMContentLoaded', function() {
   // Admin com sessao activa: pula splash e PIN completamente
   if (perfil.isAdmin && perfil.uid === 'admin_local') {
     if (splash) splash.remove();
+    document.body.classList.add('pronto');
     const ovAdm = document.getElementById('onboarding-overlay');
     if (ovAdm) ovAdm.remove();
     // Evita flash: transicao suave ao entrar directo
@@ -1473,6 +1502,7 @@ document.addEventListener('DOMContentLoaded', function() {
     // Vem de um logout — pula splash, vai direto ao cadastro
     sessionStorage.removeItem('map_skip_splash');
     if (splash) splash.remove();
+    document.body.classList.add('pronto');
     _mostrarOnboarding();
     return;
   }
@@ -1485,6 +1515,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
   // Após 1.8s: inicia saída do splash E entrada do próximo ecrã em simultâneo
   setTimeout(function() {
+    document.body.classList.add('pronto');
     if (splash) splash.classList.add('exit');
 
     if (perfil.nome && perfil.nome.trim().length >= 2) {
@@ -1526,6 +1557,7 @@ document.addEventListener('DOMContentLoaded', function() {
     // Remove splash do DOM após animação terminar
     setTimeout(function() {
       if (splash) splash.remove();
+      document.body.classList.add('pronto'); // garante
     }, 300);
   // Usuário já registado: splash mais curto (1800ms); novo usuário: 4000ms
   }, perfil.nome ? 1800 : 4000);
@@ -1835,6 +1867,208 @@ body { font-family: -apple-system, 'Inter', BlinkMacSystemFont, 'Segoe UI', sans
 .album-card:nth-child(3){animation-delay:.06s}
 .album-card:nth-child(4){animation-delay:.09s}
 .album-card:nth-child(n+5){animation-delay:.12s}
+
+/* ── ORDENAÇÃO DA BIBLIOTECA ────────────────────────────── */
+.bib-sort-bar {
+  display: none;
+  align-items: center;
+  gap: 6px;
+  padding: 0 16px 8px;
+  flex-shrink: 0;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+}
+.bib-sort-bar::-webkit-scrollbar { display: none; }
+.bib-sort-bar.visible { display: flex; }
+.sort-btn {
+  font-size: 10px; font-weight: 800; letter-spacing: 0.3px;
+  padding: 4px 11px; border-radius: 20px; cursor: pointer;
+  border: 1px solid rgba(255,255,255,0.1);
+  background: rgba(255,255,255,0.04);
+  color: rgba(255,255,255,0.4);
+  transition: all 0.15s; white-space: nowrap;
+  touch-action: manipulation; flex-shrink: 0;
+  display: flex; align-items: center; gap: 4px;
+}
+.sort-btn:hover { border-color: rgba(255,255,255,0.22); color: rgba(255,255,255,0.75); }
+.sort-btn.active {
+  background: rgba(255,255,255,0.1);
+  border-color: rgba(255,255,255,0.3);
+  color: #fff;
+}
+.sort-btn .sort-arrow { font-size: 9px; opacity: 0.6; }
+
+/* ── TAGS — filtro e editor ─────────────────────────────── */
+.bib-tags-bar {
+  display: none;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding: 8px 16px 4px;
+  flex-shrink: 0;
+}
+.bib-tags-bar.visible { display: flex; }
+.tag-chip {
+  font-size: 10px; font-weight: 800; letter-spacing: 0.4px;
+  padding: 4px 10px; border-radius: 20px; cursor: pointer;
+  border: 1px solid rgba(255,255,255,0.12);
+  background: rgba(255,255,255,0.05);
+  color: rgba(255,255,255,0.5);
+  transition: all 0.15s; white-space: nowrap;
+  touch-action: manipulation;
+}
+.tag-chip:hover { border-color: rgba(10,158,110,0.4); color: #fff; }
+.tag-chip.active {
+  background: rgba(10,158,110,0.18);
+  border-color: rgba(10,158,110,0.55);
+  color: #0A9E6E;
+}
+/* Tags no card da música */
+.album-tags {
+  display: flex; flex-wrap: wrap; gap: 3px; margin-top: 3px;
+}
+.album-tag {
+  font-size: 9px; font-weight: 700; padding: 2px 6px;
+  border-radius: 10px; background: rgba(10,158,110,0.12);
+  border: 1px solid rgba(10,158,110,0.25); color: rgba(10,158,110,0.8);
+  white-space: nowrap;
+}
+/* Editor de tags no modal editar música */
+.tag-editor-wrap {
+  display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 6px;
+}
+.tag-editor-chip {
+  font-size: 10px; font-weight: 800; padding: 4px 10px;
+  border-radius: 20px; cursor: pointer;
+  border: 1px solid rgba(255,255,255,0.1);
+  background: rgba(255,255,255,0.04); color: rgba(255,255,255,0.45);
+  transition: all 0.15s; white-space: nowrap;
+  touch-action: manipulation;
+}
+.tag-editor-chip.sel {
+  background: rgba(10,158,110,0.18);
+  border-color: rgba(10,158,110,0.5); color: #0A9E6E;
+}
+.tag-custom-row {
+  display: flex; gap: 6px; align-items: center; margin-top: 4px;
+}
+.tag-custom-input {
+  flex: 1; background: rgba(255,255,255,0.05);
+  border: 1px solid rgba(255,255,255,0.1); border-radius: 8px;
+  color: #fff; font-size: 11px; padding: 7px 10px;
+  outline: none; font-family: inherit;
+}
+.tag-custom-input:focus { border-color: rgba(10,158,110,0.4); }
+.tag-custom-input::placeholder { color: rgba(255,255,255,0.22); }
+.tag-custom-add {
+  background: rgba(10,158,110,0.1); border: 1px solid rgba(10,158,110,0.3);
+  color: #0A9E6E; border-radius: 8px; padding: 7px 12px;
+  cursor: pointer; font-size: 11px; font-weight: 800; font-family: inherit;
+}
+
+/* ── AVISO DA SALA (banner flutuante) ───────────────────── */
+#sala-aviso-banner {
+  position: fixed;
+  top: -90px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 100050;
+  background: #0d2918;
+  border: 1.5px solid rgba(10,158,110,0.5);
+  border-radius: 16px;
+  padding: 12px 18px;
+  min-width: 240px;
+  max-width: 90vw;
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.7);
+  transition: top 0.4s cubic-bezier(0.34,1.56,0.64,1);
+  pointer-events: none;
+}
+#sala-aviso-banner.show { top: 16px; }
+#sala-aviso-banner .aviso-icon {
+  width: 28px; height: 28px; border-radius: 8px;
+  background: rgba(10,158,110,0.18); border: 1px solid rgba(10,158,110,0.3);
+  display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+}
+#sala-aviso-banner .aviso-label {
+  font-size: 9px; font-weight: 900; color: rgba(10,158,110,0.8);
+  letter-spacing: 1.5px; text-transform: uppercase; margin-bottom: 2px;
+}
+#sala-aviso-banner .aviso-texto {
+  font-size: 13px; font-weight: 700; color: #fff; line-height: 1.4;
+  word-break: break-word;
+}
+
+/* ── CHAT DO HOST — dentro do modal de sala ─────────────── */
+.sala-chat-wrap {
+  margin-top: 16px;
+  border-top: 1px solid rgba(255,255,255,0.07);
+  padding-top: 14px;
+}
+.sala-chat-title {
+  font-size: 9px; font-weight: 900; letter-spacing: 2px;
+  color: rgba(255,255,255,0.3); text-transform: uppercase; margin-bottom: 10px;
+}
+.sala-chat-input-row {
+  display: flex; gap: 8px; align-items: center;
+}
+.sala-chat-input {
+  flex: 1; background: rgba(255,255,255,0.05);
+  border: 1px solid rgba(255,255,255,0.1); border-radius: 10px;
+  color: #fff; font-size: 12px; padding: 10px 12px;
+  outline: none; font-family: inherit;
+  transition: border-color 0.2s;
+}
+.sala-chat-input:focus { border-color: rgba(10,158,110,0.4); }
+.sala-chat-input::placeholder { color: rgba(255,255,255,0.22); }
+.sala-chat-send {
+  background: rgba(10,158,110,0.15); border: 1px solid rgba(10,158,110,0.35);
+  color: #0A9E6E; border-radius: 10px; padding: 10px 14px;
+  cursor: pointer; font-size: 11px; font-weight: 800;
+  font-family: inherit; white-space: nowrap; transition: background 0.2s;
+  letter-spacing: 0.5px;
+}
+.sala-chat-send:hover { background: rgba(10,158,110,0.28); }
+.sala-chat-avisos {
+  margin-top: 10px; display: flex; flex-direction: column;
+  gap: 6px; max-height: 150px; overflow-y: auto;
+}
+.sala-chat-item {
+  background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.07);
+  border-radius: 8px; padding: 8px 10px;
+  font-size: 11px; color: rgba(255,255,255,0.7); line-height: 1.4;
+  display: flex; align-items: center; gap: 8px;
+}
+.sala-chat-item .chat-hora {
+  font-size: 9px; color: rgba(255,255,255,0.25); white-space: nowrap; margin-left: auto;
+}
+
+/* ── DRAG & DROP EVENTO ─────────────────────────────────── */
+.album-card[draggable] { cursor: grab; }
+.album-card[draggable]:active { cursor: grabbing; }
+.album-card.drag-over {
+  outline: 2px solid rgba(10,158,110,0.7);
+  outline-offset: 2px;
+  opacity: 0.85;
+}
+.album-card.dragging {
+  opacity: 0.35;
+  transform: scale(0.97);
+}
+.drag-handle {
+  position: absolute;
+  top: 6px; left: 6px;
+  width: 20px; height: 20px;
+  display: flex; align-items: center; justify-content: center;
+  color: rgba(255,255,255,0.25);
+  z-index: 2;
+  touch-action: none;
+  cursor: grab;
+}
+.drag-handle:active { cursor: grabbing; color: rgba(255,255,255,0.6); }
+.album-cover { position: relative; }
 @keyframes acFadeIn {
   from { opacity:0; transform:translateY(8px) scale(0.97); }
   to   { opacity:1; transform:translateY(0) scale(1); }
@@ -2605,6 +2839,45 @@ body.performance-mode .teleprompter-panel { display: block; }
 }
 body.performance-mode .perf-song-indicator { display: flex; }
 .perf-song-name { color: #fff; font-size: 13px; font-weight: 900; max-width: 180px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+/* ALERTA PRÓXIMA MÚSICA */
+#show-proxima-alerta {
+  position: fixed;
+  bottom: -90px;
+  left: 20px;
+  z-index: 2500;
+  background: rgba(0,0,0,0.88);
+  border: 1px solid rgba(255,255,255,0.12);
+  border-radius: 14px;
+  padding: 10px 16px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  pointer-events: none;
+  transition: bottom 0.4s cubic-bezier(0.34,1.56,0.64,1);
+  max-width: 220px;
+}
+#show-proxima-alerta.show { bottom: 100px; }
+#show-proxima-alerta .prox-label {
+  font-size: 8px; font-weight: 900; letter-spacing: 2px;
+  text-transform: uppercase; color: rgba(255,255,255,0.35);
+  white-space: nowrap;
+}
+#show-proxima-alerta .prox-nome {
+  font-size: 13px; font-weight: 900; color: #fff;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  max-width: 160px;
+}
+#show-proxima-alerta .prox-bpm {
+  font-size: 9px; font-weight: 700; color: rgba(255,62,62,0.7);
+  white-space: nowrap; margin-top: 1px;
+}
+#show-proxima-alerta .prox-icon {
+  width: 28px; height: 28px; border-radius: 8px;
+  background: rgba(255,255,255,0.07);
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+}
 
 /* FLASH DE SWIPE */
 .swipe-hint {
@@ -4171,6 +4444,21 @@ body.auth-pending #toast {
         
       </div>
 
+      <!-- Tamanho de fonte das partes -->
+      <div style="display:flex;flex-direction:column;gap:8px;padding-top:4px;padding-bottom:4px;">
+        <div style="display:flex;align-items:center;justify-content:space-between;">
+          <label style="font-size:9px;font-weight:800;letter-spacing:2px;color:rgba(255,255,255,0.3);text-transform:uppercase;">Fonte das cifras</label>
+          <span id="perfil-fonte-val" style="font-size:11px;font-weight:800;color:rgba(255,255,255,0.5);min-width:28px;text-align:right;">19px</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:10px;">
+          <span style="font-size:10px;color:rgba(255,255,255,0.25);font-weight:700;">A</span>
+          <input type="range" id="perfil-fonte-slider" min="13" max="32" step="1" value="19"
+            style="flex:1;accent-color:#0A9E6E;"
+            oninput="_previewFontePartes(this.value)">
+          <span style="font-size:15px;color:rgba(255,255,255,0.25);font-weight:700;">A</span>
+        </div>
+      </div>
+
       <!-- Botões ação -->
       <div style="display:flex;gap:10px;padding-top:4px;">
         <button onclick="fecharModalPerfil()" style="flex:1;padding:13px;border-radius:12px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);color:rgba(255,255,255,0.4);font-size:11px;font-weight:700;cursor:pointer;letter-spacing:1px;text-transform:uppercase;font-family:inherit;transition:0.2s;" onmouseenter="this.style.background='rgba(255,255,255,0.08)'" onmouseleave="this.style.background='rgba(255,255,255,0.04)'">Cancelar</button>
@@ -4178,6 +4466,15 @@ body.auth-pending #toast {
       </div>
 
     </div>
+    <!-- Histórico de Shows -->
+    <div style="padding:4px 20px 16px;border-top:1px solid rgba(255,255,255,0.05);margin-top:4px;">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;margin-top:14px;">
+        <div style="font-size:9px;font-weight:900;letter-spacing:2px;color:rgba(255,255,255,0.3);text-transform:uppercase;">Histórico de Shows</div>
+        <button onclick="_limparHistoricoShow()" style="background:none;border:none;color:rgba(255,80,80,0.45);font-size:10px;font-weight:700;cursor:pointer;letter-spacing:0.5px;padding:2px 0;">Limpar</button>
+      </div>
+      <div id="perfil-historico-lista" style="display:flex;flex-direction:column;gap:7px;max-height:220px;overflow-y:auto;"></div>
+    </div>
+
     <!-- Rodapé fixo com botões de conta -->
     <div style="padding:14px 20px 20px;border-top:1px solid rgba(255,255,255,0.05);display:flex;flex-direction:column;gap:8px;flex-shrink:0;">
       <button id="perfil-btn-sair" onclick="sairDaConta()" style="width:100%;padding:11px;border-radius:12px;background:rgba(255,60,60,0.07);border:1px solid rgba(255,60,60,0.18);color:rgba(255,100,100,0.8);font-size:11px;font-weight:800;cursor:pointer;letter-spacing:1px;text-transform:uppercase;font-family:inherit;transition:0.2s;touch-action:manipulation;" onmouseenter="this.style.background='rgba(255,60,60,0.14)'" onmouseleave="this.style.background='rgba(255,60,60,0.07)'">Sair do Perfil</button>
@@ -4243,6 +4540,32 @@ body.auth-pending #toast {
 </div>
 
 <!-- SYNC BAR -->
+<!-- VIEW SETLIST PÚBLICO — somente-leitura para visitantes -->
+<div id="setlist-readonly-view" style="display:none;position:fixed;inset:0;z-index:999990;background:#03030A;overflow-y:auto;padding:32px 20px 60px;">
+  <div style="max-width:480px;margin:0 auto;">
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:28px;">
+      <div style="font-size:10px;font-weight:900;letter-spacing:3px;color:#0A9E6E;">MAP MUSIC PRO</div>
+    </div>
+    <h1 id="srv-titulo" style="font-size:24px;font-weight:900;color:#fff;margin:0 0 4px;"></h1>
+    <p id="srv-data" style="font-size:12px;color:rgba(255,255,255,0.35);margin:0 0 28px;"></p>
+    <div id="srv-lista" style="display:flex;flex-direction:column;gap:8px;"></div>
+    <div style="margin-top:40px;padding-top:20px;border-top:1px solid rgba(255,255,255,0.07);text-align:center;">
+      <a href="." style="font-size:11px;color:#0A9E6E;font-weight:800;letter-spacing:1px;text-decoration:none;">Abrir Map Music Pro ↗</a>
+    </div>
+  </div>
+</div>
+
+<!-- AVISO DA SALA — banner flutuante para viewers -->
+<div id="sala-aviso-banner">
+  <div class="aviso-icon">
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#0A9E6E" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M22 17H2a3 3 0 0 0 3-3V9a7 7 0 0 1 14 0v5a3 3 0 0 0 3 3z"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+  </div>
+  <div>
+    <div class="aviso-label" id="sala-aviso-nome">Host</div>
+    <div class="aviso-texto" id="sala-aviso-texto"></div>
+  </div>
+</div>
+
 <div class="sync-bar" id="sync-bar">
   <div class="sync-dot"></div>
   <span id="sync-label">SINCRONIZADO</span>
@@ -4397,6 +4720,17 @@ body.auth-pending #toast {
       <button class="modal-btn primary" id="btn-copiar-codigo" onclick="copiarCodigo()" disabled>Copiar Código</button>
       <button class="modal-btn secondary" style="margin-top:8px;" onclick="fecharModal()">Fechar</button>
       <button class="modal-btn danger" style="margin-top:8px;background:rgba(255,60,60,0.12);border:1px solid rgba(255,60,60,0.3);color:rgba(255,100,100,0.95);font-weight:900;" onclick="if(confirm('Encerrar a sala?'))desconectar()">Encerrar Sala</button>
+
+      <!-- Chat de avisos do host -->
+      <div class="sala-chat-wrap" id="sala-chat-host-wrap" style="display:none;">
+        <div class="sala-chat-title">Avisos para a sala</div>
+        <div class="sala-chat-input-row">
+          <input class="sala-chat-input" id="sala-chat-input" placeholder="Ex: Repetir refrão, ir pro final..." maxlength="80"
+            onkeydown="if(event.key==='Enter')enviarAvisoSala()">
+          <button class="sala-chat-send" onclick="enviarAvisoSala()">Enviar</button>
+        </div>
+        <div class="sala-chat-avisos" id="sala-chat-avisos"></div>
+      </div>
     </div>
 
     <!-- ECRÃ 3: entrar na sala -->
@@ -4413,6 +4747,27 @@ body.auth-pending #toast {
       <button class="modal-btn secondary" style="margin-top:10px;" onclick="voltarEscolhaSala()">Voltar</button>
     </div>
 
+  </div>
+</div>
+
+<!-- MODAL SETLIST PÚBLICO -->
+<div class="modal-overlay" id="modal-setlist-publico" onclick="if(event.target===this)document.getElementById('modal-setlist-publico').classList.remove('show')">
+  <div class="modal-box" style="max-width:420px;padding:0;overflow:hidden;max-height:90vh;display:flex;flex-direction:column;">
+    <div style="padding:24px 24px 16px;border-bottom:1px solid var(--glass-border);flex-shrink:0;">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;">
+        <h2 style="font-size:16px;font-weight:900;margin:0;" id="setlist-pub-titulo">Setlist</h2>
+        <button onclick="document.getElementById('modal-setlist-publico').classList.remove('show')" style="background:none;border:none;color:rgba(255,255,255,0.3);font-size:18px;cursor:pointer;padding:4px 6px;">&times;</button>
+      </div>
+      <p style="font-size:11px;color:var(--text-secondary);margin:0;" id="setlist-pub-data"></p>
+    </div>
+    <div id="setlist-pub-lista" style="overflow-y:auto;flex:1;padding:12px 20px 8px;display:flex;flex-direction:column;gap:6px;"></div>
+    <div style="padding:14px 20px 20px;border-top:1px solid var(--glass-border);flex-shrink:0;">
+      <div style="display:flex;align-items:center;gap:8px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.09);border-radius:10px;padding:10px 12px;margin-bottom:10px;">
+        <span id="setlist-pub-link" style="font-size:11px;color:rgba(255,255,255,0.5);flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-family:monospace;"></span>
+        <button onclick="copiarLinkSetlist()" style="background:rgba(10,158,110,0.12);border:1px solid rgba(10,158,110,0.3);border-radius:7px;color:#0A9E6E;font-size:10px;font-weight:800;padding:5px 10px;cursor:pointer;flex-shrink:0;font-family:inherit;">Copiar</button>
+      </div>
+      <p style="font-size:10px;color:rgba(255,255,255,0.2);text-align:center;margin:0;">Qualquer pessoa com o link pode ver este setlist</p>
+    </div>
   </div>
 </div>
 
@@ -4596,8 +4951,15 @@ body.auth-pending #toast {
     </div>
     <div class="biblioteca-search">
       <input type="text" id="biblioteca-search" placeholder="Buscar música..."
-        oninput="renderBibAtivo(this.value)">
+        oninput="_bibDebouncedRender(this.value)">
     </div>
+    <div class="bib-sort-bar" id="bib-sort-bar">
+      <button class="sort-btn" id="sort-btn-nome"     onclick="_bibOrdenar('nome')"    >A–Z <span class="sort-arrow" id="sort-arr-nome"></span></button>
+      <button class="sort-btn" id="sort-btn-bpm"      onclick="_bibOrdenar('bpm')"     >BPM <span class="sort-arrow" id="sort-arr-bpm"></span></button>
+      <button class="sort-btn" id="sort-btn-criacao"  onclick="_bibOrdenar('criacao')" >Recentes <span class="sort-arrow" id="sort-arr-criacao"></span></button>
+      <button class="sort-btn" id="sort-btn-tocadas"  onclick="_bibOrdenar('tocadas')" >Mais tocadas <span class="sort-arrow" id="sort-arr-tocadas"></span></button>
+    </div>
+    <div class="bib-tags-bar" id="bib-tags-bar"></div>
     <div class="biblioteca-grid" id="biblioteca-grid"></div>
   </div>
 
@@ -4610,6 +4972,12 @@ body.auth-pending #toast {
       <div class="evento-detalhe-title" id="evento-detalhe-title">Evento</div>
       <button onclick="abrirEditarEventoAtual()" title="Editar evento" style="background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.12);border-radius:8px;width:32px;height:32px;display:flex;align-items:center;justify-content:center;cursor:pointer;color:rgba(255,255,255,0.45);flex-shrink:0;">
         <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+      </button>
+      <button onclick="compartilharSetlist()" title="Compartilhar setlist" id="btn-compartilhar-setlist" style="background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);border-radius:8px;width:32px;height:32px;display:flex;align-items:center;justify-content:center;cursor:pointer;color:rgba(255,255,255,0.4);flex-shrink:0;position:relative;">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
+      </button>
+      <button onclick="exportarSetlistPDF()" title="Exportar como PDF" style="background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);border-radius:8px;width:32px;height:32px;display:flex;align-items:center;justify-content:center;cursor:pointer;color:rgba(255,255,255,0.4);flex-shrink:0;">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="12" y1="18" x2="12" y2="12"/><line x1="9" y1="15" x2="15" y2="15"/></svg>
       </button>
       <button onclick="abrirAddMusica()" title="Adicionar música" style="background:rgba(10,158,110,0.15);border:1px solid rgba(10,158,110,0.35);border-radius:8px;width:32px;height:32px;display:flex;align-items:center;justify-content:center;cursor:pointer;color:#0A9E6E;flex-shrink:0;">
         <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
@@ -4631,7 +4999,14 @@ body.auth-pending #toast {
     <input type="text" id="editar-musica-nome" placeholder="Nome da música">
     <div class="modal-editar-label">BPM</div>
     <input type="number" id="editar-musica-bpm" placeholder="BPM" min="40" max="300" inputmode="numeric">
-    <div class="modal-editar-btns">
+    <div class="modal-editar-label" style="margin-top:10px;">Tags</div>
+    <div class="tag-editor-wrap" id="tag-editor-chips"></div>
+    <div class="tag-custom-row">
+      <input class="tag-custom-input" id="tag-custom-input" placeholder="Tag personalizada..." maxlength="20"
+        onkeydown="if(event.key==='Enter'){event.preventDefault();_tagCustomAdicionar();}">
+      <button class="tag-custom-add" onclick="_tagCustomAdicionar()">+ Adicionar</button>
+    </div>
+    <div class="modal-editar-btns" style="margin-top:14px;">
       <button class="modal-editar-cancel" onclick="fecharEditarMusica()">Cancelar</button>
       <button class="modal-editar-save" onclick="salvarEditarMusica()">Salvar</button>
     </div>
@@ -4708,6 +5083,18 @@ body.auth-pending #toast {
 <!-- FLASH DE SWIPE -->
 <div class="swipe-hint" id="swipe-hint"></div>
 
+<!-- ALERTA PRÓXIMA MÚSICA -->
+<div id="show-proxima-alerta">
+  <div class="prox-icon">
+    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.5)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polygon points="5 3 19 12 5 21 5 3"/><line x1="19" y1="3" x2="19" y2="21"/></svg>
+  </div>
+  <div>
+    <div class="prox-label">A seguir</div>
+    <div class="prox-nome" id="prox-nome">—</div>
+    <div class="prox-bpm" id="prox-bpm"></div>
+  </div>
+</div>
+
 <div class="perf-bottom-panel">
   <div class="teleprompter-panel">
     <div class="tp-header">
@@ -4743,6 +5130,10 @@ let perfilFotoBase64 = null; // foto atual em edição
 (function _initStatusWatch() {
   var CHECK_MS = 5 * 60 * 1000; // 5 minutos
   async function _checarStatus() {
+  // Aplica tamanho de fonte salvo
+  _aplicarFontePartes(_fontePartes);
+  // Verifica se URL tem ?setlist= (view pública)
+  _verificarSetlistPublico();
     try {
       var uid = localStorage.getItem('map_uid_v1');
       var perfil = JSON.parse(localStorage.getItem('map_perfil_v1') || '{}');
@@ -4765,8 +5156,8 @@ let perfilFotoBase64 = null; // foto atual em edição
       }
     } catch(e) {}
   }
-  // Primeira verificação após 10s (app já carregado)
-  setTimeout(_checarStatus, 10000);
+  // Primeira verificação após 3s (app já carregado)
+  setTimeout(_checarStatus, 3000);
   // Verificações periódicas
   setInterval(_checarStatus, CHECK_MS);
   // Verificar ao voltar à aba
@@ -4777,6 +5168,12 @@ let perfilFotoBase64 = null; // foto atual em edição
 
 
 function abrirModalPerfil() {
+  // Sincroniza slider com valor salvo
+  var slider = document.getElementById('perfil-fonte-slider');
+  var lbl    = document.getElementById('perfil-fonte-val');
+  if (slider) { slider.value = _fontePartes; }
+  if (lbl)    { lbl.innerText = _fontePartes + 'px'; }
+  _renderHistoricoShow();
   const perfil = JSON.parse(localStorage.getItem('map_perfil_v1') || '{}');
   const nome = perfil.nome || perfil.nomeUsuario || '';
   const inst = perfil.instrumento || null;
@@ -5186,6 +5583,51 @@ async function enviarRecuperacaoSenha() {
   }
 }
 
+function _renderHistoricoShow() {
+  var lista = document.getElementById('perfil-historico-lista');
+  if (!lista) return;
+  var hist = [];
+  try { hist = JSON.parse(localStorage.getItem('map_historico_shows_v1') || '[]'); } catch(e) {}
+  if (!hist.length) {
+    lista.innerHTML = '<div style="font-size:11px;color:rgba(255,255,255,0.2);text-align:center;padding:12px 0;">Nenhum show registrado ainda</div>';
+    return;
+  }
+  lista.innerHTML = hist.map(function(h) {
+    var nomes = h.musicas.map(function(m) { return m.nome; }).join(', ');
+    var titulo = h.eventoNome ? h.eventoNome : 'Show livre';
+    return '<div style="background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.07);border-radius:10px;padding:10px 12px;">'
+      + '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;">'
+      + '<div style="font-size:12px;font-weight:800;color:#fff;">' + titulo + '</div>'
+      + '<div style="font-size:10px;color:rgba(255,255,255,0.3);">' + h.data + ' · ' + h.hora + '</div>'
+      + '</div>'
+      + '<div style="font-size:10px;color:rgba(10,158,110,0.8);font-weight:700;margin-bottom:3px;">' + h.musicas.length + ' música' + (h.musicas.length !== 1 ? 's' : '') + '</div>'
+      + '<div style="font-size:10px;color:rgba(255,255,255,0.25);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + nomes + '</div>'
+      + '</div>';
+  }).join('');
+}
+
+function _limparHistoricoShow() {
+  var overlay = document.createElement('div');
+  overlay.style.cssText = 'position:fixed;inset:0;z-index:100040;background:rgba(0,0,0,0.88);display:flex;align-items:center;justify-content:center;padding:24px;';
+  overlay.innerHTML =
+    '<div style="background:#111119;border:1px solid rgba(255,255,255,0.1);border-radius:20px;padding:24px 20px;width:100%;max-width:280px;display:flex;flex-direction:column;gap:14px;text-align:center;">'
+  + '<div style="font-size:14px;font-weight:900;color:#fff;">Limpar histórico?</div>'
+  + '<div style="font-size:12px;color:rgba(255,255,255,0.35);">Todos os registros de shows serão apagados.</div>'
+  + '<div style="display:flex;gap:10px;">'
+  + '<button id="_lhs-nao" style="flex:1;padding:11px;border-radius:10px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);color:rgba(255,255,255,0.5);font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;">Cancelar</button>'
+  + '<button id="_lhs-sim" style="flex:2;padding:11px;border-radius:10px;background:rgba(220,50,50,0.75);border:none;color:#fff;font-size:12px;font-weight:900;cursor:pointer;font-family:inherit;">Limpar tudo</button>'
+  + '</div></div>';
+  document.body.appendChild(overlay);
+  document.getElementById('_lhs-nao').onclick = function() { overlay.remove(); };
+  document.getElementById('_lhs-sim').onclick = function() {
+    localStorage.removeItem('map_historico_shows_v1');
+    overlay.remove();
+    _renderHistoricoShow();
+    showToast('Histórico apagado.');
+  };
+  overlay.addEventListener('click', function(e) { if (e.target === overlay) overlay.remove(); });
+}
+
 function fecharModalPerfil() {
   document.getElementById('modal-perfil').style.display = 'none';
 }
@@ -5290,6 +5732,11 @@ let isPlaying = false;
 let nextNoteTime = 0.0;
 let timerID = null;
 let scrollInterval = null;
+function _setScroll(speed) {
+  clearInterval(scrollInterval);
+  scrollInterval = null;
+  if (speed > 0) scrollInterval = setInterval(() => window.scrollBy(0, 1), 175 - speed);
+}
 let tapTimes = [];
 let audioCtx = null;
 function _getAudioCtx() {
@@ -5388,6 +5835,11 @@ async function criarSala() {
   document.getElementById('criar-status').innerText = 'Sala ativa! Partilha o código.';
   atualizarSyncBar(code);
   showToast('Sala criada! Código: ' + code);
+  // Mostra painel de chat de avisos
+  _salaAvisos = [];
+  _renderAvisosChat();
+  var chatWrap = document.getElementById('sala-chat-host-wrap');
+  if (chatWrap) chatWrap.style.display = 'block';
 
   // Escuta mensagens dos viewers (join/leave/ping)
   _iniciarListenerMensagens(code, uid);
@@ -5395,6 +5847,8 @@ async function criarSala() {
   // Keepalive — atualiza estado a cada 15s e lê onlineCount do Firestore
   _salaOnlineTimer = setInterval(async () => {
     if (!isHost || !myRoomCode) { clearInterval(_salaOnlineTimer); return; }
+    // Não envia keepalive com app em background — economiza bateria e dados
+    if (window._appPaused) return;
     broadcastEstado();
     // Lê onlineCount atual do Firestore para o host ver viewers
     try {
@@ -5430,6 +5884,61 @@ function broadcastEstado() {
     const onlineUids = Object.keys(_viewersOnline || {});
     window._fb.atualizarEstadoSala(myRoomCode, estado, [_getUid(), ...onlineUids]).catch(() => {});
   }
+}
+
+// ── CHAT DE AVISOS DA SALA ───────────────────────────────────────────────────
+var _salaAvisos = []; // histórico de avisos enviados pelo host nesta sessão
+var _avisoTimer  = null;
+
+function enviarAvisoSala() {
+  var input = document.getElementById('sala-chat-input');
+  var texto = (input.value || '').trim();
+  if (!texto || !isHost || !myRoomCode) return;
+  var perfil = _getPerfilLocal();
+  var uid    = _getUid();
+  var hora   = new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+  // Envia via Firebase mensagens da sala
+  var avisoObj = { tipo: 'aviso', uid, nome: perfil.nome || 'Host', texto, _t: Date.now() };
+  window._fb.enviarMensagemSala(myRoomCode, avisoObj).catch(function() {});
+  // Persiste ultimoAviso na sala para viewers que já estão com polling ativo
+  if (window._fb && myRoomCode) {
+    window._fb.atualizarEstadoSala && window._fb.atualizarEstadoSala(myRoomCode,
+      capturarEstado(), [uid, ...Object.keys(_viewersOnline || {})]).catch(function(){});
+    window._fb._set && window._fb._set('salas/' + myRoomCode, { ultimoAviso: avisoObj }, true).catch(function(){});
+  }
+  // Registra localmente e atualiza lista
+  _salaAvisos.unshift({ texto, hora });
+  if (_salaAvisos.length > 20) _salaAvisos.pop();
+  _renderAvisosChat();
+  input.value = '';
+  input.focus();
+  showToast('Aviso enviado!');
+}
+
+function _renderAvisosChat() {
+  var lista = document.getElementById('sala-chat-avisos');
+  if (!lista) return;
+  if (!_salaAvisos.length) { lista.innerHTML = ''; return; }
+  lista.innerHTML = _salaAvisos.map(function(a) {
+    return '<div class="sala-chat-item">'
+      + '<span>' + a.texto.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;') + '</span>'
+      + '<span class="chat-hora">' + a.hora + '</span>'
+      + '</div>';
+  }).join('');
+}
+
+function _mostrarAvisoBanner(nomeHost, texto) {
+  var banner = document.getElementById('sala-aviso-banner');
+  var nomeEl = document.getElementById('sala-aviso-nome');
+  var textoEl = document.getElementById('sala-aviso-texto');
+  if (!banner || !nomeEl || !textoEl) return;
+  nomeEl.innerText = nomeHost || 'Host';
+  textoEl.innerText = texto;
+  banner.classList.add('show');
+  if (_avisoTimer) clearTimeout(_avisoTimer);
+  _avisoTimer = setTimeout(function() {
+    banner.classList.remove('show');
+  }, 5000);
 }
 
 // ── HOST: Escuta mensagens dos viewers ───────────────────────────────────────
@@ -5531,6 +6040,14 @@ async function entrarNaSala() {
         const cnt = guestsEl.querySelector('#sync-guests-count');
         if (cnt) cnt.innerText = total + ' online';
       }
+      // Verifica aviso mais recente do host
+      if (data.ultimoAviso && data.ultimoAviso._t) {
+        const lastT = parseInt(sessionStorage.getItem('_sala_last_aviso_t') || '0');
+        if (data.ultimoAviso._t > lastT) {
+          sessionStorage.setItem('_sala_last_aviso_t', String(data.ultimoAviso._t));
+          _mostrarAvisoBanner(data.ultimoAviso.nome || 'Host', data.ultimoAviso.texto || '');
+        }
+      }
     } catch(e) {}
   });
 }
@@ -5565,6 +6082,9 @@ async function encerrarSala() {
   isHost = false;
   _viewersOnline = {};
   myRoomCode = null;
+  _salaAvisos = [];
+  var chatWrap = document.getElementById('sala-chat-host-wrap');
+  if (chatWrap) chatWrap.style.display = 'none';
   atualizarSyncBar();
   atualizarLetreiroDrumCam();
   showToast('Sala encerrada');
@@ -5596,28 +6116,106 @@ function atualizarSyncBar(code) {
 
 // ── Reconexão automática ao voltar ao foreground ─────────────────────────────
 // visibilitychange handled in sala Firebase block
+document.addEventListener('visibilitychange', function() {
+  if (document.visibilityState !== 'visible') return;
+  // Host: reenviar estado e atualizar onlineCount após voltar do background
+  if (isHost && myRoomCode && _fbReady && window._fb) {
+    broadcastEstado();
+    window._fb.getSala(myRoomCode).then(function(salaData) {
+      if (!salaData) return;
+      var total = salaData.onlineCount || 1;
+      window._onlineCountCache = total;
+      var sc = document.querySelector('#sync-guests-count');
+      if (sc) sc.innerText = total + ' online';
+    }).catch(function() {});
+  }
+});
 
 function togglePerf() {
-  setTimeout(atualizarLetreiroDrumCam, 50);
-  const isPerf = document.getElementById('app-body').classList.toggle('performance-mode');
-  document.getElementById('mode-text').innerText = isPerf ? "SAIR DO SHOW" : "MODO SHOW";
-  if (!isPerf) { stopScroll(); window.scrollTo(0,0); liberarWakeLock(); limparShowEvento(); const _b = document.getElementById('perf-evento-badge'); if (_b) _b.style.display='none'; }
-  else {
-    atualizarIndicador();
-    ativarWakeLock();
-    // Inicia teleprompter automaticamente no 9 (apenas se não estava já a rolar)
-    const slider = document.getElementById('scroll-speed');
-    const prevSpeed = parseInt(slider.value) || 0;
-    if (prevSpeed === 0) {
-      slider.value = 9;
-      document.getElementById('scroll-speed-val').innerText = '9';
-    }
-    const speed = parseInt(slider.value);
-    clearInterval(scrollInterval);
-    scrollInterval = null;
-    if (speed > 0) scrollInterval = setInterval(() => window.scrollBy(0, 1), 175 - speed);
+  const appBody = document.getElementById('app-body');
+  const isPerf = appBody.classList.contains('performance-mode');
+
+  // Ao ENTRAR no show — sem confirmação
+  if (!isPerf) {
+    _ativarModoShow();
+    return;
   }
+
+  // Ao SAIR do show — pede confirmação
+  var overlay = document.createElement('div');
+  overlay.id = '_confirm-sair-show';
+  overlay.style.cssText = 'position:fixed;inset:0;z-index:100030;background:rgba(0,0,0,0.88);display:flex;align-items:center;justify-content:center;padding:24px;';
+  overlay.innerHTML =
+    '<div style="background:#111119;border:1px solid rgba(255,255,255,0.1);border-radius:20px;padding:28px 24px;width:100%;max-width:300px;display:flex;flex-direction:column;gap:14px;text-align:center;">'
+  + '<div style="font-size:32px;line-height:1;">🎤</div>'
+  + '<div style="font-size:16px;font-weight:900;color:#fff;">Encerrar o show?</div>'
+  + '<div style="font-size:13px;color:rgba(255,255,255,0.4);line-height:1.5;">O modo show será desativado e o scroll parado.</div>'
+  + '<div style="display:flex;gap:10px;margin-top:4px;">'
+  + '<button id="_sair-show-nao" style="flex:1;padding:13px;border-radius:12px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);color:rgba(255,255,255,0.5);font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;touch-action:manipulation;">Cancelar</button>'
+  + '<button id="_sair-show-sim" style="flex:2;padding:13px;border-radius:12px;background:rgba(220,50,50,0.8);border:none;color:#fff;font-size:13px;font-weight:900;cursor:pointer;font-family:inherit;touch-action:manipulation;">Encerrar show</button>'
+  + '</div>'
+  + '</div>';
+  document.body.appendChild(overlay);
+
+  document.getElementById('_sair-show-nao').onclick = function() { overlay.remove(); };
+  document.getElementById('_sair-show-sim').onclick = function() {
+    overlay.remove();
+    _desativarModoShow();
+  };
+  // Toque fora também cancela
+  overlay.addEventListener('click', function(e) { if (e.target === overlay) overlay.remove(); });
+}
+
+function _ativarModoShow() {
+  setTimeout(atualizarLetreiroDrumCam, 50);
+  document.getElementById('app-body').classList.add('performance-mode');
+  document.getElementById('mode-text').innerText = 'SAIR DO SHOW';
+  atualizarIndicador();
+  ativarWakeLock();
+  const slider = document.getElementById('scroll-speed');
+  const prevSpeed = parseInt(slider.value) || 0;
+  if (prevSpeed === 0) {
+    slider.value = 9;
+    document.getElementById('scroll-speed-val').innerText = '9';
+  }
+  _setScroll(parseInt(slider.value));
   broadcastEstado();
+}
+
+function _desativarModoShow() {
+  var alerta = document.getElementById('show-proxima-alerta');
+  if (alerta) alerta.classList.remove('show');
+  if (_alertaProximaTimer) { clearTimeout(_alertaProximaTimer); _alertaProximaTimer = null; }
+  // Salvar histórico antes de limpar o estado do show
+  _salvarHistoricoShow();
+  setTimeout(atualizarLetreiroDrumCam, 50);
+  document.getElementById('app-body').classList.remove('performance-mode');
+  document.getElementById('mode-text').innerText = 'MODO SHOW';
+  stopScroll();
+  window.scrollTo(0, 0);
+  liberarWakeLock();
+  limparShowEvento();
+  const _b = document.getElementById('perf-evento-badge');
+  if (_b) _b.style.display = 'none';
+  broadcastEstado();
+}
+
+function _salvarHistoricoShow() {
+  var lista = _getShowSongs();
+  if (!lista || lista.length === 0) return;
+  var entrada = {
+    id: Date.now(),
+    data: new Date().toLocaleDateString('pt-BR'),
+    hora: new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }),
+    eventoNome: showSetlistEventoNome || null,
+    musicas: lista.map(function(s) { return { id: s.id, nome: s.name, bpm: s.bpm || null }; })
+  };
+  try {
+    var hist = JSON.parse(localStorage.getItem('map_historico_shows_v1') || '[]');
+    hist.unshift(entrada); // mais recente primeiro
+    if (hist.length > 50) hist = hist.slice(0, 50); // máx 50 registros
+    localStorage.setItem('map_historico_shows_v1', JSON.stringify(hist));
+  } catch(e) {}
 }
 
 function atualizarIndicador() {
@@ -5692,7 +6290,7 @@ function ativarShowEvento(eventoId, startSongId) {
 
   const isPerf = document.getElementById('app-body').classList.contains('performance-mode');
   if (!isPerf) togglePerf();
-  else { atualizarIndicador(); broadcastEstado(); }
+  else { atualizarIndicador(); broadcastEstado(); _mostrarAlertaProxima(); }
 
   showToast('Show: ' + ev.nome + ' · ' + idsValidos.length + ' músicas');
 }
@@ -5743,12 +6341,12 @@ function navegarSetlist(dir) {
   window.scrollTo(0, 0);
   if (scrollInterval) {
     const spd = parseInt(document.getElementById('scroll-speed').value) || 9;
-    clearInterval(scrollInterval);
-    scrollInterval = setInterval(() => window.scrollBy(0, 1), 175 - spd);
+    _setScroll(spd);
   }
   atualizarIndicador();
   flashSwipe(dir > 0 ? '>' : '<');
   broadcastEstado();
+  _mostrarAlertaProxima();
 }
 
 function flashSwipe(txt) {
@@ -5756,6 +6354,30 @@ function flashSwipe(txt) {
   el.innerText = txt;
   el.classList.add('show');
   setTimeout(() => el.classList.remove('show'), 500);
+}
+
+var _alertaProximaTimer = null;
+function _mostrarAlertaProxima() {
+  var lista = _getShowSongs();
+  var currentSong = currentSongIndex >= 0 ? songs[currentSongIndex] : null;
+  var posAtual = currentSong ? lista.findIndex(function(s) { return s.id === currentSong.id; }) : -1;
+  var alerta = document.getElementById('show-proxima-alerta');
+  if (!alerta) return;
+  if (posAtual === -1 || posAtual >= lista.length - 1) {
+    // Última ou sem posição — esconde qualquer alerta pendente
+    alerta.classList.remove('show');
+    return;
+  }
+  var proxima = lista[posAtual + 1];
+  document.getElementById('prox-nome').innerText = proxima.name;
+  var bpmTxt = proxima.bpm ? proxima.bpm + ' BPM' : '';
+  document.getElementById('prox-bpm').innerText = bpmTxt;
+  // Limpa timer anterior
+  if (_alertaProximaTimer) clearTimeout(_alertaProximaTimer);
+  alerta.classList.add('show');
+  _alertaProximaTimer = setTimeout(function() {
+    alerta.classList.remove('show');
+  }, 4000);
 }
 
 // SWIPE touch
@@ -6328,6 +6950,9 @@ function toggleFavorite(id, e) {
 }
 
 function updateStorage() {
+  // Invalida cache de renderização da biblioteca
+  _bibLastSig = null;
+  _evLastSig = null;
   // Atualiza timestamp local do backup para controle de mesclagem
   localStorage.setItem('map_backup_ts_v1', String(Date.now()));
   songs.sort((a,b) => { if (a.favorite === b.favorite) return 0; return a.favorite ? -1 : 1; });
@@ -6364,6 +6989,10 @@ function renderSetlist() {
 function loadSong(id) {
   const idx = songs.findIndex(x => x.id === id);
   if (idx === -1) return;
+  // Incrementa contador de reproduções (usado na ordenação "mais tocadas")
+  if (!songs[idx].playCount) songs[idx].playCount = 0;
+  songs[idx].playCount++;
+  updateStorage();
   currentSongIndex = idx;
   document.getElementById('dc-song-name').textContent = songs[idx] ? songs[idx].name : '—';
   atualizarLetreiroDrumCam();
@@ -6425,11 +7054,12 @@ function abrirCtxMenu(e, songId, modo) {
   if (favLabel) favLabel.innerText = (song && song.favorite) ? 'Desfavoritar' : 'Favoritar';
 
   // Mostra/esconde opções conforme contexto
-  document.getElementById('ctx-fav').style.display     = modo === 'biblioteca' ? 'flex' : 'none';
-  document.getElementById('ctx-deletar').style.display = modo === 'biblioteca' ? 'flex' : 'none';
-  document.getElementById('ctx-show').style.display    = modo === 'evento'     ? 'flex' : 'none';
-  document.getElementById('ctx-remover').style.display = modo === 'evento'     ? 'flex' : 'none';
-  document.getElementById('ctx-abrir').style.display   = 'flex';
+  document.getElementById('ctx-fav').style.display      = modo === 'biblioteca' ? 'flex' : 'none';
+  document.getElementById('ctx-duplicar').style.display = modo === 'biblioteca' ? 'flex' : 'none';
+  document.getElementById('ctx-deletar').style.display  = modo === 'biblioteca' ? 'flex' : 'none';
+  document.getElementById('ctx-show').style.display     = modo === 'evento'     ? 'flex' : 'none';
+  document.getElementById('ctx-remover').style.display  = modo === 'evento'     ? 'flex' : 'none';
+  document.getElementById('ctx-abrir').style.display    = 'flex';
 
   // Posiciona o menu perto do botão
   menu.classList.add('show');
@@ -6455,11 +7085,37 @@ function ctxAcao(acao) {
   var id = ctxSongId;
   fecharCtxMenu();
   if (id === null || id === undefined) return;
-  if (acao === 'abrir')   { loadSongBiblioteca(id); }
-  if (acao === 'fav')     { favoritarBiblioteca(id, null); }
-  if (acao === 'deletar') { deleteSongBiblioteca(id, null); }
-  if (acao === 'remover') { removerDoEvento(id, null); }
-  if (acao === 'show')    { ativarShowEvento(eventoAbertoId, id); }
+  if (acao === 'abrir')     { loadSongBiblioteca(id); }
+  if (acao === 'fav')       { favoritarBiblioteca(id, null); }
+  if (acao === 'duplicar')  { duplicarMusica(id); }
+  if (acao === 'deletar')   { deleteSongBiblioteca(id, null); }
+  if (acao === 'remover')   { removerDoEvento(id, null); }
+  if (acao === 'show')      { ativarShowEvento(eventoAbertoId, id); }
+}
+
+function duplicarMusica(id) {
+  var original = songs.find(function(s) { return s.id === id; });
+  if (!original) return;
+  var novoId = Date.now();
+  // Clona profundo: partes com novos objetos para não compartilhar referências
+  var clone = {
+    id: novoId,
+    name: original.name + ' (cópia)',
+    bpm: original.bpm,
+    favorite: false,
+    tags: (original.tags || []).slice(),
+    parts: (original.parts || []).map(function(p) {
+      return { title: p.title, content: p.content };
+    })
+  };
+  // Insere logo após a música original na lista
+  var idx = songs.findIndex(function(s) { return s.id === id; });
+  songs.splice(idx + 1, 0, clone);
+  updateStorage();
+  _bibLastSig = null; // invalida cache
+  var filtro = (document.getElementById('biblioteca-search') || {}).value || '';
+  renderBiblioteca(filtro);
+  showToast('Música duplicada!');
 }
 
 // Fecha ao clicar fora
@@ -6515,19 +7171,259 @@ const scrollSlider = document.getElementById('scroll-speed');
 if (scrollSlider) scrollSlider.oninput = () => {
   const spd = parseInt(scrollSlider.value);
   document.getElementById('scroll-speed-val').innerText = spd;
-  clearInterval(scrollInterval);
-  scrollInterval = null;
-  if (spd > 0) scrollInterval = setInterval(() => window.scrollBy(0, 1), 175 - spd);
+  _setScroll(spd);
   if (!syncPaused) broadcastEstado();
 };
 function stopScroll() {
-  clearInterval(scrollInterval);
-  scrollInterval = null;
+  _setScroll(0);
   scrollSlider.value = 0;
   document.getElementById('scroll-speed-val').innerText = '0';
 }
 
+// ─── FONTE DAS PARTES ────────────────────────────────────────────────────────
+var _FONTE_KEY = 'map_fonte_partes_v1';
+var _fontePartes = parseInt(localStorage.getItem(_FONTE_KEY) || '19');
+
+function _aplicarFontePartes(size) {
+  var el = document.getElementById('font-parts-css');
+  if (!el) {
+    el = document.createElement('style');
+    el.id = 'font-parts-css';
+    document.head.appendChild(el);
+  }
+  // Modo show sobrescreve com !important — só aplica no modo normal
+  el.textContent = '.chord-area { font-size: ' + size + 'px !important; }'
+    + 'body.performance-mode .chord-area { font-size: 48px !important; }';
+  // Reajusta alturas de todos os textareas visíveis
+  document.querySelectorAll('.chord-area').forEach(function(ta) {
+    ta.style.height = '';
+    ta.style.height = ta.scrollHeight + 'px';
+  });
+}
+
+function _previewFontePartes(val) {
+  val = parseInt(val);
+  document.getElementById('perfil-fonte-val').innerText = val + 'px';
+  _aplicarFontePartes(val);
+}
+
+function _salvarFontePartes() {
+  var slider = document.getElementById('perfil-fonte-slider');
+  if (!slider) return;
+  _fontePartes = parseInt(slider.value);
+  localStorage.setItem(_FONTE_KEY, String(_fontePartes));
+  _aplicarFontePartes(_fontePartes);
+}
+
 // ─── EXPORT / IMPORT ───────────────────────────────────────────────────────
+
+// ─── SETLIST PÚBLICO ─────────────────────────────────────────────────────────
+var _setlistPubSlug = null;
+
+function _gerarSlug() {
+  var chars = 'abcdefghijklmnopqrstuvwxyz0123456789';
+  var slug = '';
+  for (var i = 0; i < 8; i++) slug += chars[Math.floor(Math.random() * chars.length)];
+  return slug;
+}
+
+async function compartilharSetlist() {
+  var ev = eventos.find(function(e) { return e.id === eventoAbertoId; });
+  if (!ev) return;
+  var lista = (ev.musicIds || []).map(function(id) {
+    return songs.find(function(s) { return s.id === id; });
+  }).filter(Boolean);
+  if (!lista.length) { showToast('Evento sem músicas para compartilhar.'); return; }
+
+  // Mostra modal imediatamente com loading
+  var modal = document.getElementById('modal-setlist-publico');
+  document.getElementById('setlist-pub-titulo').innerText = ev.nome;
+  var dataStr = ev.data ? new Date(ev.data + 'T12:00:00').toLocaleDateString('pt-BR', {day:'2-digit',month:'long',year:'numeric'}) : '';
+  document.getElementById('setlist-pub-data').innerText = dataStr;
+  document.getElementById('setlist-pub-link').innerText = 'Gerando link…';
+  document.getElementById('setlist-pub-lista').innerHTML = '<div style="text-align:center;padding:20px;color:rgba(255,255,255,0.3);font-size:12px;">Publicando…</div>';
+  modal.classList.add('show');
+
+  // Slug: reusa se já existir para este evento nesta sessão
+  var slug = (ev._pubSlug) || _gerarSlug();
+  var dados = {
+    nome: ev.nome,
+    data: ev.data || '',
+    criadoEm: Date.now(),
+    musicas: lista.map(function(s, i) {
+      return { pos: i + 1, nome: s.name, bpm: s.bpm || 0, tags: (s.tags || []).join(', ') };
+    })
+  };
+
+  var ok = await window._fb._set('setlists_publicos/' + slug, dados, false);
+  if (!ok) {
+    document.getElementById('setlist-pub-link').innerText = 'Erro ao publicar. Tenta novamente.';
+    document.getElementById('setlist-pub-lista').innerHTML = '';
+    showToast('Erro ao gerar link.');
+    return;
+  }
+
+  // Guarda slug no evento (memória, não persiste — slug gerado de novo se recarregar)
+  ev._pubSlug = slug;
+  _setlistPubSlug = slug;
+
+  var link = window.location.origin + window.location.pathname + '?setlist=' + slug;
+  document.getElementById('setlist-pub-link').innerText = link;
+
+  // Renderiza lista de músicas no modal
+  document.getElementById('setlist-pub-lista').innerHTML = lista.map(function(s, i) {
+    var tags = (s.tags && s.tags.length) ? '<span style="font-size:9px;color:#0A9E6E;margin-left:4px;">' + s.tags.join(' · ') + '</span>' : '';
+    return '<div style="display:flex;align-items:center;gap:10px;padding:8px 10px;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.06);border-radius:9px;">'
+      + '<span style="font-size:11px;font-weight:800;color:rgba(255,255,255,0.25);min-width:18px;text-align:center;">' + (i+1) + '</span>'
+      + '<div style="flex:1;min-width:0;">'
+      +   '<div style="font-size:13px;font-weight:700;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + (s.name||'').replace(/</g,'&lt;') + tags + '</div>'
+      + '</div>'
+      + '<span style="font-size:11px;font-weight:700;color:rgba(255,62,62,0.7);white-space:nowrap;">' + (s.bpm||'—') + ' BPM</span>'
+      + '</div>';
+  }).join('');
+}
+
+function copiarLinkSetlist() {
+  var link = document.getElementById('setlist-pub-link').innerText;
+  if (!link || link.startsWith('Gerando') || link.startsWith('Erro')) return;
+  navigator.clipboard.writeText(link).then(function() {
+    showToast('Link copiado!');
+  }).catch(function() {
+    showToast('Copia o link manualmente.');
+  });
+}
+
+// ── Carrega setlist público quando URL tem ?setlist=SLUG ──────────────────
+async function _verificarSetlistPublico() {
+  var params = new URLSearchParams(window.location.search);
+  var slug = params.get('setlist');
+  if (!slug) return false;
+
+  var view = document.getElementById('setlist-readonly-view');
+  if (!view) return false;
+  view.style.display = 'block';
+  document.getElementById('srv-titulo').innerText = 'Carregando…';
+
+  // Aguarda Firebase inicializar
+  var tentativas = 0;
+  while (!window._fb && tentativas < 20) {
+    await new Promise(function(r){ setTimeout(r, 300); });
+    tentativas++;
+  }
+
+  var dados = window._fb ? await window._fb._get('setlists_publicos/' + slug) : null;
+  if (!dados) {
+    document.getElementById('srv-titulo').innerText = 'Setlist não encontrado';
+    document.getElementById('srv-data').innerText = 'Este link pode ter expirado ou sido removido.';
+    return true;
+  }
+
+  document.getElementById('srv-titulo').innerText = dados.nome || 'Setlist';
+  var dataStr = dados.data ? new Date(dados.data + 'T12:00:00').toLocaleDateString('pt-BR', {day:'2-digit',month:'long',year:'numeric'}) : '';
+  document.getElementById('srv-data').innerText = dataStr;
+
+  var musicas = dados.musicas || [];
+  document.getElementById('srv-lista').innerHTML = musicas.map(function(m) {
+    var tags = m.tags ? '<div style="font-size:10px;color:#0A9E6E;margin-top:2px;">' + m.tags + '</div>' : '';
+    return '<div style="display:flex;align-items:center;gap:12px;padding:12px 14px;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.07);border-radius:10px;">'
+      + '<span style="font-size:12px;font-weight:800;color:rgba(255,255,255,0.25);min-width:22px;text-align:center;">' + (m.pos||'') + '</span>'
+      + '<div style="flex:1;min-width:0;">'
+      +   '<div style="font-size:15px;font-weight:800;color:#fff;">' + (m.nome||'').replace(/</g,'&lt;') + '</div>'
+      +   tags
+      + '</div>'
+      + '<span style="font-size:12px;font-weight:700;color:rgba(255,62,62,0.65);white-space:nowrap;">' + (m.bpm||'—') + ' BPM</span>'
+      + '</div>';
+  }).join('');
+  return true;
+}
+
+function exportarSetlistPDF() {
+  var ev = eventos.find(function(e) { return e.id === eventoAbertoId; });
+  if (!ev) return;
+  var musicIds = ev.musicIds || [];
+  var lista = musicIds.map(function(id) { return songs.find(function(s) { return s.id === id; }); }).filter(Boolean);
+
+  if (!lista.length) { showToast('Evento sem músicas para exportar.'); return; }
+
+  var data = ev.data ? new Date(ev.data + 'T12:00:00').toLocaleDateString('pt-BR', { day:'2-digit', month:'long', year:'numeric' }) : '';
+  var totalBpm = lista.reduce(function(acc, s) { return acc + (s.bpm || 0); }, 0);
+  var mediaBpm = lista.length ? Math.round(totalBpm / lista.length) : 0;
+
+  // Calcula tonalidades únicas (transposição 0 = tom original)
+  var linhasMusicas = lista.map(function(s, i) {
+    var tags = (s.tags && s.tags.length) ? s.tags.join(', ') : '';
+    var partes = s.parts ? s.parts.length : 0;
+    return '<tr>'
+      + '<td style="padding:10px 14px;font-size:13px;font-weight:700;color:#111;border-bottom:1px solid #e8e8e8;width:28px;text-align:center;color:#888;">' + (i + 1) + '</td>'
+      + '<td style="padding:10px 14px;font-size:14px;font-weight:700;color:#111;border-bottom:1px solid #e8e8e8;">'
+      +   s.name
+      +   (tags ? '<br><span style="font-size:10px;font-weight:600;color:#0A9E6E;">' + tags + '</span>' : '')
+      + '</td>'
+      + '<td style="padding:10px 14px;font-size:13px;color:#555;border-bottom:1px solid #e8e8e8;text-align:center;white-space:nowrap;">' + (s.bpm || '—') + ' BPM</td>'
+      + '<td style="padding:10px 14px;font-size:12px;color:#888;border-bottom:1px solid #e8e8e8;text-align:center;">' + (partes > 0 ? partes + ' parte' + (partes !== 1 ? 's' : '') : '—') + '</td>'
+      + '</tr>';
+  }).join('');
+
+  var html = '<!DOCTYPE html><html lang="pt-BR"><head>'
+    + '<meta charset="UTF-8">'
+    + '<title>Setlist — ' + ev.nome.replace(/</g,'&lt;') + '</title>'
+    + '<style>'
+    + 'body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;margin:0;padding:32px 40px;color:#111;background:#fff;}'
+    + '@media print{body{padding:20px 28px;}@page{margin:1.5cm;}}'
+    + '.header{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:28px;padding-bottom:20px;border-bottom:2px solid #111;}'
+    + '.logo{font-size:10px;font-weight:900;letter-spacing:3px;color:#0A9E6E;text-transform:uppercase;margin-bottom:4px;}'
+    + '.titulo{font-size:26px;font-weight:900;color:#111;line-height:1.2;}'
+    + '.data{font-size:13px;color:#888;margin-top:4px;}'
+    + '.stats{display:flex;gap:20px;text-align:right;flex-shrink:0;margin-top:4px;}'
+    + '.stat{}'
+    + '.stat-val{font-size:22px;font-weight:900;color:#111;line-height:1;}'
+    + '.stat-label{font-size:9px;font-weight:700;color:#aaa;letter-spacing:1.5px;text-transform:uppercase;margin-top:2px;}'
+    + 'table{width:100%;border-collapse:collapse;}'
+    + 'thead tr{border-bottom:2px solid #111;}'
+    + 'thead th{padding:8px 14px;font-size:10px;font-weight:900;letter-spacing:1.5px;text-transform:uppercase;color:#888;text-align:left;}'
+    + 'thead th:nth-child(3),thead th:nth-child(4){text-align:center;}'
+    + 'tbody tr:last-child td{border-bottom:none;}'
+    + 'tbody tr:hover{background:#f9f9f9;}'
+    + '.footer{margin-top:32px;padding-top:14px;border-top:1px solid #e8e8e8;display:flex;justify-content:space-between;align-items:center;}'
+    + '.footer-note{font-size:10px;color:#bbb;}'
+    + '.footer-brand{font-size:10px;font-weight:900;letter-spacing:2px;color:#0A9E6E;}'
+    + '</style></head><body>'
+    + '<div class="header">'
+    +   '<div>'
+    +     '<div class="logo">Map Music Pro · Setlist</div>'
+    +     '<div class="titulo">' + ev.nome.replace(/</g,'&lt;').replace(/>/g,'&gt;') + '</div>'
+    +     (data ? '<div class="data">' + data + '</div>' : '')
+    +   '</div>'
+    +   '<div class="stats">'
+    +     '<div class="stat"><div class="stat-val">' + lista.length + '</div><div class="stat-label">Músicas</div></div>'
+    +     '<div class="stat"><div class="stat-val">' + mediaBpm + '</div><div class="stat-label">BPM médio</div></div>'
+    +   '</div>'
+    + '</div>'
+    + '<table>'
+    +   '<thead><tr>'
+    +     '<th style="width:28px;">#</th>'
+    +     '<th>Música</th>'
+    +     '<th style="width:90px;">BPM</th>'
+    +     '<th style="width:90px;">Partes</th>'
+    +   '</tr></thead>'
+    +   '<tbody>' + linhasMusicas + '</tbody>'
+    + '</table>'
+    + '<div class="footer">'
+    +   '<div class="footer-note">Gerado em ' + new Date().toLocaleDateString('pt-BR') + ' às ' + new Date().toLocaleTimeString('pt-BR', {hour:'2-digit',minute:'2-digit'}) + '</div>'
+    +   '<div class="footer-brand">MAP MUSIC PRO</div>'
+    + '</div>'
+    + '</body></html>';
+
+  var janela = window.open('', '_blank', 'width=794,height=1000');
+  if (!janela) { showToast('Permita popups para exportar o PDF.'); return; }
+  janela.document.write(html);
+  janela.document.close();
+  janela.onload = function() {
+    setTimeout(function() { janela.print(); }, 300);
+  };
+  showToast('A abrir pré-visualização do PDF…');
+}
+
 function exportData() {
   const blob = new Blob([JSON.stringify(songs,null,2)], {type:"application/json"});
   const a = document.createElement('a');
@@ -7073,6 +7969,12 @@ function bibTab(aba) {
   bibTabAtiva = aba;
   ativarTab(aba);
   document.getElementById('biblioteca-search').value = '';
+  _tagAtiva = null;
+  if (aba === 'musicas') { _bibRenderSortBar(); _bibRenderTagBar(); }
+  else {
+    var b = document.getElementById('bib-tags-bar'); if (b) b.classList.remove('visible');
+    var sb = document.getElementById('bib-sort-bar'); if (sb) sb.classList.remove('visible');
+  }
   renderBibAtivo('');
 }
 
@@ -7081,18 +7983,39 @@ function ativarTab(aba) {
   document.getElementById('tab-musicas').classList.toggle('active', aba === 'musicas');
 }
 
+var _bibDebounceTimer = null;
+function _bibDebouncedRender(filtro) {
+  clearTimeout(_bibDebounceTimer);
+  _bibDebounceTimer = setTimeout(function() { renderBibAtivo(filtro); }, 200);
+}
+
 function renderBibAtivo(filtro) {
-  if (bibTabAtiva === 'musicas') renderBiblioteca(filtro);
+  if (bibTabAtiva === 'musicas') { _bibRenderSortBar(); _bibRenderTagBar(); renderBiblioteca(filtro); }
   else renderEventos(filtro);
 }
 
 // ── ABA MÚSICAS ──
+var _bibLastSig = null;
+function _bibSig(lista, filtro) {
+  return filtro + '||' + lista.map(function(s) {
+    return s.id + '|' + (s.favorite ? 1 : 0) + '|' + (s.bpm || '') + '|' + (s.name || '') + '|' + (s.parts ? s.parts.length : 0) + '|' + (s.playCount || 0);
+  }).join(',');
+}
+
 function renderBiblioteca(filtro) {
   filtro = filtro || '';
   var grid = document.getElementById('biblioteca-grid');
   if (!grid) return;
   var termo = filtro.toLowerCase();
-  var lista = songs.filter(function(s) { return s.name.toLowerCase().includes(termo); });
+  var lista = songs.filter(function(s) {
+    var nomeOk = s.name.toLowerCase().includes(termo);
+    var tagOk  = !_tagAtiva || (s.tags && s.tags.includes(_tagAtiva));
+    return nomeOk && tagOk;
+  });
+
+  var sig = _bibSig(lista, filtro) + '|tag:' + (_tagAtiva || '') + '|ord:' + _bibOrdem + (_bibOrdemDesc ? 'd' : 'a');
+  if (sig === _bibLastSig) return;
+  _bibLastSig = sig;
 
   if (!lista.length) {
     grid.innerHTML = '<div class="biblioteca-vazia" style="grid-column:1/-1">'
@@ -7103,12 +8026,7 @@ function renderBiblioteca(filtro) {
     return;
   }
 
-  // Favoritas primeiro, resto por nome
-  var sorted = lista.slice().sort(function(a, b) {
-    if (a.favorite && !b.favorite) return -1;
-    if (!a.favorite && b.favorite) return 1;
-    return (a.name || '').localeCompare(b.name || '');
-  });
+  var sorted = lista.slice().sort(_bibSortFn);
 
   grid.innerHTML = sorted.map(function(s) {
     var cor = albumColor(s.id || 0);
@@ -7133,6 +8051,7 @@ function renderBiblioteca(filtro) {
       + '<div class="album-info">'
       +   '<div class="album-name" title="' + (s.name||'').replace(/"/g,'&quot;') + '">' + (s.name||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;') + '</div>'
       +   '<div class="album-meta">' + (partes > 0 ? partes + ' parte' + (partes !== 1 ? 's' : '') : 'sem partes') + ' · ' + bpm + ' BPM</div>'
+      +   (s.tags && s.tags.length ? '<div class="album-tags">' + s.tags.map(function(t){ return '<span class="album-tag">' + t + '</span>'; }).join('') + '</div>' : '')
       + '</div>'
       + '</div>';
   }).join('');
@@ -7142,6 +8061,144 @@ function loadSongBiblioteca(id) {
   loadSong(id);
   fecharBiblioteca();
   showToast('Música carregada!');
+}
+
+// ── ORDENAÇÃO DA BIBLIOTECA ──────────────────────────────────────────────────
+var _bibOrdem = 'nome';       // 'nome' | 'bpm' | 'criacao' | 'tocadas'
+var _bibOrdemDesc = false;    // false = asc, true = desc
+
+function _bibOrdenar(campo) {
+  if (_bibOrdem === campo) {
+    _bibOrdemDesc = !_bibOrdemDesc; // inverte direção se clicar no mesmo
+  } else {
+    _bibOrdem = campo;
+    // Defaults: bpm e tocadas começam desc (maior primeiro); nome e criacao asc
+    _bibOrdemDesc = (campo === 'bpm' || campo === 'tocadas');
+  }
+  _bibLastSig = null;
+  _bibAtualizarSortUI();
+  renderBiblioteca((document.getElementById('biblioteca-search') || {}).value || '');
+}
+
+function _bibAtualizarSortUI() {
+  ['nome','bpm','criacao','tocadas'].forEach(function(c) {
+    var btn = document.getElementById('sort-btn-' + c);
+    var arr = document.getElementById('sort-arr-' + c);
+    if (!btn || !arr) return;
+    if (_bibOrdem === c) {
+      btn.classList.add('active');
+      arr.textContent = _bibOrdemDesc ? '↓' : '↑';
+    } else {
+      btn.classList.remove('active');
+      arr.textContent = '';
+    }
+  });
+}
+
+function _bibSortFn(a, b) {
+  // Favoritas sempre primeiro
+  if (a.favorite && !b.favorite) return -1;
+  if (!a.favorite && b.favorite) return 1;
+  var mul = _bibOrdemDesc ? -1 : 1;
+  if (_bibOrdem === 'nome') {
+    return mul * (a.name || '').localeCompare(b.name || '');
+  }
+  if (_bibOrdem === 'bpm') {
+    return mul * ((a.bpm || 0) - (b.bpm || 0));
+  }
+  if (_bibOrdem === 'criacao') {
+    // id é Date.now() na criação — proxy confiável
+    return mul * ((a.id || 0) - (b.id || 0));
+  }
+  if (_bibOrdem === 'tocadas') {
+    return mul * ((a.playCount || 0) - (b.playCount || 0));
+  }
+  return 0;
+}
+
+function _bibRenderSortBar() {
+  var bar = document.getElementById('bib-sort-bar');
+  if (!bar) return;
+  bar.classList.add('visible');
+  _bibAtualizarSortUI();
+}
+
+// ── TAGS — sistema completo ──────────────────────────────────────────────────
+var _TAG_SUGERIDAS = ['lenta','animada','louvor','adoração','abertura','encerramento','hino','gospel','pop','rock','instrumental'];
+var _tagAtiva = null; // tag selecionada no filtro da biblioteca
+var _tagsSelecionadas = []; // tags selecionadas no editor
+
+function _tagSlug(t) { return (t || '').toLowerCase().trim().replace(/\s+/g,'-').replace(/[^a-z0-9\-áàãâéêíóôõúç]/g,''); }
+
+// ── Filtro da biblioteca ──────────────────────────────────────────────────────
+function _bibRenderTagBar() {
+  var bar = document.getElementById('bib-tags-bar');
+  if (!bar) return;
+  var todas = {};
+  songs.forEach(function(s) {
+    (s.tags || []).forEach(function(t) { todas[t] = (todas[t] || 0) + 1; });
+  });
+  var lista = Object.keys(todas).sort();
+  if (!lista.length) { bar.classList.remove('visible'); return; }
+  bar.classList.add('visible');
+  // Build chips — use data-tag attribute and event delegation to avoid quote escaping
+  var html = '<div class="tag-chip' + (!_tagAtiva ? ' active' : '') + '" data-tag="">Todas</div>';
+  lista.forEach(function(t) {
+    var esc = t.replace(/&/g,'&amp;').replace(/"/g,'&quot;');
+    html += '<div class="tag-chip' + (_tagAtiva === t ? ' active' : '') + '" data-tag="' + esc + '">'
+      + esc + ' <span style="opacity:0.45;font-size:9px;">(' + todas[t] + ')</span></div>';
+  });
+  bar.innerHTML = html;
+  // Attach click handlers after setting innerHTML
+  bar.querySelectorAll('.tag-chip').forEach(function(chip) {
+    chip.addEventListener('click', function() {
+      var tag = chip.getAttribute('data-tag') || null;
+      _bibFiltrarTag(tag || null);
+    });
+  });
+}
+function _bibFiltrarTag(tag) {
+  _tagAtiva = tag;
+  _bibLastSig = null; // força re-render
+  _bibRenderTagBar();
+  renderBiblioteca((document.getElementById('biblioteca-search') || {}).value || '');
+}
+
+// ── Editor de tags no modal ───────────────────────────────────────────────────
+function _tagEditorRender() {
+  var wrap = document.getElementById('tag-editor-chips');
+  if (!wrap) return;
+  var todasVisiveis = _TAG_SUGERIDAS.slice();
+  _tagsSelecionadas.forEach(function(t) { if (!todasVisiveis.includes(t)) todasVisiveis.push(t); });
+  var html = '';
+  todasVisiveis.forEach(function(t) {
+    var sel = _tagsSelecionadas.includes(t);
+    var esc = t.replace(/&/g,'&amp;').replace(/"/g,'&quot;');
+    html += '<div class="tag-editor-chip' + (sel ? ' sel' : '') + '" data-tag="' + esc + '">'
+      + (sel ? '✕ ' : '') + esc + '</div>';
+  });
+  wrap.innerHTML = html;
+  wrap.querySelectorAll('.tag-editor-chip').forEach(function(chip) {
+    chip.addEventListener('click', function() {
+      _tagToggle(chip.getAttribute('data-tag'));
+    });
+  });
+}
+
+function _tagToggle(t) {
+  var idx = _tagsSelecionadas.indexOf(t);
+  if (idx === -1) _tagsSelecionadas.push(t);
+  else _tagsSelecionadas.splice(idx, 1);
+  _tagEditorRender();
+}
+
+function _tagCustomAdicionar() {
+  var input = document.getElementById('tag-custom-input');
+  var val = _tagSlug(input.value);
+  if (!val || val.length < 2) { input.focus(); return; }
+  if (!_tagsSelecionadas.includes(val)) _tagsSelecionadas.push(val);
+  input.value = '';
+  _tagEditorRender();
 }
 
 // ── EDITAR MÚSICA ──
@@ -7154,6 +8211,8 @@ function abrirEditarMusica(id, e) {
   if (!s) return;
   document.getElementById('editar-musica-nome').value = s.name;
   document.getElementById('editar-musica-bpm').value = s.bpm;
+  _tagsSelecionadas = (s.tags || []).slice();
+  _tagEditorRender();
   document.getElementById('modal-editar-musica').classList.add('show');
   setTimeout(() => document.getElementById('editar-musica-nome').focus(), 100);
 }
@@ -7161,6 +8220,7 @@ function abrirEditarMusica(id, e) {
 function fecharEditarMusica() {
   document.getElementById('modal-editar-musica').classList.remove('show');
   editarMusicaId = null;
+  _tagsSelecionadas = [];
 }
 
 function salvarEditarMusica() {
@@ -7170,12 +8230,13 @@ function salvarEditarMusica() {
   const s = songs.find(x => x.id === editarMusicaId);
   if (s) {
     s.name = nome;
-    if (!isNaN(bpmVal) && bpmVal >= 40 && bpmVal <= 860) s.bpm = bpmVal; // limite unificado com o metrônomo (860)
+    if (!isNaN(bpmVal) && bpmVal >= 40 && bpmVal <= 860) s.bpm = bpmVal;
+    s.tags = _tagsSelecionadas.slice();
     updateStorage();
     showToast('Música atualizada!');
   }
   fecharEditarMusica();
-  // Re-renderiza a aba ativa (eventos ou músicas) para refletir edições
+  _bibRenderTagBar();
   if (typeof renderBibAtivo === 'function') {
     const filtro = (document.getElementById('biblioteca-search') || {}).value || '';
     renderBibAtivo(filtro);
@@ -7240,10 +8301,15 @@ function deleteSongBiblioteca(id, e) {
 }
 
 // ── ABA EVENTOS ──
+var _evLastSig = null;
 function renderEventos(filtro = '') {
   const grid = document.getElementById('biblioteca-grid');
   const termo = (filtro || '').toLowerCase();
   const lista = eventos.filter(e => e.nome.toLowerCase().includes(termo));
+
+  const sig = filtro + '||' + lista.map(e => e.id + '|' + (e.nome || '') + '|' + (e.data || '') + '|' + (e.musicas ? e.musicas.length : 0)).join(',');
+  if (sig === _evLastSig) return;
+  _evLastSig = sig;
 
   // Botão criar evento sempre no topo
   const btnCriar = `<div style="grid-column:1/-1;margin-bottom:4px;">
@@ -7389,8 +8455,11 @@ function renderEventoDetalhe() {
     var ini2 = words.length > 1 ? words[words.length - 1].charAt(0).toUpperCase() : '';
     var partes = s.parts ? s.parts.length : 0;
     var bpm = s.bpm || '—';
-    return '<div class="album-card" data-id="' + s.id + '">'
+    return '<div class="album-card" draggable="true" data-id="' + s.id + '">'
       + '<div class="album-cover" style="--ac1:' + cor.ac1 + ';--ac2:' + cor.ac2 + '" onclick="loadSongBiblioteca(' + s.id + ')">'
+      +   '<div class="drag-handle" title="Arrastar para reordenar" onmousedown="event.stopPropagation()" ontouchstart="event.stopPropagation()">'
+      +     '<svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><circle cx="9" cy="5" r="1.5"/><circle cx="15" cy="5" r="1.5"/><circle cx="9" cy="12" r="1.5"/><circle cx="15" cy="12" r="1.5"/><circle cx="9" cy="19" r="1.5"/><circle cx="15" cy="19" r="1.5"/></svg>'
+      +   '</div>'
       +   '<div class="album-cover-bg"></div>'
       +   '<div class="album-cover-shine"></div>'
       +   '<div class="album-cover-body">'
@@ -7410,6 +8479,8 @@ function renderEventoDetalhe() {
       + '</div>'
       + '</div>';
   }).join('');
+
+  _initEventoDragDrop(grid);
 }
 
 function removerDoEvento(songId, e) {
@@ -7420,6 +8491,107 @@ function removerDoEvento(songId, e) {
   salvarEventos();
   renderEventoDetalhe();
   showToast('Removida do evento.');
+}
+
+// ── DRAG & DROP — reordenar músicas no evento ─────────────────────────────
+function _initEventoDragDrop(grid) {
+  var dragSrcId = null;
+
+  function onDragStart(e) {
+    dragSrcId = parseInt(this.dataset.id);
+    this.classList.add('dragging');
+    if (e.dataTransfer) { e.dataTransfer.effectAllowed = 'move'; e.dataTransfer.setData('text/plain', dragSrcId); }
+  }
+  function onDragEnd() {
+    grid.querySelectorAll('.album-card').forEach(function(c) {
+      c.classList.remove('dragging', 'drag-over');
+    });
+  }
+  function onDragOver(e) {
+    e.preventDefault();
+    if (e.dataTransfer) e.dataTransfer.dropEffect = 'move';
+    grid.querySelectorAll('.album-card').forEach(function(c) { c.classList.remove('drag-over'); });
+    this.classList.add('drag-over');
+  }
+  function onDrop(e) {
+    e.preventDefault();
+    var targetId = parseInt(this.dataset.id);
+    if (!dragSrcId || dragSrcId === targetId) return;
+    var ev = eventos.find(function(ev) { return ev.id === eventoAbertoId; });
+    if (!ev) return;
+    var ids = ev.musicIds.slice();
+    var fromIdx = ids.indexOf(dragSrcId);
+    var toIdx   = ids.indexOf(targetId);
+    if (fromIdx === -1 || toIdx === -1) return;
+    ids.splice(fromIdx, 1);
+    ids.splice(toIdx, 0, dragSrcId);
+    ev.musicIds = ids;
+    salvarEventos();
+    _fbBackupEventos();
+    renderEventoDetalhe();
+  }
+
+  // Touch drag (mobile)
+  var _touchDragId = null;
+  var _touchClone  = null;
+  function onTouchStart(e) {
+    _touchDragId = parseInt(this.dataset.id);
+    var t = e.touches[0];
+    var rect = this.getBoundingClientRect();
+    _touchClone = this.cloneNode(true);
+    _touchClone.style.cssText = 'position:fixed;left:' + rect.left + 'px;top:' + rect.top + 'px;width:' + rect.width + 'px;opacity:0.75;pointer-events:none;z-index:99999;transition:none;border-radius:12px;';
+    document.body.appendChild(_touchClone);
+    this.classList.add('dragging');
+  }
+  function onTouchMove(e) {
+    if (_touchDragId === null || !_touchClone) return;
+    e.preventDefault();
+    var t = e.touches[0];
+    var w = _touchClone.offsetWidth;
+    var h = _touchClone.offsetHeight;
+    _touchClone.style.left = (t.clientX - w / 2) + 'px';
+    _touchClone.style.top  = (t.clientY - h / 2) + 'px';
+    grid.querySelectorAll('.album-card').forEach(function(c) { c.classList.remove('drag-over'); });
+    var el = document.elementFromPoint(t.clientX, t.clientY);
+    var over = el && el.closest ? el.closest('.album-card[draggable]') : null;
+    if (over && parseInt(over.dataset.id) !== _touchDragId) over.classList.add('drag-over');
+  }
+  function onTouchEnd(e) {
+    if (_touchClone) { _touchClone.remove(); _touchClone = null; }
+    grid.querySelectorAll('.album-card').forEach(function(c) { c.classList.remove('dragging', 'drag-over'); });
+    if (_touchDragId === null) return;
+    var t = e.changedTouches[0];
+    var el = document.elementFromPoint(t.clientX, t.clientY);
+    var over = el && el.closest ? el.closest('.album-card[draggable]') : null;
+    var targetId = over ? parseInt(over.dataset.id) : null;
+    if (targetId && targetId !== _touchDragId) {
+      var ev = eventos.find(function(ev) { return ev.id === eventoAbertoId; });
+      if (ev) {
+        var ids = ev.musicIds.slice();
+        var fromIdx = ids.indexOf(_touchDragId);
+        var toIdx   = ids.indexOf(targetId);
+        if (fromIdx !== -1 && toIdx !== -1) {
+          ids.splice(fromIdx, 1);
+          ids.splice(toIdx, 0, _touchDragId);
+          ev.musicIds = ids;
+          salvarEventos();
+          _fbBackupEventos();
+          renderEventoDetalhe();
+        }
+      }
+    }
+    _touchDragId = null;
+  }
+
+  grid.querySelectorAll('.album-card[draggable]').forEach(function(card) {
+    card.addEventListener('dragstart',  onDragStart);
+    card.addEventListener('dragend',    onDragEnd);
+    card.addEventListener('dragover',   onDragOver);
+    card.addEventListener('drop',       onDrop);
+    card.addEventListener('touchstart', onTouchStart, { passive: true });
+    card.addEventListener('touchmove',  onTouchMove,  { passive: false });
+    card.addEventListener('touchend',   onTouchEnd,   { passive: true });
+  });
 }
 
 // ── ADICIONAR MÚSICA AO EVENTO ──
@@ -9254,6 +10426,16 @@ function capturarEstado() {
     currentSongIndex,
     currentSongName: currentSongIndex >= 0 && songs[currentSongIndex] ? songs[currentSongIndex].name : null,
     songTotal: songs.length,
+    setlistNomes: (function() {
+      if (!showSetlist || !showSetlist.length) return null;
+      return showSetlist.map(function(id) { var s = songs.find(function(x){ return x.id===id; }); return s ? s.name : null; }).filter(Boolean);
+    })(),
+    setlistEventoNome: (typeof showSetlistEventoNome !== 'undefined') ? showSetlistEventoNome : null,
+    salaCode: myRoomCode || null,
+    setlistNomes: (showSetlist && showSetlist.length)
+      ? showSetlist.map(function(id){ var s=songs.find(function(x){return x.id===id;}); return s?s.name:''; }).filter(Boolean)
+      : [],
+    eventoNome: showSetlistEventoNome || null,
     scrollSpeed: parseInt(document.getElementById('scroll-speed').value),
     onlineCount: 1 + Object.keys(_viewersOnline || {}).length,
     roomCode: myRoomCode
@@ -9292,9 +10474,37 @@ function aplicarEstado(estado) {
     stopScroll();
   }
 
+  // Setlist completo recebido do host — guarda para uso no espaço vocalista
+  if (estado.setlistNomes && estado.setlistNomes.length) {
+    window._vocSetlistRecebido = {
+      nomes: estado.setlistNomes,
+      pos: estado.currentSongIndex || 0,
+      eventoNome: estado.eventoNome || null
+    };
+    _vocAtualizarBadgeSala();
+  }
+
+  // Setlist completo da sala — atualiza _vocSalaSetlist para o espaço vocalista
+  if (estado.setlistNomes && estado.setlistNomes.length) {
+    _vocSalaSetlist = {
+      nomeEvento: estado.setlistEventoNome || 'Show ao vivo',
+      codigo: estado.salaCode || '',
+      musicas: estado.setlistNomes,
+      posAtual: estado.currentSongIndex || 0
+    };
+  } else if (_vocSalaSetlist && estado.currentSongIndex !== undefined) {
+    _vocSalaSetlist.posAtual = estado.currentSongIndex || 0;
+  }
+  // Atualiza sala ao vivo se o painel estiver aberto
+  if (_vocShowsAba === 'sala' && document.getElementById('voc-panel-shows') &&
+      document.getElementById('voc-panel-shows').classList.contains('ativo')) {
+    _vocRenderSalaVivo();
+  }
+
   // Nome e posição da música
   if (estado.currentSongName) {
     currentSongIndex = estado.currentSongIndex;
+    if (window._vocSetlistRecebido) window._vocSetlistRecebido.pos = estado.currentSongIndex || 0;
     document.getElementById('perf-song-name').innerText = estado.currentSongName;
     document.getElementById('perf-song-pos').innerText =
       (estado.currentSongIndex + 1) + '/' + estado.songTotal;
@@ -9313,15 +10523,11 @@ function aplicarEstado(estado) {
   if (currentSpeed !== speed) {
     slider.value = speed;
     document.getElementById('scroll-speed-val').innerText = speed;
-    clearInterval(scrollInterval);
-    scrollInterval = null;
-    if (speed > 0) {
-      scrollInterval = setInterval(() => window.scrollBy(0, 1), 175 - speed);
-    }
+    _setScroll(speed);
   }
   // Se devia estar a rolar mas o interval morreu por algum motivo, reinicia
   else if (speed > 0 && !scrollInterval) {
-    scrollInterval = setInterval(() => window.scrollBy(0, 1), 175 - speed);
+    _setScroll(speed);
   }
 
   // Presença online — atualiza sync bar do viewer
@@ -9676,6 +10882,7 @@ function perfilCarregarFoto(input) {
 }
 
 function salvarPerfil() {
+  _salvarFontePartes();
   const nomeInput = document.getElementById('perfil-nome-input');
   const nome = (nomeInput ? nomeInput.value : '').trim();
   if (nome.length < 2) { showToast('Nome deve ter ao menos 2 caracteres'); return; }
@@ -12556,6 +13763,10 @@ async function _fbFazerBackupAgora(btn) {
     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
     Remover do Evento
   </div>
+  <div class="ctx-item" id="ctx-duplicar" onclick="ctxAcao('duplicar')" style="display:none;">
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+    Duplicar
+  </div>
   <div class="ctx-item ctx-danger" id="ctx-deletar" onclick="ctxAcao('deletar')">
     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>
     Excluir
@@ -13296,6 +14507,7 @@ async function _fbFazerBackupAgora(btn) {
 <style>
 /* ─── Esconder elementos fixos do instrumentista no ambiente vocalista ─────── */
 body[data-ambiente="vocalista"] #btn-save-vitro,
+body[data-ambiente="vocalista"] #show-proxima-alerta,
 body[data-ambiente="vocalista"] .perf-bottom-panel,
 body[data-ambiente="vocalista"] .btn-pad-flutuante,
 body[data-ambiente="vocalista"] .perf-song-indicator,
@@ -13422,6 +14634,95 @@ body[data-ambiente="vocalista"] .swipe-hint { display: none !important; }
 .voc-alb-aulas   { background: linear-gradient(145deg, #1a0c10, #2a0e16); }
 .voc-alb-videos  { background: linear-gradient(145deg, #0c0f1a, #101830); }
 .voc-alb-salvos  { background: linear-gradient(145deg, #1a140a, #261c08); }
+.voc-alb-shows   { background: linear-gradient(145deg, #08131a, #0a1e2a); }
+/* ── Painel Shows ── */
+.voc-panel#voc-panel-ev-musicas { z-index: 12; }
+.voc-panel#voc-panel-ev-musicas.ativo { display: flex; }
+.voc-shows-tabs { display:flex; gap:8px; padding:0 16px 14px; flex-shrink:0; }
+.voc-shows-tab  { flex:1; padding:8px; border-radius:10px; border:1px solid rgba(255,255,255,0.07);
+  background:rgba(255,255,255,0.03); color:rgba(255,255,255,0.35); font-size:12px; font-weight:800;
+  font-family:inherit; cursor:pointer; transition:all 0.2s; }
+.voc-shows-tab.ativo { background:rgba(56,189,248,0.1); border-color:rgba(56,189,248,0.25); color:#38bdf8; }
+.voc-sort-bar { display:flex; gap:6px; padding:0 16px 12px; flex-shrink:0; }
+.voc-sort-btn { font-size:10px; font-weight:800; padding:5px 10px; border-radius:8px; font-family:inherit;
+  border:1px solid rgba(255,255,255,0.07); background:rgba(255,255,255,0.03);
+  color:rgba(255,255,255,0.3); cursor:pointer; transition:all 0.2s; }
+.voc-sort-btn.ativo { background:rgba(56,189,248,0.1); border-color:rgba(56,189,248,0.25); color:#38bdf8; }
+.voc-ev-card { background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.07);
+  border-radius:12px; margin:0 16px 8px; padding:14px 16px; cursor:pointer; transition:all 0.2s; }
+.voc-ev-card:active { background:rgba(56,189,248,0.05); }
+.voc-ev-nome { font-size:14px; font-weight:800; color:#fff; margin-bottom:3px; }
+.voc-ev-meta { font-size:11px; color:rgba(255,255,255,0.3); display:flex; align-items:center; gap:8px; }
+.voc-ev-letras-badge { font-size:9px; font-weight:900; padding:2px 7px; border-radius:6px;
+  background:rgba(56,189,248,0.12); border:1px solid rgba(56,189,248,0.2); color:#38bdf8; }
+/* Painel músicas do evento/sala */
+.voc-setlist-header { padding:14px 16px 10px; flex-shrink:0; border-bottom:1px solid rgba(255,255,255,0.05); }
+.voc-setlist-title  { font-size:15px; font-weight:900; color:#fff; }
+.voc-setlist-sub    { font-size:11px; color:rgba(255,255,255,0.3); margin-top:2px; }
+.voc-musica-item { display:flex; align-items:center; gap:12px;
+  padding:11px 16px; border-bottom:1px solid rgba(255,255,255,0.04); cursor:pointer; transition:background 0.15s; }
+.voc-musica-item:active { background:rgba(56,189,248,0.05); }
+.voc-musica-num  { font-size:11px; font-weight:800; color:rgba(255,255,255,0.2); min-width:22px; text-align:center; }
+.voc-musica-nome { font-size:14px; font-weight:700; color:#fff; flex:1; min-width:0;
+  white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.voc-musica-bpm  { font-size:11px; font-weight:700; color:rgba(255,62,62,0.6); white-space:nowrap; }
+.voc-musica-letra-badge { font-size:9px; font-weight:900; padding:3px 8px; border-radius:6px; white-space:nowrap; flex-shrink:0; }
+.voc-musica-letra-ok  { background:rgba(34,197,94,0.1); border:1px solid rgba(34,197,94,0.2); color:#4ade80; }
+.voc-musica-letra-no  { background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.08); color:rgba(255,255,255,0.25); }
+/* Sala ao vivo — destaque na música atual */
+.voc-musica-item.atual { background:rgba(56,189,248,0.07); border-left:3px solid #38bdf8; padding-left:13px; }
+.voc-musica-item.atual .voc-musica-nome { color:#38bdf8; }
+.voc-alb-eventos { background: linear-gradient(145deg, #081420, #0a1c30); }
+.voc-eventos-sort {
+  display: flex; gap: 6px; padding: 0 16px 12px; flex-shrink: 0;
+}
+.voc-sort-btn {
+  flex: 1; padding: 7px 0; border-radius: 9px; border: 1px solid rgba(255,255,255,0.07);
+  background: rgba(255,255,255,0.03); color: rgba(255,255,255,0.35);
+  font-size: 11px; font-weight: 800; cursor: pointer; font-family: inherit;
+  transition: all 0.2s; letter-spacing: 0.5px;
+}
+.voc-sort-btn.ativo {
+  background: rgba(96,165,250,0.1); border-color: rgba(96,165,250,0.3); color: #60a5fa;
+}
+.voc-ev-item {
+  display: flex; align-items: center; gap: 10px;
+  padding: 11px 16px; border-bottom: 1px solid rgba(255,255,255,0.04);
+  cursor: pointer; transition: background 0.15s;
+}
+.voc-ev-item:active { background: rgba(96,165,250,0.05); }
+.voc-ev-nome { font-size: 14px; font-weight: 800; color: #fff; }
+.voc-ev-data { font-size: 11px; color: rgba(255,255,255,0.3); margin-top:2px; }
+.voc-ev-cnt  { font-size: 11px; font-weight: 700; color: rgba(96,165,250,0.6); margin-left:auto; white-space:nowrap; }
+.voc-set-item {
+  display: flex; align-items: center; gap: 10px;
+  padding: 11px 16px; border-bottom: 1px solid rgba(255,255,255,0.04);
+  cursor: pointer; transition: background 0.15s;
+}
+.voc-set-item.atual { background: rgba(96,165,250,0.07); }
+.voc-set-item:active { background: rgba(96,165,250,0.1); }
+.voc-set-num {
+  font-size: 12px; font-weight: 800; color: rgba(255,255,255,0.2);
+  min-width: 22px; text-align: center; flex-shrink: 0;
+}
+.voc-set-item.atual .voc-set-num { color: #60a5fa; }
+.voc-set-nome { font-size: 14px; font-weight: 700; color: #fff; flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.voc-set-item.atual .voc-set-nome { color: #93c5fd; }
+.voc-set-tag {
+  font-size: 10px; font-weight: 800; padding: 3px 8px;
+  border-radius: 7px; flex-shrink: 0;
+}
+.voc-set-tag.tem-letra { background: rgba(10,158,110,0.12); border: 1px solid rgba(10,158,110,0.25); color: #34d399; }
+.voc-set-tag.sem-letra { background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08); color: rgba(255,255,255,0.25); }
+.voc-sala-badge {
+  display: none; align-items: center; gap: 5px;
+  background: rgba(96,165,250,0.1); border: 1px solid rgba(96,165,250,0.25);
+  border-radius: 10px; padding: 5px 11px; margin: 0 16px 12px;
+  font-size: 11px; font-weight: 800; color: #60a5fa;
+}
+.voc-sala-badge.ativo { display: flex; }
+.voc-sala-dot { width: 6px; height: 6px; border-radius: 50%; background: #60a5fa; animation: vocPulse 1.2s ease-in-out infinite; }
+@keyframes vocPulse { 0%,100%{opacity:1;} 50%{opacity:0.3;} }
 
 /* Textura decorativa de fundo */
 .voc-alb::before {
@@ -13580,7 +14881,10 @@ body[data-ambiente="vocalista"] .swipe-hint { display: none !important; }
 /* Topbar do painel */
 .voc-panel-top {
   display: flex; align-items: center; gap: 10px;
-  padding: 0 14px 0 8px; height: 56px; flex-shrink: 0;
+  padding: 0 14px 0 8px;
+  padding-top: env(safe-area-inset-top, 0px);
+  min-height: 56px; height: calc(56px + env(safe-area-inset-top, 0px));
+  flex-shrink: 0;
   background: #09091a;
   border-bottom: 1px solid rgba(255,255,255,0.05);
 }
@@ -13689,6 +14993,69 @@ body[data-ambiente="vocalista"] .swipe-hint { display: none !important; }
 #voc-letra-tela {
   display: none; position: absolute; inset: 0;
   background: #07070e; flex-direction: column; z-index: 20; overflow: hidden;
+}
+/* ── Modo performance vocalista ── */
+#voc-perf-overlay {
+  display: none; position: absolute; inset: 0; z-index: 30;
+  background: #03030a; flex-direction: column; overflow: hidden;
+  font-family: inherit;
+}
+#voc-perf-overlay.ativo { display: flex; }
+.voc-perf-header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 14px 18px 10px; flex-shrink: 0;
+  border-bottom: 1px solid rgba(138,92,246,0.08);
+}
+.voc-perf-nome {
+  font-size: 14px; font-weight: 900; color: #fff;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis; flex: 1;
+}
+.voc-perf-tom {
+  font-size: 11px; font-weight: 900; color: #a78bfa;
+  background: rgba(138,92,246,0.12); border: 1px solid rgba(138,92,246,0.22);
+  border-radius: 8px; padding: 4px 10px; margin-left: 10px; flex-shrink: 0;
+}
+.voc-perf-close {
+  width: 34px; height: 34px; border-radius: 10px;
+  background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.08);
+  color: rgba(255,255,255,0.4); cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  margin-left: 10px; flex-shrink: 0; touch-action: manipulation;
+}
+.voc-perf-scroll { flex: 1; overflow-y: auto; -webkit-overflow-scrolling: touch; scrollbar-width: none; }
+.voc-perf-scroll::-webkit-scrollbar { display: none; }
+.voc-perf-letra { padding: 22px 22px 40px; word-break: break-word; }
+.voc-perf-footer {
+  flex-shrink: 0; border-top: 1px solid rgba(255,255,255,0.05);
+  padding: 10px 16px 14px; display: flex; align-items: center; gap: 10px;
+  background: #05050f;
+}
+.voc-perf-proxima {
+  flex: 1; min-width: 0;
+}
+.voc-perf-prox-lbl {
+  font-size: 9px; font-weight: 800; letter-spacing: 1.5px;
+  color: rgba(255,255,255,0.2); text-transform: uppercase; margin-bottom: 2px;
+}
+.voc-perf-prox-nome {
+  font-size: 13px; font-weight: 800; color: rgba(255,255,255,0.55);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.voc-perf-scroll-ctrl {
+  display: flex; align-items: center; gap: 8px; flex-shrink: 0;
+}
+.voc-perf-scroll-btn {
+  display: flex; align-items: center; gap: 5px;
+  background: rgba(138,92,246,0.08); border: 1px solid rgba(138,92,246,0.18);
+  border-radius: 10px; color: rgba(138,92,246,0.6);
+  font-size: 11px; font-weight: 800; padding: 7px 13px;
+  cursor: pointer; font-family: inherit; touch-action: manipulation; transition: all 0.2s;
+}
+.voc-perf-scroll-btn.ativo {
+  background: rgba(138,92,246,0.18); border-color: rgba(138,92,246,0.4); color: #a78bfa;
+}
+.voc-perf-vel {
+  width: 70px; accent-color: #8a5cf6;
 }
 #voc-letra-tela.aberta { display: flex; }
 .voc-letra-topbar {
@@ -14036,6 +15403,39 @@ body[data-ambiente="vocalista"] .swipe-hint { display: none !important; }
         </div>
       </div>
 
+      <!-- Eventos — card largo -->
+      <div class="voc-alb voc-alb-eventos" onclick="vocAbrirPainel('eventos', this)" style="grid-column:span 2;aspect-ratio:auto;min-height:90px;">
+        <div class="voc-alb-deco" style="bottom:-10px;right:-10px;">
+          <svg width="110" height="110" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="1.2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+        </div>
+        <div class="voc-alb-inner" style="flex-direction:row;align-items:center;gap:14px;padding:18px 20px;">
+          <div class="voc-alb-icon" style="background:rgba(96,165,250,0.1);border:1px solid rgba(96,165,250,0.18);flex-shrink:0;">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#60a5fa" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+          </div>
+          <div>
+            <div class="voc-alb-name">Eventos</div>
+            <div class="voc-alb-desc">Setlists organizados por show</div>
+          </div>
+          <div id="voc-eventos-badge" class="voc-alb-badge" style="margin-left:auto;display:none;"></div>
+        </div>
+      </div>
+
+      <!-- Shows -->
+      <div class="voc-alb voc-alb-shows" onclick="vocAbrirPainel('shows', this)">
+        <div class="voc-alb-deco">
+          <svg width="90" height="90" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="1.5"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+        </div>
+        <div class="voc-alb-inner">
+          <div class="voc-alb-icon" style="background:rgba(56,189,248,0.1);border:1px solid rgba(56,189,248,0.18);">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#38bdf8" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+          </div>
+          <div class="voc-alb-info">
+            <div class="voc-alb-name">Shows</div>
+            <div class="voc-alb-desc">Setlist do evento ou da sala</div>
+          </div>
+        </div>
+      </div>
+
       <!-- Salvos — card largo -->
       <div class="voc-alb voc-alb-salvos" onclick="vocAbrirPainel('salvos', this)" style="grid-column:span 2;aspect-ratio:auto;min-height:90px;">
         <div class="voc-alb-deco" style="bottom:-12px;right:-12px;">
@@ -14231,6 +15631,75 @@ body[data-ambiente="vocalista"] .swipe-hint { display: none !important; }
   </div>
 
   <!-- SALVOS -->
+  <!-- EVENTOS -->
+  <div class="voc-panel" id="voc-panel-eventos">
+    <div class="voc-panel-top">
+      <button class="voc-back-btn" onclick="vocFecharPainel()">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+      </button>
+      <span class="voc-panel-title" id="voc-ev-panel-titulo">Eventos</span>
+      <button id="voc-ev-back-btn" onclick="vocEvVoltarLista()" style="display:none;margin-left:auto;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.08);border-radius:9px;color:rgba(255,255,255,0.4);font-size:11px;font-weight:800;padding:6px 12px;cursor:pointer;font-family:inherit;">↩ Eventos</button>
+    </div>
+    <!-- Badge sala ao vivo -->
+    <div class="voc-sala-badge" id="voc-sala-badge">
+      <div class="voc-sala-dot"></div>
+      <span id="voc-sala-badge-txt">Sala ao vivo</span>
+    </div>
+    <!-- Lista de eventos -->
+    <div id="voc-ev-lista-wrap">
+      <!-- Barra de ordenação -->
+      <div class="voc-eventos-sort">
+        <button class="voc-sort-btn ativo" id="voc-sort-data" onclick="vocEvOrdenar('data')">Recentes</button>
+        <button class="voc-sort-btn" id="voc-sort-az" onclick="vocEvOrdenar('az')">A–Z</button>
+      </div>
+      <div id="voc-ev-lista" class="voc-panel-body" style="padding-top:0;"></div>
+    </div>
+    <!-- Lista de músicas do evento/setlist -->
+    <div id="voc-ev-set-wrap" style="display:none;flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;">
+      <div id="voc-ev-set-lista"></div>
+    </div>
+  </div>
+
+  <!-- SHOWS -->
+  <div class="voc-panel" id="voc-panel-shows">
+    <div class="voc-panel-top">
+      <button class="voc-back-btn" onclick="vocFecharPainel()">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+      </button>
+      <span class="voc-panel-title">Shows</span>
+    </div>
+    <div class="voc-shows-tabs">
+      <button class="voc-shows-tab ativo" id="voc-shows-tab-eventos" onclick="vocShowsAba('eventos')">Eventos</button>
+      <button class="voc-shows-tab" id="voc-shows-tab-sala" onclick="vocShowsAba('sala')">Sala ao vivo</button>
+    </div>
+    <!-- Sub-painel Eventos -->
+    <div id="voc-shows-eventos" style="display:flex;flex-direction:column;flex:1;overflow:hidden;">
+      <div class="voc-sort-bar">
+        <button class="voc-sort-btn ativo" id="voc-sort-az" onclick="vocShowsOrdenar('az')">A–Z</button>
+        <button class="voc-sort-btn" id="voc-sort-data" onclick="vocShowsOrdenar('data')">Data</button>
+      </div>
+      <div id="voc-eventos-lista" style="overflow-y:auto;flex:1;padding-bottom:20px;"></div>
+    </div>
+    <!-- Sub-painel Sala ao vivo -->
+    <div id="voc-shows-sala" style="display:none;flex-direction:column;flex:1;overflow:hidden;">
+      <div id="voc-sala-setlist-wrap" style="overflow-y:auto;flex:1;padding-bottom:20px;"></div>
+    </div>
+  </div>
+
+  <!-- MÚSICAS DO EVENTO (sub-tela) -->
+  <div class="voc-panel" id="voc-panel-ev-musicas" style="z-index:11;">
+    <div class="voc-panel-top">
+      <button class="voc-back-btn" onclick="vocFecharEvMusicas()">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+      </button>
+      <span class="voc-panel-title" id="voc-ev-musicas-titulo">Setlist</span>
+    </div>
+    <div class="voc-setlist-header">
+      <div class="voc-setlist-sub" id="voc-ev-musicas-sub"></div>
+    </div>
+    <div id="voc-ev-musicas-lista" style="overflow-y:auto;flex:1;padding-bottom:20px;"></div>
+  </div>
+
   <div class="voc-panel" id="voc-panel-salvos">
     <div class="voc-panel-top">
       <button class="voc-back-btn" onclick="vocFecharPainel()">
@@ -14248,6 +15717,33 @@ body[data-ambiente="vocalista"] .swipe-hint { display: none !important; }
       </div>
       <div id="voc-fav-letras"></div>
       <div id="voc-fav-tons" style="display:none;"></div>
+    </div>
+  </div>
+
+  <!-- MODO PERFORMANCE VOCALISTA -->
+  <div id="voc-perf-overlay">
+    <div class="voc-perf-header">
+      <div class="voc-perf-nome" id="voc-perf-nome">—</div>
+      <div class="voc-perf-tom" id="voc-perf-tom" style="display:none;"></div>
+      <button class="voc-perf-close" onclick="vocFecharPerformance()" title="Sair do modo performance">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    </div>
+    <div class="voc-perf-scroll" id="voc-perf-scroll">
+      <div class="voc-perf-letra" id="voc-perf-letra"></div>
+    </div>
+    <div class="voc-perf-footer">
+      <div class="voc-perf-proxima" id="voc-perf-proxima" style="display:none;">
+        <div class="voc-perf-prox-lbl">A seguir</div>
+        <div class="voc-perf-prox-nome" id="voc-perf-prox-nome"></div>
+      </div>
+      <div class="voc-perf-scroll-ctrl" style="margin-left:auto;">
+        <input type="range" class="voc-perf-vel" id="voc-perf-vel" min="20" max="120" step="5" value="55" title="Velocidade">
+        <button class="voc-perf-scroll-btn" id="voc-perf-scroll-btn" onclick="vocPerfToggleScroll()">
+          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="6 9 12 15 18 9"/></svg>
+          Auto
+        </button>
+      </div>
     </div>
   </div>
 
@@ -14386,6 +15882,8 @@ function vocAbrirPainel(id, originEl) {
   // Preparar conteúdo antes de mostrar
   if(id === 'salvos') _vocRenderFavs();
   if(id === 'tom') _vocRenderTons();
+  if(id === 'shows') _vocRenderShows();
+  if(id === 'eventos') { _vocAtualizarBadgeSala(); vocEvRenderLista(); }
   if(id === 'videos') { var vi=document.getElementById('voc-input-video'); if(vi&&_voc.titulo) vi.value=_voc.titulo+' '+_voc.artista; }
 
   // Mostrar e animar
@@ -14608,6 +16106,529 @@ function _vocIniciarScroll(){ var a=document.getElementById('voc-letra-scroll'),
 function _vocPararScroll(){ if(_voc.scrollTimer){clearInterval(_voc.scrollTimer);_voc.scrollTimer=null;} var btn=document.getElementById('voc-scroll-btn'); if(btn)btn.classList.remove('ativo'); }
 function vocIrParaTom(){ vocFecharLetra(); vocAbrirPainel('tom'); }
 
+// ─── PAINEL EVENTOS VOCALISTA ────────────────────────────────────────────────
+var _vocEvOrdem = 'data'; // 'data' | 'az'
+var _vocEvSetAtual = null; // { nome, musicas:[{nome,temLetra,favIdx}] }
+window._vocSetlistRecebido = null;
+
+function _vocAtualizarBadgeSala() {
+  var badge = document.getElementById('voc-sala-badge');
+  var badgeTxt = document.getElementById('voc-sala-badge-txt');
+  var sl = window._vocSetlistRecebido;
+  if (!badge) return;
+  if (sl && sl.nomes && sl.nomes.length) {
+    badge.classList.add('ativo');
+    var txt = sl.eventoNome ? ('Ao vivo · ' + sl.eventoNome) : 'Sala ao vivo';
+    if (badgeTxt) badgeTxt.textContent = txt;
+  } else {
+    badge.classList.remove('ativo');
+  }
+  // Atualiza badge do card no grid
+  var evBadge = document.getElementById('voc-eventos-badge');
+  var total = (typeof eventos !== 'undefined' ? eventos.length : 0);
+  if (evBadge) {
+    if (total > 0) { evBadge.textContent = total; evBadge.style.display = 'flex'; }
+    else { evBadge.style.display = 'none'; }
+  }
+}
+
+function vocEvRenderLista() {
+  var lista = document.getElementById('voc-ev-lista');
+  if (!lista) return;
+  var favs = vocFavs() || [];
+  var sl = window._vocSetlistRecebido;
+
+  var html = '';
+
+  // Bloco sala ao vivo (se tiver setlist recebido via sala)
+  if (sl && sl.nomes && sl.nomes.length) {
+    var posAtual = sl.pos || 0;
+    html += '<div style="padding:8px 16px 4px;">'
+      + '<div style="font-size:9px;font-weight:800;letter-spacing:2px;color:rgba(96,165,250,0.5);text-transform:uppercase;margin-bottom:6px;">Sala ao vivo'
+      + (sl.eventoNome ? ' · ' + _ve(sl.eventoNome) : '') + '</div>';
+    sl.nomes.forEach(function(nome, i) {
+      var fav = favs.find(function(f) { return f.titulo && f.titulo.toLowerCase() === nome.toLowerCase(); });
+      var temLetra = !!fav;
+      var atual = (i === posAtual);
+      html += '<div class="voc-set-item' + (atual ? ' atual' : '') + '" onclick="vocEvAbrirSetlistSala(' + i + ')">'
+        + '<span class="voc-set-num">' + (i + 1) + '</span>'
+        + '<span class="voc-set-nome">' + _ve(nome) + '</span>'
+        + '<span class="voc-set-tag ' + (temLetra ? 'tem-letra' : 'sem-letra') + '">' + (temLetra ? 'Letra' : 'Buscar') + '</span>'
+        + '</div>';
+    });
+    html += '</div><div style="height:1px;background:rgba(255,255,255,0.05);margin:8px 0;"></div>';
+  }
+
+  // Eventos locais
+  var evs = (typeof eventos !== 'undefined' ? eventos.slice() : []);
+  if (!evs.length && !html) {
+    lista.innerHTML = '<div class="voc-empty"><div class="voc-empty-title">Nenhum evento criado</div>'
+      + '<div class="voc-empty-sub">Cria eventos no app principal para vê-los aqui</div></div>';
+    return;
+  }
+  if (evs.length) {
+    if (_vocEvOrdem === 'az') {
+      evs.sort(function(a, b) { return (a.nome || '').localeCompare(b.nome || ''); });
+    } else {
+      evs.sort(function(a, b) { return (b.id || 0) - (a.id || 0); });
+    }
+    html += '<div style="padding:8px 16px 4px;font-size:9px;font-weight:800;letter-spacing:2px;color:rgba(255,255,255,0.2);text-transform:uppercase;">Meus eventos</div>';
+    evs.forEach(function(ev) {
+      var musTotal = (ev.musicIds || []).length;
+      var musComLetra = (ev.musicIds || []).filter(function(id) {
+        var s = (typeof songs !== 'undefined' ? songs : []).find(function(x) { return x.id === id; });
+        if (!s) return false;
+        return favs.some(function(f) { return f.titulo && f.titulo.toLowerCase() === (s.name||'').toLowerCase(); });
+      }).length;
+      var dataStr = ev.data ? new Date(ev.data + 'T12:00:00').toLocaleDateString('pt-BR', {day:'2-digit',month:'short',year:'numeric'}) : '';
+      html += '<div class="voc-ev-item" onclick="vocEvAbrirEvento(' + ev.id + ')">'
+        + '<div style="flex:1;min-width:0;">'
+        +   '<div class="voc-ev-nome">' + _ve(ev.nome || 'Sem nome') + '</div>'
+        +   (dataStr ? '<div class="voc-ev-data">' + dataStr + '</div>' : '')
+        + '</div>'
+        + '<div class="voc-ev-cnt">' + musComLetra + '/' + musTotal + ' letras</div>'
+        + '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.2)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>'
+        + '</div>';
+    });
+  }
+  lista.innerHTML = html;
+}
+
+function vocEvOrdenar(ord) {
+  _vocEvOrdem = ord;
+  document.getElementById('voc-sort-data').classList.toggle('ativo', ord === 'data');
+  document.getElementById('voc-sort-az').classList.toggle('ativo', ord === 'az');
+  vocEvRenderLista();
+}
+
+function vocEvAbrirEvento(evId) {
+  var ev = (typeof eventos !== 'undefined' ? eventos : []).find(function(e) { return e.id === evId; });
+  if (!ev) return;
+  var favs = vocFavs() || [];
+  var musicas = (ev.musicIds || []).map(function(id, i) {
+    var s = (typeof songs !== 'undefined' ? songs : []).find(function(x) { return x.id === id; });
+    if (!s) return null;
+    var fav = favs.find(function(f) { return f.titulo && f.titulo.toLowerCase() === (s.name||'').toLowerCase(); });
+    return { nome: s.name, temLetra: !!fav, fav: fav || null, pos: i };
+  }).filter(Boolean);
+  _vocEvSetAtual = { nome: ev.nome, musicas: musicas, tipo: 'evento' };
+  vocEvMostrarSet();
+}
+
+function vocEvAbrirSetlistSala(posInicial) {
+  var sl = window._vocSetlistRecebido;
+  if (!sl || !sl.nomes) return;
+  var favs = vocFavs() || [];
+  var musicas = sl.nomes.map(function(nome, i) {
+    var fav = favs.find(function(f) { return f.titulo && f.titulo.toLowerCase() === nome.toLowerCase(); });
+    return { nome: nome, temLetra: !!fav, fav: fav || null, pos: i };
+  });
+  _vocEvSetAtual = { nome: sl.eventoNome || 'Sala ao vivo', musicas: musicas, tipo: 'sala', posAtual: posInicial };
+  vocEvMostrarSet();
+}
+
+function vocEvMostrarSet() {
+  if (!_vocEvSetAtual) return;
+  var set = _vocEvSetAtual;
+  document.getElementById('voc-ev-panel-titulo').textContent = set.nome;
+  document.getElementById('voc-ev-back-btn').style.display = '';
+  document.getElementById('voc-ev-lista-wrap').style.display = 'none';
+  var wrap = document.getElementById('voc-ev-set-wrap');
+  wrap.style.display = '';
+
+  var posAtual = (set.tipo === 'sala' && set.posAtual !== undefined) ? set.posAtual
+    : (window._vocSetlistRecebido && set.tipo === 'sala' ? (window._vocSetlistRecebido.pos || 0) : -1);
+
+  // Se sala, atualiza posAtual em tempo real
+  if (set.tipo === 'sala' && window._vocSetlistRecebido) {
+    posAtual = window._vocSetlistRecebido.pos || 0;
+  }
+
+  var html = set.musicas.map(function(m, i) {
+    var atual = (i === posAtual);
+    return '<div class="voc-set-item' + (atual ? ' atual' : '') + '" onclick="vocEvClicarMusica(' + i + ')">'
+      + '<span class="voc-set-num">' + (i + 1) + '</span>'
+      + '<span class="voc-set-nome">' + _ve(m.nome) + '</span>'
+      + '<span class="voc-set-tag ' + (m.temLetra ? 'tem-letra' : 'sem-letra') + '">' + (m.temLetra ? 'Letra' : 'Buscar') + '</span>'
+      + '</div>';
+  }).join('');
+  document.getElementById('voc-ev-set-lista').innerHTML = html || '<div class="voc-empty"><div class="voc-empty-title">Sem músicas</div></div>';
+
+  // Scroll para música atual
+  if (posAtual >= 0) {
+    setTimeout(function() {
+      var items = wrap.querySelectorAll('.voc-set-item');
+      if (items[posAtual]) items[posAtual].scrollIntoView({ block: 'center', behavior: 'smooth' });
+    }, 100);
+  }
+}
+
+function vocEvClicarMusica(idx) {
+  if (!_vocEvSetAtual) return;
+  var m = _vocEvSetAtual.musicas[idx];
+  if (!m) return;
+  if (m.temLetra && m.fav) {
+    // Abre performance diretamente
+    _voc.titulo = m.fav.titulo;
+    _voc.artista = m.fav.artista;
+    _voc.letra = m.fav.letra;
+    // Calcula próxima
+    var prox = _vocEvSetAtual.musicas[idx + 1];
+    window._vocPerfProxima = prox ? prox.nome : null;
+    vocEvAbrirPerformanceDireto(m.fav, idx);
+  } else {
+    // Abre busca de letras com o nome pré-preenchido
+    vocAbrirPainel('letras');
+    var input = document.getElementById('voc-input-busca');
+    if (input) { input.value = m.nome; }
+    setTimeout(function() { vocBuscarLetras(); }, 200);
+  }
+}
+
+function vocEvAbrirPerformanceDireto(fav, idx) {
+  var set = _vocEvSetAtual;
+  // Usa vocAbrirPerformance mas com dados diretos (não por índice em favs)
+  document.getElementById('voc-perf-nome').textContent = fav.titulo;
+  var letraEl = document.getElementById('voc-perf-letra');
+  letraEl.innerHTML = _vocRenderLetra(fav.letra || '', _voc.fontSize);
+  var tons = vocTons() || [];
+  var tonSalvo = tons.find(function(t) { return t.titulo === fav.titulo; });
+  var tomEl = document.getElementById('voc-perf-tom');
+  if (tonSalvo) { tomEl.textContent = tonSalvo.tom; tomEl.style.display = ''; }
+  else { tomEl.style.display = 'none'; }
+  // Próxima música
+  var proxEl = document.getElementById('voc-perf-proxima');
+  var proxNomeEl = document.getElementById('voc-perf-prox-nome');
+  var proximaNome = window._vocPerfProxima || null;
+  if (!proximaNome && set && set.musicas[idx + 1]) proximaNome = set.musicas[idx + 1].nome;
+  if (proximaNome) { proxNomeEl.textContent = proximaNome; proxEl.style.display = ''; }
+  else { proxEl.style.display = 'none'; }
+  vocPerfPararScroll();
+  var scrollArea = document.getElementById('voc-perf-scroll');
+  if (scrollArea) scrollArea.scrollTop = 0;
+  document.getElementById('voc-perf-overlay').classList.add('ativo');
+}
+
+function vocEvVoltarLista() {
+  _vocEvSetAtual = null;
+  document.getElementById('voc-ev-panel-titulo').textContent = 'Eventos';
+  document.getElementById('voc-ev-back-btn').style.display = 'none';
+  document.getElementById('voc-ev-lista-wrap').style.display = '';
+  document.getElementById('voc-ev-set-wrap').style.display = 'none';
+  vocEvRenderLista();
+}
+
+// ─── PAINEL SHOWS ────────────────────────────────────────────────────────────
+var _vocShowsOrdem = 'az';   // 'az' | 'data'
+var _vocShowsAba   = 'eventos'; // 'eventos' | 'sala'
+var _vocEvAtual    = null;   // evento aberto na sub-tela
+
+// Abre o painel Shows e renderiza a aba ativa
+function _vocRenderShows() {
+  if (_vocShowsAba === 'eventos') _vocRenderEventos();
+  else _vocRenderSalaVivo();
+}
+
+// ── Aba selector ──────────────────────────────────────────────────────────────
+function vocShowsAba(aba) {
+  _vocShowsAba = aba;
+  var te = document.getElementById('voc-shows-tab-eventos');
+  var ts = document.getElementById('voc-shows-tab-sala');
+  var de = document.getElementById('voc-shows-eventos');
+  var ds = document.getElementById('voc-shows-sala');
+  if (aba === 'eventos') {
+    te.classList.add('ativo'); ts.classList.remove('ativo');
+    de.style.display = 'flex'; ds.style.display = 'none';
+    _vocRenderEventos();
+  } else {
+    ts.classList.add('ativo'); te.classList.remove('ativo');
+    ds.style.display = 'flex'; de.style.display = 'none';
+    _vocRenderSalaVivo();
+  }
+}
+
+// ── Ordenação ─────────────────────────────────────────────────────────────────
+function vocShowsOrdenar(ord) {
+  _vocShowsOrdem = ord;
+  document.getElementById('voc-sort-az').classList.toggle('ativo', ord === 'az');
+  document.getElementById('voc-sort-data').classList.toggle('ativo', ord === 'data');
+  _vocRenderEventos();
+}
+
+// ── Lista de eventos (cenário solo) ──────────────────────────────────────────
+function _vocRenderEventos() {
+  var lista = document.getElementById('voc-eventos-lista');
+  if (!lista) return;
+  var evs = (typeof eventos !== 'undefined' ? eventos : []).slice();
+  if (!evs.length) {
+    lista.innerHTML = '<div class="voc-empty" style="margin:32px 16px;"><div class="voc-empty-title">Nenhum evento encontrado</div><div class="voc-empty-sub">Crie eventos no app principal e eles aparecerão aqui</div></div>';
+    return;
+  }
+  // Ordenação
+  if (_vocShowsOrdem === 'az') {
+    evs.sort(function(a, b) { return (a.nome||'').localeCompare(b.nome||'', 'pt'); });
+  } else {
+    evs.sort(function(a, b) { return (b.data||'') > (a.data||'') ? 1 : -1; });
+  }
+  // Conta quantas músicas têm letra salva por evento
+  var favs = vocFavs() || [];
+  var favTitulos = favs.map(function(f) { return (f.titulo||'').toLowerCase(); });
+  lista.innerHTML = evs.map(function(ev) {
+    var musicas = (ev.musicIds || []).map(function(id) {
+      return (typeof songs !== 'undefined' ? songs : []).find(function(s) { return s.id === id; });
+    }).filter(Boolean);
+    var comLetra = musicas.filter(function(s) {
+      return favTitulos.indexOf((s.name||'').toLowerCase()) !== -1;
+    }).length;
+    var dataStr = ev.data ? new Date(ev.data + 'T12:00:00').toLocaleDateString('pt-BR', {day:'2-digit', month:'short'}) : '';
+    var badge = comLetra ? '<span class="voc-ev-letras-badge">' + comLetra + '/' + musicas.length + ' letras</span>' : '';
+    return '<div class="voc-ev-card" onclick="vocAbrirEvMusicas(' + ev.id + ')">'
+      + '<div class="voc-ev-nome">' + _ve(ev.nome) + '</div>'
+      + '<div class="voc-ev-meta">'
+      +   (dataStr ? '<span>' + dataStr + '</span>' : '')
+      +   '<span>' + musicas.length + ' música' + (musicas.length !== 1 ? 's' : '') + '</span>'
+      +   badge
+      + '</div>'
+      + '</div>';
+  }).join('');
+}
+
+// ── Abrir músicas de um evento ────────────────────────────────────────────────
+function vocAbrirEvMusicas(evId) {
+  var ev = (typeof eventos !== 'undefined' ? eventos : []).find(function(e) { return e.id === evId; });
+  if (!ev) return;
+  _vocEvAtual = ev;
+  document.getElementById('voc-ev-musicas-titulo').textContent = ev.nome;
+  var dataStr = ev.data ? new Date(ev.data + 'T12:00:00').toLocaleDateString('pt-BR', {weekday:'long', day:'2-digit', month:'long'}) : '';
+  document.getElementById('voc-ev-musicas-sub').textContent = dataStr;
+  _vocRenderEvMusicasLista(ev, null);
+  document.getElementById('voc-panel-ev-musicas').classList.add('ativo');
+}
+
+function vocFecharEvMusicas() {
+  document.getElementById('voc-panel-ev-musicas').classList.remove('ativo');
+  _vocEvAtual = null;
+}
+
+function _vocRenderEvMusicasLista(ev, posAtual) {
+  var lista = document.getElementById('voc-ev-musicas-lista');
+  if (!lista) return;
+  var favs = vocFavs() || [];
+  var musicas = (ev.musicIds || []).map(function(id) {
+    return (typeof songs !== 'undefined' ? songs : []).find(function(s) { return s.id === id; });
+  }).filter(Boolean);
+  if (!musicas.length) {
+    lista.innerHTML = '<div class="voc-empty" style="margin:32px 16px;"><div class="voc-empty-title">Nenhuma música neste evento</div></div>';
+    return;
+  }
+  lista.innerHTML = musicas.map(function(s, i) {
+    var fav = favs.find(function(f) { return (f.titulo||'').toLowerCase() === (s.name||'').toLowerCase(); });
+    var badge = fav
+      ? '<span class="voc-musica-letra-badge voc-musica-letra-ok">letra</span>'
+      : '<span class="voc-musica-letra-badge voc-musica-letra-no">sem letra</span>';
+    var atual = (posAtual !== null && posAtual === i) ? ' atual' : '';
+    return '<div class="voc-musica-item' + atual + '" data-idx="' + i + '" data-nome="' + _ve(s.name).replace(/"/g,'&quot;') + '" data-evid="' + ev.id + '" onclick="vocClicarMusicaEv(+this.dataset.idx, this.dataset.nome, +this.dataset.evid)">'
+      + '<span class="voc-musica-num">' + (i + 1) + '</span>'
+      + '<span class="voc-musica-nome">' + _ve(s.name) + '</span>'
+      + (s.bpm ? '<span class="voc-musica-bpm">' + s.bpm + '</span>' : '')
+      + badge
+      + '</div>';
+  }).join('');
+}
+
+function vocClicarMusicaEv(idx, nome, evId) {
+  var favs = vocFavs() || [];
+  var fav = favs.find(function(f) { return (f.titulo||'').toLowerCase() === (nome||'').toLowerCase(); });
+  if (fav) {
+    // Tem letra — abre modo performance com contexto do evento
+    var ev = (typeof eventos !== 'undefined' ? eventos : []).find(function(e) { return e.id === evId; });
+    var favIdx = favs.indexOf(fav);
+    // Calcula próxima com letra no setlist
+    var proxNome = null;
+    if (ev) {
+      var musicas = (ev.musicIds || []).map(function(id) {
+        return (typeof songs !== 'undefined' ? songs : []).find(function(s) { return s.id === id; });
+      }).filter(Boolean);
+      for (var i = idx + 1; i < musicas.length; i++) {
+        var pf = favs.find(function(f) { return (f.titulo||'').toLowerCase() === (musicas[i].name||'').toLowerCase(); });
+        if (pf) { proxNome = musicas[i].name; break; }
+        else { proxNome = musicas[i].name; break; }
+      }
+    }
+    vocAbrirPerformanceComContexto(fav, proxNome);
+  } else {
+    // Não tem letra — abre busca pré-preenchida
+    vocFecharEvMusicas();
+    vocFecharPainel();
+    vocAbrirPainel('letras');
+    setTimeout(function() {
+      var inp = document.getElementById('voc-input-busca');
+      if (inp) { inp.value = nome; vocBuscarLetras(); }
+    }, 300);
+  }
+}
+
+// ── Sala ao vivo ──────────────────────────────────────────────────────────────
+function _vocRenderSalaVivo() {
+  var wrap = document.getElementById('voc-sala-setlist-wrap');
+  if (!wrap) return;
+  var setlist = (typeof _vocSalaSetlist !== 'undefined') ? _vocSalaSetlist : null;
+  if (!setlist || !setlist.musicas || !setlist.musicas.length) {
+    wrap.innerHTML = '<div class="voc-empty" style="margin:32px 16px;"><div class="voc-empty-title">Nenhuma sala ativa</div><div class="voc-empty-sub">Entre numa sala como viewer ou aguarda o host iniciar o show</div></div>';
+    return;
+  }
+  var favs = vocFavs() || [];
+  var posAtual = setlist.posAtual || 0;
+  wrap.innerHTML = '<div class="voc-setlist-header"><div class="voc-setlist-title">' + _ve(setlist.nomeEvento || 'Show ao vivo') + '</div><div class="voc-setlist-sub">Sala: ' + _ve(setlist.codigo || '') + ' · ' + setlist.musicas.length + ' músicas</div></div>'
+    + setlist.musicas.map(function(m, i) {
+      var fav = favs.find(function(f) { return (f.titulo||'').toLowerCase() === (m||'').toLowerCase(); });
+      var badge = fav
+        ? '<span class="voc-musica-letra-badge voc-musica-letra-ok">letra</span>'
+        : '<span class="voc-musica-letra-badge voc-musica-letra-no">sem letra</span>';
+      var atual = (i === posAtual) ? ' atual' : '';
+      return '<div class="voc-musica-item' + atual + '" data-idx="' + i + '" data-nome="' + _ve(m).replace(/"/g,'&quot;') + '" onclick="vocClicarMusicaSala(+this.dataset.idx, this.dataset.nome)">'
+        + '<span class="voc-musica-num">' + (i + 1) + '</span>'
+        + '<span class="voc-musica-nome">' + _ve(m) + '</span>'
+        + badge
+        + '</div>';
+    }).join('');
+  // Scroll para música atual
+  setTimeout(function() {
+    var atual = wrap.querySelector('.voc-musica-item.atual');
+    if (atual) atual.scrollIntoView({ block: 'center', behavior: 'smooth' });
+  }, 100);
+}
+
+function vocClicarMusicaSala(idx, nome) {
+  var favs = vocFavs() || [];
+  var fav = favs.find(function(f) { return (f.titulo||'').toLowerCase() === (nome||'').toLowerCase(); });
+  var setlist = (typeof _vocSalaSetlist !== 'undefined') ? _vocSalaSetlist : null;
+  var proxNome = null;
+  if (setlist && setlist.musicas) {
+    for (var i = idx + 1; i < setlist.musicas.length; i++) {
+      proxNome = setlist.musicas[i]; break;
+    }
+  }
+  if (fav) {
+    vocAbrirPerformanceComContexto(fav, proxNome);
+  } else {
+    vocFecharPainel();
+    vocAbrirPainel('letras');
+    setTimeout(function() {
+      var inp = document.getElementById('voc-input-busca');
+      if (inp) { inp.value = nome; vocBuscarLetras(); }
+    }, 300);
+  }
+}
+
+// ── Performance com contexto externo ─────────────────────────────────────────
+function vocAbrirPerformanceComContexto(fav, proxNome) {
+  // Preenche campos do overlay de performance
+  document.getElementById('voc-perf-nome').textContent = fav.titulo;
+  var letraEl = document.getElementById('voc-perf-letra');
+  letraEl.innerHTML = _vocRenderLetra(fav.letra || '', _voc.fontSize);
+  // Tom
+  var tons = vocTons() || [];
+  var tonSalvo = tons.find(function(t) { return t.titulo === fav.titulo; });
+  var tomEl = document.getElementById('voc-perf-tom');
+  if (tonSalvo) { tomEl.textContent = tonSalvo.tom; tomEl.style.display = ''; }
+  else { tomEl.style.display = 'none'; }
+  // Próxima
+  var proxEl = document.getElementById('voc-perf-proxima');
+  var proxNomeEl = document.getElementById('voc-perf-prox-nome');
+  if (proxNome) { proxNomeEl.textContent = proxNome; proxEl.style.display = ''; }
+  else { proxEl.style.display = 'none'; }
+  // Reset
+  vocPerfPararScroll();
+  var scrollArea = document.getElementById('voc-perf-scroll');
+  if (scrollArea) scrollArea.scrollTop = 0;
+  document.getElementById('voc-perf-overlay').classList.add('ativo');
+}
+
+// ─── MODO PERFORMANCE VOCALISTA ───────────────────────────────────────────────
+var _vocPerfTimer    = null;
+var _vocSalaSetlist  = null; // setlist recebido da sala: { nomeEvento, codigo, musicas:[], posAtual }
+
+function vocAbrirPerformance(favIdx) {
+  var favs = vocFavs() || [];
+  var fav = favs[favIdx];
+  if (!fav) return;
+
+  // Nome e letra
+  document.getElementById('voc-perf-nome').textContent = fav.titulo;
+  var letraEl = document.getElementById('voc-perf-letra');
+  letraEl.innerHTML = _vocRenderLetra(fav.letra || '', _voc.fontSize);
+
+  // Tom salvo para esta música
+  var tons = vocTons() || [];
+  var tonSalvo = tons.find(function(t) { return t.titulo === fav.titulo; });
+  var tomEl = document.getElementById('voc-perf-tom');
+  if (tonSalvo) {
+    tomEl.textContent = tonSalvo.tom;
+    tomEl.style.display = '';
+  } else {
+    tomEl.style.display = 'none';
+  }
+
+  // Próxima música — tenta pelo setlist em sala, depois pelo índice nos salvos
+  var proximaNome = null;
+  if (typeof showSetlist !== 'undefined' && showSetlist && typeof showSetlistPos !== 'undefined') {
+    // Em sala: usa posição atual do show
+    var prox = showSetlist[showSetlistPos + 1];
+    if (prox) {
+      var proxSong = (typeof songs !== 'undefined' ? songs : []).find(function(s) { return s.id === prox; });
+      if (proxSong) proximaNome = proxSong.name;
+    }
+  }
+  if (!proximaNome && favIdx + 1 < favs.length) {
+    proximaNome = favs[favIdx + 1].titulo;
+  }
+  var proxEl = document.getElementById('voc-perf-proxima');
+  var proxNomeEl = document.getElementById('voc-perf-prox-nome');
+  if (proximaNome) {
+    proxNomeEl.textContent = proximaNome;
+    proxEl.style.display = '';
+  } else {
+    proxEl.style.display = 'none';
+  }
+
+  // Reset scroll e timer
+  vocPerfPararScroll();
+  var scrollArea = document.getElementById('voc-perf-scroll');
+  if (scrollArea) scrollArea.scrollTop = 0;
+
+  document.getElementById('voc-perf-overlay').classList.add('ativo');
+}
+
+function vocFecharPerformance() {
+  vocPerfPararScroll();
+  document.getElementById('voc-perf-overlay').classList.remove('ativo');
+}
+
+function vocPerfToggleScroll() {
+  if (_vocPerfTimer) vocPerfPararScroll();
+  else vocPerfIniciarScroll();
+}
+
+function vocPerfIniciarScroll() {
+  var a = document.getElementById('voc-perf-scroll');
+  var btn = document.getElementById('voc-perf-scroll-btn');
+  var vel = parseInt((document.getElementById('voc-perf-vel') || {}).value || 55);
+  if (!a) return;
+  if (btn) btn.classList.add('ativo');
+  var delay = Math.round(110 - vel); // vel 20→90ms, vel 120→10ms
+  _vocPerfTimer = setInterval(function() {
+    a.scrollTop += 1;
+    if (a.scrollTop + a.clientHeight >= a.scrollHeight - 5) vocPerfPararScroll();
+  }, delay);
+}
+
+function vocPerfPararScroll() {
+  if (_vocPerfTimer) { clearInterval(_vocPerfTimer); _vocPerfTimer = null; }
+  var btn = document.getElementById('voc-perf-scroll-btn');
+  if (btn) btn.classList.remove('ativo');
+}
+
 // ── Favorito (estrela na tela da letra) ───────────────────────────────────────
 function vocToggleFav(){
   var favs=vocFavs()||[]; var idx=favs.findIndex(function(f){return f.titulo===_voc.titulo&&f.artista===_voc.artista;});
@@ -14639,7 +16660,7 @@ function _vocRenderFavs(){
   var fl=document.getElementById('voc-fav-letras');
   if(fl){
     if(!favs.length){ fl.innerHTML='<div class="voc-empty"><div class="voc-empty-ico"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="rgba(138,92,246,0.4)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg></div><div class="voc-empty-title">Nenhuma letra salva</div><div class="voc-empty-sub">Busque músicas e salve as que gostar</div></div>'; }
-    else{ fl.innerHTML=favs.map(function(f,i){ return '<div class="voc-fav-item" data-titulo="'+_ve(f.titulo)+'" data-artista="'+_ve(f.artista)+'" data-letra="'+_ve(f.letra)+'" onclick="vocAbrirDaHistEl(this)">'+'<div class="voc-fav-art" style="background:rgba(245,196,0,0.08);border:1px solid rgba(245,196,0,0.12);"><svg width="16" height="16" viewBox="0 0 24 24" fill="rgba(245,196,0,0.7)" stroke="rgba(245,196,0,0.8)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg></div>'+'<div style="flex:1;min-width:0;"><div class="voc-fav-name">'+_ve(f.titulo)+'</div><div class="voc-fav-sub">'+_ve(f.artista)+'</div></div>'+'<button onclick="event.stopPropagation();_vocDelFav('+i+')" class="voc-del-btn"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg></button>'+'</div>'; }).join(''); }
+    else{ fl.innerHTML=favs.map(function(f,i){ return '<div class="voc-fav-item" data-titulo="'+_ve(f.titulo)+'" data-artista="'+_ve(f.artista)+'" data-letra="'+_ve(f.letra)+'" onclick="vocAbrirDaHistEl(this)">'+'<div class="voc-fav-art" style="background:rgba(245,196,0,0.08);border:1px solid rgba(245,196,0,0.12);"><svg width="16" height="16" viewBox="0 0 24 24" fill="rgba(245,196,0,0.7)" stroke="rgba(245,196,0,0.8)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg></div>'+'<div style="flex:1;min-width:0;"><div class="voc-fav-name">'+_ve(f.titulo)+'</div><div class="voc-fav-sub">'+_ve(f.artista)+'</div></div>'+'<button onclick="event.stopPropagation();vocAbrirPerformance('+i+')" style="background:rgba(138,92,246,0.1);border:1px solid rgba(138,92,246,0.22);border-radius:9px;color:#a78bfa;font-size:10px;font-weight:800;padding:5px 10px;cursor:pointer;font-family:inherit;margin-right:4px;white-space:nowrap;">Cantar</button>'+'<button onclick="event.stopPropagation();_vocDelFav('+i+')" class="voc-del-btn"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg></button>'+'</div>'; }).join(''); }
   }
   var ft=document.getElementById('voc-fav-tons');
   if(ft){
@@ -14845,14 +16866,42 @@ setTimeout(function(){ _vocRenderHist(); _vocAtualizarBadgeSalvos(); }, 300);
     + '.hap-release{transition:transform 0.2s cubic-bezier(0.34,1.56,0.64,1)!important,filter 0.15s ease!important}';
   document.head.appendChild(style);
 
-  // ── Vibração (iOS 12+ e Android) ──────────────────────────────────────────
-  // iOS 13+ suporta navigator.vibrate em Safari quando executado via HTTPS
+  // ── Vibração: Android via navigator.vibrate, iOS via AudioContext pulse ────
+  function _hapticAudio(duracaoMs) {
+    try {
+      var ctx = window.audioCtx || (window.AudioContext || window.webkitAudioContext
+                  ? new (window.AudioContext || window.webkitAudioContext)() : null);
+      if (!ctx) return;
+      if (ctx.state === 'suspended') ctx.resume();
+      // Pulso de áudio de baixíssima frequência — aciona Taptic Engine no iOS
+      var osc = ctx.createOscillator();
+      var gain = ctx.createGain();
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(200, ctx.currentTime);
+      gain.gain.setValueAtTime(0.001, ctx.currentTime); // quase inaudível
+      gain.gain.exponentialRampToValueAtTime(0.00001, ctx.currentTime + duracaoMs / 1000);
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.start(ctx.currentTime);
+      osc.stop(ctx.currentTime + duracaoMs / 1000);
+    } catch(e) {}
+  }
+
   function vibrar(tipo) {
-    if (!navigator.vibrate) return;
-    if (tipo === 'light')      navigator.vibrate(8);
-    else if (tipo === 'heavy') navigator.vibrate([15, 30, 15]);
-    else if (tipo === 'pin')   navigator.vibrate(5);
-    else                       navigator.vibrate(12);
+    if (isIOS) {
+      // iOS: pulso de áudio que aciona o Taptic Engine
+      if (tipo === 'light')      _hapticAudio(8);
+      else if (tipo === 'heavy') { _hapticAudio(20); setTimeout(function(){ _hapticAudio(20); }, 50); }
+      else if (tipo === 'pin')   _hapticAudio(5);
+      else                       _hapticAudio(12);
+    } else {
+      // Android: vibração nativa
+      if (!navigator.vibrate) return;
+      if (tipo === 'light')      navigator.vibrate(8);
+      else if (tipo === 'heavy') navigator.vibrate([15, 30, 15]);
+      else if (tipo === 'pin')   navigator.vibrate(5);
+      else                       navigator.vibrate(12);
+    }
   }
 
   // ── Feedback visual ────────────────────────────────────────────────────────
