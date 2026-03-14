@@ -2684,6 +2684,7 @@ body { font-family: -apple-system, 'Inter', BlinkMacSystemFont, 'Segoe UI', sans
   opacity: 1; pointer-events: auto;
   transform: translateY(0) scale(1);
 }
+.dropdown-menu:not(.show) { pointer-events: none !important; }
 .menu-item { padding: 15px 18px; color: rgba(255,255,255,0.75); font-size: 13px; font-weight: 600; letter-spacing: 0.2px; cursor: pointer; border-bottom: 1px solid rgba(255,255,255,0.05); transition: background 0.14s, color 0.14s, padding-left 0.14s; display: flex; align-items: center; gap: 12px; touch-action: manipulation; }
 .menu-item:last-child { border-bottom: none; }
 .menu-item:hover { background: rgba(138,92,246,0.08); color: #c4b5fd; }
@@ -2715,6 +2716,10 @@ body { font-family: -apple-system, 'Inter', BlinkMacSystemFont, 'Segoe UI', sans
   opacity: 1;
   transform: translateY(0) scale(1);
   pointer-events: auto;
+}
+/* Durante o fechamento (transição de saída), bloqueia cliques imediatamente */
+.biblioteca-overlay:not(.show) {
+  pointer-events: none !important;
 }
 
 .biblioteca-header {
@@ -3901,6 +3906,7 @@ body.performance-mode #perf-font-ctrl { display: flex; }
   transition: opacity 0.2s ease;
 }
 .modal-overlay.show { opacity: 1; pointer-events: auto; }
+.modal-overlay:not(.show) { pointer-events: none !important; }
 .modal-overlay.show .modal-box,
 .modal-overlay.show > div:first-child {
   animation: modalBoxIn 0.28s cubic-bezier(0.34,1.4,0.64,1) both;
@@ -4003,6 +4009,7 @@ body.performance-mode #perf-font-ctrl { display: flex; }
   transition: opacity 0.22s ease;
 }
 #modal-amigos.show { opacity: 1; pointer-events: auto; }
+#modal-amigos:not(.show) { pointer-events: none !important; }
 .amigos-sheet {
   background: #0c0c14;
   border: 1px solid rgba(255,255,255,0.08);
@@ -4562,6 +4569,7 @@ body.viewer-mode input[type="text"] { pointer-events: none; }
   opacity: 1; pointer-events: auto;
   transform: scale(1) translateY(0);
 }
+.album-ctx-menu:not(.show) { pointer-events: none !important; }
 .ctx-item {
   padding: 11px 14px; font-size: 12px; font-weight: 700;
   color: rgba(255,255,255,0.75); cursor: pointer;
@@ -4625,6 +4633,7 @@ body.viewer-mode input[type="text"] { pointer-events: none; }
   opacity: 1; pointer-events: auto;
   transform: translateY(0) scale(1);
 }
+.notif-panel:not(.show) { pointer-events: none !important; }
 
 .notif-panel-header {
   padding: 14px 16px 12px;
@@ -6073,7 +6082,7 @@ body.auth-pending #toast {
 <button class="btn-save-vitro" id="btn-save-vitro" onclick="saveSong()">Salvar Música</button>
 
 <!-- Controle de fonte das cifras — painel individual -->
-<div id="cifra-font-ctrl" style="position:fixed;bottom:30px;right:20px;z-index:900;display:flex;align-items:center;gap:6px;background:var(--glass-bg);backdrop-filter:blur(10px);border:1px solid var(--glass-border);border-radius:999px;padding:6px 12px;">
+<div id="cifra-font-ctrl" style="position:fixed;bottom:90px;right:20px;z-index:2100;display:flex;align-items:center;gap:6px;background:var(--glass-bg);backdrop-filter:blur(10px);border:1px solid var(--glass-border);border-radius:999px;padding:6px 12px;">
   <button onclick="_cifraFontAjustar(-1)" style="background:none;border:none;color:rgba(255,255,255,0.4);font-size:12px;font-weight:900;cursor:pointer;padding:2px 4px;line-height:1;touch-action:manipulation;" title="Diminuir fonte">A<sup style="font-size:7px">−</sup></button>
   <span id="cifra-font-val" style="font-size:10px;font-weight:900;color:rgba(255,255,255,0.35);min-width:28px;text-align:center;letter-spacing:0.5px;"></span>
   <button onclick="_cifraFontAjustar(+1)" style="background:none;border:none;color:rgba(255,255,255,0.4);font-size:15px;font-weight:900;cursor:pointer;padding:2px 4px;line-height:1;touch-action:manipulation;" title="Aumentar fonte">A<sup style="font-size:7px">+</sup></button>
@@ -6120,6 +6129,10 @@ body.auth-pending #toast {
           <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor" stroke="none"><circle cx="12" cy="5" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="12" cy="19" r="1.5"/></svg>
         </button>
         <div class="ev-more-drop" id="ev-more-drop">
+          <button class="ev-more-item" onclick="_evMoreAcao('show')" style="color:#0A9E6E;">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="#0A9E6E"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+            Iniciar Show
+          </button>
           <button class="ev-more-item" onclick="_evMoreAcao('editar')">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
             Editar evento
@@ -6134,6 +6147,11 @@ body.auth-pending #toast {
           </button>
         </div>
       </div>
+      <!-- Botão Iniciar Show (evento inteiro) -->
+      <button id="btn-iniciar-show-evento" onclick="ativarShowEvento(eventoAbertoId, null)" title="Iniciar Show" style="background:rgba(10,158,110,0.18);border:1px solid rgba(10,158,110,0.45);border-radius:8px;padding:0 10px;height:32px;display:flex;align-items:center;gap:5px;cursor:pointer;color:#0A9E6E;flex-shrink:0;font-size:11px;font-weight:800;letter-spacing:0.3px;">
+        <svg width="9" height="9" viewBox="0 0 24 24" fill="#0A9E6E"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+        SHOW
+      </button>
       <!-- Botão adicionar música (mantido discreto) -->
       <button onclick="abrirAddMusica()" title="Adicionar música" style="background:rgba(10,158,110,0.15);border:1px solid rgba(10,158,110,0.35);border-radius:8px;width:32px;height:32px;display:flex;align-items:center;justify-content:center;cursor:pointer;color:#0A9E6E;flex-shrink:0;">
         <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
@@ -9900,9 +9918,10 @@ function _evMoreToggle() {
 function _evMoreAcao(acao) {
   var drop = document.getElementById('ev-more-drop');
   if (drop) drop.classList.remove('show');
-  if (acao === 'editar')       abrirEditarEventoAtual();
+  if (acao === 'show')          ativarShowEvento(eventoAbertoId, null);
+  else if (acao === 'editar')   abrirEditarEventoAtual();
   else if (acao === 'compartilhar') compartilharSetlist();
-  else if (acao === 'pdf')     exportarSetlistPDF();
+  else if (acao === 'pdf')      exportarSetlistPDF();
 }
 // Fecha ao clicar fora
 document.addEventListener('click', function(e) {
@@ -16507,10 +16526,11 @@ async function _fbFazerBackupAgora(btn) {
 body[data-ambiente="vocalista"] #btn-save-vitro,
 body[data-ambiente="vocalista"] #cifra-font-ctrl,
 body[data-ambiente="vocalista"] #show-proxima-alerta,
-body[data-ambiente="vocalista"] .perf-bottom-panel,
 body[data-ambiente="vocalista"] .btn-pad-flutuante,
 body[data-ambiente="vocalista"] .perf-song-indicator,
 body[data-ambiente="vocalista"] .swipe-hint { display: none !important; }
+/* No ambiente vocalista o perf-bottom-panel fica visível mas sem o teleprompter */
+body[data-ambiente="vocalista"] .teleprompter-panel { display: none !important; }
 
 /* ─── SPLASH ─────────────────────────────────────────────────────────────── */
 #voc-splash {
@@ -17891,6 +17911,11 @@ body[data-ambiente="vocalista"] .swipe-hint { display: none !important; }
       </div>
       <button class="voc-icon-btn" id="voc-fav-btn" onclick="vocToggleFav()">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+      </button>
+      <button onclick="vocAbrirPerformanceDaLetraAtual()" title="Cantar — modo show"
+        style="background:rgba(138,92,246,0.18);border:1px solid rgba(138,92,246,0.45);border-radius:20px;padding:5px 12px;color:#a78bfa;font-size:11px;font-weight:800;cursor:pointer;font-family:inherit;display:flex;align-items:center;gap:5px;letter-spacing:0.3px;flex-shrink:0;">
+        <svg width="9" height="9" viewBox="0 0 24 24" fill="#a78bfa"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+        CANTAR
       </button>
     </div>
     <div class="voc-controls-bar">
