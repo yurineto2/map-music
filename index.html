@@ -81,9 +81,6 @@ window.addEventListener('unhandledrejection', function(e) {
 </style>
 <!-- Google Fonts removed — using system fonts -->
 <script>
-// ─── FLAG DE DEBUG — mude para true localmente para ver logs ─────────────────
-window._DEBUG = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
-
 // ─── FIREBASE via REST API — sem CDN, funciona em qualquer browser ────────────
 (function() {
   const _PROJECT = 'map-music-eb8aa';
@@ -207,7 +204,7 @@ window._DEBUG = (window.location.hostname === 'localhost' || window.location.hos
         const code = err.error && err.error.code;
         // 403 = regras bloqueiam, não adianta tentar novamente
         if (code === 403 || code === 401) {
-          if (window._DEBUG) console.error('Firebase 403: Regras bloqueando. Firebase Console → Firestore → Regras → allow read, write: if true');
+          console.error('Firebase 403: Regras bloqueando. Firebase Console → Firestore → Regras → allow read, write: if true');
           if (typeof showToast === 'function') showToast('Firestore bloqueado (403). Verifique as Regras no Firebase Console.');
           return false;
         }
@@ -221,14 +218,12 @@ window._DEBUG = (window.location.hostname === 'localhost' || window.location.hos
   }
 
   async function _add(path, data) {
-    try {
-      const r = await _ft(_url(path), {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ fields: _toFirestore(data) })
-      });
-      return r.ok;
-    } catch(e) { return false; }
+    const r = await _ft(_url(path), {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ fields: _toFirestore(data) })
+    });
+    return r.ok;
   }
 
   async function _delete(path) {
@@ -257,19 +252,17 @@ window._DEBUG = (window.location.hostname === 'localhost' || window.location.hos
         limit: limitN || 20
       }
     };
-    try {
-      const r = await _ft('https://firestore.googleapis.com/v1/projects/' + _PROJECT + '/databases/(default)/documents:runQuery?key=' + _API_KEY, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(body)
-      });
-      if (!r.ok) return [];
-      const rows = await r.json();
-      return (rows || []).filter(x => x.document).map(x => ({
-        id: x.document.name.split('/').pop(),
-        ..._fromFirestore(x.document.fields)
-      }));
-    } catch(e) { return []; }
+    const r = await _ft('https://firestore.googleapis.com/v1/projects/' + _PROJECT + '/databases/(default)/documents:runQuery?key=' + _API_KEY, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body)
+    });
+    if (!r.ok) return [];
+    const rows = await r.json();
+    return (rows || []).filter(x => x.document).map(x => ({
+      id: x.document.name.split('/').pop(),
+      ..._fromFirestore(x.document.fields)
+    }));
   }
 
   // ── Polling realtime (onSnapshot simulado) ───────────────────────────────────
@@ -450,7 +443,6 @@ window._DEBUG = (window.location.hostname === 'localhost' || window.location.hos
           return { ok: false, msg };
         }
       }
-      return { ok: false, msg: 'Não foi possível conectar. Tente novamente.' };
     },
 
     async enviarEmailRecuperacao(email) {
@@ -619,15 +611,15 @@ window._DEBUG = (window.location.hostname === 'localhost' || window.location.hos
     async criarSalaFb(codigo, hostUid, hostNome, estado) {
       try {
         // Testa conectividade primeiro
-        const testUrl = 'https://firestore.googleapis.com/v1/projects/' + _PROJECT + '/databases/(default)/documents?key=' + _API_KEY + '&pageSize=1';
+        const testUrl = 'https://firestore.googleapis.com/v1/projects/map-music-eb8aa/databases/(default)/documents?key=AIzaSyBausGqamGuEbxV8NdHfuRY0Tx21LELj-Y&pageSize=1';
         try {
           const testR = await _ft(testUrl);
           if (!testR.ok) {
             const testErr = await testR.json().catch(() => ({}));
-            if (window._DEBUG) console.error('Firebase conectividade:', testR.status, JSON.stringify(testErr));
+            console.error('Firebase conectividade:', testR.status, JSON.stringify(testErr));
           } else {
               }
-        } catch(te) { if (window._DEBUG) console.error('Firebase rede:', te.message); }
+        } catch(te) { console.error('Firebase rede:', te.message); }
 
         const result = await _set('salas/' + codigo, {
           codigo, hostUid, hostNome,
@@ -637,7 +629,7 @@ window._DEBUG = (window.location.hostname === 'localhost' || window.location.hos
         }, false);
         return result;
       } catch(e) {
-        if (window._DEBUG) console.error('criarSalaFb erro:', e.message, e);
+        console.error('criarSalaFb erro:', e.message, e);
         return false;
       }
     },
@@ -815,7 +807,7 @@ window._DEBUG = (window.location.hostname === 'localhost' || window.location.hos
         'https://firestore.googleapis.com/v1/projects/' + _PROJECT + '/databases/(default)/documents?pageSize=1&key=' + _API_KEY
       );
       if (r.status === 403) {
-        if (window._DEBUG) console.warn('Firebase: regras de segurança bloqueiam acesso.');
+        console.warn('Firebase: regras de segurança bloqueiam acesso.');
       } else {
         _fbOnline = true;
         _fbRetryCount = 0;
@@ -1055,7 +1047,7 @@ async function terminarOnboarding() {
     profileId,
     pin   // PIN fica só local
   };
-  _lsSet('map_perfil_v1', perfil);
+  localStorage.setItem('map_perfil_v1', JSON.stringify(perfil));
   localStorage.setItem('map_uid_v1', uid);
 
   // 4. Guarda perfil no Firestore (sem PIN, sem senha)
@@ -1088,11 +1080,11 @@ async function terminarOnboarding() {
 let _pinBuffer = '';
 
 function _pinGetSaved() {
-  try { return _lsGet('map_perfil_v1', {}).pin || ''; } catch(e) { return ''; }
+  try { return JSON.parse(localStorage.getItem('map_perfil_v1') || '{}').pin || ''; } catch(e) { return ''; }
 }
 
 function _verificarPinNaEntrada() {
-  const perfil = _lsGet('map_perfil_v1', {});
+  const perfil = JSON.parse(localStorage.getItem('map_perfil_v1') || '{}');
   if (!perfil.nome || !perfil.pin) { _mostrarApp(); return; } // sem PIN — mostra app directo
   const screen = document.getElementById('pin-lock-screen');
   const nomeEl = document.getElementById('pin-lock-nome');
@@ -1150,9 +1142,9 @@ function _pinVerificar() {
           }
           // Atualizar status local com o do servidor
           if (perfilAtual) {
-            var pLocal = _lsGet('map_perfil_v1', {});
+            var pLocal = JSON.parse(localStorage.getItem('map_perfil_v1') || '{}');
             pLocal.status = st;
-            _lsSet('map_perfil_v1', pLocal);
+            localStorage.setItem('map_perfil_v1', JSON.stringify(pLocal));
           }
         }
       } catch(e) { /* sem rede — deixa entrar offline, será verificado online depois */ }
@@ -1184,7 +1176,7 @@ function _pinVerificar() {
 
   function _rotearAmbiente() {
     try {
-      var perfil = _lsGet('map_perfil_v1', {});
+      var perfil = JSON.parse(localStorage.getItem('map_perfil_v1') || '{}');
       var instrumento = (perfil.instrumento || '').toLowerCase().trim();
       var vocalApp = document.getElementById('vocal-app');
       var header   = document.querySelector('header.app-header');
@@ -1314,21 +1306,21 @@ async function obFazerLogin() {
       return;
     }
     // Guardar PIN local se existia antes
-    const pinAnterior = _lsGet('map_perfil_v1', {}).pin || '';
+    const pinAnterior = JSON.parse(localStorage.getItem('map_perfil_v1') || '{}').pin || '';
     // Restaura foto e banner do Firebase (campos que vem no perfil do Firestore)
     const perfilCompleto = {
       ...perfil,
       uid,
       pin: perfil.pin || pinAnterior
     };
-    _lsSet('map_perfil_v1', perfilCompleto);
+    localStorage.setItem('map_perfil_v1', JSON.stringify(perfilCompleto));
     localStorage.setItem('map_uid_v1', uid);
 
     // Restaurar backup da nuvem — só busca se local pode estar desatualizado
     try {
       const localTs     = parseInt(localStorage.getItem('map_backup_ts_v1') || '0');
       const localMusicas = JSON.parse(localStorage.getItem('map_pro_elite_v1') || '[]');
-      const localEventos = _lsGet('map_pro_eventos_v1', []);
+      const localEventos = JSON.parse(localStorage.getItem('map_pro_eventos_v1') || '[]');
       const semDadosLocais = localMusicas.length === 0 && localEventos.length === 0;
       // Só vai à nuvem se: não há dados locais, OU não há timestamp (primeira vez)
       // Caso contrário, confia no localStorage e sincroniza em background silenciosamente
@@ -1338,12 +1330,12 @@ async function obFazerLogin() {
           const backupTs = backup.updatedAt || 0;
           if (backup.musicas && backup.musicas.length > 0) {
             if (localMusicas.length === 0 || backupTs > localTs) {
-              try { localStorage.setItem('map_pro_elite_v1', JSON.stringify(backup.musicas)); } catch(e) {}
+              localStorage.setItem('map_pro_elite_v1', JSON.stringify(backup.musicas));
             }
           }
           if (backup.eventos && backup.eventos.length > 0) {
             if (localEventos.length === 0 || backupTs > localTs) {
-              _lsSet('map_pro_eventos_v1', backup.eventos);
+              localStorage.setItem('map_pro_eventos_v1', JSON.stringify(backup.eventos));
             }
           }
           if (backupTs) localStorage.setItem('map_backup_ts_v1', String(backupTs));
@@ -1357,7 +1349,7 @@ async function obFazerLogin() {
               if (backup.musicas && backup.musicas.length > 0)
                 localStorage.setItem('map_pro_elite_v1', JSON.stringify(backup.musicas));
               if (backup.eventos && backup.eventos.length > 0)
-                _lsSet('map_pro_eventos_v1', backup.eventos);
+                localStorage.setItem('map_pro_eventos_v1', JSON.stringify(backup.eventos));
               localStorage.setItem('map_backup_ts_v1', String(backup.updatedAt));
             }
           } catch(e) {}
@@ -1378,7 +1370,7 @@ async function obFazerLogin() {
         try { songs = JSON.parse(localStorage.getItem('map_pro_elite_v1') || '[]'); } catch(e) {}
       }
       if (typeof eventos !== 'undefined') {
-        try { eventos = _lsGet('map_pro_eventos_v1', []); } catch(e) {}
+        try { eventos = JSON.parse(localStorage.getItem('map_pro_eventos_v1') || '[]'); } catch(e) {}
       }
       if (typeof renderBiblioteca === 'function') renderBiblioteca();
       if (typeof _renderHistoricoShow === 'function') _renderHistoricoShow();
@@ -1396,14 +1388,14 @@ async function obDiagnosticarConexao() {
   var msgEl = document.getElementById('login-msg');
   if (msgEl) { msgEl.style.color = 'rgba(138,92,246,0.9)'; msgEl.style.fontSize = '10px'; msgEl.style.lineHeight = '1.6'; msgEl.textContent = 'Testando...'; }
 
-  var API_KEY = _API_KEY; // usa a constante já definida — chave não duplicada no fonte
+  var API_KEY = 'AIzaSyBausGqamGuEbxV8NdHfuRY0Tx21LELj-Y';
   var linhas = [];
   linhas.push('Protocolo: ' + window.location.protocol);
   linhas.push('Online: ' + navigator.onLine);
 
   try {
     var r1 = await Promise.race([
-      fetch('https://firestore.googleapis.com/v1/projects/' + _PROJECT + '/databases/(default)/documents?pageSize=1&key=' + API_KEY, {mode:'cors'}),
+      fetch('https://firestore.googleapis.com/v1/projects/map-music-eb8aa/databases/(default)/documents?pageSize=1&key=' + API_KEY, {mode:'cors'}),
       new Promise(function(_,rej){ setTimeout(function(){ rej(new Error('timeout')); }, 8000); })
     ]);
     linhas.push('Firestore: ' + r1.status);
@@ -1441,21 +1433,6 @@ function obAbrirEsqueciSenha() {
   if (modal) modal.style.display = 'flex';
   if (typeof _esqueciValidar === 'function') _esqueciValidar();
 }
-
-// ── Cache de perfil em memória — evita JSON.parse repetido em cada função ────
-window._perfilCache = null;
-window._getPerfil = function() {
-  if (!window._perfilCache) {
-    try { window._perfilCache = _lsGet('map_perfil_v1', {}); }
-    catch(e) { window._perfilCache = {}; }
-  }
-  return window._perfilCache;
-};
-window._setPerfil = function(dados) {
-  window._perfilCache = dados;
-  try { _lsSet('map_perfil_v1', dados); } catch(e) {}
-};
-window._invalidarCachePerfil = function() { window._perfilCache = null; };
 
 document.addEventListener('DOMContentLoaded', function() {
 
@@ -1546,7 +1523,7 @@ document.addEventListener('DOMContentLoaded', function() {
     }
   }, 500);
 
-  const perfil = _lsGet('map_perfil_v1', {});
+  const perfil = JSON.parse(localStorage.getItem('map_perfil_v1') || '{}');
   const splash = document.getElementById('ob-splash');
   const skipSplash = sessionStorage.getItem('map_skip_splash') === '1';
 
@@ -1569,7 +1546,7 @@ document.addEventListener('DOMContentLoaded', function() {
     }, 600);
     // Step 4: carregando dados
     setTimeout(function() {
-      var perfil2 = _lsGet('map_perfil_v1', {});
+      var perfil2 = JSON.parse(localStorage.getItem('map_perfil_v1') || '{}');
       _splashStep(perfil2.nome ? ('Olá, ' + perfil2.nome.split(' ')[0] + '!') : 'Carregando dados...', 85);
     }, 1100);
     // Step 5: pronto (logo antes de fechar)
@@ -1641,12 +1618,6 @@ document.addEventListener('DOMContentLoaded', function() {
       _mostrarApp();
       const ov = document.getElementById('onboarding-overlay');
       if (ov) ov.remove();
-      // Atualiza badge/painel com notificacoes ja salvas no localStorage
-      // (sem esperar Firebase — corrige sino zerado ao recarregar o app)
-      setTimeout(function() {
-        if (typeof atualizarBadge === 'function') atualizarBadge();
-        if (typeof renderNotifPanel === 'function') renderNotifPanel();
-      }, 300);
       setTimeout(function() { _verificarPinNaEntrada(); }, 750);
       // Verificar status em background (sem bloquear UI)
       // Se bloqueado/banido, fecha o app e mostra mensagem
@@ -1682,18 +1653,6 @@ document.addEventListener('DOMContentLoaded', function() {
     setTimeout(function() {
       if (splash) splash.remove();
       document.body.classList.add('pronto'); // garante
-      // Aplica tamanho de fonte salvo (uma única vez no carregamento)
-      try {
-        if (typeof _FONTE_SHOW_KEY !== 'undefined') {
-          window._fonteShow = parseInt(localStorage.getItem(_FONTE_SHOW_KEY) || '48');
-        }
-        if (typeof _aplicarFontePartes === 'function' && typeof _fontePartes !== 'undefined') {
-          _aplicarFontePartes(_fontePartes);
-        }
-        if (typeof _cifraFontSincLabel === 'function') _cifraFontSincLabel();
-      } catch(e) {}
-      // Verifica se URL tem ?setlist= (view pública) — apenas no carregamento
-      if (typeof _verificarSetlistPublico === 'function') _verificarSetlistPublico();
     }, 300);
   // Usuário já registado: splash mais curto (1800ms); novo usuário: 4000ms
   }, perfil.nome ? 1800 : 4000);
@@ -1802,7 +1761,7 @@ function _adminEntrar() {
     pin: _ADMIN_PIN,
     isAdmin: true
   };
-  _lsSet('map_perfil_v1', adminPerfil);
+  localStorage.setItem('map_perfil_v1', JSON.stringify(adminPerfil));
   localStorage.setItem('map_uid_v1', 'admin_local');
 
   // Fecha o modal do PIN
@@ -1876,721 +1835,146 @@ function adminEscolherModo(modo) {
   --note-color: #ffffff;
 }
 body.theme-light {
-  /* ── Design tokens ─────────────────────────────────────────────
-     Paleta: papel branco quente · cinza âncora · verde musgo
-     Inspiração: Linear / Notion / apps profissionais iOS
-     ──────────────────────────────────────────────────────────── */
-  --bg-primary:     #FAFAF8;
-  --bg-secondary:   #F2F1EE;
-  --bg-tertiary:    #E8E7E3;
-  --accent-primary: #0A8F62;
-  --accent-glow:    rgba(10,143,98,0.15);
-  --text-primary:   #18181B;
-  --text-secondary: #52525B;
-  --border-color:   rgba(0,0,0,0.08);
-  --glass-bg:       rgba(255,255,255,0.75);
-  --glass-border:   rgba(0,0,0,0.07);
-  --note-color:     #18181B;
-  /* sombras dedicadas ao modo claro */
-  --shadow-sm:  0 1px 3px rgba(0,0,0,0.08), 0 1px 2px rgba(0,0,0,0.04);
-  --shadow-md:  0 4px 16px rgba(0,0,0,0.08), 0 1px 4px rgba(0,0,0,0.04);
-  --shadow-lg:  0 12px 40px rgba(0,0,0,0.10), 0 2px 8px rgba(0,0,0,0.05);
-  --shadow-xl:  0 24px 64px rgba(0,0,0,0.12), 0 4px 12px rgba(0,0,0,0.06);
+  --bg-primary: #f4f4f8;
+  --bg-secondary: #eaeaf0;
+  --bg-tertiary: #dfdfe8;
+  --accent-primary: #0A9E6E;
+  --accent-glow: rgba(10,158,110,0.2);
+  --text-primary: #0d0d14;
+  --text-secondary: #555566;
+  --border-color: rgba(0,0,0,0.1);
+  --glass-bg: rgba(0,0,0,0.03);
+  --glass-border: rgba(0,0,0,0.08);
+  --note-color: #0d0d14;
 }
+/* ── Tema Claro — overrides completos ─────────────────────────────────────── */
+body.theme-light { background: #f4f4f8 !important; color: #0d0d14; }
 
-/* ══════════════════════════════════════════════════════════════════
-   TEMA CLARO — REDESIGN PROFISSIONAL
-   ══════════════════════════════════════════════════════════════════ */
-body.theme-light {
-  background: var(--bg-primary) !important;
-  color: var(--text-primary);
-}
-
-/* ── 1. APP HEADER ──────────────────────────────────────────────── */
+/* Header e navegação */
 body.theme-light .app-header {
-  background: rgba(250,250,248,0.92) !important;
-  backdrop-filter: blur(28px) saturate(1.6) !important;
-  -webkit-backdrop-filter: blur(28px) saturate(1.6) !important;
-  border-bottom: 1px solid rgba(0,0,0,0.07) !important;
-  box-shadow: 0 1px 0 rgba(0,0,0,0.05), 0 2px 16px rgba(0,0,0,0.04) !important;
+  background: rgba(240,240,246,0.92) !important;
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border-bottom: 1px solid rgba(0,0,0,0.1) !important;
 }
-body.theme-light .app-header::after { display: none !important; }
-body.theme-light .logo-name { color: #18181B !important; }
-body.theme-light .logo-name .pro { color: var(--accent-primary) !important; }
-body.theme-light .logo-tag { color: rgba(24,24,27,0.35) !important; }
-body.theme-light .logo-shimmer { background: none !important; -webkit-text-fill-color: #18181B !important; color: #18181B !important; }
-body.theme-light .menu-btn { color: rgba(24,24,27,0.5) !important; }
-body.theme-light .menu-btn:hover { color: #18181B !important; }
-body.theme-light #btn-theme { color: rgba(24,24,27,0.45) !important; }
-body.theme-light #btn-amigos-header { color: rgba(24,24,27,0.45) !important; }
-body.theme-light .notif-btn { color: rgba(24,24,27,0.45) !important; }
-body.theme-light #btn-sala {
-  background: rgba(10,143,98,0.08) !important;
-  border-color: rgba(10,143,98,0.25) !important;
-  color: var(--accent-primary) !important;
-}
-body.theme-light #btn-sala:hover {
-  background: rgba(10,143,98,0.14) !important;
-  border-color: rgba(10,143,98,0.4) !important;
-}
-
-/* ── 2. MENU DROPDOWN ───────────────────────────────────────────── */
+body.theme-light .app-header .logo { color: #0d0d14; }
 body.theme-light .dropdown-menu {
-  background: rgba(252,252,250,0.98) !important;
-  border: 1px solid rgba(0,0,0,0.09) !important;
-  box-shadow: var(--shadow-xl) !important;
+  background: rgba(245,245,250,0.96) !important;
+  border-color: rgba(0,0,0,0.12) !important;
+  box-shadow: 0 12px 40px rgba(0,0,0,0.15) !important;
 }
-body.theme-light .menu-item {
-  color: #18181B !important;
-  border-bottom-color: rgba(0,0,0,0.05) !important;
-}
-body.theme-light .menu-item:hover {
-  background: rgba(10,143,98,0.06) !important;
-  color: var(--accent-primary) !important;
-}
-body.theme-light .menu-item:active {
-  background: rgba(10,143,98,0.1) !important;
-}
-body.theme-light .menu-item.danger { color: #DC2626 !important; }
-body.theme-light .menu-item.danger:hover { background: rgba(220,38,38,0.06) !important; }
-body.theme-light .menu-separator { border-color: rgba(0,0,0,0.06) !important; }
+body.theme-light .menu-item { color: #0d0d14 !important; }
+body.theme-light .menu-item:hover { background: rgba(0,0,0,0.05) !important; }
+body.theme-light .menu-separator { border-color: rgba(0,0,0,0.08) !important; }
 
-/* ── 3. SYNC BAR ────────────────────────────────────────────────── */
-body.theme-light .sync-bar {
-  background: rgba(10,143,98,0.07) !important;
-  border-color: rgba(10,143,98,0.18) !important;
-  color: #0A8F62 !important;
-}
-body.theme-light .sync-bar .sync-code {
-  background: rgba(10,143,98,0.1) !important;
-  color: #0A8F62 !important;
-}
-body.theme-light .sync-bar.viewer {
-  background: rgba(161,107,0,0.06) !important;
-  border-color: rgba(161,107,0,0.2) !important;
-  color: #A16B00 !important;
-}
-
-/* ── 4. MAIN LAYOUT ─────────────────────────────────────────────── */
-body.theme-light .notes-section { background: transparent !important; }
-
-/* ── 5. TOOLBAR CENTRAL ─────────────────────────────────────────── */
-body.theme-light .toolbar-central {
-  background: rgba(255,255,255,0.8) !important;
-  backdrop-filter: blur(12px) !important;
-  -webkit-backdrop-filter: blur(12px) !important;
-  border: 1px solid rgba(0,0,0,0.07) !important;
-  box-shadow: var(--shadow-sm) !important;
-  border-radius: 14px !important;
-  padding: 10px 16px !important;
-}
-body.theme-light .toolbar-central button {
-  background: rgba(0,0,0,0.04) !important;
-  border: 1px solid rgba(0,0,0,0.09) !important;
-  color: #18181B !important;
-}
-body.theme-light .toolbar-central button:hover {
-  background: rgba(0,0,0,0.08) !important;
-}
-body.theme-light .toolbar-central span,
-body.theme-light #trans-val { color: #18181B !important; }
-body.theme-light #tom-original-badge {
-  background: rgba(255,255,255,0.9) !important;
-  border-color: rgba(10,143,98,0.2) !important;
-}
-
-/* ── 6. SONG PARTS (cifra) ──────────────────────────────────────── */
+/* Cards de parte */
 body.theme-light .song-part {
-  background: #FFFFFF !important;
-  border-left-color: var(--accent-primary) !important;
-  border-top: 1px solid rgba(0,0,0,0.05) !important;
-  border-right: 1px solid rgba(0,0,0,0.05) !important;
-  border-bottom: 1px solid rgba(0,0,0,0.05) !important;
-  box-shadow: var(--shadow-sm) !important;
-}
-body.theme-light .song-part:focus-within {
-  box-shadow: var(--shadow-md), 0 0 0 2px rgba(10,143,98,0.12) !important;
+  background: #ffffff !important;
+  border-color: var(--accent-primary) !important;
+  box-shadow: 0 2px 12px rgba(0,0,0,0.08) !important;
 }
 body.theme-light .chord-area {
   background: transparent !important;
-  color: #18181B !important;
+  color: #1a1a2e !important;
 }
-body.theme-light .chord-area::placeholder { color: rgba(24,24,27,0.22) !important; }
-body.theme-light .song-part input[type="text"],
-body.theme-light .part-title-input {
+body.theme-light .song-part input[type="text"] {
   color: var(--accent-primary) !important;
-  background: transparent !important;
-  border-color: transparent !important;
 }
-body.theme-light .part-title { color: var(--accent-primary) !important; font-weight: 800 !important; }
 
-/* ── 7. ASIDE / METRÔNOMO ───────────────────────────────────────── */
-body.theme-light aside { background: transparent !important; }
-body.theme-light .side-panel,
-body.theme-light .metronome-card {
-  background: #FFFFFF !important;
-  border: 1px solid rgba(0,0,0,0.07) !important;
-  box-shadow: var(--shadow-md) !important;
-}
+/* BPM e controles de tom */
 body.theme-light #bpm-display,
 body.theme-light .bpm-val { color: var(--accent-primary) !important; }
-body.theme-light #trans-val { color: #18181B !important; }
-body.theme-light .bpm-btn, body.theme-light .trans-btn {
-  background: rgba(0,0,0,0.04) !important;
-  border: 1px solid rgba(0,0,0,0.09) !important;
-  color: #18181B !important;
+body.theme-light #trans-val { color: #0d0d14 !important; }
+body.theme-light .bpm-btn,
+body.theme-light .trans-btn {
+  background: rgba(0,0,0,0.06) !important;
+  border-color: rgba(0,0,0,0.12) !important;
+  color: #0d0d14 !important;
 }
-body.theme-light .bpm-btn:active, body.theme-light .trans-btn:active {
-  background: rgba(0,0,0,0.1) !important;
-}
-body.theme-light #tap-btn {
-  border-color: var(--accent-primary) !important;
-  color: var(--accent-primary) !important;
-  background: transparent !important;
-}
-body.theme-light #tap-btn:active {
-  background: rgba(10,143,98,0.08) !important;
-}
-body.theme-light #play-btn {
-  background: var(--accent-primary) !important;
-  color: #fff !important;
-  box-shadow: 0 4px 16px rgba(10,143,98,0.25) !important;
-}
-body.theme-light #play-btn:active {
-  background: #087a53 !important;
-  box-shadow: 0 2px 8px rgba(10,143,98,0.2) !important;
-}
-body.theme-light #bpm-mic-btn {
-  background: rgba(10,143,98,0.07) !important;
-  border-color: rgba(10,143,98,0.22) !important;
-  color: var(--accent-primary) !important;
-}
+body.theme-light .bpm-btn:active,
+body.theme-light .trans-btn:active { background: rgba(0,0,0,0.12) !important; }
 
-/* ── 8. SALVAR / FONT CTRL ──────────────────────────────────────── */
-body.theme-light #btn-save-vitro {
-  background: var(--accent-primary) !important;
-  color: #fff !important;
-  border: none !important;
-  box-shadow: 0 4px 20px rgba(10,143,98,0.28), 0 2px 6px rgba(10,143,98,0.16) !important;
-}
-body.theme-light #btn-save-vitro:active {
-  background: #087a53 !important;
-  box-shadow: 0 2px 8px rgba(10,143,98,0.2) !important;
-}
+/* Barra de tom e + PARTE */
+body.theme-light #btn-save-vitro,
 body.theme-light #cifra-font-ctrl {
-  background: rgba(255,255,255,0.9) !important;
-  border: 1px solid rgba(0,0,0,0.09) !important;
-  box-shadow: var(--shadow-md) !important;
-}
-body.theme-light #cifra-font-ctrl button {
-  color: rgba(24,24,27,0.45) !important;
-  background: none !important;
-  border: none !important;
-}
-body.theme-light #cifra-font-ctrl button:hover { color: #18181B !important; }
-body.theme-light #cifra-font-val { color: rgba(24,24,27,0.45) !important; }
-
-/* ── 9. BIBLIOTECA ──────────────────────────────────────────────── */
-body.theme-light {
-  --bib-bg: #FAFAF8;
-}
-body.theme-light .biblioteca-overlay {
-  background: #FAFAF8 !important;
-}
-body.theme-light .biblioteca-header {
-  background: rgba(250,250,248,0.97) !important;
-  border-bottom-color: rgba(0,0,0,0.07) !important;
-  box-shadow: 0 1px 0 rgba(0,0,0,0.05), 0 4px 16px rgba(0,0,0,0.04) !important;
-}
-body.theme-light .biblioteca-titulo { color: #18181B !important; }
-body.theme-light .biblioteca-close {
-  background: rgba(0,0,0,0.04) !important;
-  border-color: rgba(0,0,0,0.08) !important;
-  color: rgba(24,24,27,0.5) !important;
-}
-body.theme-light .biblioteca-close:active {
-  background: rgba(0,0,0,0.09) !important;
-  color: #18181B !important;
-}
-body.theme-light .biblioteca-tabs {
-  border-bottom-color: rgba(0,0,0,0.07) !important;
-}
-body.theme-light .biblioteca-tab {
-  color: rgba(24,24,27,0.4) !important;
-  border-color: transparent !important;
-}
-body.theme-light .biblioteca-tab.active {
-  color: var(--accent-primary) !important;
-  border-color: var(--accent-primary) !important;
-}
-body.theme-light .biblioteca-search input {
-  background: #FFFFFF !important;
-  border: 1px solid rgba(0,0,0,0.09) !important;
-  color: #18181B !important;
-  box-shadow: var(--shadow-sm) !important;
-}
-body.theme-light .biblioteca-search input::placeholder { color: rgba(24,24,27,0.28) !important; }
-body.theme-light .biblioteca-search input:focus {
-  border-color: rgba(10,143,98,0.35) !important;
-  box-shadow: 0 0 0 3px rgba(10,143,98,0.08), var(--shadow-sm) !important;
+  background: rgba(0,0,0,0.06) !important;
+  border-color: rgba(0,0,0,0.12) !important;
+  color: #0d0d14 !important;
 }
 
-/* Sort + Tags */
-/* Biblioteca modo claro — todos os filhos com fundo claro */
-body.theme-light .biblioteca-main,
-body.theme-light .biblioteca-grid,
-body.theme-light .biblioteca-search,
-body.theme-light .bib-sort-bar,
-body.theme-light .bib-tags-bar,
-body.theme-light .evento-detalhe,
-body.theme-light .biblioteca-grid.eventos-mode {
-  background: #FAFAF8 !important;
+/* Sync bar (sala) */
+body.theme-light .sync-bar {
+  background: rgba(10,158,110,0.08) !important;
+  border-color: rgba(10,158,110,0.25) !important;
 }
-body.theme-light .bib-sort-bar { border-bottom-color: rgba(0,0,0,0.05) !important; }
-body.theme-light .sort-btn {
-  background: rgba(0,0,0,0.04) !important;
-  border-color: rgba(0,0,0,0.08) !important;
-  color: rgba(24,24,27,0.5) !important;
-}
-body.theme-light .sort-btn:hover { color: #18181B !important; border-color: rgba(0,0,0,0.15) !important; }
-body.theme-light .sort-btn.active {
-  background: rgba(10,143,98,0.08) !important;
-  border-color: rgba(10,143,98,0.28) !important;
-  color: var(--accent-primary) !important;
-}
-body.theme-light .tag-chip {
-  background: rgba(0,0,0,0.04) !important;
-  border-color: rgba(0,0,0,0.08) !important;
-  color: rgba(24,24,27,0.55) !important;
-}
-body.theme-light .tag-chip:hover { border-color: rgba(10,143,98,0.3) !important; color: var(--accent-primary) !important; }
-body.theme-light .tag-chip.active {
-  background: rgba(10,143,98,0.09) !important;
-  border-color: rgba(10,143,98,0.3) !important;
-  color: var(--accent-primary) !important;
+body.theme-light .sync-bar.viewer {
+  background: rgba(180,140,0,0.1) !important;
+  border-color: rgba(180,140,0,0.3) !important;
 }
 
-/* ── 10. ALBUM CARDS ────────────────────────────────────────────── */
-body.theme-light .album-card .album-name { color: #18181B !important; }
-body.theme-light .album-card .album-meta { color: rgba(24,24,27,0.4) !important; }
-body.theme-light .album-tag {
-  background: rgba(10,143,98,0.08) !important;
-  border-color: rgba(10,143,98,0.2) !important;
-  color: #0A8F62 !important;
-}
-body.theme-light .album-menu-btn {
-  background: rgba(255,255,255,0.9) !important;
-  backdrop-filter: blur(8px) !important;
+/* Biblioteca / side panel */
+body.theme-light .side-panel,
+body.theme-light .metronome-card {
+  background: #f0f0f6 !important;
   border-color: rgba(0,0,0,0.1) !important;
-  color: #18181B !important;
 }
-body.theme-light .album-menu-btn:active { background: rgba(10,143,98,0.12) !important; }
-body.theme-light .album-show-btn {
-  background: rgba(255,255,255,0.85) !important;
-  border-color: rgba(10,143,98,0.4) !important;
+body.theme-light .biblioteca-overlay,
+body.theme-light .biblioteca-header {
+  background: #f4f4f8 !important;
 }
+body.theme-light .song-item {
+  background: #fff !important;
+  border-color: rgba(0,0,0,0.08) !important;
+  color: #0d0d14 !important;
+}
+body.theme-light .song-item:hover { background: #e8e8f0 !important; }
+body.theme-light .song-name { color: #0d0d14 !important; }
+body.theme-light .song-meta { color: #555566 !important; }
 
-/* ── 11. CONTEXT MENU ───────────────────────────────────────────── */
-body.theme-light .album-ctx-menu {
-  background: #FFFFFF !important;
-  border: 1px solid rgba(0,0,0,0.09) !important;
-  box-shadow: var(--shadow-xl) !important;
-}
-body.theme-light .ctx-item {
-  color: #18181B !important;
-}
-body.theme-light .ctx-item:hover { background: rgba(10,143,98,0.06) !important; color: #0A8F62 !important; }
-body.theme-light .ctx-item:active { background: rgba(10,143,98,0.1) !important; }
-body.theme-light .ctx-item.ctx-danger { color: #DC2626 !important; }
-body.theme-light .ctx-item.ctx-danger:hover { background: rgba(220,38,38,0.06) !important; color: #B91C1C !important; }
-body.theme-light .ctx-item.ctx-fav { color: #92400E !important; }
-
-/* ── 12. EVENTO DETALHE ─────────────────────────────────────────── */
-body.theme-light .evento-detalhe { background: #FAFAF8 !important; }
-body.theme-light .evento-detalhe-header {
-  background: rgba(250,250,248,0.97) !important;
-  border-bottom-color: rgba(0,0,0,0.07) !important;
-}
-body.theme-light .evento-detalhe-title { color: #18181B !important; }
-body.theme-light .evento-detalhe-back {
-  background: rgba(0,0,0,0.04) !important;
-  border-color: rgba(0,0,0,0.09) !important;
-  color: rgba(24,24,27,0.5) !important;
-}
-body.theme-light .evento-detalhe-back:hover {
-  background: rgba(0,0,0,0.08) !important;
-  color: #18181B !important;
-}
-body.theme-light .ev-more-btn {
-  background: rgba(0,0,0,0.04) !important;
-  border-color: rgba(0,0,0,0.09) !important;
-  color: rgba(24,24,27,0.5) !important;
-}
-body.theme-light .ev-more-btn:hover {
-  background: rgba(0,0,0,0.08) !important;
-  color: #18181B !important;
-}
-body.theme-light .ev-more-drop {
-  background: #FFFFFF !important;
-  border: 1px solid rgba(0,0,0,0.09) !important;
-  box-shadow: var(--shadow-lg) !important;
-}
-body.theme-light .ev-more-item { color: #18181B !important; }
-body.theme-light .ev-more-item:hover { background: rgba(10,143,98,0.06) !important; color: var(--accent-primary) !important; }
-body.theme-light .ev-more-item + .ev-more-item { border-top-color: rgba(0,0,0,0.05) !important; }
-
-/* ── 13. MODAIS ─────────────────────────────────────────────────── */
-body.theme-light .modal-overlay {
-  background: rgba(24,24,27,0.4) !important;
-  backdrop-filter: blur(8px) saturate(1.2) !important;
-  -webkit-backdrop-filter: blur(8px) saturate(1.2) !important;
-}
+/* Modal */
+body.theme-light .modal-overlay { background: rgba(0,0,0,0.5) !important; }
 body.theme-light .modal-box {
-  background: #FFFFFF !important;
-  border: 1px solid rgba(0,0,0,0.09) !important;
-  box-shadow: var(--shadow-xl) !important;
-  backdrop-filter: none !important;
+  background: #ffffff !important;
+  border-color: rgba(0,0,0,0.12) !important;
+  color: #0d0d14 !important;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.2) !important;
 }
 body.theme-light .modal-box h2,
-body.theme-light .modal-box p,
-body.theme-light .modal-box label { color: #18181B !important; }
-body.theme-light .modal-box p { color: rgba(24,24,27,0.6) !important; }
+body.theme-light .modal-box p { color: #0d0d14 !important; }
 body.theme-light .modal-box input[type="text"],
 body.theme-light .modal-box input[type="email"],
-body.theme-light .modal-box input[type="number"],
-body.theme-light .modal-box input[type="password"],
-body.theme-light .modal-box textarea {
-  background: #F8F8F6 !important;
-  border: 1px solid rgba(0,0,0,0.1) !important;
-  color: #18181B !important;
-}
-body.theme-light .modal-box input:focus,
-body.theme-light .modal-box textarea:focus {
-  border-color: rgba(10,143,98,0.35) !important;
-  box-shadow: 0 0 0 3px rgba(10,143,98,0.08) !important;
-}
-/* Modal editar música */
-body.theme-light .modal-editar-box {
-  background: #FFFFFF !important;
-  border: 1px solid rgba(0,0,0,0.09) !important;
-  box-shadow: var(--shadow-xl) !important;
-}
-body.theme-light .modal-editar-title { color: #18181B !important; }
-body.theme-light .modal-editar-label { color: rgba(24,24,27,0.6) !important; }
-body.theme-light .modal-editar input[type="text"],
-body.theme-light .modal-editar input[type="number"] {
-  background: #F8F8F6 !important;
-  border-color: rgba(0,0,0,0.1) !important;
-  color: #18181B !important;
-}
-body.theme-light .modal-editar input:focus {
-  border-color: rgba(10,143,98,0.35) !important;
-  box-shadow: 0 0 0 3px rgba(10,143,98,0.08) !important;
-}
-/* Tag editor */
-body.theme-light .tag-editor-chip {
-  background: rgba(0,0,0,0.04) !important;
-  border-color: rgba(0,0,0,0.09) !important;
-  color: rgba(24,24,27,0.6) !important;
-}
-body.theme-light .tag-editor-chip.sel {
-  background: rgba(10,143,98,0.09) !important;
-  border-color: rgba(10,143,98,0.3) !important;
-  color: var(--accent-primary) !important;
-}
-body.theme-light .tag-custom-input {
-  background: #F8F8F6 !important;
-  border-color: rgba(0,0,0,0.1) !important;
-  color: #18181B !important;
-}
-body.theme-light .tag-custom-add {
-  background: rgba(10,143,98,0.08) !important;
-  border-color: rgba(10,143,98,0.22) !important;
-  color: var(--accent-primary) !important;
-}
-/* Modal adicionar música */
-body.theme-light .modal-addmusica-box {
-  background: #FFFFFF !important;
-  border-color: rgba(0,0,0,0.09) !important;
-  box-shadow: var(--shadow-xl) !important;
-}
-body.theme-light .modal-addmusica-header { color: #18181B !important; border-bottom-color: rgba(0,0,0,0.07) !important; }
-body.theme-light .modal-addmusica-item {
-  background: #F8F8F6 !important;
-  border-color: rgba(0,0,0,0.07) !important;
-  color: #18181B !important;
-}
-body.theme-light .modal-addmusica-item:hover { background: rgba(10,143,98,0.05) !important; border-color: rgba(10,143,98,0.2) !important; }
-/* Modal sala */
-body.theme-light .modal-sala-box,
-body.theme-light [id="modal-sala"] .modal-box {
-  background: #FFFFFF !important;
-  border-color: rgba(0,0,0,0.09) !important;
-}
-/* Modal evento */
-body.theme-light .modal-evento-box {
-  background: #FFFFFF !important;
-  border-color: rgba(0,0,0,0.09) !important;
-  box-shadow: var(--shadow-xl) !important;
-}
-body.theme-light .modal-evento-title { color: #18181B !important; }
-body.theme-light .modal-evento input,
-body.theme-light .modal-evento textarea,
-body.theme-light .modal-evento select {
-  background: #F8F8F6 !important;
-  border-color: rgba(0,0,0,0.1) !important;
-  color: #18181B !important;
-}
-/* Setlist público */
-body.theme-light #modal-setlist-publico .modal-box {
-  background: #FFFFFF !important;
-}
-body.theme-light #setlist-pub-titulo { color: #18181B !important; }
-body.theme-light #setlist-pub-link {
-  color: rgba(24,24,27,0.55) !important;
-  background: #F4F4F2 !important;
+body.theme-light .modal-box input[type="password"] {
+  background: #f0f0f6 !important;
+  border-color: rgba(0,0,0,0.15) !important;
+  color: #0d0d14 !important;
 }
 
-/* ── 14. AMIGOS ─────────────────────────────────────────────────── */
-body.theme-light #modal-amigos { background: rgba(24,24,27,0.4) !important; }
-body.theme-light .amigos-sheet {
-  background: #FAFAF8 !important;
-  border-top: 1px solid rgba(0,0,0,0.07) !important;
-  box-shadow: 0 -8px 40px rgba(0,0,0,0.10) !important;
-}
-body.theme-light .amigos-header { border-bottom-color: rgba(0,0,0,0.07) !important; }
-body.theme-light .amigos-title { color: #18181B !important; }
-body.theme-light .amigos-close {
-  background: rgba(0,0,0,0.04) !important;
-  border-color: rgba(0,0,0,0.09) !important;
-  color: rgba(24,24,27,0.4) !important;
-}
-body.theme-light .amigos-tabs { border-bottom-color: rgba(0,0,0,0.07) !important; }
-body.theme-light .amigos-tab { color: rgba(24,24,27,0.4) !important; }
-body.theme-light .amigos-tab.active { color: var(--accent-primary) !important; border-color: var(--accent-primary) !important; }
-body.theme-light .amigos-add-input {
-  background: #FFFFFF !important;
-  border-color: rgba(0,0,0,0.09) !important;
-  color: #18181B !important;
-}
-body.theme-light .amigos-add-input::placeholder { color: rgba(24,24,27,0.28) !important; }
-body.theme-light .amigos-add-btn {
-  background: rgba(10,143,98,0.08) !important;
-  border-color: rgba(10,143,98,0.25) !important;
-  color: var(--accent-primary) !important;
-}
-body.theme-light .amigo-item { border-bottom-color: rgba(0,0,0,0.06) !important; }
-body.theme-light .amigo-nome { color: #18181B !important; }
-body.theme-light .amigo-inst { color: rgba(24,24,27,0.45) !important; }
-body.theme-light .amigo-avatar {
-  background: rgba(10,143,98,0.1) !important;
-  color: var(--accent-primary) !important;
-  border-color: rgba(10,143,98,0.15) !important;
-}
-body.theme-light .amigos-empty { color: rgba(24,24,27,0.35) !important; }
-body.theme-light .amigo-btn-aceitar {
-  background: rgba(10,143,98,0.1) !important;
-  border-color: rgba(10,143,98,0.28) !important;
-  color: var(--accent-primary) !important;
-}
-body.theme-light .amigo-btn-recusar {
-  background: rgba(220,38,38,0.06) !important;
-  border-color: rgba(220,38,38,0.18) !important;
-  color: #DC2626 !important;
-}
-body.theme-light .amigos-sala-banner {
-  background: rgba(10,143,98,0.06) !important;
-  border-color: rgba(10,143,98,0.15) !important;
-}
-
-/* ── 15. NOTIFICAÇÕES ───────────────────────────────────────────── */
-body.theme-light .notif-btn { color: rgba(24,24,27,0.45) !important; }
-body.theme-light .notif-panel {
-  background: #FAFAF8 !important;
-  border: 1px solid rgba(0,0,0,0.09) !important;
-  box-shadow: var(--shadow-xl) !important;
-}
-body.theme-light .notif-panel-header {
-  border-bottom-color: rgba(0,0,0,0.07) !important;
-}
-body.theme-light .notif-panel-header h3 { color: #18181B !important; }
-body.theme-light .notif-clear-btn {
-  color: rgba(24,24,27,0.4) !important;
-  background: rgba(0,0,0,0.04) !important;
-  border-color: rgba(0,0,0,0.08) !important;
-}
-body.theme-light .notif-item {
-  border-bottom-color: rgba(0,0,0,0.06) !important;
-}
-body.theme-light .notif-item.unread { background: rgba(10,143,98,0.03) !important; }
-body.theme-light .notif-title { color: #18181B !important; }
-body.theme-light .notif-desc { color: rgba(24,24,27,0.55) !important; }
-body.theme-light .notif-time { color: rgba(24,24,27,0.3) !important; }
-body.theme-light .notif-empty { color: rgba(24,24,27,0.35) !important; }
-body.theme-light .notif-dot { background: var(--accent-primary) !important; }
-body.theme-light .notif-badge {
-  background: var(--accent-primary) !important;
-  color: #fff !important;
-}
-
-/* ── 16. PERFIL ─────────────────────────────────────────────────── */
-body.theme-light #modal-perfil > div:first-child {
-  background: #FAFAF8 !important;
-  border-top: 1px solid rgba(0,0,0,0.07) !important;
-}
-body.theme-light #perfil-nome-input {
-  background: #F4F4F2 !important;
-  border-color: rgba(0,0,0,0.1) !important;
-  color: #18181B !important;
-}
-body.theme-light #perfil-nome-input:focus {
-  border-color: rgba(10,143,98,0.35) !important;
-  box-shadow: 0 0 0 3px rgba(10,143,98,0.08) !important;
-}
-
-/* ── 17. HISTÓRICO SHOWS ────────────────────────────────────────── */
-body.theme-light #modal-historico-shows > div {
-  background: #FAFAF8 !important;
-  border-top: 1px solid rgba(0,0,0,0.07) !important;
-}
-body.theme-light #hist-modal-count { color: rgba(24,24,27,0.45) !important; }
-
-/* ── 18. SONG ITEM (lista lateral) ─────────────────────────────── */
-body.theme-light .song-item {
-  background: #FFFFFF !important;
-  border: 1px solid rgba(0,0,0,0.07) !important;
-  box-shadow: var(--shadow-sm) !important;
-}
-body.theme-light .song-item:hover { background: #F4F4F2 !important; }
-body.theme-light .song-item.active { border-color: rgba(10,143,98,0.3) !important; background: rgba(10,143,98,0.03) !important; }
-body.theme-light .song-name { color: #18181B !important; }
-body.theme-light .song-meta { color: rgba(24,24,27,0.4) !important; }
-
-/* ── 19. CAMPO HARMÔNICO ────────────────────────────────────────── */
-body.theme-light .harmonic-popup {
-  background: #FFFFFF !important;
-  border: 1px solid rgba(0,0,0,0.09) !important;
-  box-shadow: var(--shadow-lg) !important;
-}
-body.theme-light .hp-header { border-bottom-color: rgba(0,0,0,0.07) !important; }
-body.theme-light .hp-key { color: #18181B !important; }
-body.theme-light .hp-close { color: rgba(24,24,27,0.4) !important; }
-
-/* ── 20. PERFORMANCE MODE ───────────────────────────────────────── */
-body.theme-light .perf-song-name,
-body.theme-light .perf-song-pos { color: #18181B !important; }
-body.theme-light .perf-bottom-panel {
-  background: rgba(250,250,248,0.95) !important;
-  border-top: 1px solid rgba(0,0,0,0.07) !important;
-  backdrop-filter: blur(16px) !important;
-  -webkit-backdrop-filter: blur(16px) !important;
-}
-body.theme-light .teleprompter-panel {
-  background: rgba(255,255,255,0.9) !important;
-  border-color: rgba(0,0,0,0.08) !important;
-}
-body.theme-light .tp-label { color: rgba(24,24,27,0.5) !important; }
-body.theme-light .tp-stop {
-  background: rgba(220,38,38,0.08) !important;
-  border-color: rgba(220,38,38,0.18) !important;
-  color: #DC2626 !important;
-}
-
-/* ── 21. BOTÕES GENÉRICOS ───────────────────────────────────────── */
-body.theme-light .modal-btn.primary,
-body.theme-light .modal-btn-primary {
-  background: var(--accent-primary) !important;
-  color: #fff !important;
-  border-color: transparent !important;
-  box-shadow: 0 4px 14px rgba(10,143,98,0.22) !important;
-}
-body.theme-light .modal-btn.secondary,
-body.theme-light .modal-btn-secondary,
-body.theme-light .btn-secondary {
-  background: rgba(0,0,0,0.04) !important;
-  border-color: rgba(0,0,0,0.1) !important;
-  color: #18181B !important;
-}
-body.theme-light .modal-btn.secondary:hover,
-body.theme-light .btn-secondary:hover {
-  background: rgba(0,0,0,0.08) !important;
-}
-body.theme-light .modal-evento-save {
-  background: var(--accent-primary) !important;
-  color: #fff !important;
-  border-color: transparent !important;
-}
-body.theme-light .modal-evento-cancel {
-  background: transparent !important;
-  color: rgba(24,24,27,0.5) !important;
-  border-color: rgba(0,0,0,0.09) !important;
-}
-
-/* ── 22. INPUTS GENÉRICOS ───────────────────────────────────────── */
-body.theme-light input[type="text"]:not([class*="voc"]):not([class*="adm"]):not([class*="ob-"]):not([class*="chord"]):not([class*="part-title"]):not([class*="cifra"]),
-body.theme-light input[type="number"]:not([class*="voc"]):not([class*="adm"]),
-body.theme-light input[type="email"]:not([class*="voc"]):not([class*="adm"]),
-body.theme-light input[type="password"]:not([class*="voc"]):not([class*="adm"]),
-body.theme-light input[type="search"]:not([class*="voc"]):not([class*="adm"]) {
-  background: #FFFFFF !important;
-  border-color: rgba(0,0,0,0.1) !important;
-  color: #18181B !important;
-}
-body.theme-light input::placeholder { color: rgba(24,24,27,0.28) !important; }
-body.theme-light textarea:not([class*="voc"]):not([class*="adm"]):not(.chord-area):not(.cifra-textarea) {
-  background: #FFFFFF !important;
-  border-color: rgba(0,0,0,0.1) !important;
-  color: #18181B !important;
-}
-
-/* ── 23. SCROLLBAR ──────────────────────────────────────────────── */
-/* ── 23b. BOTTOM SHEETS & INLINE DARK ELEMENTS ────────────────────────── */
-/* Cobre elementos HTML estáticos com background inline escuro */
-body.theme-light [style*="background:#0c0c14"],
-body.theme-light [style*="background:#111119"],
-body.theme-light [style*="background:#0d0d1a"],
-body.theme-light [style*="background:#1a1a28"],
-body.theme-light [style*="background:#111"] {
-  background: #FFFFFF !important;
-  border-color: rgba(0,0,0,0.09) !important;
-  color: #18181B !important;
-}
-/* Textos brancos dentro de sheets no modo claro */
-body.theme-light [style*="background:#0c0c14"] *:not(button):not(svg):not(path):not(circle):not(line):not(polyline):not(polygon):not(rect):not(input):not(textarea),
-body.theme-light [style*="background:#111119"] *:not(button):not(svg):not(path):not(circle):not(line):not(polyline):not(polygon):not(rect):not(input):not(textarea) {
+/* Buttons genéricos */
+body.theme-light button:not(.mode-show-container):not(.acc-btn):not([class*="voc-"]):not([class*="adm-"]):not(.modal-btn-primary) {
   color: inherit;
 }
-/* Bordas internas de seções dentro dos sheets */
-body.theme-light [style*="background:#0c0c14"] [style*="border-bottom:1px solid rgba(255,255,255"],
-body.theme-light [style*="background:#111119"] [style*="border-bottom:1px solid rgba(255,255,255"],
-body.theme-light [style*="background:#0c0c14"] [style*="border-top:1px solid rgba(255,255,255"],
-body.theme-light [style*="background:#111119"] [style*="border-top:1px solid rgba(255,255,255"] {
-  border-color: rgba(0,0,0,0.07) !important;
-}
-/* Inputs dentro de sheets dark */
-body.theme-light [style*="background:#0c0c14"] input,
-body.theme-light [style*="background:#111119"] input,
-body.theme-light [style*="background:#0c0c14"] textarea,
-body.theme-light [style*="background:#111119"] textarea {
-  background: #F4F4F2 !important;
-  border-color: rgba(0,0,0,0.1) !important;
-  color: #18181B !important;
-}
-/* Menus dropdown inline (banner-menu, foto-menu) */
-body.theme-light [id="banner-menu"],
-body.theme-light [id="foto-menu"] {
-  background: #FFFFFF !important;
-  border-color: rgba(0,0,0,0.09) !important;
-  box-shadow: 0 8px 24px rgba(0,0,0,0.12) !important;
+body.theme-light .btn-secondary {
+  background: rgba(0,0,0,0.06) !important;
+  border-color: rgba(0,0,0,0.12) !important;
+  color: #0d0d14 !important;
 }
 
-body.theme-light ::-webkit-scrollbar-thumb {
-  background: rgba(0,0,0,0.14) !important;
-  border-radius: 8px !important;
-}
-body.theme-light ::-webkit-scrollbar-thumb:hover { background: rgba(0,0,0,0.22) !important; }
-body.theme-light ::-webkit-scrollbar-track { background: rgba(0,0,0,0.03) !important; }
+/* Performance mode indicators */
+body.theme-light .perf-song-name,
+body.theme-light .perf-song-pos { color: #0d0d14 !important; }
 
+/* Input de busca da biblioteca */
+body.theme-light .search-input,
+body.theme-light input[type="search"] {
+  background: rgba(0,0,0,0.06) !important;
+  border-color: rgba(0,0,0,0.12) !important;
+  color: #0d0d14 !important;
+}
+body.theme-light .search-input::placeholder { color: rgba(0,0,0,0.3) !important; }
+
+/* Scrollbar */
+body.theme-light ::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.2) !important; }
+body.theme-light ::-webkit-scrollbar-track { background: rgba(0,0,0,0.05) !important; }
 body, body * { transition: background-color 0.25s, color 0.15s, border-color 0.15s; }
 body.performance-mode {
   --bg-primary: #050000;
@@ -2664,28 +2048,9 @@ body { font-family: -apple-system, 'Inter', BlinkMacSystemFont, 'Segoe UI', sans
 }
 .menu-container { position: relative; z-index: 9999; }
 .menu-btn { background: none; border: none; color: #fff; cursor: pointer; padding: 8px; border-radius: 50%; display: flex; align-items: center; }
-.dropdown-menu {
-  position: absolute; top: 48px; right: 0;
-  background: rgba(13,13,26,0.88);
-  backdrop-filter: blur(40px) saturate(1.8);
-  -webkit-backdrop-filter: blur(40px) saturate(1.8);
-  border: 1px solid rgba(138,92,246,0.25);
-  border-radius: 16px; width: 220px;
-  display: flex; flex-direction: column;
-  z-index: 9999;
-  box-shadow: 0 20px 60px rgba(0,0,0,0.8), 0 0 0 1px rgba(255,255,255,0.06);
-  overflow: hidden;
-  opacity: 0; pointer-events: none;
-  transform: translateY(-8px) scale(0.97);
-  transform-origin: top right;
-  transition: opacity 0.18s ease, transform 0.2s cubic-bezier(0.34,1.4,0.64,1);
-}
-.dropdown-menu.show {
-  opacity: 1; pointer-events: auto;
-  transform: translateY(0) scale(1);
-}
-.dropdown-menu:not(.show) { pointer-events: none !important; }
-.menu-item { padding: 15px 18px; color: rgba(255,255,255,0.75); font-size: 13px; font-weight: 600; letter-spacing: 0.2px; cursor: pointer; border-bottom: 1px solid rgba(255,255,255,0.05); transition: background 0.14s, color 0.14s, padding-left 0.14s; display: flex; align-items: center; gap: 12px; touch-action: manipulation; }
+.dropdown-menu { position: absolute; top: 48px; right: 0; background: rgba(13,13,26,0.88); backdrop-filter: blur(40px) saturate(1.8); -webkit-backdrop-filter: blur(40px) saturate(1.8); border: 1px solid rgba(138,92,246,0.25); border-radius: 16px; width: 220px; display: none; flex-direction: column; z-index: 9999; box-shadow: 0 20px 60px rgba(0,0,0,0.8), 0 0 0 1px rgba(255,255,255,0.06); overflow: hidden; }
+.dropdown-menu.show { display: flex; }
+.menu-item { padding: 15px 18px; color: rgba(255,255,255,0.75); font-size: 13px; font-weight: 600; letter-spacing: 0.2px; cursor: pointer; border-bottom: 1px solid rgba(255,255,255,0.05); transition: background 0.15s, color 0.15s; display: flex; align-items: center; gap: 12px; touch-action: manipulation; }
 .menu-item:last-child { border-bottom: none; }
 .menu-item:hover { background: rgba(138,92,246,0.08); color: #c4b5fd; }
 .menu-item:active { background: rgba(138,92,246,0.15); }
@@ -2704,33 +2069,20 @@ body { font-family: -apple-system, 'Inter', BlinkMacSystemFont, 'Segoe UI', sans
 /* ── BIBLIOTECA ── */
 .biblioteca-overlay {
   position: fixed; inset: 0; z-index: 5500;
-  background: var(--bib-bg, #030309);
-  display: flex; flex-direction: column;
+  background: #030309;
+  display: none; flex-direction: column;
   overflow: hidden;
-  opacity: 0;
-  transform: translateY(18px) scale(0.99);
-  pointer-events: none;
-  transition: opacity 0.26s ease, transform 0.28s cubic-bezier(0.34,1.2,0.64,1);
 }
-.biblioteca-overlay.show {
-  opacity: 1;
-  transform: translateY(0) scale(1);
-  pointer-events: auto;
-}
-/* Durante o fechamento (transição de saída), bloqueia cliques imediatamente */
-.biblioteca-overlay:not(.show) {
-  pointer-events: none !important;
-}
+.biblioteca-overlay.show { display: flex; }
 
 .biblioteca-header {
   display: flex; align-items: center; justify-content: space-between;
   padding: 20px 20px 14px;
-  border-bottom: 1px solid var(--border-color);
+  border-bottom: 1px solid rgba(255,255,255,0.06);
   flex-shrink: 0;
-  background: var(--bib-bg, #030309);
 }
 .biblioteca-titulo {
-  font-size: 21px; font-weight: 900; color: var(--text-primary); letter-spacing: -0.5px;
+  font-size: 21px; font-weight: 900; color: #fff; letter-spacing: -0.5px;
   display: flex; align-items: center; gap: 8px;
 }
 .biblioteca-close {
@@ -2744,7 +2096,6 @@ body { font-family: -apple-system, 'Inter', BlinkMacSystemFont, 'Segoe UI', sans
 
 .biblioteca-search {
   padding: 12px 20px 8px; flex-shrink: 0;
-  background: var(--bib-bg, #030309);
 }
 .biblioteca-search input {
   width: 100%; background: rgba(255,255,255,0.04);
@@ -2762,9 +2113,6 @@ body { font-family: -apple-system, 'Inter', BlinkMacSystemFont, 'Segoe UI', sans
   gap: 16px; padding: 16px 20px 100px;
   overflow-y: auto; flex: 1;
   -webkit-overflow-scrolling: touch;
-  scroll-behavior: smooth;
-  overscroll-behavior-y: contain;
-  background: var(--bib-bg, #030309);
 }
 
 /* ── ALBUM CARD ──────────────────────────────────────────────── */
@@ -2789,7 +2137,6 @@ body { font-family: -apple-system, 'Inter', BlinkMacSystemFont, 'Segoe UI', sans
   overflow-x: auto;
   -webkit-overflow-scrolling: touch;
   scrollbar-width: none;
-  background: var(--bib-bg, #030309);
 }
 .bib-sort-bar::-webkit-scrollbar { display: none; }
 .bib-sort-bar.visible { display: flex; }
@@ -2818,7 +2165,6 @@ body { font-family: -apple-system, 'Inter', BlinkMacSystemFont, 'Segoe UI', sans
   gap: 6px;
   padding: 8px 16px 4px;
   flex-shrink: 0;
-  background: var(--bib-bg, #030309);
 }
 .bib-tags-bar.visible { display: flex; }
 .tag-chip {
@@ -3000,15 +2346,10 @@ body { font-family: -apple-system, 'Inter', BlinkMacSystemFont, 'Segoe UI', sans
   transition: transform 0.16s cubic-bezier(0.34,1.56,0.64,1),
               box-shadow 0.16s ease;
 }
-.album-cover:hover {
-  transform: scale(1.03);
-  box-shadow: 0 16px 40px rgba(0,0,0,0.7), 0 4px 12px rgba(0,0,0,0.4);
-}
 .album-cover:active {
   transform: scale(0.92);
   box-shadow: 0 4px 14px rgba(0,0,0,0.5);
 }
-@media (hover: none) { .album-cover:hover { transform: none; } }
 
 /* Fundo gradiente */
 .album-cover-bg {
@@ -3071,7 +2412,17 @@ body { font-family: -apple-system, 'Inter', BlinkMacSystemFont, 'Segoe UI', sans
 }
 .album-card.fav .album-cover-fav { opacity: 1; }
 
-/* Botão ··· menu — definição única (duplicata removida abaixo) */
+/* Botão ··· menu */
+.album-menu-btn {
+  position: absolute; top: 7px; right: 7px; z-index: 5;
+  width: 28px; height: 28px; border-radius: 50%;
+  background: rgba(0,0,0,0.42);
+  border: 1px solid rgba(255,255,255,0.1);
+  color: rgba(255,255,255,0.75); cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  transition: background 0.14s; touch-action: manipulation; padding: 0;
+}
+.album-menu-btn:active { background: rgba(10,158,110,0.3); }
 
 /* Botão ▶ show (evento detalhe) */
 .album-show-btn {
@@ -3086,9 +2437,6 @@ body { font-family: -apple-system, 'Inter', BlinkMacSystemFont, 'Segoe UI', sans
 
 /* Info abaixo do cover */
 .album-info { padding: 0 2px; }
-.album-card .album-info {
-  transition: opacity 0.2s ease, transform 0.2s ease;
-}
 .album-name {
   font-size: 12px; font-weight: 800; color: #fff;
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
@@ -3109,7 +2457,32 @@ body { font-family: -apple-system, 'Inter', BlinkMacSystemFont, 'Segoe UI', sans
 }
 .biblioteca-vazia-icon { font-size: 44px; opacity: 0.15; }
 
-/* ── CONTEXT MENU — definição única abaixo (duplicata removida) ── */
+/* ── CONTEXT MENU ────────────────────────────────────────────── */
+.album-ctx-menu {
+  position: fixed; z-index: 9000;
+  background: rgba(10,10,18,0.97);
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 16px;
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  box-shadow: 0 16px 48px rgba(0,0,0,0.8), 0 4px 12px rgba(0,0,0,0.4);
+  min-width: 190px;
+  display: none; flex-direction: column;
+  overflow: hidden; padding: 4px;
+}
+.album-ctx-menu.show { display: flex; }
+.ctx-item {
+  padding: 11px 14px; font-size: 12px; font-weight: 700;
+  color: rgba(255,255,255,0.75); cursor: pointer;
+  border-radius: 12px;
+  display: flex; align-items: center; gap: 10px;
+  transition: background 0.12s; touch-action: manipulation;
+}
+.ctx-item:active { background: rgba(255,255,255,0.07); }
+.ctx-item.ctx-danger { color: rgba(255,70,70,0.85); }
+.ctx-item.ctx-danger:active { background: rgba(255,50,50,0.1); }
+.ctx-item.ctx-fav { color: rgba(255,215,0,0.85); }
+.ctx-item svg { flex-shrink: 0; opacity: 0.65; }
 
 /* Modal editar música */
 .modal-editar { position: fixed; inset: 0; z-index: 7000;
@@ -3149,14 +2522,13 @@ body { font-family: -apple-system, 'Inter', BlinkMacSystemFont, 'Segoe UI', sans
 /* Nav tabs biblioteca */
 .biblioteca-tabs {
   display: flex; gap: 0; padding: 0 24px;
-  border-bottom: 1px solid var(--border-color);
+  border-bottom: 1px solid rgba(255,255,255,0.06);
   flex-shrink: 0;
-  background: var(--bib-bg, #030309);
 }
 .biblioteca-tab {
   padding: 10px 20px; font-size: 11px; font-weight: 800;
   letter-spacing: 1px; text-transform: uppercase;
-  color: var(--text-secondary); cursor: pointer;
+  color: rgba(255,255,255,0.3); cursor: pointer;
   border-bottom: 2px solid transparent; transition: 0.2s;
 }
 .biblioteca-tab.active {
@@ -3170,8 +2542,8 @@ body { font-family: -apple-system, 'Inter', BlinkMacSystemFont, 'Segoe UI', sans
 }
 .evento-card {
   grid-column: 1 / -1;
-  background: var(--glass-bg);
-  border: 1px solid var(--border-color);
+  background: rgba(255,255,255,0.03);
+  border: 1px solid rgba(255,255,255,0.07);
   border-radius: 14px; overflow: hidden; cursor: pointer;
   transition: border-color 0.2s, transform 0.2s;
   display: flex; flex-direction: row; align-items: stretch;
@@ -3253,19 +2625,7 @@ body { font-family: -apple-system, 'Inter', BlinkMacSystemFont, 'Segoe UI', sans
 .evento-detalhe {
   display: none; flex-direction: column; height: 100%;
 }
-/* fase entering: já tem display flex mas ainda invisível */
-.evento-detalhe.entering {
-  display: flex;
-  opacity: 0; transform: translateX(20px);
-  pointer-events: none;
-  transition: opacity 0.22s ease, transform 0.25s cubic-bezier(0.34,1.2,0.64,1);
-}
-.evento-detalhe.show {
-  display: flex;
-  opacity: 1; transform: translateX(0);
-  pointer-events: auto;
-  transition: opacity 0.22s ease, transform 0.25s cubic-bezier(0.34,1.2,0.64,1);
-}
+.evento-detalhe.show { display: flex; }
 .biblioteca-main { display: flex; flex-direction: column; flex: 1; overflow: hidden; }
 .biblioteca-main.hidden { display: none; }
 
@@ -3294,33 +2654,6 @@ body { font-family: -apple-system, 'Inter', BlinkMacSystemFont, 'Segoe UI', sans
   transition: 0.2s;
 }
 .evento-detalhe-add:hover { background: rgba(10,158,110,0.22); }
-
-/* 3-dot menu do detalhe de evento */
-.ev-more-wrap { position: relative; flex-shrink: 0; }
-.ev-more-btn {
-  background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1);
-  border-radius: 8px; width: 32px; height: 32px;
-  display: flex; align-items: center; justify-content: center;
-  cursor: pointer; color: rgba(255,255,255,0.45); transition: 0.15s;
-}
-.ev-more-btn:hover { background: rgba(255,255,255,0.1); color: #fff; }
-.ev-more-drop {
-  display: none; position: absolute; top: calc(100% + 6px); right: 0;
-  background: #111119; border: 1px solid rgba(255,255,255,0.1);
-  border-radius: 14px; overflow: hidden; min-width: 180px;
-  box-shadow: 0 8px 32px rgba(0,0,0,0.6); z-index: 9000;
-  flex-direction: column;
-}
-.ev-more-drop.show { display: flex; }
-.ev-more-item {
-  display: flex; align-items: center; gap: 10px;
-  padding: 12px 16px; background: transparent; border: none;
-  color: rgba(255,255,255,0.7); font-size: 12px; font-weight: 700;
-  cursor: pointer; font-family: inherit; text-align: left;
-  transition: background 0.15s; width: 100%;
-}
-.ev-more-item:hover { background: rgba(255,255,255,0.07); color: #fff; }
-.ev-more-item + .ev-more-item { border-top: 1px solid rgba(255,255,255,0.05); }
 
 /* Modal novo evento */
 .modal-evento {
@@ -3566,30 +2899,7 @@ body { font-family: -apple-system, 'Inter', BlinkMacSystemFont, 'Segoe UI', sans
 }
 .btn-pad-flutuante.pad-ativo { display: flex; }
 
-.btn-save-vitro {
-  position: fixed; bottom: 30px; left: 20px; z-index: 900;
-  background: var(--glass-bg); backdrop-filter: blur(10px);
-  border: 1px solid var(--glass-border);
-  color: rgba(255,255,255,0.4);
-  padding: 10px 20px; border-radius: var(--radius-full);
-  cursor: pointer; font-weight: 500; font-size: 10px;
-  letter-spacing: 1.5px; text-transform: uppercase;
-  transition: background 0.3s, color 0.3s, border-color 0.3s,
-              box-shadow 0.3s, transform 0.15s cubic-bezier(0.34,1.5,0.64,1);
-}
-.btn-save-vitro.dirty {
-  background: var(--accent-primary) !important;
-  color: #fff !important;
-  border-color: transparent !important;
-  box-shadow: 0 0 0 0 rgba(10,158,110,0.6);
-  animation: savePulse 1.8s ease-in-out infinite;
-}
-.btn-save-vitro.dirty:active { transform: scale(0.94); }
-@keyframes savePulse {
-  0%   { box-shadow: 0 0 0 0 rgba(10,158,110,0.55), 0 4px 20px rgba(10,158,110,0.3); }
-  60%  { box-shadow: 0 0 0 8px rgba(10,158,110,0), 0 4px 20px rgba(10,158,110,0.25); }
-  100% { box-shadow: 0 0 0 0 rgba(10,158,110,0), 0 4px 20px rgba(10,158,110,0.3); }
-}
+.btn-save-vitro { position: fixed; bottom: 30px; left: 20px; z-index: 900; background: var(--glass-bg); backdrop-filter: blur(10px); border: 1px solid var(--glass-border); color: rgba(255,255,255,0.4); padding: 10px 20px; border-radius: var(--radius-full); cursor: pointer; font-weight: 500; font-size: 10px; letter-spacing: 1.5px; text-transform: uppercase; transition: 0.4s; }
 .btn-save-vitro:hover { color: var(--accent-primary); border-color: var(--accent-primary); background: rgba(255,255,255,0.05); }
 
 /* LAYOUT */
@@ -3666,18 +2976,7 @@ body { font-family: -apple-system, 'Inter', BlinkMacSystemFont, 'Segoe UI', sans
 .toolbar-central { display: flex; align-items: center; gap: 15px; margin-bottom: 20px; flex-wrap: wrap; }
 .tool-group { display: flex; align-items: center; gap: 15px; background: var(--bg-secondary); padding: 8px 20px; border-radius: 50px; border: 1px solid var(--border-color); }
 .section-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 15px; }
-.song-part {
-  background: var(--bg-secondary); border-radius: var(--radius-lg);
-  padding: 15px; border-left: 5px solid var(--accent-primary);
-  position: relative;
-  transition: transform 0.14s cubic-bezier(0.34,1.4,0.64,1),
-              box-shadow 0.14s ease, border-color 0.2s;
-  will-change: transform;
-}
-.song-part:focus-within {
-  transform: translateY(-2px);
-  box-shadow: 0 8px 32px rgba(0,0,0,0.35), 0 2px 8px rgba(0,0,0,0.2);
-}
+.song-part { background: var(--bg-secondary); border-radius: var(--radius-lg); padding: 15px; border-left: 5px solid var(--accent-primary); position: relative; }
 .chord-area { font-family: 'Monaco', monospace; font-size: 19px; font-weight: 700; color: var(--note-color); background: none; border: none; width: 100%; resize: none; outline: none; margin-top: 10px; line-height: 1.4; }
 
 /* METRÔNOMO */
@@ -3896,25 +3195,8 @@ body.performance-mode #perf-font-ctrl { display: flex; }
 .swipe-hint.show { opacity: 1; }
 
 /* MODAL SALA */
-.modal-overlay {
-  position: fixed; inset: 0;
-  background: rgba(0,0,0,0.80);
-  backdrop-filter: blur(20px) saturate(1.4);
-  -webkit-backdrop-filter: blur(20px) saturate(1.4);
-  z-index: 5000; display: flex; align-items: center; justify-content: center;
-  opacity: 0; pointer-events: none;
-  transition: opacity 0.2s ease;
-}
-.modal-overlay.show { opacity: 1; pointer-events: auto; }
-.modal-overlay:not(.show) { pointer-events: none !important; }
-.modal-overlay.show .modal-box,
-.modal-overlay.show > div:first-child {
-  animation: modalBoxIn 0.28s cubic-bezier(0.34,1.4,0.64,1) both;
-}
-@keyframes modalBoxIn {
-  from { opacity: 0; transform: scale(0.92) translateY(12px); }
-  to   { opacity: 1; transform: scale(1) translateY(0); }
-}
+.modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.80); backdrop-filter: blur(20px) saturate(1.4); -webkit-backdrop-filter: blur(20px) saturate(1.4); z-index: 5000; display: none; align-items: center; justify-content: center; }
+.modal-overlay.show { display: flex; }
 .modal-box { background: rgba(13,13,26,0.90); backdrop-filter: blur(40px) saturate(1.8); -webkit-backdrop-filter: blur(40px) saturate(1.8); border: 1px solid rgba(138,92,246,0.22); border-radius: var(--radius-xl); padding: 35px; width: 90%; max-width: 420px; text-align: center; box-shadow: 0 30px 80px rgba(0,0,0,0.7), inset 0 1px 0 rgba(255,255,255,0.06); }
 .modal-box h2 { font-size: 18px; font-weight: 900; margin-bottom: 6px; }
 .modal-box p { font-size: 12px; color: var(--text-secondary); margin-bottom: 24px; line-height: 1.6; }
@@ -4004,12 +3286,9 @@ body.performance-mode #perf-font-ctrl { display: flex; }
 #modal-amigos {
   position: fixed; inset: 0; z-index: 98000;
   background: rgba(0,0,0,0.92);
-  display: flex; align-items: flex-end; justify-content: center;
-  opacity: 0; pointer-events: none;
-  transition: opacity 0.22s ease;
+  display: none; align-items: flex-end; justify-content: center;
 }
-#modal-amigos.show { opacity: 1; pointer-events: auto; }
-#modal-amigos:not(.show) { pointer-events: none !important; }
+#modal-amigos.show { display: flex; }
 .amigos-sheet {
   background: #0c0c14;
   border: 1px solid rgba(255,255,255,0.08);
@@ -4018,10 +3297,8 @@ body.performance-mode #perf-font-ctrl { display: flex; }
   max-height: 90vh;
   display: flex; flex-direction: column;
   overflow: hidden;
-  transform: translateY(100%);
-  transition: transform 0.3s cubic-bezier(0.34,1.3,0.64,1);
+  animation: slideUpModal 0.3s cubic-bezier(0.34,1.56,0.64,1);
 }
-#modal-amigos.show .amigos-sheet { transform: translateY(0); }
 .amigos-header {
   display: flex; align-items: center; justify-content: space-between;
   padding: 20px 24px 16px;
@@ -4218,77 +3495,31 @@ body.performance-mode #perf-font-ctrl { display: flex; }
 
 .toast {
   position: fixed; bottom: 88px; left: 50%;
-  transform: translateX(-50%) translateY(20px) scale(0.96);
+  transform: translateX(-50%) translateY(16px);
   background: #1c1c28; color: #fff;
-  padding: 12px 20px 12px 15px;
-  border-radius: 18px;
+  padding: 11px 18px 11px 14px;
+  border-radius: 16px;
   font-weight: 700; font-size: 13px;
   z-index: 99999; opacity: 0;
-  transition: opacity 0.22s ease,
-              transform 0.3s cubic-bezier(0.34,1.5,0.64,1);
+  transition: opacity 0.28s ease, transform 0.32s cubic-bezier(0.34,1.3,0.64,1);
   pointer-events: none;
-  display: flex; align-items: center; gap: 10px;
-  box-shadow: 0 12px 40px rgba(0,0,0,0.5), 0 2px 8px rgba(0,0,0,0.3),
-              0 1px 0 rgba(255,255,255,0.06) inset;
+  display: flex; align-items: center; gap: 9px;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.55), 0 1px 0 rgba(255,255,255,0.05) inset;
   border: 1px solid rgba(255,255,255,0.09);
   max-width: min(90vw, 360px);
   white-space: normal;
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
 }
-.toast.show {
-  opacity: 1;
-  transform: translateX(-50%) translateY(0) scale(1);
-}
-.toast-icon {
-  flex-shrink: 0; display: flex; align-items: center;
-  width: 26px; height: 26px; border-radius: 50%;
-  background: rgba(255,255,255,0.08);
-  justify-content: center;
-}
-.toast-msg { line-height: 1.45; flex: 1; }
-.toast-success {
-  background: rgba(10,40,28,0.96);
-  border-color: rgba(10,158,110,0.4); color: #5de890;
-}
-.toast-success .toast-icon { background: rgba(10,158,110,0.18); color: #5de890; }
-.toast-error {
-  background: rgba(40,12,12,0.96);
-  border-color: rgba(255,60,60,0.4); color: #ff8080;
-}
-.toast-error .toast-icon { background: rgba(255,60,60,0.15); color: #ff8080; }
-.toast-warning {
-  background: rgba(38,30,10,0.96);
-  border-color: rgba(250,180,0,0.35); color: #fcd14e;
-}
-.toast-warning .toast-icon { background: rgba(250,180,0,0.15); color: #fcd14e; }
-.toast-info {
-  background: rgba(16,16,32,0.96);
-  border-color: rgba(255,255,255,0.12); color: rgba(255,255,255,0.9);
-}
-.toast-info .toast-icon { background: rgba(255,255,255,0.07); color: rgba(255,255,255,0.6); }
-/* Toast no modo claro */
-body.theme-light .toast-success {
-  background: rgba(236,252,243,0.97) !important;
-  border-color: rgba(10,143,98,0.3) !important; color: #0A6B48 !important;
-}
-body.theme-light .toast-success .toast-icon { background: rgba(10,143,98,0.12) !important; color: #0A6B48 !important; }
-body.theme-light .toast-error {
-  background: rgba(254,242,242,0.97) !important;
-  border-color: rgba(220,38,38,0.28) !important; color: #B91C1C !important;
-}
-body.theme-light .toast-error .toast-icon { background: rgba(220,38,38,0.1) !important; color: #B91C1C !important; }
-body.theme-light .toast-warning {
-  background: rgba(255,251,235,0.97) !important;
-  border-color: rgba(217,119,6,0.28) !important; color: #92400E !important;
-}
-body.theme-light .toast-warning .toast-icon { background: rgba(217,119,6,0.1) !important; color: #92400E !important; }
-body.theme-light .toast-info {
-  background: rgba(250,250,248,0.97) !important;
-  border-color: rgba(0,0,0,0.1) !important; color: #18181B !important;
-  box-shadow: 0 8px 32px rgba(0,0,0,0.12), 0 2px 6px rgba(0,0,0,0.06) !important;
-}
-body.theme-light .toast-info .toast-icon { background: rgba(0,0,0,0.05) !important; color: rgba(24,24,27,0.5) !important; }
+.toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+.toast-icon { flex-shrink: 0; display: flex; align-items: center; opacity: 0.9; }
+.toast-msg { line-height: 1.4; }
+.toast-success { background: #0d2218; border-color: rgba(10,158,110,0.35); color: #4ade80; }
+.toast-success .toast-icon { color: #4ade80; }
+.toast-error   { background: #1f0d0d; border-color: rgba(255,60,60,0.35); color: #f87171; }
+.toast-error .toast-icon { color: #f87171; }
+.toast-warning { background: #1c180a; border-color: rgba(250,180,0,0.3); color: #fbbf24; }
+.toast-warning .toast-icon { color: #fbbf24; }
+.toast-info    { background: #0e0e1f; border-color: rgba(255,255,255,0.12); color: rgba(255,255,255,0.85); }
+.toast-info .toast-icon { color: rgba(255,255,255,0.5); }
 
 /* MODAL PADS AMBIENT */
 .pads-overlay {
@@ -4531,60 +3762,51 @@ body.viewer-mode .btn-save-vitro,
 body.viewer-mode #cifra-font-ctrl { display: none; }
 body.viewer-mode input[type="text"] { pointer-events: none; }
 
-/* ── Botão ··· menu do álbum ────────────────────────────────── */
+/* Menu de contexto do álbum */
 .album-menu-btn {
-  position: absolute; top: 7px; right: 7px; z-index: 5;
+  position: absolute; top: 8px; right: 8px; z-index: 3;
   width: 28px; height: 28px; border-radius: 50%;
   background: rgba(0,0,0,0.55); backdrop-filter: blur(6px);
-  -webkit-backdrop-filter: blur(6px);
   border: 1px solid rgba(255,255,255,0.12);
-  color: #fff; cursor: pointer; padding: 0;
+  color: #fff; font-size: 14px; cursor: pointer;
   display: flex; align-items: center; justify-content: center;
-  touch-action: manipulation;
-  opacity: 0; transition: opacity 0.18s, background 0.14s;
+  opacity: 0; transition: opacity 0.2s;
+  line-height: 1; font-weight: 900; letter-spacing: -1px;
 }
 .album-card:hover .album-menu-btn,
 .album-card:focus-within .album-menu-btn { opacity: 1; }
-.album-menu-btn:active { background: rgba(10,158,110,0.35); }
-/* Sempre visível em telas touch */
-@media (hover: none) { .album-menu-btn { opacity: 1; } }
 
-/* ── Context menu do álbum ───────────────────────────────────── */
+/* Sempre visível no touch (mobile) */
+@media (hover: none) {
+  .album-menu-btn { opacity: 1; }
+}
+
 .album-ctx-menu {
   position: fixed; z-index: 9000;
-  background: rgba(10,10,18,0.97);
+  background: rgba(14,14,22,0.97);
   border: 1px solid rgba(255,255,255,0.1);
-  border-radius: 16px;
-  backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
-  box-shadow: 0 16px 48px rgba(0,0,0,0.8), 0 4px 12px rgba(0,0,0,0.4);
-  min-width: 190px;
-  display: flex; flex-direction: column;
-  overflow: hidden; padding: 4px;
-  opacity: 0; pointer-events: none;
-  transform: scale(0.92) translateY(-8px);
-  transform-origin: top right;
-  transition: opacity 0.16s ease, transform 0.18s cubic-bezier(0.34,1.4,0.64,1);
+  border-radius: 14px;
+  backdrop-filter: blur(20px);
+  box-shadow: 0 12px 40px rgba(0,0,0,0.7);
+  min-width: 180px;
+  display: none; flex-direction: column;
+  overflow: hidden;
+  animation: ctxFadeIn 0.15s ease;
 }
-.album-ctx-menu.show {
-  opacity: 1; pointer-events: auto;
-  transform: scale(1) translateY(0);
+.album-ctx-menu.show { display: flex; }
+@keyframes ctxFadeIn {
+  from { opacity:0; transform:scale(0.94) translateY(-4px); }
+  to   { opacity:1; transform:scale(1)    translateY(0); }
 }
-.album-ctx-menu:not(.show) { pointer-events: none !important; }
 .ctx-item {
-  padding: 11px 14px; font-size: 12px; font-weight: 700;
+  padding: 13px 18px; font-size: 12px; font-weight: 700;
   color: rgba(255,255,255,0.75); cursor: pointer;
-  border-radius: 12px;
+  border-bottom: 1px solid rgba(255,255,255,0.05);
   display: flex; align-items: center; gap: 10px;
-  transition: background 0.12s, color 0.12s, transform 0.1s; touch-action: manipulation;
+  transition: background 0.15s, color 0.15s;
 }
-.ctx-item:active { transform: scale(0.97); }
-.ctx-item:hover  { background: rgba(255,255,255,0.07); color: #fff; }
-.ctx-item:active { background: rgba(255,255,255,0.07); }
-.ctx-item.ctx-danger { color: rgba(255,70,70,0.85); }
-.ctx-item.ctx-danger:hover  { background: rgba(255,50,50,0.1); }
-.ctx-item.ctx-danger:active { background: rgba(255,50,50,0.1); }
-.ctx-item.ctx-fav { color: rgba(255,215,0,0.85); }
-.ctx-item svg { flex-shrink: 0; opacity: 0.65; }
+.ctx-item:last-child { border-bottom: none; }
+.ctx-item:hover { background: rgba(255,255,255,0.06); color: #fff; }
 .ctx-item.ctx-danger { color: rgba(255,80,80,0.75); }
 .ctx-item.ctx-danger:hover { background: rgba(255,50,50,0.1); color: #ff5555; }
 .ctx-item.ctx-fav { color: rgba(255,215,0,0.8); }
@@ -4620,20 +3842,12 @@ body.viewer-mode input[type="text"] { pointer-events: none; }
   width: 300px; max-width: calc(100vw - 24px);
   background: #111118;
   border: 1px solid rgba(255,255,255,0.08);
-  border-radius: 16px;
-  box-shadow: 0 12px 48px rgba(0,0,0,0.65), 0 2px 8px rgba(0,0,0,0.3);
-  display: flex; flex-direction: column; overflow: hidden;
+  border-radius: 12px;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.6);
+  display: none; flex-direction: column; overflow: hidden;
   max-height: 65vh;
-  opacity: 0; pointer-events: none;
-  transform: translateY(-10px) scale(0.97);
-  transform-origin: top right;
-  transition: opacity 0.18s ease, transform 0.2s cubic-bezier(0.34,1.4,0.64,1);
 }
-.notif-panel.show {
-  opacity: 1; pointer-events: auto;
-  transform: translateY(0) scale(1);
-}
-.notif-panel:not(.show) { pointer-events: none !important; }
+.notif-panel.show { display: flex; }
 
 .notif-panel-header {
   padding: 14px 16px 12px;
@@ -5763,38 +4977,16 @@ body.auth-pending #toast {
           <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="1"/><circle cx="12" cy="5" r="1"/><circle cx="12" cy="19" r="1"/></svg>
         </button>
         <div id="m-drop" class="dropdown-menu">
-          <div class="menu-item" onclick="event.stopPropagation();fecharMenu({target:document.body});abrirModalPerfil()">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
-            Meu Perfil
-          </div>
-          <div class="menu-item" onclick="event.stopPropagation();fecharMenu({target:document.body});abrirBiblioteca()">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>
-            Biblioteca
-          </div>
-          <div class="menu-item" onclick="event.stopPropagation();fecharMenu({target:document.body});abrirDrumCam()">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="3"/></svg>
-            Drum Cam
-          </div>
-          <div class="menu-item" onclick="event.stopPropagation();fecharMenu({target:document.body});abrirPads()">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="9" height="9" rx="2"/><rect x="13" y="3" width="9" height="9" rx="2"/><rect x="2" y="13" width="9" height="9" rx="2"/><rect x="13" y="13" width="9" height="9" rx="2"/></svg>
-            Pads
-          </div>
-          <div class="menu-item" onclick="event.stopPropagation();fecharMenu({target:document.body});abrirModalStats()">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
-            Estatísticas
-          </div>
-          <div class="menu-item" onclick="event.stopPropagation();fecharMenu({target:document.body});abrirModalCifra()">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
-            Importar Cifra
-          </div>
-          <div class="menu-item" onclick="event.stopPropagation();fecharMenu({target:document.body});abrirConfigAudio()">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14M4.93 4.93a10 10 0 0 0 0 14.14"/></svg>
-            Áudio
-          </div>
-          <div class="menu-item danger" onclick="event.stopPropagation();fecharMenu({target:document.body});resetSection()">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg>
-            Limpar Seção
-          </div>
+          <div class="menu-item" onclick="abrirModalPerfil()">Meu Perfil</div>
+          
+          <div class="menu-item" onclick="abrirBiblioteca()">Biblioteca</div>
+          <div class="menu-item" onclick="abrirDrumCam()">Drum Cam</div>
+          <div class="menu-item" onclick="abrirPads()">Pads</div>
+          <div class="menu-item" onclick="abrirModalStats()">Estatísticas</div>
+          <div class="menu-item" onclick="abrirModalCifra()">Importar Cifra</div>
+          <div class="menu-item" onclick="abrirConfigAudio()">Configurações de Áudio</div>
+          <div class="menu-item" onclick="mostrarAtalhosApp && mostrarAtalhosApp()">Atalhos de teclado</div>
+          <div class="menu-item danger" onclick="resetSection()">Limpar Seção</div>
         </div>
       </div>
     </div>
@@ -5903,16 +5095,12 @@ body.auth-pending #toast {
       <p style="font-size:11px;color:var(--text-secondary);margin:0;" id="setlist-pub-data"></p>
     </div>
     <div id="setlist-pub-lista" style="overflow-y:auto;flex:1;padding:12px 20px 8px;display:flex;flex-direction:column;gap:6px;"></div>
-    <div style="padding:14px 20px 20px;border-top:1px solid var(--glass-border);flex-shrink:0;display:flex;flex-direction:column;gap:8px;">
-      <div style="display:flex;align-items:center;gap:8px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.09);border-radius:10px;padding:10px 12px;">
+    <div style="padding:14px 20px 20px;border-top:1px solid var(--glass-border);flex-shrink:0;">
+      <div style="display:flex;align-items:center;gap:8px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.09);border-radius:10px;padding:10px 12px;margin-bottom:10px;">
         <span id="setlist-pub-link" style="font-size:11px;color:rgba(255,255,255,0.5);flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-family:monospace;"></span>
-        <button onclick="copiarLinkSetlist()" style="background:rgba(10,158,110,0.12);border:1px solid rgba(10,158,110,0.3);border-radius:7px;color:#0A9E6E;font-size:10px;font-weight:800;padding:5px 10px;cursor:pointer;flex-shrink:0;font-family:inherit;touch-action:manipulation;">Copiar</button>
+        <button onclick="copiarLinkSetlist()" style="background:rgba(10,158,110,0.12);border:1px solid rgba(10,158,110,0.3);border-radius:7px;color:#0A9E6E;font-size:10px;font-weight:800;padding:5px 10px;cursor:pointer;flex-shrink:0;font-family:inherit;">Copiar</button>
       </div>
-      <button id="btn-share-nativo" onclick="compartilharNativo()" style="width:100%;padding:12px;border-radius:12px;background:rgba(10,158,110,0.15);border:1px solid rgba(10,158,110,0.35);color:#0A9E6E;font-size:13px;font-weight:800;cursor:pointer;font-family:inherit;touch-action:manipulation;display:flex;align-items:center;justify-content:center;gap:8px;">
-        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
-        Compartilhar
-      </button>
-      <p style="font-size:10px;color:rgba(255,255,255,0.2);text-align:center;margin:0;">Compartilhe o link ou copie o texto acima</p>
+      <p style="font-size:10px;color:rgba(255,255,255,0.2);text-align:center;margin:0;">Qualquer pessoa com o link pode ver este setlist</p>
     </div>
   </div>
 </div>
@@ -6070,19 +5258,19 @@ body.auth-pending #toast {
       </button>
       <div class="bpm-val" id="bpm-display">120</div>
       <div style="font-size:10px; font-weight:900; opacity:0.5;">BPM</div>
-      <button id="tap-btn" style="border:2px solid var(--accent-primary); background:none; color:var(--accent-primary); width:70px; height:70px; border-radius:50%; font-weight:900; margin:15px 0; cursor:pointer; transition:transform 0.08s cubic-bezier(0.34,1.8,0.64,1),background 0.1s,box-shadow 0.1s; touch-action:manipulation;" onmousedown="this.style.transform='scale(0.88)';this.style.background='rgba(10,158,110,0.15)'" onmouseup="this.style.transform='';this.style.background='none'" ontouchstart="this.style.transform='scale(0.88)';this.style.background='rgba(10,158,110,0.15)'" ontouchend="this.style.transform='';this.style.background='none'">TAP</button>
+      <button id="tap-btn" style="border:2px solid var(--accent-primary); background:none; color:var(--accent-primary); width:70px; height:70px; border-radius:50%; font-weight:900; margin:15px 0; cursor:pointer;">TAP</button>
       <div style="display:flex; gap:15px; justify-content:center; margin-bottom:20px;">
         <button onclick="adj(-1)" style="width:35px; height:35px; border-radius:50%; border:1px solid var(--border-color); background:none; color:#fff; cursor:pointer;">-</button>
         <button onclick="adj(1)" style="width:35px; height:35px; border-radius:50%; border:1px solid var(--border-color); background:none; color:#fff; cursor:pointer;">+</button>
       </div>
-      <button onclick="togglePlay()" id="play-btn" style="background:var(--accent-primary); color:#000; border:none; padding:14px; border-radius:30px; font-weight:800; width:100%; cursor:pointer; transition:transform 0.15s cubic-bezier(0.34,1.6,0.64,1),box-shadow 0.15s; touch-action:manipulation;" onmousedown="this.style.transform='scale(0.96)'" onmouseup="this.style.transform=''">INICIAR</button>
+      <button onclick="togglePlay()" id="play-btn" style="background:var(--accent-primary); color:#000; border:none; padding:14px; border-radius:30px; font-weight:800; width:100%; cursor:pointer;">INICIAR</button>
     </div>
   </aside>
 </div>
 <button class="btn-save-vitro" id="btn-save-vitro" onclick="saveSong()">Salvar Música</button>
 
 <!-- Controle de fonte das cifras — painel individual -->
-<div id="cifra-font-ctrl" style="position:fixed;bottom:90px;right:20px;z-index:2100;display:flex;align-items:center;gap:6px;background:var(--glass-bg);backdrop-filter:blur(10px);border:1px solid var(--glass-border);border-radius:999px;padding:6px 12px;">
+<div id="cifra-font-ctrl" style="position:fixed;bottom:30px;right:20px;z-index:900;display:flex;align-items:center;gap:6px;background:var(--glass-bg);backdrop-filter:blur(10px);border:1px solid var(--glass-border);border-radius:999px;padding:6px 12px;">
   <button onclick="_cifraFontAjustar(-1)" style="background:none;border:none;color:rgba(255,255,255,0.4);font-size:12px;font-weight:900;cursor:pointer;padding:2px 4px;line-height:1;touch-action:manipulation;" title="Diminuir fonte">A<sup style="font-size:7px">−</sup></button>
   <span id="cifra-font-val" style="font-size:10px;font-weight:900;color:rgba(255,255,255,0.35);min-width:28px;text-align:center;letter-spacing:0.5px;"></span>
   <button onclick="_cifraFontAjustar(+1)" style="background:none;border:none;color:rgba(255,255,255,0.4);font-size:15px;font-weight:900;cursor:pointer;padding:2px 4px;line-height:1;touch-action:manipulation;" title="Aumentar fonte">A<sup style="font-size:7px">+</sup></button>
@@ -6123,36 +5311,15 @@ body.auth-pending #toast {
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
       </button>
       <div class="evento-detalhe-title" id="evento-detalhe-title">Evento</div>
-      <!-- 3 pontinhos: Editar, Compartilhar, PDF -->
-      <div class="ev-more-wrap">
-        <button class="ev-more-btn" onclick="event.stopPropagation();_evMoreToggle()" title="Mais opções">
-          <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor" stroke="none"><circle cx="12" cy="5" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="12" cy="19" r="1.5"/></svg>
-        </button>
-        <div class="ev-more-drop" id="ev-more-drop">
-          <button class="ev-more-item" onclick="_evMoreAcao('show')" style="color:#0A9E6E;">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="#0A9E6E"><polygon points="5 3 19 12 5 21 5 3"/></svg>
-            Iniciar Show
-          </button>
-          <button class="ev-more-item" onclick="_evMoreAcao('editar')">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
-            Editar evento
-          </button>
-          <button class="ev-more-item" onclick="_evMoreAcao('compartilhar')">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
-            Compartilhar setlist
-          </button>
-          <button class="ev-more-item" onclick="_evMoreAcao('pdf')">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="12" y1="18" x2="12" y2="12"/><line x1="9" y1="15" x2="15" y2="15"/></svg>
-            Exportar PDF
-          </button>
-        </div>
-      </div>
-      <!-- Botão Iniciar Show (evento inteiro) -->
-      <button id="btn-iniciar-show-evento" onclick="ativarShowEvento(eventoAbertoId, null)" title="Iniciar Show" style="background:rgba(10,158,110,0.18);border:1px solid rgba(10,158,110,0.45);border-radius:8px;padding:0 10px;height:32px;display:flex;align-items:center;gap:5px;cursor:pointer;color:#0A9E6E;flex-shrink:0;font-size:11px;font-weight:800;letter-spacing:0.3px;">
-        <svg width="9" height="9" viewBox="0 0 24 24" fill="#0A9E6E"><polygon points="5 3 19 12 5 21 5 3"/></svg>
-        SHOW
+      <button onclick="abrirEditarEventoAtual()" title="Editar evento" style="background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.12);border-radius:8px;width:32px;height:32px;display:flex;align-items:center;justify-content:center;cursor:pointer;color:rgba(255,255,255,0.45);flex-shrink:0;">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
       </button>
-      <!-- Botão adicionar música (mantido discreto) -->
+      <button onclick="compartilharSetlist()" title="Compartilhar setlist" id="btn-compartilhar-setlist" style="background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);border-radius:8px;width:32px;height:32px;display:flex;align-items:center;justify-content:center;cursor:pointer;color:rgba(255,255,255,0.4);flex-shrink:0;position:relative;">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
+      </button>
+      <button onclick="exportarSetlistPDF()" title="Exportar como PDF" style="background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);border-radius:8px;width:32px;height:32px;display:flex;align-items:center;justify-content:center;cursor:pointer;color:rgba(255,255,255,0.4);flex-shrink:0;">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="12" y1="18" x2="12" y2="12"/><line x1="9" y1="15" x2="15" y2="15"/></svg>
+      </button>
       <button onclick="abrirAddMusica()" title="Adicionar música" style="background:rgba(10,158,110,0.15);border:1px solid rgba(10,158,110,0.35);border-radius:8px;width:32px;height:32px;display:flex;align-items:center;justify-content:center;cursor:pointer;color:#0A9E6E;flex-shrink:0;">
         <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
       </button>
@@ -6303,42 +5470,23 @@ body.auth-pending #toast {
 </div>
 
 <script>
-// ── Sanitizador HTML global (disponível em todo o bloco) ─────────────────────
-if (typeof _ve !== 'function') {
-  window._ve = function _ve(s){ return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#x27;'); };
-}
-// ── Suprimir console em produção (definir window.MAP_DEBUG=true para habilitar) ─
-(function(){
-  if (!window.MAP_DEBUG) {
-    var noop = function(){};
-    if (typeof console !== 'undefined') {
-      ['log','warn','info','debug'].forEach(function(m){ console[m] = noop; });
-    }
-  }
-})();
 // ─── PERFIL ─────────────────────────────────────────────────────────────────
-// ── Helper seguro para localStorage JSON (evita crash com JSON corrompido) ──
-function _lsGet(key, fallback) {
-  try { var v = localStorage.getItem(key); return v ? JSON.parse(v) : fallback; }
-  catch(e) { return fallback; }
-}
-function _lsSet(key, val) {
-  try { localStorage.setItem(key, JSON.stringify(val)); return true; }
-  catch(e) { return false; }
-}
 let perfilFotoBase64 = null; // foto atual em edição
 
 
 // ── Verificação periódica de status (banimento/bloqueio em tempo real) ────────
 (function _initStatusWatch() {
   var CHECK_MS = 5 * 60 * 1000; // 5 minutos
-  var _checarStatusEmAndamento = false; // guard de concorrência
   async function _checarStatus() {
-    if (_checarStatusEmAndamento) return; // evita chamadas simultâneas
-    _checarStatusEmAndamento = true;
+  // Aplica tamanho de fonte salvo
+  _fonteShow = parseInt(localStorage.getItem(_FONTE_SHOW_KEY) || '48');
+  _aplicarFontePartes(_fontePartes);
+  _cifraFontSincLabel();
+  // Verifica se URL tem ?setlist= (view pública)
+  _verificarSetlistPublico();
     try {
       var uid = localStorage.getItem('map_uid_v1');
-      var perfil = _lsGet('map_perfil_v1', {});
+      var perfil = JSON.parse(localStorage.getItem('map_perfil_v1') || '{}');
       if (!uid || perfil.isAdmin) return; // admin nunca é bloqueado
       if (!window._fb) return;
       var pf = await window._fb.carregarPerfilPorUid(uid);
@@ -6356,10 +5504,7 @@ let perfilFotoBase64 = null; // foto atual em edição
           location.reload();
         }, 2000);
       }
-    } catch(e) {
-    } finally {
-      _checarStatusEmAndamento = false; // libera guard em qualquer caso
-    }
+    } catch(e) {}
   }
   // Verificar link seguro se houver token pendente
   if (sessionStorage.getItem('_lseg_token')) {
@@ -6379,7 +5524,7 @@ let perfilFotoBase64 = null; // foto atual em edição
 function abrirModalPerfil() {
   // Sliders de fonte foram movidos para os painéis individuais — nada a sincronizar aqui
   _renderHistoricoShow();
-  const perfil = _lsGet('map_perfil_v1', {});
+  const perfil = JSON.parse(localStorage.getItem('map_perfil_v1') || '{}');
   const nome = perfil.nome || perfil.nomeUsuario || '';
   const inst = perfil.instrumento || null;
 
@@ -6401,7 +5546,7 @@ function abrirModalPerfil() {
   // Stats
   document.getElementById('perfil-stat-musicas').textContent = songs.length;
   document.getElementById('perfil-stat-eventos').textContent =
-    (_lsGet('map_pro_eventos_v1', [])).length;
+    (JSON.parse(localStorage.getItem('map_pro_eventos_v1') || '[]')).length;
 
   // Badge Google
   const badge = document.getElementById('perfil-google-badge');
@@ -6416,7 +5561,7 @@ function abrirModalPerfil() {
   }
 
   // Carrega foto de fundo do banner
-  const _pb = _lsGet('map_perfil_v1', {});
+  const _pb = JSON.parse(localStorage.getItem('map_perfil_v1') || '{}');
   _aplicarBannerFoto(_pb.bannerFoto || null);
 
 
@@ -6436,10 +5581,10 @@ function abrirModalPerfil() {
 async function sairDaConta() {
   // confirm() nativo bloqueado em iOS em contextos de overlay — usar modal próprio
   const overlay = document.createElement('div');
-  overlay.style.cssText = _overlayBg();
+  overlay.style.cssText = 'position:fixed;inset:0;z-index:100020;background:rgba(0,0,0,0.88);display:flex;align-items:center;justify-content:center;padding:24px;';
   overlay.innerHTML =
-    '<div style="' + _boxBg('padding:26px 22px;width:100%;max-width:320px;display:flex;flex-direction:column;gap:14px;') + '">'
-  + '<div style="font-size:16px;font-weight:900;color:' + _txtColor() + ';">Sair do perfil?</div>'
+    '<div style="background:#111119;border:1px solid rgba(255,255,255,0.1);border-radius:20px;padding:26px 22px;width:100%;max-width:320px;display:flex;flex-direction:column;gap:14px;">'
+  + '<div style="font-size:16px;font-weight:900;color:#fff;">Sair do perfil?</div>'
   + '<div style="font-size:13px;color:rgba(255,255,255,0.45);line-height:1.5;">Os dados locais serão apagados. As músicas e eventos guardados na nuvem ficam seguros.</div>'
   + '<div style="display:flex;gap:10px;margin-top:4px;">'
   + '<button id="_sair-cancel" style="flex:1;padding:12px;border-radius:12px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);color:rgba(255,255,255,0.4);font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;touch-action:manipulation;">Cancelar</button>'
@@ -6460,7 +5605,7 @@ async function _executarSaida() {
     try {
       const uid = _getUid();
       const musicasLocais  = JSON.parse(localStorage.getItem('map_pro_elite_v1')   || '[]');
-      const eventosLocais  = _lsGet('map_pro_eventos_v1', []);
+      const eventosLocais  = JSON.parse(localStorage.getItem('map_pro_eventos_v1') || '[]');
       if (window._fb.salvarBackupCompleto) {
         await window._fb.salvarBackupCompleto(uid, musicasLocais, eventosLocais);
       } else {
@@ -6477,13 +5622,7 @@ async function _executarSaida() {
     'map_pro_elite_v1', 'map_pro_eventos_v1'
   ].forEach(function(k) { localStorage.removeItem(k); });
 
-  // 3. Cancelar intervalos antes de sair
-  if (window._eventosProximosInterval) {
-    clearInterval(window._eventosProximosInterval);
-    window._eventosProximosInterval = null;
-  }
-
-  // 4. Reload para login
+  // 3. Reload para login
   sessionStorage.setItem('map_skip_splash', '1');
   location.reload();
 }
@@ -6704,7 +5843,7 @@ async function confirmarFormalizarConta() {
   }
   if (!perfil.nome) perfil.nome = email.split('@')[0];
   if (!perfil.nomeUsuario) perfil.nomeUsuario = perfil.nome;
-  _lsSet('map_perfil_v1', perfil);
+  localStorage.setItem('map_perfil_v1', JSON.stringify(perfil));
   localStorage.setItem('map_uid_v1', novoUid);
 
   // 3. Sincroniza músicas e eventos para o novo UID no Firebase
@@ -6725,7 +5864,7 @@ async function confirmarFormalizarConta() {
     await window._fb.backupMusicas(novoUid, _musParaBackup);
   } catch(e) {}
   try {
-    const _evParaBackup = _lsGet('map_pro_eventos_v1', []);
+    const _evParaBackup = JSON.parse(localStorage.getItem('map_pro_eventos_v1') || '[]');
     await window._fb.backupEventos(novoUid, _evParaBackup);
   } catch(e) {}
 
@@ -6789,8 +5928,7 @@ async function enviarRecuperacaoSenha() {
   if (btn) { btn.disabled = true; btn.textContent = 'A enviar...'; }
   setMsg('', null);
 
-  let result;
-  try { result = await window._fb.enviarEmailRecuperacao(email); } catch(e) { result = null; }
+  const result = await window._fb.enviarEmailRecuperacao(email);
   if (result && result.ok) {
     setMsg('Email enviado! Verifique sua caixa de entrada.', '#0A9E6E');
     if (btn) btn.textContent = 'Enviado';
@@ -6852,10 +5990,10 @@ function fecharHistoricoShows() {
 
 function _limparHistoricoShow() {
   var overlay = document.createElement('div');
-  overlay.style.cssText = _overlayBg().replace('100020','100060');
+  overlay.style.cssText = 'position:fixed;inset:0;z-index:100040;background:rgba(0,0,0,0.88);display:flex;align-items:center;justify-content:center;padding:24px;';
   overlay.innerHTML =
-    '<div style="' + _boxBg('padding:24px 20px;width:100%;max-width:280px;display:flex;flex-direction:column;gap:14px;text-align:center;') + '">'
-  + '<div style="font-size:14px;font-weight:900;color:' + _txtColor() + ';">Limpar histórico?</div>'
+    '<div style="background:#111119;border:1px solid rgba(255,255,255,0.1);border-radius:20px;padding:24px 20px;width:100%;max-width:280px;display:flex;flex-direction:column;gap:14px;text-align:center;">'
+  + '<div style="font-size:14px;font-weight:900;color:#fff;">Limpar histórico?</div>'
   + '<div style="font-size:12px;color:rgba(255,255,255,0.35);">Todos os registros de shows serão apagados.</div>'
   + '<div style="display:flex;gap:10px;">'
   + '<button id="_lhs-nao" style="flex:1;padding:11px;border-radius:10px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);color:rgba(255,255,255,0.5);font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;">Cancelar</button>'
@@ -6916,9 +6054,9 @@ async function verPerfilUsuario(uid) {
     if (fotoSrc) {
       const px = u.fotoPosX !== undefined ? u.fotoPosX : 50;
       const py = u.fotoPosY !== undefined ? u.fotoPosY : 50;
-      avEl.innerHTML = '<img src="' + encodeURI(String(fotoSrc||'')) + '" style="width:100%;height:100%;object-fit:cover;border-radius:15px;object-position:' + (+px||50) + '% ' + (+py||50) + '%;">';
+      avEl.innerHTML = '<img src="' + fotoSrc + '" style="width:100%;height:100%;object-fit:cover;border-radius:15px;object-position:' + px + '% ' + py + '%;">';
     } else {
-      avEl.innerHTML = '<span style="font-size:28px;font-weight:900;color:#0A9E6E;">' + _ve(inicial) + '</span>';
+      avEl.innerHTML = '<span style="font-size:28px;font-weight:900;color:#0A9E6E;">' + inicial + '</span>';
     }
 
     document.getElementById('pp-nome').textContent = nome;
@@ -7059,7 +6197,7 @@ async function criarSala() {
   try {
     ok = await window._fb.criarSalaFb(code, uid, perfil.nome || 'Host', estado);
   } catch(e) {
-    if (window._DEBUG) console.error('criarSala exception:', e);
+    console.error('criarSala exception:', e);
   }
   if (!ok) {
     const msg = navigator.onLine
@@ -7118,7 +6256,7 @@ async function criarSala() {
 }
 
 function copiarCodigo() {
-  navigator.clipboard.writeText(myRoomCode).then(() => showToast('Código copiado: ' + myRoomCode)).catch(function() { showToast('Não foi possível copiar automaticamente.'); });
+  navigator.clipboard.writeText(myRoomCode).then(() => showToast('Código copiado: ' + myRoomCode));
 }
 
 // ── HOST: Broadcast de Estado ────────────────────────────────────────────────
@@ -7205,8 +6343,8 @@ function _iniciarListenerMensagens(code, hostUid) {
         const jaEntrou = !!_viewersOnline[msg.uid];
         _viewersOnline[msg.uid] = msg.nome;
         if (!jaEntrou) {
-          showToast((_ve(msg.nome) || 'Músico') + ' entrou na sala');
-          adicionarNotif('event', (_ve(msg.nome) || 'Músico') + ' entrou na sala',
+          showToast(msg.nome + ' entrou na sala');
+          adicionarNotif('event', msg.nome + ' entrou na sala',
             'Código ' + myRoomCode, 'join_' + msg.uid);
         }
         broadcastEstado();
@@ -7214,7 +6352,7 @@ function _iniciarListenerMensagens(code, hostUid) {
       } else if (msg.tipo === 'leave') {
         const nome = _viewersOnline[msg.uid] || 'Músico';
         delete _viewersOnline[msg.uid];
-        showToast((_ve(nome) || 'Músico') + ' saiu da sala');
+        showToast(nome + ' saiu da sala');
         atualizarSyncBar(myRoomCode);
       }
     });
@@ -7305,13 +6443,13 @@ async function _sairDaSala() {
   if (!isViewer) return;
   const code = (document.getElementById('sync-code-display')?.innerText || '').trim() || myRoomCode;
   const uid  = _getUid();
+  const nome = (_getPerfilLocal()).nome || 'Músico';
 
   if (_salaListener) { _salaListener(); _salaListener = null; }
-  try {
-    if (code) {
-      await window._fb.sairSalaFb(code, uid).catch(() => {});
-    }
-  } catch(e) {}
+  if (code) {
+    // Leave registado pelo sairSalaFb (remove do campo viewers no doc da sala)
+    await window._fb.sairSalaFb(code, uid).catch(() => {});
+  }
 
   isViewer = false;
   window._emSala = false;
@@ -7399,11 +6537,11 @@ function togglePerf() {
   // Ao SAIR do show — pede confirmação
   var overlay = document.createElement('div');
   overlay.id = '_confirm-sair-show';
-  overlay.style.cssText = _overlayBg().replace('100020','100030');
+  overlay.style.cssText = 'position:fixed;inset:0;z-index:100030;background:rgba(0,0,0,0.88);display:flex;align-items:center;justify-content:center;padding:24px;';
   overlay.innerHTML =
-    '<div style="' + _boxBg('padding:28px 24px;width:100%;max-width:300px;display:flex;flex-direction:column;gap:14px;text-align:center;') + '">'
+    '<div style="background:#111119;border:1px solid rgba(255,255,255,0.1);border-radius:20px;padding:28px 24px;width:100%;max-width:300px;display:flex;flex-direction:column;gap:14px;text-align:center;">'
   + '<div style="font-size:32px;line-height:1;"></div>'
-  + '<div style="font-size:16px;font-weight:900;color:' + _txtColor() + ';">Encerrar o show?</div>'
+  + '<div style="font-size:16px;font-weight:900;color:#fff;">Encerrar o show?</div>'
   + '<div style="font-size:13px;color:rgba(255,255,255,0.4);line-height:1.5;">O modo show será desativado e o scroll parado.</div>'
   + '<div style="display:flex;gap:10px;margin-top:4px;">'
   + '<button id="_sair-show-nao" style="flex:1;padding:13px;border-radius:12px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);color:rgba(255,255,255,0.5);font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;touch-action:manipulation;">Cancelar</button>'
@@ -7510,19 +6648,12 @@ function _atualizarBadgeEvento() {
 
 // ─── ATIVAR SHOW COM EVENTO ───────────────────────────────────────────────────
 function ativarShowEvento(eventoId, startSongId) {
-  // Normaliza tipos: IDs vindos de onclick HTML chegam como string, musicIds são number
-  var eventoIdN   = eventoId   != null ? Number(eventoId)   : null;
-  var startSongN  = startSongId != null ? Number(startSongId) : null;
-
-  const ev = eventos.find(e => e.id === eventoIdN);
+  const ev = eventos.find(e => e.id === eventoId);
   if (!ev || !ev.musicIds || ev.musicIds.length === 0) {
     showToast('O evento não tem músicas.');
     return;
   }
-  // Garante que todos os IDs do evento também sejam números para comparação segura
-  const idsValidos = ev.musicIds
-    .map(Number)
-    .filter(id => songs.find(s => s.id === id));
+  const idsValidos = ev.musicIds.filter(id => songs.find(s => s.id === id));
   if (idsValidos.length === 0) {
     showToast('Nenhuma música encontrada.');
     return;
@@ -7533,7 +6664,7 @@ function ativarShowEvento(eventoId, startSongId) {
   showSetlistEventoNome = ev.nome;
 
   // Se veio uma música específica, começa por ela; senão começa pela primeira
-  const startId = startSongN && idsValidos.includes(startSongN) ? startSongN : idsValidos[0];
+  const startId = startSongId && idsValidos.includes(startSongId) ? startSongId : idsValidos[0];
   showSetlistPos = idsValidos.indexOf(startId);
 
   const musicaInicial = songs.find(s => s.id === startId);
@@ -7555,7 +6686,7 @@ function ativarShowEvento(eventoId, startSongId) {
   if (!isPerf) togglePerf();
   else { atualizarIndicador(); broadcastEstado(); _mostrarAlertaProxima(); }
 
-  showToast('Show: ' + (_ve(ev.nome) || 'Evento') + ' · ' + idsValidos.length + ' músicas');
+  showToast('Show: ' + ev.nome + ' · ' + idsValidos.length + ' músicas');
 }
 
 function limparShowEvento() {
@@ -7796,9 +6927,9 @@ window.addEventListener('touchend', function(e) {
 
 function resetSection() {
   var overlay = document.createElement('div');
-  overlay.style.cssText = _overlayBg();
-  overlay.innerHTML = '<div style="' + _boxBg('padding:24px 20px;width:100%;max-width:300px;display:flex;flex-direction:column;gap:14px;') + '">'
-    + '<div style="font-size:15px;font-weight:900;color:' + _txtColor() + ';">Limpar seção?</div>'
+  overlay.style.cssText = 'position:fixed;inset:0;z-index:100020;background:rgba(0,0,0,0.88);display:flex;align-items:center;justify-content:center;padding:24px;';
+  overlay.innerHTML = '<div style="background:#111119;border:1px solid rgba(255,255,255,0.1);border-radius:20px;padding:24px 20px;width:100%;max-width:300px;display:flex;flex-direction:column;gap:14px;">'
+    + '<div style="font-size:15px;font-weight:900;color:#fff;">Limpar seção?</div>'
     + '<div style="font-size:13px;color:rgba(255,255,255,0.4);line-height:1.5;">Todas as partes e acordes serão removidos. O metrônomo voltará para 120 BPM.</div>'
     + '<div style="display:flex;gap:10px;">'
     + '<button id="_rs-cancel" style="flex:1;padding:12px;border-radius:12px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);color:rgba(255,255,255,0.4);font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;touch-action:manipulation;">Cancelar</button>'
@@ -8212,16 +7343,15 @@ function saveSong() {
     songs[currentSongIndex].bpm   = bpm;
     songs[currentSongIndex].parts = parts;
     updateStorage();
-    _markClean();
     showToast('Alterações salvas!');
   } else {
     // Nova música — usa modal customizado em vez de prompt() nativo (bloqueado no iOS)
     var overlay = document.createElement('div');
-    overlay.style.cssText = _overlayBg();
-    overlay.innerHTML = '<div style="' + _boxBg('padding:24px 20px;width:100%;max-width:320px;display:flex;flex-direction:column;gap:14px;') + '">'
-      + '<div style="font-size:15px;font-weight:900;color:' + _txtColor() + ';">Salvar música</div>'
+    overlay.style.cssText = 'position:fixed;inset:0;z-index:100020;background:rgba(0,0,0,0.88);display:flex;align-items:center;justify-content:center;padding:24px;';
+    overlay.innerHTML = '<div style="background:#111119;border:1px solid rgba(255,255,255,0.1);border-radius:20px;padding:24px 20px;width:100%;max-width:320px;display:flex;flex-direction:column;gap:14px;">'
+      + '<div style="font-size:15px;font-weight:900;color:#fff;">Salvar música</div>'
       + '<input id="_save-name-input" type="text" placeholder="Nome da música..." maxlength="80"'
-      +   ' style="' + _inputBg() + '"'
+      +   ' style="background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.12);border-radius:10px;color:#fff;font-size:14px;padding:12px 14px;outline:none;font-family:inherit;width:100%;box-sizing:border-box;"'
       +   '>'
       + '<div style="display:flex;gap:10px;">'
       + '<button id="_save-cancel" style="flex:1;padding:12px;border-radius:12px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);color:rgba(255,255,255,0.4);font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;touch-action:manipulation;">Cancelar</button>'
@@ -8254,26 +7384,14 @@ function toggleFavorite(id, e) {
   if (s) { s.favorite = !s.favorite; updateStorage(); }
 }
 
-function _markDirty() {
-  var btn = document.getElementById('btn-save-vitro');
-  if (btn) btn.classList.add('dirty');
-}
-function _markClean() {
-  var btn = document.getElementById('btn-save-vitro');
-  if (btn) btn.classList.remove('dirty');
-}
-
 function updateStorage() {
-  _markDirty();
   // Invalida cache de renderização da biblioteca
   _bibLastSig = null;
   _evLastSig = null;
   // Atualiza timestamp local do backup para controle de mesclagem
-  try {
-    localStorage.setItem('map_backup_ts_v1', String(Date.now()));
-    songs.sort((a,b) => { if (a.favorite === b.favorite) return 0; return a.favorite ? -1 : 1; });
-    localStorage.setItem('map_pro_elite_v1', JSON.stringify(songs));
-  } catch(e) { if (window._DEBUG) console.error('localStorage quota exceeded', e); }
+  localStorage.setItem('map_backup_ts_v1', String(Date.now()));
+  songs.sort((a,b) => { if (a.favorite === b.favorite) return 0; return a.favorite ? -1 : 1; });
+  localStorage.setItem('map_pro_elite_v1', JSON.stringify(songs));
   _fbBackupMusicas(); // auto-backup na nuvem
   renderSetlist();
   if (document.getElementById('biblioteca-overlay')?.classList.contains('show')) {
@@ -8304,7 +7422,6 @@ function renderSetlist() {
 }
 
 function loadSong(id) {
-  id = Number(id); // normaliza tipo: pode chegar como string via onclick
   const idx = songs.findIndex(x => x.id === id);
   if (idx === -1) return;
   // Incrementa contador de reproduções (usado na ordenação "mais tocadas")
@@ -8329,10 +7446,10 @@ function deleteSong(id, e) {
   var song = songs.find(function(s){ return s.id === id; });
   var nome = song ? song.name : 'esta música';
   var overlay = document.createElement('div');
-  overlay.style.cssText = _overlayBg();
-  overlay.innerHTML = '<div style="' + _boxBg('padding:24px 20px;width:100%;max-width:300px;display:flex;flex-direction:column;gap:14px;') + '">'
-    + '<div style="font-size:15px;font-weight:900;color:' + _txtColor() + ';">Excluir música?</div>'
-    + '<div style="font-size:13px;color:' + _txtSecColor() + ';line-height:1.5;"><b style="color:' + _txtColor() + ';">' + nome.replace(/</g,'&lt;') + '</b> será removida permanentemente.</div>'
+  overlay.style.cssText = 'position:fixed;inset:0;z-index:100020;background:rgba(0,0,0,0.88);display:flex;align-items:center;justify-content:center;padding:24px;';
+  overlay.innerHTML = '<div style="background:#111119;border:1px solid rgba(255,255,255,0.1);border-radius:20px;padding:24px 20px;width:100%;max-width:300px;display:flex;flex-direction:column;gap:14px;">'
+    + '<div style="font-size:15px;font-weight:900;color:#fff;">Excluir música?</div>'
+    + '<div style="font-size:13px;color:rgba(255,255,255,0.4);line-height:1.5;"><b style="color:#fff;">' + nome.replace(/</g,'&lt;') + '</b> será removida permanentemente.</div>'
     + '<div style="display:flex;gap:10px;">'
     + '<button id="_ds-cancel" style="flex:1;padding:12px;border-radius:12px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);color:rgba(255,255,255,0.4);font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;touch-action:manipulation;">Cancelar</button>'
     + '<button id="_ds-confirm" style="flex:2;padding:12px;border-radius:12px;background:rgba(255,60,60,0.8);border:none;color:#fff;font-size:12px;font-weight:900;cursor:pointer;font-family:inherit;touch-action:manipulation;">Excluir</button>'
@@ -8362,8 +7479,7 @@ let ctxModo = null; // 'biblioteca' | 'evento'
 
 function abrirCtxMenu(e, songId, modo) {
   e.stopPropagation();
-  ctxSongId = Number(songId); // normaliza tipo: pode chegar como string via onclick
-  songId = ctxSongId;
+  ctxSongId = songId;
   ctxModo = modo;
 
   const song = songs.find(s => s.id === songId);
@@ -8414,7 +7530,6 @@ function ctxAcao(acao) {
 }
 
 function duplicarMusica(id) {
-  id = Number(id); // normaliza tipo
   var original = songs.find(function(s) { return s.id === id; });
   if (!original) return;
   var novoId = Date.now();
@@ -8470,7 +7585,7 @@ function desconectar() {
           window._fb.enviarMensagemSala(code, { tipo: 'leave', uid, nome: (_getPerfilLocal().nome || 'Músico'), _t: Date.now() }).catch(() => {});
         }
       }
-    } catch(e) { if (window._DEBUG) console.warn('desconectar FB:', e); }
+    } catch(e) { console.warn('desconectar FB:', e); }
     // Reset estado
     isHost = false; isViewer = false;
     myRoomCode = null;
@@ -8482,7 +7597,7 @@ function desconectar() {
     try { mostrarEscolhaSala(); } catch(e){}
     showToast('Sala encerrada.');
   } catch(e) {
-    if (window._DEBUG) console.error('desconectar erro:', e);
+    console.error('desconectar erro:', e);
     showToast('Sala encerrada.');
   }
 }
@@ -8563,121 +7678,74 @@ function _gerarSlug() {
 
 async function compartilharSetlist() {
   try {
-    var ev = eventos.find(function(e) { return e.id === eventoAbertoId; });
-    if (!ev) return;
-    var lista = (ev.musicIds || []).map(function(id) {
-      return songs.find(function(s) { return s.id === id; });
-    }).filter(Boolean);
-    if (!lista.length) { showToast('Evento sem músicas para compartilhar.'); return; }
 
-    // ── Monta texto do setlist para share nativo ──────────────────────────────
-    var dataStr = ev.data
-      ? new Date(ev.data + 'T12:00:00').toLocaleDateString('pt-BR', {day:'2-digit',month:'long',year:'numeric'})
-      : '';
-    var linhas = lista.map(function(s, i) {
-      return (i + 1) + '. ' + s.name + (s.bpm ? ' — ' + s.bpm + ' BPM' : '');
-    });
-    var textoShare = '🎵 Setlist: ' + ev.nome
-      + (dataStr ? '\n📅 ' + dataStr : '')
-      + '\n\n' + linhas.join('\n')
-      + '\n\n— Map Music PRO';
+  var ev = eventos.find(function(e) { return e.id === eventoAbertoId; });
+  if (!ev) return;
+  var lista = (ev.musicIds || []).map(function(id) {
+    return songs.find(function(s) { return s.id === id; });
+  }).filter(Boolean);
+  if (!lista.length) { showToast('Evento sem músicas para compartilhar.'); return; }
 
-    // ── Tenta gerar link público via Firebase (melhor opção) ──────────────────
-    var link = null;
-    if (window._fb && window._fbReady) {
-      try {
-        var slug = ev._pubSlug || _gerarSlug();
-        var dados = {
-          nome: ev.nome, data: ev.data || '', criadoEm: Date.now(),
-          musicas: lista.map(function(s, i) {
-            return { pos: i+1, nome: s.name, bpm: s.bpm || 0, tags: (s.tags||[]).join(', ') };
-          })
-        };
-        var ok = await window._fb._set('setlists_publicos/' + slug, dados, false);
-        if (ok) {
-          ev._pubSlug = slug;
-          _setlistPubSlug = slug;
-          link = window.location.origin + window.location.pathname + '?setlist=' + slug;
-          textoShare += (link ? '\n\n🔗 ' + link : '');
-        }
-      } catch(e) { /* Firebase falhou — compartilha só o texto */ }
-    }
+  // Mostra modal imediatamente com loading
+  var modal = document.getElementById('modal-setlist-publico');
+  document.getElementById('setlist-pub-titulo').innerText = ev.nome;
+  var dataStr = ev.data ? new Date(ev.data + 'T12:00:00').toLocaleDateString('pt-BR', {day:'2-digit',month:'long',year:'numeric'}) : '';
+  document.getElementById('setlist-pub-data').innerText = dataStr;
+  document.getElementById('setlist-pub-link').innerText = 'Gerando link…';
+  document.getElementById('setlist-pub-lista').innerHTML = '<div style="text-align:center;padding:20px;color:rgba(255,255,255,0.3);font-size:12px;">Publicando…</div>';
+  modal.classList.add('show');
 
-    // ── Web Share API (sheet nativa iOS/Android/desktop) ─────────────────────
-    if (navigator.share) {
-      var shareData = { title: 'Setlist — ' + ev.nome, text: textoShare };
-      if (link) shareData.url = link;
-      try {
-        await navigator.share(shareData);
-        return; // share nativo abriu — não precisa do modal
-      } catch(err) {
-        if (err.name === 'AbortError') return; // usuário fechou o share sheet
-        // Outro erro → cai no modal abaixo
-      }
-    }
+  // Slug: reusa se já existir para este evento nesta sessão
+  var slug = (ev._pubSlug) || _gerarSlug();
+  var dados = {
+    nome: ev.nome,
+    data: ev.data || '',
+    criadoEm: Date.now(),
+    musicas: lista.map(function(s, i) {
+      return { pos: i + 1, nome: s.name, bpm: s.bpm || 0, tags: (s.tags || []).join(', ') };
+    })
+  };
 
-    // ── Fallback: modal com link/texto e botões copiar + share ───────────────
-    var modal = document.getElementById('modal-setlist-publico');
-    document.getElementById('setlist-pub-titulo').innerText = ev.nome;
-    document.getElementById('setlist-pub-data').innerText = dataStr;
-    document.getElementById('setlist-pub-link').innerText = link || textoShare;
-    document.getElementById('setlist-pub-lista').innerHTML = lista.map(function(s, i) {
-      var tags = (s.tags && s.tags.length)
-        ? '<span style="font-size:9px;color:#0A9E6E;margin-left:4px;">' + s.tags.join(' · ') + '</span>' : '';
-      return '<div style="display:flex;align-items:center;gap:10px;padding:8px 10px;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.06);border-radius:9px;">'
-        + '<span style="font-size:11px;font-weight:800;color:rgba(255,255,255,0.25);min-width:18px;text-align:center;">' + (i+1) + '</span>'
-        + '<div style="flex:1;min-width:0;"><div style="font-size:13px;font-weight:700;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">'
-        + (s.name||'').replace(/</g,'&lt;') + tags + '</div></div>'
-        + '<span style="font-size:11px;font-weight:700;color:rgba(255,62,62,0.7);white-space:nowrap;">' + (s.bpm||'—') + ' BPM</span>'
-        + '</div>';
-    }).join('');
-    // Guarda texto para copiar (link se tiver, senão texto completo)
-    modal._shareText = textoShare;
-    modal.classList.add('show');
+  var ok = await window._fb._set('setlists_publicos/' + slug, dados, false);
+  if (!ok) {
+    document.getElementById('setlist-pub-link').innerText = 'Erro ao publicar. Tenta novamente.';
+    document.getElementById('setlist-pub-lista').innerHTML = '';
+    showToast('Erro ao gerar link.');
+    return;
+  }
+
+  // Guarda slug no evento (memória, não persiste — slug gerado de novo se recarregar)
+  ev._pubSlug = slug;
+  _setlistPubSlug = slug;
+
+  var link = window.location.origin + window.location.pathname + '?setlist=' + slug;
+  document.getElementById('setlist-pub-link').innerText = link;
+
+  // Renderiza lista de músicas no modal
+  document.getElementById('setlist-pub-lista').innerHTML = lista.map(function(s, i) {
+    var tags = (s.tags && s.tags.length) ? '<span style="font-size:9px;color:#0A9E6E;margin-left:4px;">' + s.tags.join(' · ') + '</span>' : '';
+    return '<div style="display:flex;align-items:center;gap:10px;padding:8px 10px;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.06);border-radius:9px;">'
+      + '<span style="font-size:11px;font-weight:800;color:rgba(255,255,255,0.25);min-width:18px;text-align:center;">' + (i+1) + '</span>'
+      + '<div style="flex:1;min-width:0;">'
+      +   '<div style="font-size:13px;font-weight:700;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + (s.name||'').replace(/</g,'&lt;') + tags + '</div>'
+      + '</div>'
+      + '<span style="font-size:11px;font-weight:700;color:rgba(255,62,62,0.7);white-space:nowrap;">' + (s.bpm||'—') + ' BPM</span>'
+      + '</div>';
+  }).join('');
 
   } catch(e) {
-    if (window._DEBUG) console.error('compartilharSetlist:', e);
     showToast('Erro ao compartilhar setlist.');
   }
 }
 
 function copiarLinkSetlist() {
-  var modal = document.getElementById('modal-setlist-publico');
-  // Usa o texto de share completo se disponível, senão o conteúdo do campo
-  var texto = (modal && modal._shareText)
-    ? modal._shareText
-    : (document.getElementById('setlist-pub-link').innerText || '');
-  if (!texto || texto.startsWith('Gerando') || texto.startsWith('Erro')) return;
-  if (navigator.clipboard && navigator.clipboard.writeText) {
-    navigator.clipboard.writeText(texto).then(function() {
-      showToast('Copiado!');
-    }).catch(function() { _copiarFallback(texto); });
-  } else {
-    _copiarFallback(texto);
-  }
-}
-
-function compartilharNativo() {
-  var modal = document.getElementById('modal-setlist-publico');
-  var texto = (modal && modal._shareText) || document.getElementById('setlist-pub-link').innerText || '';
-  var titulo = document.getElementById('setlist-pub-titulo').innerText || 'Setlist';
-  if (!navigator.share) { copiarLinkSetlist(); return; }
-  navigator.share({ title: titulo, text: texto }).catch(function(e) {
-    if (e.name !== 'AbortError') copiarLinkSetlist();
+  var link = document.getElementById('setlist-pub-link').innerText;
+  if (!link || link.startsWith('Gerando') || link.startsWith('Erro')) return;
+  navigator.clipboard.writeText(link).then(function() {
+    showToast('Link copiado!');
+  }).catch(function() {
+    showToast('Copia o link manualmente.');
   });
-}
-
-function _copiarFallback(texto) {
-  try {
-    var ta = document.createElement('textarea');
-    ta.value = texto;
-    ta.style.cssText = 'position:fixed;opacity:0;top:0;left:0;';
-    document.body.appendChild(ta);
-    ta.select(); ta.setSelectionRange(0, 99999);
-    document.execCommand('copy');
-    document.body.removeChild(ta);
-    showToast('Copiado!');
-  } catch(e) { showToast('Não foi possível copiar.'); }
 }
 
 // ── Carrega setlist público quando URL tem ?setlist=SLUG ──────────────────
@@ -8726,7 +7794,7 @@ async function _verificarSetlistPublico() {
   return true;
 
   } catch(e) {
-    if (window._DEBUG) console.error('Erro ao verificar setlist público:', e);
+    console.error('Erro ao verificar setlist público:', e);
   }
 }
 
@@ -8762,14 +7830,6 @@ function exportarSetlistPDF() {
     + '<title>Setlist — ' + ev.nome.replace(/</g,'&lt;') + '</title>'
     + '<style>'
     + 'body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;margin:0;padding:32px 40px;color:#111;background:#fff;}'
-    + '.back-bar{position:fixed;top:0;left:0;right:0;z-index:999;background:rgba(255,255,255,0.95);backdrop-filter:blur(12px);border-bottom:1px solid #e8e8e8;padding:10px 20px;display:flex;align-items:center;justify-content:space-between;gap:12px;}'
-    + '.back-btn{display:flex;align-items:center;gap:7px;background:none;border:1px solid #ddd;border-radius:20px;padding:7px 16px;font-size:12px;font-weight:700;color:#444;cursor:pointer;font-family:inherit;transition:all 0.15s;}'
-    + '.back-btn:hover{background:#f0f0f0;color:#111;border-color:#bbb;}'
-    + '.back-bar-title{font-size:12px;font-weight:700;color:#888;letter-spacing:0.5px;}'
-    + '.print-btn{display:flex;align-items:center;gap:7px;background:#0A9E6E;border:none;border-radius:20px;padding:7px 18px;font-size:12px;font-weight:800;color:#fff;cursor:pointer;font-family:inherit;}'
-    + '.print-btn:hover{background:#089060;}'
-    + '@media print{.back-bar{display:none!important;}body{padding-top:32px!important;}}'
-    + 'body{padding-top:68px;}'
     + '@media print{body{padding:20px 28px;}@page{margin:1.5cm;}}'
     + '.header{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:28px;padding-bottom:20px;border-bottom:2px solid #111;}'
     + '.logo{font-size:10px;font-weight:900;letter-spacing:3px;color:#0A9E6E;text-transform:uppercase;margin-bottom:4px;}'
@@ -8789,17 +7849,6 @@ function exportarSetlistPDF() {
     + '.footer-note{font-size:10px;color:#bbb;}'
     + '.footer-brand{font-size:10px;font-weight:900;letter-spacing:2px;color:#0A9E6E;}'
     + '</style></head><body>'
-    + '<div class="back-bar">'
-    +   '<button class="back-btn" onclick="window.close()">'
-    +     '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>'
-    +     'Voltar ao app'
-    +   '</button>'
-    +   '<span class="back-bar-title">PRÉ-VISUALIZAÇÃO DO PDF</span>'
-    +   '<button class="print-btn" onclick="window.print()">'
-    +     '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>'
-    +     'Imprimir / Salvar PDF'
-    +   '</button>'
-    + '</div>'
     + '<div class="header">'
     +   '<div>'
     +     '<div class="logo">Map Music Pro · Setlist</div>'
@@ -8826,22 +7875,22 @@ function exportarSetlistPDF() {
     + '</div>'
     + '</body></html>';
 
-  var janela = window.open('', '_blank', 'width=860,height=1020,noopener,noreferrer');
+  var janela = window.open('', '_blank', 'width=794,height=1000');
   if (!janela) { showToast('Permita popups para exportar o PDF.'); return; }
   janela.document.write(html);
   janela.document.close();
-  showToast('Pré-visualização do PDF aberta!');
+  janela.onload = function() {
+    setTimeout(function() { janela.print(); }, 300);
+  };
+  showToast('A abrir pré-visualização do PDF…');
 }
 
 function exportData() {
   const blob = new Blob([JSON.stringify(songs,null,2)], {type:"application/json"});
   const a = document.createElement('a');
-  const _objUrl = URL.createObjectURL(blob);
-  a.href = _objUrl;
+  a.href = URL.createObjectURL(blob);
   a.download = `backup_map_${new Date().toISOString().slice(0,10)}.json`;
-  a.click();
-  setTimeout(function() { URL.revokeObjectURL(_objUrl); }, 1000); // libera memória
-  showToast('Backup exportado!');
+  a.click(); showToast('Backup exportado!');
 }
 function importData() {
   const input = document.createElement('input');
@@ -9343,12 +8392,12 @@ const ALBUM_PALETTES = [
   ['#042f2e','#2dd4bf'],  // turquesa
 ];
 
-let eventos = (function(){ try { return _lsGet('map_pro_eventos_v1', []) || []; } catch(e) { return []; } })();
+let eventos = (function(){ try { return JSON.parse(localStorage.getItem('map_pro_eventos_v1') || '[]') || []; } catch(e) { return []; } })();
 let bibTabAtiva = 'eventos'; // 'eventos' | 'musicas'
 let eventoAbertoId = null;
 
 function salvarEventos() {
-  _lsSet('map_pro_eventos_v1', eventos);
+  localStorage.setItem('map_pro_eventos_v1', JSON.stringify(eventos));
   _fbBackupEventos(); // auto-backup na nuvem
 }
 
@@ -9374,9 +8423,7 @@ function fecharBiblioteca() {
 
 function mostrarBibMain() {
   document.getElementById('biblioteca-main').classList.remove('hidden');
-  var _ed = document.getElementById('evento-detalhe');
-  _ed.classList.remove('show');
-  _ed.classList.remove('entering');
+  document.getElementById('evento-detalhe').classList.remove('show');
 }
 
 function bibTab(aba) {
@@ -9472,22 +8519,9 @@ function renderBiblioteca(filtro) {
 }
 
 function loadSongBiblioteca(id) {
-  // Flash visual para confirmar seleção
-  var grid = document.getElementById('biblioteca-grid');
-  if (grid) {
-    var card = grid.querySelector('[data-id="' + id + '"] .album-cover');
-    if (card) {
-      card.style.transition = 'transform 0.12s ease, filter 0.12s ease';
-      card.style.transform = 'scale(1.06)';
-      card.style.filter = 'brightness(1.3)';
-      setTimeout(function() { card.style.transform = ''; card.style.filter = ''; }, 160);
-    }
-  }
-  setTimeout(function() {
-    loadSong(id);
-    fecharBiblioteca();
-    showToast('Música carregada!');
-  }, 120);
+  loadSong(id);
+  fecharBiblioteca();
+  showToast('Música carregada!');
 }
 
 // ── ORDENAÇÃO DA BIBLIOTECA ──────────────────────────────────────────────────
@@ -9675,7 +8709,6 @@ let editarEventoId = null;
 
 function abrirEditarEvento(id, e) {
   if (e) e.stopPropagation();
-  id = Number(id); // normaliza tipo
   editarEventoId = id;
   const ev = eventos.find(x => x.id === id);
   if (!ev) return;
@@ -9692,7 +8725,6 @@ function abrirEditarEventoAtual() {
 
 function favoritarBiblioteca(id, e) {
   if (e) e.stopPropagation();
-  id = Number(id); // normaliza tipo: pode chegar como string via onclick
   var s = songs.find(function(x) { return x.id === id; });
   if (s) {
     s.favorite = !s.favorite;
@@ -9705,15 +8737,14 @@ function favoritarBiblioteca(id, e) {
 
 function deleteSongBiblioteca(id, e) {
   if (e) e.stopPropagation();
-  id = Number(id); // normaliza tipo: pode chegar como string via onclick
   var song = songs.find(function(s) { return s.id === id; });
   var nome = song ? song.name : 'esta música';
   var overlay = document.createElement('div');
-  overlay.style.cssText = _overlayBg();
+  overlay.style.cssText = 'position:fixed;inset:0;z-index:100020;background:rgba(0,0,0,0.88);display:flex;align-items:center;justify-content:center;padding:24px;';
   overlay.innerHTML =
-    '<div style="' + _boxBg('padding:24px 20px;width:100%;max-width:300px;display:flex;flex-direction:column;gap:14px;') + '">'
-  + '<div style="font-size:15px;font-weight:900;color:' + _txtColor() + ';">Excluir música?</div>'
-  + '<div style="font-size:13px;color:' + _txtSecColor() + ';line-height:1.5;"><b style="color:' + _txtColor() + ';">' + nome + '</b> será removida da biblioteca permanentemente.</div>'
+    '<div style="background:#111119;border:1px solid rgba(255,255,255,0.1);border-radius:20px;padding:24px 20px;width:100%;max-width:300px;display:flex;flex-direction:column;gap:14px;">'
+  + '<div style="font-size:15px;font-weight:900;color:#fff;">Excluir música?</div>'
+  + '<div style="font-size:13px;color:rgba(255,255,255,0.4);line-height:1.5;"><b style="color:#fff;">' + nome + '</b> será removida da biblioteca permanentemente.</div>'
   + '<div style="display:flex;gap:10px;margin-top:4px;">'
   + '<button id="_del-cancel" style="flex:1;padding:12px;border-radius:12px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);color:rgba(255,255,255,0.4);font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;touch-action:manipulation;">Cancelar</button>'
   + '<button id="_del-confirm" style="flex:2;padding:12px;border-radius:12px;background:rgba(255,60,60,0.8);border:none;color:#fff;font-size:12px;font-weight:900;cursor:pointer;font-family:inherit;touch-action:manipulation;">Excluir</button>'
@@ -9886,17 +8917,11 @@ function deletarEvento(id, e) {
 
 // ── DETALHE DO EVENTO ──
 function abrirEventoDetalhe(id) {
-  id = Number(id); // normaliza tipo: pode chegar como string via onclick
   eventoAbertoId = id;
   const ev = eventos.find(e => e.id === id);
   if (!ev) return;
   document.getElementById('biblioteca-main').classList.add('hidden');
-  var _ed = document.getElementById('evento-detalhe');
-  _ed.classList.add('entering');
-  // Força reflow para a transição funcionar
-  void _ed.offsetWidth;
-  _ed.classList.remove('entering');
-  _ed.classList.add('show');
+  document.getElementById('evento-detalhe').classList.add('show');
   document.getElementById('evento-detalhe-title').textContent = ev.nome;
   document.getElementById('evento-search').value = '';
   renderEventoDetalhe();
@@ -9909,29 +8934,6 @@ function voltarEventos() {
   ativarTab('eventos');
   renderEventos('');
 }
-
-// ── Menu 3 pontinhos do detalhe de evento ────────────────────────────────────
-function _evMoreToggle() {
-  var drop = document.getElementById('ev-more-drop');
-  if (drop) drop.classList.toggle('show');
-}
-function _evMoreAcao(acao) {
-  var drop = document.getElementById('ev-more-drop');
-  if (drop) drop.classList.remove('show');
-  if (acao === 'show')          ativarShowEvento(eventoAbertoId, null);
-  else if (acao === 'editar')   abrirEditarEventoAtual();
-  else if (acao === 'compartilhar') compartilharSetlist();
-  else if (acao === 'pdf')      exportarSetlistPDF();
-}
-// Fecha ao clicar fora
-document.addEventListener('click', function(e) {
-  var drop = document.getElementById('ev-more-drop');
-  if (!drop) return;
-  var wrap = drop.closest('.ev-more-wrap');
-  if (drop.classList.contains('show') && wrap && !wrap.contains(e.target)) {
-    drop.classList.remove('show');
-  }
-});
 
 function renderEventoDetalhe() {
   var ev = eventos.find(function(e) { return e.id === eventoAbertoId; });
@@ -9990,11 +8992,10 @@ function renderEventoDetalhe() {
 }
 
 function removerDoEvento(songId, e) {
-  if (e) e.stopPropagation();
-  songId = Number(songId); // normaliza tipo: onclick HTML entrega string
+  e.stopPropagation();
   const ev = eventos.find(e => e.id === eventoAbertoId);
   if (!ev) return;
-  ev.musicIds = ev.musicIds.map(Number).filter(id => id !== songId);
+  ev.musicIds = ev.musicIds.filter(id => id !== songId);
   salvarEventos();
   renderEventoDetalhe();
   showToast('Removida do evento.');
@@ -10123,10 +9124,9 @@ function fecharAddMusica() {
 }
 
 function adicionarAoEvento(songId) {
-  songId = Number(songId); // normaliza tipo: onclick HTML entrega string
   const ev = eventos.find(e => e.id === eventoAbertoId);
   if (!ev) return;
-  if (!ev.musicIds.map(Number).includes(songId)) {
+  if (!ev.musicIds.includes(songId)) {
     ev.musicIds.push(songId);
     salvarEventos();
     renderEventoDetalhe();
@@ -10550,7 +9550,7 @@ function analisarCifra() {
       cifraSecoes.length + ' seção(ões) detectada(s)';
     document.getElementById('cifra-preview').innerHTML = cifraSecoes.map(s => `
       <div class="preview-section">
-        <div class="preview-section-title">${escapeHtml(s.titulo)}</div>
+        <div class="preview-section-title">${s.titulo}</div>
         <div class="preview-section-content">${escapeHtml(s.conteudo)}</div>
       </div>`).join('');
     document.getElementById('cifra-step-2').style.display = 'block';
@@ -10803,18 +9803,16 @@ async function _fbBackupMusicas() {
   if (!_isFbReady()) return;
   clearTimeout(_backupTimer);
   _backupTimer = setTimeout(async () => {
-    try {
-      const uid = _getUid();
-      const eventosAtuais = _lsGet('map_pro_eventos_v1', []);
-      // Salva músicas e eventos juntos para garantir consistência
-      let ok;
-      if (window._fb.salvarBackupCompleto) {
-        ok = await window._fb.salvarBackupCompleto(uid, songs, eventosAtuais);
-      } else {
-        ok = await window._fb.backupMusicas(uid, songs);
-      }
-      if (ok) _fbAtualizarStats();
-    } catch(e) {}
+    const uid = _getUid();
+    const eventosAtuais = JSON.parse(localStorage.getItem('map_pro_eventos_v1') || '[]');
+    // Salva músicas e eventos juntos para garantir consistência
+    let ok;
+    if (window._fb.salvarBackupCompleto) {
+      ok = await window._fb.salvarBackupCompleto(uid, songs, eventosAtuais);
+    } else {
+      ok = await window._fb.backupMusicas(uid, songs);
+    }
+    if (ok) _fbAtualizarStats();
   }, 2000);
 }
 
@@ -10823,11 +9821,9 @@ async function _fbBackupEventos() {
   if (!_isFbReady()) return;
   clearTimeout(_backupEventosTimer);
   _backupEventosTimer = setTimeout(async () => {
-    try {
-      const uid = _getUid();
-      const eventos = _lsGet('map_pro_eventos_v1', []);
-      await window._fb.backupEventos(uid, eventos);
-    } catch(e) {}
+    const uid = _getUid();
+    const eventos = JSON.parse(localStorage.getItem('map_pro_eventos_v1') || '[]');
+    await window._fb.backupEventos(uid, eventos);
   }, 2000);
 }
 
@@ -10867,13 +9863,13 @@ async function _fbRestaurarBackup() {
     msgModal.remove();
     if (totalM > 0) {
       songs = backup.musicas;
-      try { localStorage.setItem('map_pro_elite_v1', JSON.stringify(songs)); } catch(e) {}
+      localStorage.setItem('map_pro_elite_v1', JSON.stringify(songs));
       if (typeof renderSetlist === 'function') renderSetlist();
       if (typeof renderBiblioteca === 'function') renderBiblioteca();
     }
     if (totalE > 0) {
       eventos = backup.eventos;
-      _lsSet('map_pro_eventos_v1', eventos);
+      localStorage.setItem('map_pro_eventos_v1', JSON.stringify(eventos));
     }
     showToast(totalM + ' músicas e ' + totalE + ' eventos restaurados');
     if (typeof adicionarNotif === 'function') adicionarNotif('update', 'Backup restaurado', totalM + ' músicas e ' + totalE + ' eventos carregados.', 'restore_v1');
@@ -10888,7 +9884,7 @@ async function _fbAtualizarStats() {
 
   if (!_isFbReady()) return;
   const uid = _getUid();
-  const eventos = _lsGet('map_pro_eventos_v1', []);
+  const eventos = JSON.parse(localStorage.getItem('map_pro_eventos_v1') || '[]');
   const bpms = songs.map(s => s.bpm).filter(Boolean);
   const bpmMedio = bpms.length ? Math.round(bpms.reduce((a,b) => a+b, 0) / bpms.length) : 0;
   const instrumentos = {};
@@ -10905,7 +9901,7 @@ async function _fbAtualizarStats() {
   });
 
   } catch(e) {
-    if (window._DEBUG) console.error('Erro ao atualizar stats:', e);
+    console.error('Erro ao atualizar stats:', e);
   }
 }
 
@@ -10945,7 +9941,7 @@ async function abrirModalStats() {
 
   document.getElementById('m-drop').classList.remove('show');
   const uid = _getUid();
-  const eventos = _lsGet('map_pro_eventos_v1', []);
+  const eventos = JSON.parse(localStorage.getItem('map_pro_eventos_v1') || '[]');
   // Abre modal IMEDIATAMENTE com dados locais (sem esperar Firebase)
   const stats = null;
 
@@ -11133,8 +10129,8 @@ function _registarConexaoGuest(conn) {
     if (dados.type === 'join' && !conn._joined) {
       conn._joined = true;
       conn._nomePeer = dados.nome || 'Músico';
-      showToast((_ve(conn._nomePeer) || 'Músico') + ' entrou na sala');
-      adicionarNotif('event', (_ve(conn._nomePeer) || 'Músico') + ' entrou na sala',
+      showToast(conn._nomePeer + ' entrou na sala');
+      adicionarNotif('event', conn._nomePeer + ' entrou na sala',
         'Código ' + myRoomCode, 'join_' + conn.peer);
       atualizarSyncBar();
       broadcastEstado();
@@ -11150,8 +10146,8 @@ function _registarConexaoGuest(conn) {
     atualizarSyncBar();
     broadcastEstado();
     if (!conn._left && conn._joined) {
-      showToast((_ve(nome) || 'Músico') + ' saiu da sala');
-      adicionarNotif('alert', (_ve(nome) || 'Músico') + ' saiu da sala',
+      showToast(nome + ' saiu da sala');
+      adicionarNotif('alert', nome + ' saiu da sala',
         'Código ' + myRoomCode, 'leave_' + conn.peer);
     }
   });
@@ -11174,27 +10170,25 @@ let _amigosCache = [];
 // UID local — gerado uma vez e salvo no perfil
 function _getUid() {
   // Lê UID do perfil se existir
-  let perfil = {};
-  try { perfil = _lsGet('map_perfil_v1', {}); } catch(e) {}
+  const perfil = JSON.parse(localStorage.getItem('map_perfil_v1') || '{}');
   if (perfil.uid) return perfil.uid;
   // Usa chave separada para não criar map_perfil_v1 antes do onboarding
-  let uid;
-  try { uid = localStorage.getItem('map_uid_v1'); } catch(e) {}
+  let uid = localStorage.getItem('map_uid_v1');
   if (!uid) {
     uid = 'u_' + Date.now() + '_' + Math.random().toString(36).slice(2,8);
-    try { localStorage.setItem('map_uid_v1', uid); } catch(e) {}
+    localStorage.setItem('map_uid_v1', uid);
   }
   return uid;
 }
 
 function _getProfileId() {
-  let perfil = _lsGet('map_perfil_v1', {});
+  let perfil = JSON.parse(localStorage.getItem('map_perfil_v1') || '{}');
   if (!perfil.profileId) {
     // Gera ID numérico de 8 dígitos: ex. "47382910"
     let id = '';
     for (let i = 0; i < 8; i++) id += Math.floor(Math.random() * 10);
     perfil.profileId = id;
-    _lsSet('map_perfil_v1', perfil);
+    localStorage.setItem('map_perfil_v1', JSON.stringify(perfil));
   }
   return perfil.profileId;
 }
@@ -11207,7 +10201,7 @@ function copiarProfileId() {
 }
 
 function _getPerfilLocal() {
-  try { return _lsGet('map_perfil_v1', {}); } catch(e) { return {}; }
+  return JSON.parse(localStorage.getItem('map_perfil_v1') || '{}');
 }
 
 // Inicializa Firebase quando estiver pronto
@@ -11234,7 +10228,7 @@ function _iniciarListenerSolicitacoes() {
     // Notificação para novas solicitações
     sols.forEach(s => {
       const notifId = 'sol_' + s.id;
-      const notifs = _lsGet('map_notifs_v1', []);
+      const notifs = JSON.parse(localStorage.getItem('map_notifs_v1') || '[]');
       if (!notifs.some(n => n.id === notifId)) {
         adicionarNotif('event',
           s.deNome + ' quer ser seu amigo!',
@@ -11393,7 +10387,7 @@ async function buscarAmigosInput(val) {
   }, 400);
 
   } catch(e) {
-    if (window._DEBUG) console.error('Erro na busca de amigos:', e);
+    console.error('Erro na busca de amigos:', e);
   }
 }
 
@@ -11422,28 +10416,24 @@ async function enviarSolicitacaoFb(paraUid, paraNome, paraInst) {
 // ── Pendentes ────────────────────────────────────────────────────────────────
 async function aceitarSolicitacaoFb(solId, deNome) {
   if (!_isFbReady()) return;
-  try {
-    const ok = await window._fb.aceitarSolicitacao(solId);
-    if (ok) {
-      showToast((_ve(deNome) || 'Usuário') + ' é agora seu amigo!');
-      adicionarNotif('event', (_ve(deNome) || 'Usuário') + ' é agora seu amigo!', 'Pode convidar para salas.', 'acc_' + solId);
-      _solicitacoesPendentes = _solicitacoesPendentes.filter(s => s.id !== solId);
-      _atualizarBadgesAmigos();
-      _amigosCache = (await window._fb.listarAmigos(_getUid())).filter(function(a){ return a.uid !== 'admin_local' && a.uid !== 'admin'; });
-      amigoTab('amigos');
-    }
-  } catch(e) { showToast('Erro ao aceitar solicitação.', 'error'); }
+  const ok = await window._fb.aceitarSolicitacao(solId);
+  if (ok) {
+    showToast(deNome + ' é agora seu amigo!');
+    adicionarNotif('event', deNome + ' é agora seu amigo!', 'Pode convidar para salas.', 'acc_' + solId);
+    _solicitacoesPendentes = _solicitacoesPendentes.filter(s => s.id !== solId);
+    _atualizarBadgesAmigos();
+    _amigosCache = (await window._fb.listarAmigos(_getUid())).filter(function(a){ return a.uid !== 'admin_local' && a.uid !== 'admin'; });
+    amigoTab('amigos');
+  }
 }
 
 async function recusarSolicitacaoFb(solId, deNome) {
   if (!_isFbReady()) return;
-  try {
-    await window._fb.recusarSolicitacao(solId);
-    _solicitacoesPendentes = _solicitacoesPendentes.filter(s => s.id !== solId);
-    _atualizarBadgesAmigos();
-    showToast('Solicitação de ' + (_ve(deNome) || 'usuário') + ' recusada');
-    _renderAmigos();
-  } catch(e) { showToast('Erro ao recusar solicitação.', 'error'); }
+  await window._fb.recusarSolicitacao(solId);
+  _solicitacoesPendentes = _solicitacoesPendentes.filter(s => s.id !== solId);
+  _atualizarBadgesAmigos();
+  showToast('Solicitação de ' + deNome + ' recusada');
+  _renderAmigos();
 }
 
 // ── Convidar para sala ───────────────────────────────────────────────────────
@@ -11465,7 +10455,7 @@ async function convidarAmigo(nome, amigoUid) {
         deNome: meuNome,
         criadoEm: Date.now()
       });
-      showToast('Convite enviado para ' + (_ve(nome) || 'amigo') + '.');
+      showToast('Convite enviado para ' + nome + '.');
     } catch(e) {
       showToast('Convite enviado (offline)');
     }
@@ -11476,7 +10466,7 @@ async function convidarAmigo(nome, amigoUid) {
   if (navigator.share) {
     navigator.share({ title: 'Sala ' + myRoomCode + ' — Map Music Pro', text: linkMsg }).catch(() => {});
   } else {
-    navigator.clipboard.writeText(linkMsg).then(() => {}).catch(function(){});
+    navigator.clipboard.writeText(linkMsg).then(() => {});
   }
 }
 
@@ -11485,9 +10475,9 @@ async function convidarAmigo(nome, amigoUid) {
 async function removerAmigo(uid, nome) {
   // Modal proprio — confirm() nativo bloqueado em iOS dentro de overlays
   var overlay = document.createElement('div');
-  overlay.style.cssText = _overlayBg();
+  overlay.style.cssText = 'position:fixed;inset:0;z-index:100020;background:rgba(0,0,0,0.88);display:flex;align-items:center;justify-content:center;padding:24px;';
   overlay.innerHTML =
-    '<div style="' + _boxBg('padding:24px 20px;width:100%;max-width:300px;display:flex;flex-direction:column;gap:14px;') + '">'
+    '<div style="background:#111119;border:1px solid rgba(255,255,255,0.1);border-radius:20px;padding:24px 20px;width:100%;max-width:300px;display:flex;flex-direction:column;gap:14px;">'
   + '<div style="font-size:15px;font-weight:900;color:#fff;">Remover amigo?</div>'
   + '<div style="font-size:13px;color:rgba(255,255,255,0.4);line-height:1.5;">Remover <b style="color:#fff;">' + (nome||'') + '</b> da sua lista de amigos.</div>'
   + '<div style="display:flex;gap:10px;margin-top:4px;">'
@@ -11501,8 +10491,8 @@ async function removerAmigo(uid, nome) {
     if (!_isFbReady()) { showToast('Firebase nao disponivel'); return; }
     try {
       await window._fb.removerAmigo(_getUid(), uid);
-      adicionarNotif('info', 'Amigo removido', (_ve(nome)||'') + ' foi removido da sua lista.', 'rm_' + uid);
-      showToast((_ve(nome)||'Usuário') + ' removido');
+      adicionarNotif('info', 'Amigo removido', (nome||'') + ' foi removido da sua lista.', 'rm_' + uid);
+      showToast((nome||'Usuario') + ' removido');
       _amigosCache = _amigosCache.filter(function(a) { return a.uid !== uid; });
       _renderAmigos();
     } catch(e) {
@@ -11551,7 +10541,7 @@ async function _renderAmigos() {
             ? '<span style="font-size:10px;color:#0A9E6E;font-weight:700;">Amigo</span>'
             : jaEnviou
               ? '<span style="font-size:10px;color:rgba(255,255,255,0.3);font-weight:700;">Enviada</span>'
-              : '<button class="amigo-btn amigo-btn-aceitar" data-uid="' + _ve(_uid2) + '" data-nome="' + _ve(_nm2) + '" data-inst="' + _ve(_inst2) + '" onclick="enviarSolicitacaoFb(this.dataset.uid,this.dataset.nome,this.dataset.inst)">+ Adicionar</button>';
+              : '<button class="amigo-btn amigo-btn-aceitar" data-uid="' + _uid2 + '" data-nome="' + _nm2 + '" data-inst="' + _inst2 + '" onclick="enviarSolicitacaoFb(this.dataset.uid,this.dataset.nome,this.dataset.inst)">+ Adicionar</button>';
           var _es2 = function(v){ return (v||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); };
           return '<div class="amigo-item">'
             + '<div class="amigo-avatar">' + inicial + '</div>'
@@ -11646,7 +10636,7 @@ async function _renderAmigos() {
       ? `<button class="amigo-btn amigo-btn-convidar" onclick="convidarAmigo('${(a.nome||'').replace(/'/g,"\'")}')">Convidar</button>`
       : '';
     const _aUid  = (a.uid||'').replace(/"/g,'');
-    const _aNome = _ve(a.nome||'').replace(/"/g,'&quot;');
+    const _aNome = (a.nome||'').replace(/"/g,'');
     const btnRemover = '<button class="amigo-btn amigo-btn-remover" data-uid="' + _aUid + '" data-nome="' + _aNome + '" onclick="removerAmigo(this.dataset.uid,this.dataset.nome)" title="Remover amigo" style="background:rgba(255,60,60,0.07);border-color:rgba(255,60,60,0.18);color:rgba(255,80,80,0.7);"><svg width=\"13\" height=\"13\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2.5\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><line x1=\"18\" y1=\"6\" x2=\"6\" y2=\"18\"/><line x1=\"6\" y1=\"6\" x2=\"18\" y2=\"18\"/></svg></button>';
     const btnVerPerfil = '<button class="amigo-btn" data-uid="' + _aUid + '" onclick="verPerfilUsuario(this.dataset.uid)" style="background:rgba(255,255,255,0.04);border-color:rgba(255,255,255,0.1);color:rgba(255,255,255,0.5);font-size:10px;">Ver</button>';
     return `<div class="amigo-item">
@@ -11670,7 +10660,7 @@ const _origSalvarPerfil = window.salvarPerfil;
 
 // ─── SISTEMA DE NOTIFICAÇÕES ──────────────────────────────────────────────────
 const APP_VERSION = '1.4.8';
-let notificacoes = (_lsGet('map_notifs_v1', []) || []).filter(n => !n.ts || (Date.now() - n.ts) < (1 * 60 * 60 * 1000));
+let notificacoes = (JSON.parse(localStorage.getItem('map_notifs_v1') || '[]') || []).filter(n => !n.ts || (Date.now() - n.ts) < (1 * 60 * 60 * 1000));
 let notifPanelOpen = false;
 
 const NOTIF_EXPIRY_MS = 1 * 60 * 60 * 1000; // 1 hora
@@ -11679,7 +10669,7 @@ function salvarNotifs() {
   // Remove notificacoes com mais de 4h antes de salvar
   const agora = Date.now();
   notificacoes = notificacoes.filter(n => !n.ts || (agora - n.ts) < NOTIF_EXPIRY_MS);
-  _lsSet('map_notifs_v1', notificacoes);
+  localStorage.setItem('map_notifs_v1', JSON.stringify(notificacoes));
 }
 
 function adicionarNotif(tipo, titulo, desc, id, action) {
@@ -11709,7 +10699,7 @@ function adicionarNotif(tipo, titulo, desc, id, action) {
 }
 
 // Limpeza periodica de notificacoes expiradas (a cada minuto)
-window._notifCleanupInterval = setInterval(function() {
+setInterval(function() {
   const agora = Date.now();
   const antes = notificacoes.length;
   notificacoes = notificacoes.filter(n => !n.ts || (agora - n.ts) < NOTIF_EXPIRY_MS);
@@ -11974,11 +10964,11 @@ window.addEventListener('load', function() {
   // Faz backup automático ao abrir o app (garante que a nuvem está atualizada)
   setTimeout(function() {
     if (songs.length > 0) _fbBackupMusicas();
-    const evts = _lsGet('map_pro_eventos_v1', []);
+    const evts = JSON.parse(localStorage.getItem('map_pro_eventos_v1') || '[]');
     if (evts.length > 0) _fbBackupEventos();
   }, 3000);
   // Verifica periodicamente (a cada hora)
-  window._eventosProximosInterval = setInterval(verificarEventosProximos, 3600000);
+  setInterval(verificarEventosProximos, 3600000);
 });;
 
 
@@ -12191,9 +11181,9 @@ function removerBannerFoto() {
   const banner = document.getElementById('perfil-hero-banner');
   if (banner) { banner.style.backgroundImage = 'none'; }
   try {
-    const perfil = _lsGet('map_perfil_v1', {});
+    const perfil = JSON.parse(localStorage.getItem('map_perfil_v1') || '{}');
     delete perfil.bannerFoto; delete perfil.bannerPos; delete perfil.bannerZoom;
-    _lsSet('map_perfil_v1', perfil);
+    localStorage.setItem('map_perfil_v1', JSON.stringify(perfil));
   } catch(e) {}
   // Esconde opções de editar/remover no menu
   const eb = document.getElementById('banner-editar-btn');
@@ -12205,9 +11195,9 @@ function removerBannerFoto() {
 function removerFotoPerfil() {
   perfilFotoBase64 = null;
   try {
-    const perfil = _lsGet('map_perfil_v1', {});
+    const perfil = JSON.parse(localStorage.getItem('map_perfil_v1') || '{}');
     delete perfil.foto; delete perfil.fotoPos; delete perfil.fotoZoom;
-    _lsSet('map_perfil_v1', perfil);
+    localStorage.setItem('map_perfil_v1', JSON.stringify(perfil));
   } catch(e) {}
   atualizarPreviewPerfil();
   const eb = document.getElementById('foto-editar-btn');
@@ -12226,7 +11216,7 @@ let _editorImgW = 0, _editorImgH = 0;   // tamanho natural
 let _editorCropW = 0, _editorCropH = 0; // tamanho do recorte
 
 function abrirEditorBanner() {
-  const perfil = _lsGet('map_perfil_v1', {});
+  const perfil = JSON.parse(localStorage.getItem('map_perfil_v1') || '{}');
   if (!perfil.bannerFoto) return;
   _editorModo = 'banner';
   _abrirEditor(perfil.bannerFoto, perfil.bannerOffX || 0, perfil.bannerOffY || 0,
@@ -12234,7 +11224,7 @@ function abrirEditorBanner() {
 }
 
 function abrirEditorFoto() {
-  const perfil = _lsGet('map_perfil_v1', {});
+  const perfil = JSON.parse(localStorage.getItem('map_perfil_v1') || '{}');
   const foto = perfilFotoBase64 || perfil.foto;
   if (!foto) return;
   _editorModo = 'foto';
@@ -12331,7 +11321,7 @@ function _abrirEditor(src, offX, offY, zoom, titulo) {
 }
 
 function editorZoom(val) {
-  const perfil = _lsGet('map_perfil_v1', {});
+  const perfil = JSON.parse(localStorage.getItem('map_perfil_v1') || '{}');
   const fitScaleW = _editorCropW / _editorImgW;
   const fitScaleH = _editorCropH / _editorImgH;
   const fitScale  = Math.max(fitScaleW, fitScaleH);
@@ -12368,7 +11358,7 @@ function _aplicarEditorTransform() {
 
 function salvarEdicaoFoto() {
   const zoom = parseInt(document.getElementById('foto-editor-zoom').value);
-  const perfil = _lsGet('map_perfil_v1', {});
+  const perfil = JSON.parse(localStorage.getItem('map_perfil_v1') || '{}');
 
   // Calcula a posição normalizada (0-100%) para CSS background-position / object-position
   // OffX positivo = imagem deslocada para direita = conteúdo mais à esquerda visível
@@ -12390,7 +11380,7 @@ function salvarEdicaoFoto() {
     perfil.bannerZoom = zoom;
     perfil.bannerPosX = posX;
     perfil.bannerPosY = posY;
-    _lsSet('map_perfil_v1', perfil);
+    localStorage.setItem('map_perfil_v1', JSON.stringify(perfil));
     // Aplica ao banner
     const banner = document.getElementById('perfil-hero-banner');
     if (banner) {
@@ -12403,7 +11393,7 @@ function salvarEdicaoFoto() {
     perfil.fotoZoom = zoom;
     perfil.fotoPosX = posX;
     perfil.fotoPosY = posY;
-    _lsSet('map_perfil_v1', perfil);
+    localStorage.setItem('map_perfil_v1', JSON.stringify(perfil));
     // Aplica ao avatar
     const av = document.getElementById('perfil-avatar');
     const img = av ? av.querySelector('img') : null;
@@ -12426,7 +11416,7 @@ function fecharEditorFoto() {
 function atualizarPreviewPerfil() {
   const av = document.getElementById('perfil-avatar');
   if (!av) return;
-  const perfil = _lsGet('map_perfil_v1', {});
+  const perfil = JSON.parse(localStorage.getItem('map_perfil_v1') || '{}');
   const foto = perfilFotoBase64 || perfil.foto || null;
   const nome = (document.getElementById('perfil-nome-input') || {}).value
                || perfil.nome || perfil.nomeUsuario || '';
@@ -12435,12 +11425,12 @@ function atualizarPreviewPerfil() {
   if (foto) {
     const posX = perfil.fotoPosX !== undefined ? perfil.fotoPosX : 50;
     const posY = perfil.fotoPosY !== undefined ? perfil.fotoPosY : 50;
-    av.innerHTML = '<img src="' + encodeURI(String(foto||'')) + '" style="width:100%;height:100%;object-fit:cover;border-radius:15px;object-position:' + (+posX||50) + '% ' + (+posY||50) + '%;">';
+    av.innerHTML = '<img src="' + foto + '" style="width:100%;height:100%;object-fit:cover;border-radius:15px;object-position:' + posX + '% ' + posY + '%;">';
     if (editarBtn)  editarBtn.style.display  = 'flex';
     if (removerBtn) removerBtn.style.display = 'flex';
   } else {
     const inicial = nome.trim().charAt(0).toUpperCase() || '?';
-    av.innerHTML = '<span>' + _ve(inicial) + '</span>';
+    av.innerHTML = '<span>' + inicial + '</span>';
     if (editarBtn)  editarBtn.style.display  = 'none';
     if (removerBtn) removerBtn.style.display = 'none';
   }
@@ -12451,22 +11441,8 @@ function perfilCarregarFoto(input) {
   if (!file) return;
   const reader = new FileReader();
   reader.onload = function(e) {
-    // Comprime a imagem para max 400x400 e qualidade 0.75 antes de salvar
-    const img = new Image();
-    img.onload = function() {
-      const MAX = 400;
-      let w = img.width, h = img.height;
-      if (w > MAX || h > MAX) {
-        if (w > h) { h = Math.round(h * MAX / w); w = MAX; }
-        else { w = Math.round(w * MAX / h); h = MAX; }
-      }
-      const canvas = document.createElement('canvas');
-      canvas.width = w; canvas.height = h;
-      canvas.getContext('2d').drawImage(img, 0, 0, w, h);
-      perfilFotoBase64 = canvas.toDataURL('image/jpeg', 0.75);
-      atualizarPreviewPerfil();
-    };
-    img.src = e.target.result;
+    perfilFotoBase64 = e.target.result;
+    atualizarPreviewPerfil();
   };
   reader.readAsDataURL(file);
 }
@@ -12477,15 +11453,13 @@ function salvarPerfil() {
   const nome = (nomeInput ? nomeInput.value : '').trim();
   if (nome.length < 2) { showToast('Nome deve ter ao menos 2 caracteres'); return; }
 
-  const perfil = _lsGet('map_perfil_v1', {});
+  const perfil = JSON.parse(localStorage.getItem('map_perfil_v1') || '{}');
   perfil.nome = nome;
   // instrumento definido no cadastro, não alterado aqui
   if (perfilFotoBase64) perfil.foto = perfilFotoBase64;
-  _lsSet('map_perfil_v1', perfil);
-  if (window._invalidarCachePerfil) window._invalidarCachePerfil();
+  localStorage.setItem('map_perfil_v1', JSON.stringify(perfil));
 
-  // Sincroniza Firebase — foto de perfil vai ao Firestore (usada em notificações)
-  // Banner NÃO vai (não aparece em notificações e pode ser grande demais)
+  // Sincroniza Firebase (mantém todos os campos incluindo foto)
   if (window._fb && window._fbReady) {
     const fbData = {
       nome: perfil.nome,
@@ -12494,15 +11468,14 @@ function salvarPerfil() {
       profileId: perfil.profileId || _getProfileId(),
       criadoEm: perfil.criadoEm || Date.now()
     };
-    // Foto de perfil (já comprimida para ~40KB pela compressão no carregamento)
+    // Só sincroniza foto se tiver (evita enviar null e apagar foto existente)
     if (perfil.foto) fbData.foto = perfil.foto;
-    // Metadados de posição da foto
     if (perfil.fotoOffX !== undefined) fbData.fotoOffX = perfil.fotoOffX;
     if (perfil.fotoOffY !== undefined) fbData.fotoOffY = perfil.fotoOffY;
     if (perfil.fotoZoom !== undefined) fbData.fotoZoom = perfil.fotoZoom;
     if (perfil.fotoPosX !== undefined) fbData.fotoPosX = perfil.fotoPosX;
     if (perfil.fotoPosY !== undefined) fbData.fotoPosY = perfil.fotoPosY;
-    // Metadados de posição do banner (sem o base64)
+    if (perfil.bannerFoto) fbData.bannerFoto = perfil.bannerFoto;
     if (perfil.bannerOffX !== undefined) fbData.bannerOffX = perfil.bannerOffX;
     if (perfil.bannerOffY !== undefined) fbData.bannerOffY = perfil.bannerOffY;
     if (perfil.bannerZoom !== undefined) fbData.bannerZoom = perfil.bannerZoom;
@@ -12524,27 +11497,13 @@ function perfilBannerChange(input) {
   if (!file) return;
   const reader = new FileReader();
   reader.onload = function(e) {
-    // Comprime banner para max 1200x400 e qualidade 0.75 antes de salvar
-    const img = new Image();
-    img.onload = function() {
-      const MAX_W = 1200, MAX_H = 400;
-      let w = img.width, h = img.height;
-      const ratio = w / h;
-      if (w > MAX_W) { w = MAX_W; h = Math.round(w / ratio); }
-      if (h > MAX_H) { h = MAX_H; w = Math.round(h * ratio); }
-      const canvas = document.createElement('canvas');
-      canvas.width = w; canvas.height = h;
-      canvas.getContext('2d').drawImage(img, 0, 0, w, h);
-      const base64 = canvas.toDataURL('image/jpeg', 0.75);
-      try {
-        const perfil = _lsGet('map_perfil_v1', {});
-        perfil.bannerFoto = base64;
-        _lsSet('map_perfil_v1', perfil);
-        if (window._invalidarCachePerfil) window._invalidarCachePerfil();
-      } catch(err) {}
-      _aplicarBannerFoto(base64);
-    };
-    img.src = e.target.result;
+    const base64 = e.target.result;
+    try {
+      const perfil = JSON.parse(localStorage.getItem('map_perfil_v1') || '{}');
+      perfil.bannerFoto = base64;
+      localStorage.setItem('map_perfil_v1', JSON.stringify(perfil));
+    } catch(err) {}
+    _aplicarBannerFoto(base64);
   };
   reader.readAsDataURL(file);
 }
@@ -12555,7 +11514,7 @@ function _aplicarBannerFoto(base64) {
   const editarBtn  = document.getElementById('banner-editar-btn');
   const removerBtn = document.getElementById('banner-remover-btn');
   if (base64) {
-    const perfil = _lsGet('map_perfil_v1', {});
+    const perfil = JSON.parse(localStorage.getItem('map_perfil_v1') || '{}');
     const posX = perfil.bannerPosX !== undefined ? perfil.bannerPosX : 50;
     const posY = perfil.bannerPosY !== undefined ? perfil.bannerPosY : 50;
     const zoom = perfil.bannerZoom || 100;
@@ -14296,7 +13255,7 @@ async function _bpmMicBuscar() {
       if (!av) return;
       av.style.cssText = 'width:44px;height:44px;border-radius:10px;flex-shrink:0;overflow:hidden;background:#111;';
       var img = document.createElement('img');
-      img.src = encodeURI(String(url||''));
+      img.src = url;
       img.style.cssText = 'width:100%;height:100%;object-fit:cover;';
       img.onerror = function() {
         av.style.cssText = 'width:44px;height:44px;border-radius:10px;flex-shrink:0;background:rgba(10,158,110,0.15);display:flex;align-items:center;justify-content:center;font-size:19px;font-weight:900;color:rgba(10,158,110,0.7);';
@@ -14708,7 +13667,7 @@ var _admSelected = null;
 
 function admInicializar() {
   try {
-    var p = _lsGet('map_perfil_v1', {});
+    var p = JSON.parse(localStorage.getItem('map_perfil_v1') || '{}');
     if (!p.isAdmin) return;
     var tabs = document.getElementById('admin-tabs');
     if (tabs) tabs.style.display = 'flex';
@@ -14759,7 +13718,6 @@ function admTabSel(id) { admNavSel(id); }
 
 // ── Mensagem global inline ────────────────────────────────────────────────────
 async function admEnviarMsgInline() {
-  if (!(_lsGet('map_perfil_v1', {}).isAdmin)) return; // guard de segurança
   try {
   var titulo = (document.getElementById('adm-msg-titulo') || {}).value || '';
   var texto  = ((document.getElementById('adm-msg-texto') || {}).value || '').trim();
@@ -14822,7 +13780,6 @@ function admGerarCodigoAleatorio2() {
 }
 
 async function admGerarLinkInline() {
-  if (!(_lsGet('map_perfil_v1', {}).isAdmin)) return; // guard de segurança
   var inp = document.getElementById('adm-link-codigo');
   var codigo = (inp ? inp.value.trim() : '');
   if (codigo.length < 3) { showToast('Mínimo 3 caracteres no código.'); return; }
@@ -14851,7 +13808,7 @@ async function admGerarLinkInline() {
 function admCopiarLink2() {
   var link = window._admLinkGerado || (document.getElementById('adm-link-box') || {}).textContent || '';
   if (!link) return;
-  navigator.clipboard ? navigator.clipboard.writeText(link).then(function(){ showToast('Link copiado!'); }).catch(function(){ showToast(link); }) : showToast(link);
+  navigator.clipboard ? navigator.clipboard.writeText(link).then(function(){ showToast('Link copiado!'); }) : showToast(link);
 }
 
 function admNovoLink2() {
@@ -14867,7 +13824,6 @@ function admNovoLink2() {
 var _admLibUID = null;
 
 async function admLibBuscarInline() {
-  if (!(_lsGet('map_perfil_v1', {}).isAdmin)) return; // guard de segurança
   var inp = document.getElementById('adm-lib-email');
   var email = (inp ? inp.value.trim() : '');
   var res   = document.getElementById('adm-lib-resultado');
@@ -14881,14 +13837,12 @@ async function admLibBuscarInline() {
     var u = await window._fb.admBuscarPorEmail(email);
     if (!u) { if (res) res.textContent = 'Nenhum usuário encontrado com esse e-mail.'; return; }
     _admLibUID = u.uid;
-    var _xss = function(s){ return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); };
-    if (res) res.innerHTML = '<span style="color:#fff;font-weight:700;">' + _xss(u.nome || u.nomeUsuario || 'Sem nome') + '</span> &nbsp;<span style="color:rgba(255,255,255,0.35);">@' + _xss(u.nomeUsuario || '—') + '</span>';
+    if (res) res.innerHTML = '<span style="color:#fff;font-weight:700;">' + (u.nome || u.nomeUsuario || 'Sem nome') + '</span> &nbsp;<span style="color:rgba(255,255,255,0.35);">@' + (u.nomeUsuario || '—') + '</span>';
     if (btn) btn.style.display = 'block';
   } catch(e) { if (res) res.textContent = 'Erro na busca.'; }
 }
 
 async function admLibRemoverInline() {
-  if (!(_lsGet('map_perfil_v1', {}).isAdmin)) return; // guard de segurança
   if (!_admLibUID) return;
   var res = document.getElementById('adm-lib-resultado');
   if (!window._fb) return;
@@ -15098,12 +14052,12 @@ function admAbrirMensagem() {
 
   var overlay = document.createElement('div');
   overlay.id = '_admMsgOverlay';
-  overlay.style.cssText = _overlayBgBottom().replace('100020','100030');
+  overlay.style.cssText = 'position:fixed;inset:0;z-index:100030;background:rgba(0,0,0,0.88);display:flex;align-items:flex-end;justify-content:center;';
 
   // Sanitiza nome para evitar XSS no innerHTML
   var _nomeAdmSafe = (nome||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
   var box = document.createElement('div');
-  box.style.cssText = _boxBgBottom('padding:24px 20px 36px;width:100%;max-width:480px;');
+  box.style.cssText = 'background:#111119;border:1px solid rgba(255,255,255,0.1);border-radius:24px 24px 0 0;padding:24px 20px 36px;width:100%;max-width:480px;';
   box.innerHTML =
     '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;">'
   +   '<div style="font-size:15px;font-weight:900;color:#fff;">Mensagem para ' + _nomeAdmSafe + '</div>'
@@ -15174,7 +14128,7 @@ function admMensagemGlobal() {
 
   var overlay = document.createElement('div');
   overlay.id = '_admGlobalOverlay';
-  overlay.style.cssText = _overlayBgBottom().replace('100020','100030');
+  overlay.style.cssText = 'position:fixed;inset:0;z-index:100030;background:rgba(0,0,0,0.92);display:flex;align-items:flex-end;justify-content:center;';
 
   var total = _admCache.filter(function(u){ return !u.status || u.status === 'ativo'; }).length;
 
@@ -15289,9 +14243,9 @@ function admAcao(tipo) {
 
   // Modal de confirmacao proprio (confirm() nativo falha em iOS dentro de modais)
   var overlay = document.createElement('div');
-  overlay.style.cssText = _overlayBg();
+  overlay.style.cssText = 'position:fixed;inset:0;z-index:100020;background:rgba(0,0,0,0.85);display:flex;align-items:center;justify-content:center;padding:24px;';
   overlay.innerHTML =
-    '<div style="' + _boxBg('padding:24px 20px;width:100%;max-width:320px;display:flex;flex-direction:column;gap:14px;') + '">'
+    '<div style="background:#111119;border:1px solid rgba(255,255,255,0.1);border-radius:18px;padding:24px 20px;width:100%;max-width:320px;display:flex;flex-direction:column;gap:14px;">'
   + '<div style="font-size:15px;font-weight:900;color:#fff;">' + c.titulo + '</div>'
   + '<div style="font-size:13px;color:rgba(255,255,255,0.5);line-height:1.5;">' + c.msg + '</div>'
   + '<div style="display:flex;gap:10px;margin-top:4px;">'
@@ -15336,7 +14290,7 @@ function admAcao(tipo) {
 function admAbrirLiberarEmail() {
   var overlay = document.createElement('div');
   overlay.id = 'modal-liberar-email';
-  overlay.style.cssText = _overlayBg().replace('100020','100025');
+  overlay.style.cssText = 'position:fixed;inset:0;z-index:100025;background:rgba(0,0,0,0.92);display:flex;align-items:center;justify-content:center;padding:24px;';
   overlay.innerHTML =
     '<div style="background:#111119;border:1px solid rgba(80,200,255,0.2);border-radius:18px;padding:24px 20px;width:100%;max-width:360px;display:flex;flex-direction:column;gap:14px;">'
   + '<div style="font-size:15px;font-weight:900;color:#fff;">Liberar Email para Novo Cadastro</div>'
@@ -15381,7 +14335,7 @@ async function admBuscarPorEmail() {
     + '<button onclick="admConfirmarLiberar(\'' + encontrado.uid + '\',\'' + email + '\')" style="width:100%;padding:11px;border-radius:10px;background:#50c8ff;border:none;color:#000;font-size:13px;font-weight:900;cursor:pointer;font-family:inherit;touch-action:manipulation;">Remover do Firestore</button>'
     + '<div style="margin-top:8px;font-size:10px;color:rgba(255,200,80,0.7);line-height:1.4;">Após isso, delete também no Firebase Auth Console para liberar completamente o email.</div>';
   } catch(e) {
-    res.innerHTML = '<span style="color:#ff4444;">Erro: ' + _ve(e.message||String(e)) + '</span>';
+    res.innerHTML = '<span style="color:#ff4444;">Erro: ' + e.message + '</span>';
   }
 }
 
@@ -15422,7 +14376,7 @@ async function admReativarEmail() {
   var nome  = '@' + (u.nomeUsuario || u.nome || 'usuario');
 
   var overlay = document.createElement('div');
-  overlay.style.cssText = _overlayBg().replace('100020','100025');
+  overlay.style.cssText = 'position:fixed;inset:0;z-index:100025;background:rgba(0,0,0,0.92);display:flex;align-items:center;justify-content:center;padding:24px;';
   overlay.innerHTML =
     '<div style="background:#111119;border:1px solid rgba(80,200,255,0.2);border-radius:18px;padding:24px 20px;width:100%;max-width:340px;display:flex;flex-direction:column;gap:14px;">'
   + '<div style="font-size:15px;font-weight:900;color:#fff;">Liberar email para novo cadastro</div>'
@@ -15503,7 +14457,7 @@ async function _excluirConfirmar() {
   _fecharExcluirConta();
   fecharModalPerfil();
 
-  const perfil = _lsGet('map_perfil_v1', {});
+  const perfil = JSON.parse(localStorage.getItem('map_perfil_v1') || '{}');
   const uid = perfil.uid;
 
   // Apagar do Firestore se tiver conta na nuvem
@@ -15536,7 +14490,7 @@ async function _fbFazerBackupAgora(btn) {
   if (btn) { btn.disabled = true; btn.textContent = 'Salvando...'; }
   try {
     const uid = _getUid();
-    const eventosAtuais = _lsGet('map_pro_eventos_v1', []);
+    const eventosAtuais = JSON.parse(localStorage.getItem('map_pro_eventos_v1') || '[]');
     let ok;
     if (window._fb.salvarBackupCompleto) {
       ok = await window._fb.salvarBackupCompleto(uid, songs, eventosAtuais);
@@ -16526,11 +15480,10 @@ async function _fbFazerBackupAgora(btn) {
 body[data-ambiente="vocalista"] #btn-save-vitro,
 body[data-ambiente="vocalista"] #cifra-font-ctrl,
 body[data-ambiente="vocalista"] #show-proxima-alerta,
+body[data-ambiente="vocalista"] .perf-bottom-panel,
 body[data-ambiente="vocalista"] .btn-pad-flutuante,
 body[data-ambiente="vocalista"] .perf-song-indicator,
 body[data-ambiente="vocalista"] .swipe-hint { display: none !important; }
-/* No ambiente vocalista o perf-bottom-panel fica visível mas sem o teleprompter */
-body[data-ambiente="vocalista"] .teleprompter-panel { display: none !important; }
 
 /* ─── SPLASH ─────────────────────────────────────────────────────────────── */
 #voc-splash {
@@ -17912,11 +16865,6 @@ body[data-ambiente="vocalista"] .teleprompter-panel { display: none !important; 
       <button class="voc-icon-btn" id="voc-fav-btn" onclick="vocToggleFav()">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
       </button>
-      <button onclick="vocAbrirPerformanceDaLetraAtual()" title="Cantar — modo show"
-        style="background:rgba(138,92,246,0.18);border:1px solid rgba(138,92,246,0.45);border-radius:20px;padding:5px 12px;color:#a78bfa;font-size:11px;font-weight:800;cursor:pointer;font-family:inherit;display:flex;align-items:center;gap:5px;letter-spacing:0.3px;flex-shrink:0;">
-        <svg width="9" height="9" viewBox="0 0 24 24" fill="#a78bfa"><polygon points="5 3 19 12 5 21 5 3"/></svg>
-        CANTAR
-      </button>
     </div>
     <div class="voc-controls-bar">
       <button class="voc-ctrl" onclick="vocFonteMenos()"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="5" y1="12" x2="19" y2="12"/></svg>A</button>
@@ -18148,7 +17096,7 @@ async function _vocClaude(prompt, maxTokens) {
       new Promise(function(_,rej){ setTimeout(function(){ rej(new Error('timeout')); }, 30000); })
     ]);
     if(r.status === 401) { _vocSaveKey(''); _vocPedirChave('Chave inválida. Insira novamente.'); return null; }
-    if(!r.ok){ var e=await r.text(); if (window._DEBUG) console.error('API erro:',r.status,e); return null; }
+    if(!r.ok){ var e=await r.text(); console.error('API erro:',r.status,e); return null; }
     var d=await r.json();
     return d.content&&d.content[0]?d.content[0].text:null;
   } catch(e) { return null; }
@@ -18386,7 +17334,7 @@ async function vocCarregarLetraEl(el){
   await _vocCarregarLetraDireto(titulo, artista, res);
 
   } catch(e) {
-    if (window._DEBUG) console.error('Erro ao carregar letra:', e);
+    console.error('Erro ao carregar letra:', e);
   }
 }
 
@@ -18922,9 +17870,9 @@ async function _admCarregarLinksAtivos() {
         var resto = Math.round((l.expiraEm - agora) / 60000);
         var tempoStr = resto > 60 ? Math.round(resto/60) + 'h' : resto + 'min';
         return '<div style="display:flex;align-items:center;gap:8px;padding:8px 10px;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.06);border-radius:8px;margin-bottom:6px;">'
-          + '<div style="font-family:monospace;font-size:10px;color:rgba(255,255,255,0.4);flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + _ve(l.token.slice(0,10)) + '…</div>'
-          + '<div style="font-size:9px;color:rgba(251,191,36,0.6);white-space:nowrap;">' + _ve(tempoStr) + ' restante</div>'
-          + '<button data-token="' + _ve(l.token) + '" onclick="admRevogarLink(this.dataset.token)" style="background:rgba(255,60,60,0.08);border:1px solid rgba(255,60,60,0.2);border-radius:6px;color:rgba(255,80,80,0.7);font-size:10px;font-weight:800;padding:3px 8px;cursor:pointer;font-family:inherit;">Revogar</button>'
+          + '<div style="font-family:monospace;font-size:10px;color:rgba(255,255,255,0.4);flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + l.token.slice(0,10) + '…</div>'
+          + '<div style="font-size:9px;color:rgba(251,191,36,0.6);white-space:nowrap;">' + tempoStr + ' restante</div>'
+          + '<button data-token="' + l.token + '" onclick="admRevogarLink(this.dataset.token)" style="background:rgba(255,60,60,0.08);border:1px solid rgba(255,60,60,0.2);border-radius:6px;color:rgba(255,80,80,0.7);font-size:10px;font-weight:800;padding:3px 8px;cursor:pointer;font-family:inherit;">Revogar</button>'
           + '</div>';
       }).join('');
   } catch(e) { wrap.innerHTML = ''; }
@@ -19258,7 +18206,7 @@ async function _vocSheetCarregarLetra(titulo, artista, resEl) {
   window.vocToggleFav = window._vocSheetSaveHook;
 
   } catch(e) {
-    if (window._DEBUG) console.error('Erro ao carregar letra do sheet:', e);
+    console.error('Erro ao carregar letra do sheet:', e);
   }
 }
 
@@ -19652,11 +18600,10 @@ function vocAbrirPlayer(videoId, titulo, canal){
   var canEl    = document.getElementById('voc-player-canal');
   var linkEl   = document.getElementById('voc-player-yt-link');
   if(!overlay || !iframe) return;
-  var _safeId = String(videoId||'').replace(/[^a-zA-Z0-9_-]/g,'');
-  iframe.src = _safeId ? 'https://www.youtube.com/embed/' + _safeId + '?autoplay=1&rel=0&modestbranding=1' : '';
+  iframe.src = 'https://www.youtube.com/embed/' + videoId + '?autoplay=1&rel=0&modestbranding=1';
   if(titEl) titEl.textContent = titulo || '';
   if(canEl) canEl.textContent = canal || '';
-  if(linkEl) linkEl.href = _safeId ? 'https://www.youtube.com/watch?v=' + _safeId : '#';
+  if(linkEl) linkEl.href = 'https://www.youtube.com/watch?v=' + videoId;
   overlay.style.display = 'flex';
 }
 function vocFecharPlayer(){
@@ -19721,7 +18668,7 @@ async function vocBuscarVideos(){
       html += '<div class="voc-video-card" data-filtro="'+_ve(filtro)+'" onclick="vocAbrirPlayer(\x27'+vid+'\x27,\x27'+tEsc+'\x27,\x27'+cEsc+'\x27)">'        + '<div class="voc-video-thumb" style="background:#000;">'        + '<img src="'+thumb+'" style="width:100%;height:100%;object-fit:cover;display:block;" onerror="this.parentNode.style.background=\'#111\'">'        + '<div class="voc-video-play-btn"><svg width="16" height="16" viewBox="0 0 24 24" fill="#fff" stroke="none"><polygon points="5 3 19 12 5 21 5 3"/></svg></div>'        + '<div class="voc-video-badge">'+_ve(badge)+'</div>'        + '</div>'        + '<div class="voc-video-info">'        + '<div class="voc-video-name">'+_ve(titulo)+'</div>'        + '<div class="voc-video-chan"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="rgba(255,80,80,0.6)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2"/></svg> '+_ve(canal)+'</div>'        + '</div>'        + '</div>';
     } else {
       // Sem ID — mostra card de busca que abre no YouTube
-      html += '<div class="voc-video-card" data-filtro="'+_ve(filtro)+'" onclick="window.open(\'https://www.youtube.com/results?search_query='+encodeURIComponent(queryBusca)+'\',\'_blank,noopener,noreferrer\')">'        + '<div class="voc-video-thumb" style="background:rgba(255,0,0,0.06);display:flex;align-items:center;justify-content:center;flex-direction:column;gap:4px;">'        + '<svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="rgba(255,80,80,0.5)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>'        + '<div style="font-size:8px;color:rgba(255,80,80,0.5);font-weight:800;letter-spacing:1px;">BUSCAR</div>'        + '<div class="voc-video-badge" style="background:rgba(255,0,0,0.12);border-color:rgba(255,0,0,0.2);">'+_ve(badge)+'</div>'        + '</div>'        + '<div class="voc-video-info">'        + '<div class="voc-video-name">'+_ve(titulo)+'</div>'        + '<div class="voc-video-chan" style="color:rgba(255,80,80,0.5);">Buscar no YouTube →</div>'        + '</div>'        + '</div>';
+      html += '<div class="voc-video-card" data-filtro="'+_ve(filtro)+'" onclick="window.open(\'https://www.youtube.com/results?search_query='+encodeURIComponent(queryBusca)+'\',\'_blank\')">'        + '<div class="voc-video-thumb" style="background:rgba(255,0,0,0.06);display:flex;align-items:center;justify-content:center;flex-direction:column;gap:4px;">'        + '<svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="rgba(255,80,80,0.5)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>'        + '<div style="font-size:8px;color:rgba(255,80,80,0.5);font-weight:800;letter-spacing:1px;">BUSCAR</div>'        + '<div class="voc-video-badge" style="background:rgba(255,0,0,0.12);border-color:rgba(255,0,0,0.2);">'+_ve(badge)+'</div>'        + '</div>'        + '<div class="voc-video-info">'        + '<div class="voc-video-name">'+_ve(titulo)+'</div>'        + '<div class="voc-video-chan" style="color:rgba(255,80,80,0.5);">Buscar no YouTube →</div>'        + '</div>'        + '</div>';
     }
   });
 
@@ -19732,7 +18679,7 @@ async function vocBuscarVideos(){
   vocVideoFiltrar('todos');
 
   } catch(e) {
-    if (window._DEBUG) console.error('Erro ao buscar vídeos:', e);
+    console.error('Erro ao buscar vídeos:', e);
   }
 }
 
@@ -19842,7 +18789,7 @@ function _vocMostrarSplashSeNecessario(){
       }, 720);
     }, 3200);
 
-  }catch(e){ if (window._DEBUG) console.error('voc-splash err:',e); }
+  }catch(e){ console.error('voc-splash err:',e); }
 }
 
 // ── _rotearAmbiente hook ──────────────────────────────────────────────────────
@@ -19938,16 +18885,6 @@ setTimeout(function(){ _vocRenderHist(); _vocAtualizarBadgeSalvos(); _cifraFontS
     '.toolbar-btn', '.tab-btn', '.nav-btn',
     '.modal-close', '.sheet-close',
     '.chip', '.filter-chip',
-    /* novos seletores */
-    '.album-cover', '.album-menu-btn', '.ctx-item',
-    '.amigo-btn', '.amigo-item', '.amigo-btn-aceitar', '.amigo-btn-recusar',
-    '.amigos-tab', '.biblioteca-tab',
-    '.sort-btn', '.tag-chip', '.tag-editor-chip',
-    '.evento-detalhe-back', '.ev-more-btn', '.ev-more-item',
-    '.notif-item', '.notif-clear-btn',
-    '#tap-btn', '#play-btn', '#btn-sala', '#btn-theme',
-    '#btn-amigos-header', '.notif-btn',
-    '.amigos-add-btn', '.amigos-close',
     'button[onclick]'
   ].join(',');
 
@@ -20018,41 +18955,6 @@ var _MAP_THEME_KEY = 'map_theme_v1';
 function _themeInit() {
   var saved = localStorage.getItem(_MAP_THEME_KEY) || 'dark';
   _themeAplicar(saved, false);
-}
-
-// ── Helpers de tema para modais criados dinamicamente ───────────────────────
-function _isLight() {
-  return (document.getElementById('app-body') || document.body).classList.contains('theme-light');
-}
-// Retorna estilos inline adaptados ao tema para overlay e box dos modais JS
-function _overlayBg() {
-  return _isLight()
-    ? 'position:fixed;inset:0;z-index:100020;background:rgba(24,24,27,0.38);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);display:flex;align-items:center;justify-content:center;padding:24px;'
-    : 'position:fixed;inset:0;z-index:100020;background:rgba(0,0,0,0.88);display:flex;align-items:center;justify-content:center;padding:24px;';
-}
-function _overlayBgBottom() {
-  return _isLight()
-    ? 'position:fixed;inset:0;z-index:100020;background:rgba(24,24,27,0.38);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);display:flex;align-items:flex-end;justify-content:center;'
-    : 'position:fixed;inset:0;z-index:100020;background:rgba(0,0,0,0.88);display:flex;align-items:flex-end;justify-content:center;';
-}
-function _boxBg(extra) {
-  extra = extra || '';
-  return _isLight()
-    ? 'background:#FFFFFF;border:1px solid rgba(0,0,0,0.09);border-radius:20px;' + extra
-    : 'background:#111119;border:1px solid rgba(255,255,255,0.1);border-radius:20px;' + extra;
-}
-function _boxBgBottom(extra) {
-  extra = extra || '';
-  return _isLight()
-    ? 'background:#FAFAF8;border:1px solid rgba(0,0,0,0.08);border-radius:24px 24px 0 0;' + extra
-    : 'background:#111119;border:1px solid rgba(255,255,255,0.1);border-radius:24px 24px 0 0;' + extra;
-}
-function _txtColor() { return _isLight() ? '#18181B' : '#fff'; }
-function _txtSecColor() { return _isLight() ? 'rgba(24,24,27,0.5)' : 'rgba(255,255,255,0.45)'; }
-function _inputBg() {
-  return _isLight()
-    ? 'background:#F4F4F2;border:1px solid rgba(0,0,0,0.1);border-radius:10px;color:#18181B;font-size:14px;padding:12px 14px;outline:none;font-family:inherit;width:100%;box-sizing:border-box;'
-    : 'background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.12);border-radius:10px;color:#fff;font-size:14px;padding:12px 14px;outline:none;font-family:inherit;width:100%;box-sizing:border-box;';
 }
 
 function _themeAplicar(tema, salvar) {
@@ -20226,7 +19128,7 @@ function toggleTheme() {
     }).join('');
 
     ov.innerHTML =
-      '<div style="' + _boxBg('padding:24px 22px;width:100%;max-width:360px;') + '">'
+      '<div style="background:#111119;border:1px solid rgba(255,255,255,0.1);border-radius:20px;padding:24px 22px;width:100%;max-width:360px;">'
     + '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;">'
     +   '<div style="font-size:15px;font-weight:900;color:#fff;">Atalhos de teclado</div>'
     +   '<button onclick="document.getElementById(\'_atalhos-overlay\').remove()" style="background:none;border:none;color:rgba(255,255,255,0.3);font-size:20px;cursor:pointer;line-height:1;padding:0;">×</button>'
@@ -20432,7 +19334,7 @@ function admLimparLog() {
     // Tenta notificar o admin via Firestore
     try {
       if (!window._fb || !window._fb.admNotificarNovoUsuario) return result;
-      var perfil = _lsGet('map_perfil_v1', {});
+      var perfil = JSON.parse(localStorage.getItem('map_perfil_v1') || '{}');
       var nomeNovo = perfil.nome || perfil.nomeUsuario || 'Novo usuário';
       var emailNovo = perfil.email || '';
       // Grava um documento em /admin_notifs/ que o admin verá ao carregar o painel
@@ -20587,7 +19489,7 @@ async function vocAbrirAfinador() {
   + '</div>';
 
   } catch(e) {
-    if (window._DEBUG) console.error('Erro ao abrir afinador:', e);
+    console.error('Erro ao abrir afinador:', e);
   }
 }
 
@@ -20595,7 +19497,7 @@ async function vocToggleAfinador() {
   if (_afinadorAtivo) {
     _afinadorParar();
   } else {
-    try { await _afinadorIniciar(); } catch(e) {}
+    await _afinadorIniciar();
   }
 }
 
@@ -21015,18 +19917,16 @@ var _swReady = false;
 async function _mapNotifRegistrarSW() {
   try {
     if (!('serviceWorker' in navigator)) return false;
-    // SW so funciona em http:// ou https:// — sai silenciosamente em file://, blob://, etc.
-    var proto = window.location.protocol;
-    if (proto !== 'http:' && proto !== 'https:') return false;
+    // Criar blob do SW
     var blob = new Blob([_SW_CODE], { type: 'application/javascript' });
     var swUrl = URL.createObjectURL(blob);
     _swRegistration = await navigator.serviceWorker.register(swUrl, { scope: './' });
-    URL.revokeObjectURL(swUrl); // libera URL após registro do SW
     await navigator.serviceWorker.ready;
     _swReady = true;
+    console.log('[MapNotif] Service Worker registrado via Blob');
     return true;
   } catch(e) {
-    // Falha silenciosa — notificacoes via Notification API direta continuam funcionando
+    console.warn('[MapNotif] SW falhou (normal em file://):', e.message);
     return false;
   }
 }
@@ -21099,7 +19999,7 @@ async function _mapNotifSolicitarPermissao() {
 // ── 5. Enviar notificação — via SW (melhor) ou Notification direta (fallback) ─
 async function _mapNotifEnviar(titulo, corpo, opts) {
   opts = opts || {};
-  var perfil = _lsGet('map_perfil_v1', {});
+  var perfil = JSON.parse(localStorage.getItem('map_perfil_v1') || '{}');
   var nomeApp = 'Map Music PRO' + (perfil.nome ? ' · ' + perfil.nome : '');
 
   var notifOpts = {
@@ -21190,7 +20090,7 @@ window._mapNotifConfigAbrir = function() {
     var isMobile = /iPhone|Android/i.test(navigator.userAgent);
     modal.innerHTML =
       '<div style="background:#0d0d1a;border:1px solid rgba(255,100,100,0.25);border-radius:20px;padding:24px 20px;width:100%;max-width:360px;display:flex;flex-direction:column;gap:14px;" onclick="event.stopPropagation()">'
-      + '<div style="font-size:15px;font-weight:900;color:' + _txtColor() + ';">Notificações bloqueadas</div>'
+      + '<div style="font-size:15px;font-weight:900;color:#fff;">Notificações bloqueadas</div>'
       + '<div style="font-size:12px;color:rgba(255,255,255,0.45);line-height:1.7;">'
       + (isMobile
           ? 'Para ativar: <b style="color:#fff;">Ajustes → Safari → Notificações</b> e permita para este site.'
@@ -21215,19 +20115,18 @@ window._mapNotifConfigAbrir = function() {
     if (!drop || document.getElementById('_btn-notif-config')) return;
     var sep = document.createElement('div');
     sep.className = 'menu-separator';
-    var btn = document.createElement('div');
+    var btn = document.createElement('button');
     btn.id = '_btn-notif-config';
     btn.className = 'menu-item';
-    btn.style.cssText = 'cursor:pointer;';
-    btn.onclick = function(e) {
-      e.stopPropagation();
+    btn.style.cssText = 'display:flex;align-items:center;gap:10px;width:100%;';
+    btn.onclick = function() {
       drop.classList.remove('show');
       window._mapNotifConfigAbrir();
     };
     btn.innerHTML =
-      '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>'
+      '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>'
       + '<span>Notificações</span>'
-      + '<span id="_notif-status-badge" style="margin-left:auto;font-size:9px;font-weight:800;padding:2px 7px;border-radius:6px;"></span>';
+      + '<span id="_notif-status-badge" style="margin-left:auto;font-size:9px;font-weight:800;padding:2px 7px;border-radius:6px;background:rgba(10,158,110,0.15);border:1px solid rgba(10,158,110,0.3);color:#0A9E6E;"></span>';
     drop.appendChild(sep);
     drop.appendChild(btn);
     _mapNotifAtualizarBadge();
@@ -21238,20 +20137,9 @@ window._mapNotifConfigAbrir = function() {
     if (!badge || !('Notification' in window)) return;
     var p = Notification.permission;
     badge.textContent    = p === 'granted' ? 'ATIVA' : p === 'denied' ? 'BLOQUEADA' : 'INATIVA';
-    var isLight = (document.getElementById('app-body') || document.body).classList.contains('theme-light');
-    if (p === 'granted') {
-      badge.style.color       = '#0A9E6E';
-      badge.style.background  = 'rgba(10,158,110,0.12)';
-      badge.style.borderColor = 'rgba(10,158,110,0.25)';
-    } else if (p === 'denied') {
-      badge.style.color       = '#cc3333';
-      badge.style.background  = 'rgba(220,38,38,0.09)';
-      badge.style.borderColor = 'rgba(220,38,38,0.2)';
-    } else {
-      badge.style.color       = isLight ? 'rgba(24,24,27,0.35)' : 'rgba(255,255,255,0.3)';
-      badge.style.background  = isLight ? 'rgba(0,0,0,0.05)' : 'rgba(255,255,255,0.04)';
-      badge.style.borderColor = isLight ? 'rgba(0,0,0,0.1)' : 'rgba(255,255,255,0.08)';
-    }
+    badge.style.color    = p === 'granted' ? '#0A9E6E' : p === 'denied' ? '#ff6060' : 'rgba(255,255,255,0.3)';
+    badge.style.background   = p === 'granted' ? 'rgba(10,158,110,0.12)' : p === 'denied' ? 'rgba(255,60,60,0.1)' : 'rgba(255,255,255,0.04)';
+    badge.style.borderColor  = p === 'granted' ? 'rgba(10,158,110,0.25)' : p === 'denied' ? 'rgba(255,60,60,0.2)' : 'rgba(255,255,255,0.08)';
   }
   window._mapNotifAtualizarBadge = _mapNotifAtualizarBadge;
 
