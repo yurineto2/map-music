@@ -1869,146 +1869,356 @@ function adminEscolherModo(modo) {
   --note-color: #ffffff;
 }
 body.theme-light {
-  --bg-primary: #f4f4f8;
-  --bg-secondary: #eaeaf0;
-  --bg-tertiary: #dfdfe8;
-  --accent-primary: #0A9E6E;
-  --accent-glow: rgba(10,158,110,0.2);
-  --text-primary: #0d0d14;
-  --text-secondary: #555566;
-  --border-color: rgba(0,0,0,0.1);
-  --glass-bg: rgba(0,0,0,0.03);
-  --glass-border: rgba(0,0,0,0.08);
-  --note-color: #0d0d14;
+  --bg-primary:    #F5F4EF;
+  --bg-secondary:  #ECEAE3;
+  --bg-tertiary:   #E2E0D8;
+  --accent-primary:#0A9E6E;
+  --accent-glow:   rgba(10,158,110,0.18);
+  --text-primary:  #1A1A22;
+  --text-secondary:#5A5A70;
+  --border-color:  rgba(0,0,0,0.09);
+  --glass-bg:      rgba(255,255,255,0.6);
+  --glass-border:  rgba(0,0,0,0.08);
+  --note-color:    #1A1A22;
 }
-/* ── Tema Claro — overrides completos ─────────────────────────────────────── */
-body.theme-light { background: #f4f4f8 !important; color: #0d0d14; }
 
-/* Header e navegação */
+/* ═══════════════════════════════════════════════════════════════
+   TEMA CLARO — redesign completo
+   Paleta: creme quente (#F5F4EF) · superfícies brancas · verde
+   ═══════════════════════════════════════════════════════════════ */
+
+body.theme-light { background: #F5F4EF !important; color: #1A1A22; }
+
+/* ── Header ──────────────────────────────────────────────────── */
 body.theme-light .app-header {
-  background: rgba(240,240,246,0.92) !important;
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
-  border-bottom: 1px solid rgba(0,0,0,0.1) !important;
+  background: rgba(250,249,244,0.95) !important;
+  backdrop-filter: blur(24px); -webkit-backdrop-filter: blur(24px);
+  border-bottom: 1px solid rgba(0,0,0,0.08) !important;
+  box-shadow: 0 1px 12px rgba(0,0,0,0.07) !important;
 }
-body.theme-light .app-header .logo { color: #0d0d14; }
-body.theme-light .dropdown-menu {
-  background: rgba(245,245,250,0.96) !important;
-  border-color: rgba(0,0,0,0.12) !important;
-  box-shadow: 0 12px 40px rgba(0,0,0,0.15) !important;
-}
-body.theme-light .menu-item { color: #0d0d14 !important; }
-body.theme-light .menu-item:hover { background: rgba(0,0,0,0.05) !important; }
-body.theme-light .menu-separator { border-color: rgba(0,0,0,0.08) !important; }
+body.theme-light .logo-name,
+body.theme-light .logo-tag,
+body.theme-light .logo { color: #1A1A22 !important; }
+body.theme-light .pro { color: var(--accent-primary) !important; }
 
-/* Cards de parte */
+/* Botões do header */
+body.theme-light #btn-theme,
+body.theme-light #notif-btn,
+body.theme-light #btn-amigos-header {
+  color: rgba(26,26,34,0.5) !important;
+}
+body.theme-light #btn-theme:hover,
+body.theme-light #notif-btn:hover,
+body.theme-light #btn-amigos-header:hover { color: #1A1A22 !important; }
+body.theme-light #btn-sala {
+  background: rgba(10,158,110,0.1) !important;
+  border-color: rgba(10,158,110,0.3) !important;
+}
+
+/* ── Menu dropdown ───────────────────────────────────────────── */
+body.theme-light .dropdown-menu {
+  background: #FAFAF6 !important;
+  border-color: rgba(0,0,0,0.1) !important;
+  box-shadow: 0 16px 48px rgba(0,0,0,0.14), 0 2px 8px rgba(0,0,0,0.06) !important;
+}
+body.theme-light .menu-btn { color: rgba(26,26,34,0.55) !important; }
+body.theme-light .menu-item { color: #1A1A22 !important; }
+body.theme-light .menu-item:hover { background: rgba(10,158,110,0.07) !important; }
+body.theme-light .menu-separator { border-color: rgba(0,0,0,0.07) !important; }
+
+/* ── Cards de parte (cifra) ──────────────────────────────────── */
 body.theme-light .song-part {
-  background: #ffffff !important;
-  border-color: var(--accent-primary) !important;
-  box-shadow: 0 2px 12px rgba(0,0,0,0.08) !important;
+  background: #FFFFFF !important;
+  border-color: rgba(10,158,110,0.25) !important;
+  box-shadow: 0 2px 16px rgba(0,0,0,0.07), 0 1px 4px rgba(0,0,0,0.04) !important;
+}
+body.theme-light .song-part:hover {
+  box-shadow: 0 4px 24px rgba(0,0,0,0.1), 0 1px 4px rgba(0,0,0,0.05) !important;
 }
 body.theme-light .chord-area {
   background: transparent !important;
-  color: #1a1a2e !important;
+  color: #1A1A22 !important;
 }
 body.theme-light .song-part input[type="text"] {
   color: var(--accent-primary) !important;
+  background: transparent !important;
 }
+body.theme-light .part-title { color: var(--accent-primary) !important; }
 
-/* BPM e controles de tom */
+/* ── Toolbar central ─────────────────────────────────────────── */
+body.theme-light .toolbar-central {
+  background: rgba(255,255,255,0.7) !important;
+  border-color: rgba(0,0,0,0.08) !important;
+  backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+}
+body.theme-light .toolbar-central button {
+  background: rgba(0,0,0,0.05) !important;
+  border-color: rgba(0,0,0,0.1) !important;
+  color: #1A1A22 !important;
+}
+body.theme-light .toolbar-central span { color: #1A1A22 !important; }
+
+/* ── Metrônomo / aside ───────────────────────────────────────── */
+body.theme-light aside,
+body.theme-light .side-panel,
+body.theme-light .metronome-card {
+  background: #FFFFFF !important;
+  border-color: rgba(0,0,0,0.09) !important;
+  box-shadow: 0 2px 16px rgba(0,0,0,0.07) !important;
+}
 body.theme-light #bpm-display,
 body.theme-light .bpm-val { color: var(--accent-primary) !important; }
-body.theme-light #trans-val { color: #0d0d14 !important; }
+body.theme-light #trans-val { color: #1A1A22 !important; }
 body.theme-light .bpm-btn,
-body.theme-light .trans-btn {
-  background: rgba(0,0,0,0.06) !important;
+body.theme-light .trans-btn,
+body.theme-light #tap-btn {
+  background: rgba(0,0,0,0.05) !important;
   border-color: rgba(0,0,0,0.12) !important;
-  color: #0d0d14 !important;
+  color: #1A1A22 !important;
 }
 body.theme-light .bpm-btn:active,
 body.theme-light .trans-btn:active { background: rgba(0,0,0,0.12) !important; }
-
-/* Barra de tom e + PARTE */
-body.theme-light #btn-save-vitro,
-body.theme-light #cifra-font-ctrl {
-  background: rgba(0,0,0,0.06) !important;
-  border-color: rgba(0,0,0,0.12) !important;
-  color: #0d0d14 !important;
+body.theme-light #play-btn {
+  background: var(--accent-primary) !important;
+  color: #fff !important;
 }
 
-/* Sync bar (sala) */
+/* ── Salvar / cifra font ctrl ────────────────────────────────── */
+body.theme-light #btn-save-vitro {
+  background: var(--accent-primary) !important;
+  color: #fff !important;
+  border: none !important;
+  box-shadow: 0 4px 16px rgba(10,158,110,0.3) !important;
+}
+body.theme-light #cifra-font-ctrl {
+  background: rgba(255,255,255,0.85) !important;
+  border-color: rgba(0,0,0,0.1) !important;
+  color: #1A1A22 !important;
+  box-shadow: 0 2px 12px rgba(0,0,0,0.1) !important;
+}
+body.theme-light #cifra-font-ctrl button { color: rgba(26,26,34,0.5) !important; background: none !important; border: none !important; }
+
+/* ── Sync bar ────────────────────────────────────────────────── */
 body.theme-light .sync-bar {
   background: rgba(10,158,110,0.08) !important;
-  border-color: rgba(10,158,110,0.25) !important;
+  border-color: rgba(10,158,110,0.22) !important;
 }
 body.theme-light .sync-bar.viewer {
-  background: rgba(180,140,0,0.1) !important;
-  border-color: rgba(180,140,0,0.3) !important;
+  background: rgba(180,140,0,0.08) !important;
+  border-color: rgba(180,140,0,0.28) !important;
 }
 
-/* Biblioteca / side panel */
-body.theme-light .side-panel,
-body.theme-light .metronome-card {
-  background: #f0f0f6 !important;
-  border-color: rgba(0,0,0,0.1) !important;
+/* ── Biblioteca overlay ──────────────────────────────────────── */
+body.theme-light .biblioteca-overlay {
+  background: #F5F4EF !important;
 }
-body.theme-light .biblioteca-overlay,
 body.theme-light .biblioteca-header {
-  background: #f4f4f8 !important;
-}
-body.theme-light .song-item {
-  background: #fff !important;
+  background: rgba(250,249,244,0.95) !important;
   border-color: rgba(0,0,0,0.08) !important;
-  color: #0d0d14 !important;
+  box-shadow: 0 1px 8px rgba(0,0,0,0.06) !important;
 }
-body.theme-light .song-item:hover { background: #e8e8f0 !important; }
-body.theme-light .song-name { color: #0d0d14 !important; }
-body.theme-light .song-meta { color: #555566 !important; }
+body.theme-light .biblioteca-titulo { color: #1A1A22 !important; }
+body.theme-light .biblioteca-close {
+  background: rgba(0,0,0,0.05) !important;
+  border-color: rgba(0,0,0,0.1) !important;
+  color: rgba(26,26,34,0.5) !important;
+}
+body.theme-light .biblioteca-search input {
+  background: #FFFFFF !important;
+  border-color: rgba(0,0,0,0.1) !important;
+  color: #1A1A22 !important;
+  box-shadow: 0 1px 6px rgba(0,0,0,0.05) !important;
+}
+body.theme-light .biblioteca-search input::placeholder { color: rgba(26,26,34,0.3) !important; }
+body.theme-light .biblioteca-search input:focus { border-color: rgba(10,158,110,0.4) !important; }
 
-/* Modal */
-body.theme-light .modal-overlay { background: rgba(0,0,0,0.5) !important; }
+/* Tabs biblioteca */
+body.theme-light .biblioteca-tab {
+  color: rgba(26,26,34,0.4) !important;
+  border-color: transparent !important;
+}
+body.theme-light .biblioteca-tab.active {
+  color: var(--accent-primary) !important;
+  border-color: var(--accent-primary) !important;
+  background: rgba(10,158,110,0.07) !important;
+}
+
+/* Sort bar */
+body.theme-light .sort-btn {
+  background: rgba(0,0,0,0.04) !important;
+  border-color: rgba(0,0,0,0.09) !important;
+  color: rgba(26,26,34,0.5) !important;
+}
+body.theme-light .sort-btn.active {
+  background: rgba(10,158,110,0.1) !important;
+  border-color: rgba(10,158,110,0.35) !important;
+  color: var(--accent-primary) !important;
+}
+
+/* Tags bar */
+body.theme-light .tag-chip {
+  background: rgba(0,0,0,0.04) !important;
+  border-color: rgba(0,0,0,0.09) !important;
+  color: rgba(26,26,34,0.5) !important;
+}
+body.theme-light .tag-chip.active {
+  background: rgba(10,158,110,0.1) !important;
+  border-color: rgba(10,158,110,0.35) !important;
+  color: var(--accent-primary) !important;
+}
+
+/* ── Album cards ─────────────────────────────────────────────── */
+body.theme-light .album-card .album-info .album-name { color: #1A1A22 !important; }
+body.theme-light .album-card .album-info .album-meta { color: rgba(26,26,34,0.45) !important; }
+body.theme-light .album-tag {
+  background: rgba(10,158,110,0.1) !important;
+  border-color: rgba(10,158,110,0.2) !important;
+  color: #0A8A5E !important;
+}
+body.theme-light .album-menu-btn {
+  background: rgba(255,255,255,0.85) !important;
+  border-color: rgba(0,0,0,0.1) !important;
+  color: #1A1A22 !important;
+}
+
+/* ── Context menu ────────────────────────────────────────────── */
+body.theme-light .album-ctx-menu {
+  background: #FAFAF6 !important;
+  border-color: rgba(0,0,0,0.1) !important;
+  box-shadow: 0 16px 48px rgba(0,0,0,0.16), 0 4px 12px rgba(0,0,0,0.08) !important;
+}
+body.theme-light .ctx-item { color: #1A1A22 !important; }
+body.theme-light .ctx-item:hover { background: rgba(10,158,110,0.07) !important; }
+body.theme-light .ctx-item.ctx-danger { color: #cc3333 !important; }
+body.theme-light .ctx-item.ctx-danger:hover { background: rgba(200,40,40,0.07) !important; }
+body.theme-light .ctx-item.ctx-fav { color: #b8860b !important; }
+
+/* ── Evento detalhe ──────────────────────────────────────────── */
+body.theme-light .evento-detalhe-header {
+  background: rgba(250,249,244,0.95) !important;
+  border-color: rgba(0,0,0,0.08) !important;
+}
+body.theme-light .evento-detalhe-title { color: #1A1A22 !important; }
+body.theme-light .evento-detalhe-back {
+  background: rgba(0,0,0,0.04) !important;
+  border-color: rgba(0,0,0,0.1) !important;
+  color: rgba(26,26,34,0.5) !important;
+}
+body.theme-light .evento-detalhe-back:hover { color: #1A1A22 !important; background: rgba(0,0,0,0.08) !important; }
+body.theme-light .ev-more-btn {
+  background: rgba(0,0,0,0.05) !important;
+  border-color: rgba(0,0,0,0.1) !important;
+  color: rgba(26,26,34,0.55) !important;
+}
+body.theme-light .ev-more-drop {
+  background: #FAFAF6 !important;
+  border-color: rgba(0,0,0,0.1) !important;
+  box-shadow: 0 12px 40px rgba(0,0,0,0.14) !important;
+}
+body.theme-light .ev-more-item { color: #1A1A22 !important; }
+body.theme-light .ev-more-item:hover { background: rgba(10,158,110,0.07) !important; }
+
+/* ── Modal genérico ──────────────────────────────────────────── */
+body.theme-light .modal-overlay { background: rgba(0,0,0,0.45) !important; }
 body.theme-light .modal-box {
-  background: #ffffff !important;
-  border-color: rgba(0,0,0,0.12) !important;
-  color: #0d0d14 !important;
-  box-shadow: 0 20px 60px rgba(0,0,0,0.2) !important;
+  background: #FFFFFF !important;
+  border-color: rgba(0,0,0,0.1) !important;
+  color: #1A1A22 !important;
+  box-shadow: 0 24px 64px rgba(0,0,0,0.18) !important;
 }
 body.theme-light .modal-box h2,
-body.theme-light .modal-box p { color: #0d0d14 !important; }
+body.theme-light .modal-box p,
+body.theme-light .modal-box label { color: #1A1A22 !important; }
 body.theme-light .modal-box input[type="text"],
 body.theme-light .modal-box input[type="email"],
 body.theme-light .modal-box input[type="password"] {
-  background: #f0f0f6 !important;
-  border-color: rgba(0,0,0,0.15) !important;
-  color: #0d0d14 !important;
-}
-
-/* Buttons genéricos */
-body.theme-light button:not(.mode-show-container):not(.acc-btn):not([class*="voc-"]):not([class*="adm-"]):not(.modal-btn-primary) {
-  color: inherit;
-}
-body.theme-light .btn-secondary {
-  background: rgba(0,0,0,0.06) !important;
+  background: #F5F4EF !important;
   border-color: rgba(0,0,0,0.12) !important;
-  color: #0d0d14 !important;
+  color: #1A1A22 !important;
+}
+body.theme-light .modal-editar-box {
+  background: #FFFFFF !important;
+  border-color: rgba(0,0,0,0.1) !important;
+  color: #1A1A22 !important;
+  box-shadow: 0 24px 64px rgba(0,0,0,0.18) !important;
+}
+body.theme-light .modal-editar-title,
+body.theme-light .modal-editar-label { color: #1A1A22 !important; }
+body.theme-light .modal-editar input[type="text"],
+body.theme-light .modal-editar input[type="number"] {
+  background: #F5F4EF !important;
+  border-color: rgba(0,0,0,0.12) !important;
+  color: #1A1A22 !important;
+}
+/* Modal historico, perfil, amigos, sala */
+body.theme-light [id*="modal-"]:not([class*="voc"]) > div:first-child,
+body.theme-light .amigos-sheet,
+body.theme-light .modal-perfil-box {
+  background: #FAFAF6 !important;
+  border-color: rgba(0,0,0,0.1) !important;
+}
+body.theme-light .amigos-header,
+body.theme-light .amigos-title { color: #1A1A22 !important; }
+body.theme-light .amigos-tab { color: rgba(26,26,34,0.45) !important; }
+body.theme-light .amigos-tab.active { color: var(--accent-primary) !important; }
+
+/* ── Song list (lista antiga) ────────────────────────────────── */
+body.theme-light .song-item {
+  background: #FFFFFF !important;
+  border-color: rgba(0,0,0,0.07) !important;
+  color: #1A1A22 !important;
+  box-shadow: 0 1px 6px rgba(0,0,0,0.05) !important;
+}
+body.theme-light .song-item:hover { background: #F0EFE9 !important; }
+body.theme-light .song-name { color: #1A1A22 !important; }
+body.theme-light .song-meta { color: rgba(26,26,34,0.45) !important; }
+
+/* ── Perfil ──────────────────────────────────────────────────── */
+body.theme-light #modal-perfil > div {
+  background: #FAFAF6 !important;
+}
+body.theme-light .perfil-nome,
+body.theme-light #perfil-nome-input { color: #1A1A22 !important; }
+body.theme-light #perfil-nome-input {
+  background: #F5F4EF !important;
+  border-color: rgba(0,0,0,0.12) !important;
 }
 
-/* Performance mode indicators */
+/* ── Performance mode ────────────────────────────────────────── */
 body.theme-light .perf-song-name,
-body.theme-light .perf-song-pos { color: #0d0d14 !important; }
+body.theme-light .perf-song-pos { color: #1A1A22 !important; }
 
-/* Input de busca da biblioteca */
+/* ── Inputs genéricos ────────────────────────────────────────── */
 body.theme-light .search-input,
-body.theme-light input[type="search"] {
-  background: rgba(0,0,0,0.06) !important;
-  border-color: rgba(0,0,0,0.12) !important;
-  color: #0d0d14 !important;
+body.theme-light input[type="search"],
+body.theme-light input[type="text"]:not([class*="voc"]):not([class*="adm"]):not([class*="ob-"]),
+body.theme-light input[type="number"] {
+  background: #FFFFFF !important;
+  border-color: rgba(0,0,0,0.11) !important;
+  color: #1A1A22 !important;
 }
-body.theme-light .search-input::placeholder { color: rgba(0,0,0,0.3) !important; }
+body.theme-light input::placeholder { color: rgba(26,26,34,0.3) !important; }
+body.theme-light textarea:not([class*="voc"]):not([class*="adm"]) {
+  background: #FFFFFF !important;
+  border-color: rgba(0,0,0,0.11) !important;
+  color: #1A1A22 !important;
+}
 
-/* Scrollbar */
-body.theme-light ::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.2) !important; }
-body.theme-light ::-webkit-scrollbar-track { background: rgba(0,0,0,0.05) !important; }
+/* ── Notificações ────────────────────────────────────────────── */
+body.theme-light #notif-panel {
+  background: #FAFAF6 !important;
+  border-color: rgba(0,0,0,0.1) !important;
+  box-shadow: 0 16px 48px rgba(0,0,0,0.14) !important;
+}
+body.theme-light .notif-item { border-color: rgba(0,0,0,0.07) !important; }
+body.theme-light .notif-title { color: #1A1A22 !important; }
+body.theme-light .notif-desc { color: rgba(26,26,34,0.55) !important; }
+body.theme-light .notif-time { color: rgba(26,26,34,0.35) !important; }
+body.theme-light .notif-empty { color: rgba(26,26,34,0.35) !important; }
+
+/* ── Scrollbar ───────────────────────────────────────────────── */
+body.theme-light ::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.15) !important; }
+body.theme-light ::-webkit-scrollbar-track { background: rgba(0,0,0,0.04) !important; }
 body, body * { transition: background-color 0.25s, color 0.15s, border-color 0.15s; }
 body.performance-mode {
   --bg-primary: #050000;
@@ -7867,6 +8077,14 @@ function exportarSetlistPDF() {
     + '<title>Setlist — ' + ev.nome.replace(/</g,'&lt;') + '</title>'
     + '<style>'
     + 'body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;margin:0;padding:32px 40px;color:#111;background:#fff;}'
+    + '.back-bar{position:fixed;top:0;left:0;right:0;z-index:999;background:rgba(255,255,255,0.95);backdrop-filter:blur(12px);border-bottom:1px solid #e8e8e8;padding:10px 20px;display:flex;align-items:center;justify-content:space-between;gap:12px;}'
+    + '.back-btn{display:flex;align-items:center;gap:7px;background:none;border:1px solid #ddd;border-radius:20px;padding:7px 16px;font-size:12px;font-weight:700;color:#444;cursor:pointer;font-family:inherit;transition:all 0.15s;}'
+    + '.back-btn:hover{background:#f0f0f0;color:#111;border-color:#bbb;}'
+    + '.back-bar-title{font-size:12px;font-weight:700;color:#888;letter-spacing:0.5px;}'
+    + '.print-btn{display:flex;align-items:center;gap:7px;background:#0A9E6E;border:none;border-radius:20px;padding:7px 18px;font-size:12px;font-weight:800;color:#fff;cursor:pointer;font-family:inherit;}'
+    + '.print-btn:hover{background:#089060;}'
+    + '@media print{.back-bar{display:none!important;}body{padding-top:32px!important;}}'
+    + 'body{padding-top:68px;}'
     + '@media print{body{padding:20px 28px;}@page{margin:1.5cm;}}'
     + '.header{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:28px;padding-bottom:20px;border-bottom:2px solid #111;}'
     + '.logo{font-size:10px;font-weight:900;letter-spacing:3px;color:#0A9E6E;text-transform:uppercase;margin-bottom:4px;}'
@@ -7886,6 +8104,17 @@ function exportarSetlistPDF() {
     + '.footer-note{font-size:10px;color:#bbb;}'
     + '.footer-brand{font-size:10px;font-weight:900;letter-spacing:2px;color:#0A9E6E;}'
     + '</style></head><body>'
+    + '<div class="back-bar">'
+    +   '<button class="back-btn" onclick="window.close()">'
+    +     '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>'
+    +     'Voltar ao app'
+    +   '</button>'
+    +   '<span class="back-bar-title">PRÉ-VISUALIZAÇÃO DO PDF</span>'
+    +   '<button class="print-btn" onclick="window.print()">'
+    +     '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>'
+    +     'Imprimir / Salvar PDF'
+    +   '</button>'
+    + '</div>'
     + '<div class="header">'
     +   '<div>'
     +     '<div class="logo">Map Music Pro · Setlist</div>'
@@ -7912,14 +8141,11 @@ function exportarSetlistPDF() {
     + '</div>'
     + '</body></html>';
 
-  var janela = window.open('', '_blank', 'width=794,height=1000');
+  var janela = window.open('', '_blank', 'width=860,height=1020');
   if (!janela) { showToast('Permita popups para exportar o PDF.'); return; }
   janela.document.write(html);
   janela.document.close();
-  janela.onload = function() {
-    setTimeout(function() { janela.print(); }, 300);
-  };
-  showToast('A abrir pré-visualização do PDF…');
+  showToast('Pré-visualização do PDF aberta!');
 }
 
 function exportData() {
