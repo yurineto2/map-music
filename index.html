@@ -1869,356 +1869,708 @@ function adminEscolherModo(modo) {
   --note-color: #ffffff;
 }
 body.theme-light {
-  --bg-primary:    #F5F4EF;
-  --bg-secondary:  #ECEAE3;
-  --bg-tertiary:   #E2E0D8;
-  --accent-primary:#0A9E6E;
-  --accent-glow:   rgba(10,158,110,0.18);
-  --text-primary:  #1A1A22;
-  --text-secondary:#5A5A70;
-  --border-color:  rgba(0,0,0,0.09);
-  --glass-bg:      rgba(255,255,255,0.6);
-  --glass-border:  rgba(0,0,0,0.08);
-  --note-color:    #1A1A22;
+  /* ── Design tokens ─────────────────────────────────────────────
+     Paleta: papel branco quente · cinza âncora · verde musgo
+     Inspiração: Linear / Notion / apps profissionais iOS
+     ──────────────────────────────────────────────────────────── */
+  --bg-primary:     #FAFAF8;
+  --bg-secondary:   #F2F1EE;
+  --bg-tertiary:    #E8E7E3;
+  --accent-primary: #0A8F62;
+  --accent-glow:    rgba(10,143,98,0.15);
+  --text-primary:   #18181B;
+  --text-secondary: #52525B;
+  --border-color:   rgba(0,0,0,0.08);
+  --glass-bg:       rgba(255,255,255,0.75);
+  --glass-border:   rgba(0,0,0,0.07);
+  --note-color:     #18181B;
+  /* sombras dedicadas ao modo claro */
+  --shadow-sm:  0 1px 3px rgba(0,0,0,0.08), 0 1px 2px rgba(0,0,0,0.04);
+  --shadow-md:  0 4px 16px rgba(0,0,0,0.08), 0 1px 4px rgba(0,0,0,0.04);
+  --shadow-lg:  0 12px 40px rgba(0,0,0,0.10), 0 2px 8px rgba(0,0,0,0.05);
+  --shadow-xl:  0 24px 64px rgba(0,0,0,0.12), 0 4px 12px rgba(0,0,0,0.06);
 }
 
-/* ═══════════════════════════════════════════════════════════════
-   TEMA CLARO — redesign completo
-   Paleta: creme quente (#F5F4EF) · superfícies brancas · verde
-   ═══════════════════════════════════════════════════════════════ */
+/* ══════════════════════════════════════════════════════════════════
+   TEMA CLARO — REDESIGN PROFISSIONAL
+   ══════════════════════════════════════════════════════════════════ */
+body.theme-light {
+  background: var(--bg-primary) !important;
+  color: var(--text-primary);
+}
 
-body.theme-light { background: #F5F4EF !important; color: #1A1A22; }
-
-/* ── Header ──────────────────────────────────────────────────── */
+/* ── 1. APP HEADER ──────────────────────────────────────────────── */
 body.theme-light .app-header {
-  background: rgba(250,249,244,0.95) !important;
-  backdrop-filter: blur(24px); -webkit-backdrop-filter: blur(24px);
-  border-bottom: 1px solid rgba(0,0,0,0.08) !important;
-  box-shadow: 0 1px 12px rgba(0,0,0,0.07) !important;
+  background: rgba(250,250,248,0.92) !important;
+  backdrop-filter: blur(28px) saturate(1.6) !important;
+  -webkit-backdrop-filter: blur(28px) saturate(1.6) !important;
+  border-bottom: 1px solid rgba(0,0,0,0.07) !important;
+  box-shadow: 0 1px 0 rgba(0,0,0,0.05), 0 2px 16px rgba(0,0,0,0.04) !important;
 }
-body.theme-light .logo-name,
-body.theme-light .logo-tag,
-body.theme-light .logo { color: #1A1A22 !important; }
-body.theme-light .pro { color: var(--accent-primary) !important; }
-
-/* Botões do header */
-body.theme-light #btn-theme,
-body.theme-light #notif-btn,
-body.theme-light #btn-amigos-header {
-  color: rgba(26,26,34,0.5) !important;
-}
-body.theme-light #btn-theme:hover,
-body.theme-light #notif-btn:hover,
-body.theme-light #btn-amigos-header:hover { color: #1A1A22 !important; }
+body.theme-light .app-header::after { display: none !important; }
+body.theme-light .logo-name { color: #18181B !important; }
+body.theme-light .logo-name .pro { color: var(--accent-primary) !important; }
+body.theme-light .logo-tag { color: rgba(24,24,27,0.35) !important; }
+body.theme-light .logo-shimmer { background: none !important; -webkit-text-fill-color: #18181B !important; color: #18181B !important; }
+body.theme-light .menu-btn { color: rgba(24,24,27,0.5) !important; }
+body.theme-light .menu-btn:hover { color: #18181B !important; }
+body.theme-light #btn-theme { color: rgba(24,24,27,0.45) !important; }
+body.theme-light #btn-amigos-header { color: rgba(24,24,27,0.45) !important; }
+body.theme-light .notif-btn { color: rgba(24,24,27,0.45) !important; }
 body.theme-light #btn-sala {
-  background: rgba(10,158,110,0.1) !important;
-  border-color: rgba(10,158,110,0.3) !important;
+  background: rgba(10,143,98,0.08) !important;
+  border-color: rgba(10,143,98,0.25) !important;
+  color: var(--accent-primary) !important;
+}
+body.theme-light #btn-sala:hover {
+  background: rgba(10,143,98,0.14) !important;
+  border-color: rgba(10,143,98,0.4) !important;
 }
 
-/* ── Menu dropdown ───────────────────────────────────────────── */
+/* ── 2. MENU DROPDOWN ───────────────────────────────────────────── */
 body.theme-light .dropdown-menu {
-  background: #FAFAF6 !important;
-  border-color: rgba(0,0,0,0.1) !important;
-  box-shadow: 0 16px 48px rgba(0,0,0,0.14), 0 2px 8px rgba(0,0,0,0.06) !important;
+  background: rgba(252,252,250,0.98) !important;
+  border: 1px solid rgba(0,0,0,0.09) !important;
+  box-shadow: var(--shadow-xl) !important;
 }
-body.theme-light .menu-btn { color: rgba(26,26,34,0.55) !important; }
-body.theme-light .menu-item { color: #1A1A22 !important; }
-body.theme-light .menu-item:hover { background: rgba(10,158,110,0.07) !important; }
-body.theme-light .menu-separator { border-color: rgba(0,0,0,0.07) !important; }
+body.theme-light .menu-item {
+  color: #18181B !important;
+  border-bottom-color: rgba(0,0,0,0.05) !important;
+}
+body.theme-light .menu-item:hover {
+  background: rgba(10,143,98,0.06) !important;
+  color: var(--accent-primary) !important;
+}
+body.theme-light .menu-item:active {
+  background: rgba(10,143,98,0.1) !important;
+}
+body.theme-light .menu-item.danger { color: #DC2626 !important; }
+body.theme-light .menu-item.danger:hover { background: rgba(220,38,38,0.06) !important; }
+body.theme-light .menu-separator { border-color: rgba(0,0,0,0.06) !important; }
 
-/* ── Cards de parte (cifra) ──────────────────────────────────── */
+/* ── 3. SYNC BAR ────────────────────────────────────────────────── */
+body.theme-light .sync-bar {
+  background: rgba(10,143,98,0.07) !important;
+  border-color: rgba(10,143,98,0.18) !important;
+  color: #0A8F62 !important;
+}
+body.theme-light .sync-bar .sync-code {
+  background: rgba(10,143,98,0.1) !important;
+  color: #0A8F62 !important;
+}
+body.theme-light .sync-bar.viewer {
+  background: rgba(161,107,0,0.06) !important;
+  border-color: rgba(161,107,0,0.2) !important;
+  color: #A16B00 !important;
+}
+
+/* ── 4. MAIN LAYOUT ─────────────────────────────────────────────── */
+body.theme-light .notes-section { background: transparent !important; }
+
+/* ── 5. TOOLBAR CENTRAL ─────────────────────────────────────────── */
+body.theme-light .toolbar-central {
+  background: rgba(255,255,255,0.8) !important;
+  backdrop-filter: blur(12px) !important;
+  -webkit-backdrop-filter: blur(12px) !important;
+  border: 1px solid rgba(0,0,0,0.07) !important;
+  box-shadow: var(--shadow-sm) !important;
+  border-radius: 14px !important;
+  padding: 10px 16px !important;
+}
+body.theme-light .toolbar-central button {
+  background: rgba(0,0,0,0.04) !important;
+  border: 1px solid rgba(0,0,0,0.09) !important;
+  color: #18181B !important;
+}
+body.theme-light .toolbar-central button:hover {
+  background: rgba(0,0,0,0.08) !important;
+}
+body.theme-light .toolbar-central span,
+body.theme-light #trans-val { color: #18181B !important; }
+body.theme-light #tom-original-badge {
+  background: rgba(255,255,255,0.9) !important;
+  border-color: rgba(10,143,98,0.2) !important;
+}
+
+/* ── 6. SONG PARTS (cifra) ──────────────────────────────────────── */
 body.theme-light .song-part {
   background: #FFFFFF !important;
-  border-color: rgba(10,158,110,0.25) !important;
-  box-shadow: 0 2px 16px rgba(0,0,0,0.07), 0 1px 4px rgba(0,0,0,0.04) !important;
+  border-left-color: var(--accent-primary) !important;
+  border-top: 1px solid rgba(0,0,0,0.05) !important;
+  border-right: 1px solid rgba(0,0,0,0.05) !important;
+  border-bottom: 1px solid rgba(0,0,0,0.05) !important;
+  box-shadow: var(--shadow-sm) !important;
 }
-body.theme-light .song-part:hover {
-  box-shadow: 0 4px 24px rgba(0,0,0,0.1), 0 1px 4px rgba(0,0,0,0.05) !important;
+body.theme-light .song-part:focus-within {
+  box-shadow: var(--shadow-md), 0 0 0 2px rgba(10,143,98,0.12) !important;
 }
 body.theme-light .chord-area {
   background: transparent !important;
-  color: #1A1A22 !important;
+  color: #18181B !important;
 }
-body.theme-light .song-part input[type="text"] {
+body.theme-light .chord-area::placeholder { color: rgba(24,24,27,0.22) !important; }
+body.theme-light .song-part input[type="text"],
+body.theme-light .part-title-input {
   color: var(--accent-primary) !important;
   background: transparent !important;
+  border-color: transparent !important;
 }
-body.theme-light .part-title { color: var(--accent-primary) !important; }
+body.theme-light .part-title { color: var(--accent-primary) !important; font-weight: 800 !important; }
 
-/* ── Toolbar central ─────────────────────────────────────────── */
-body.theme-light .toolbar-central {
-  background: rgba(255,255,255,0.7) !important;
-  border-color: rgba(0,0,0,0.08) !important;
-  backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
-}
-body.theme-light .toolbar-central button {
-  background: rgba(0,0,0,0.05) !important;
-  border-color: rgba(0,0,0,0.1) !important;
-  color: #1A1A22 !important;
-}
-body.theme-light .toolbar-central span { color: #1A1A22 !important; }
-
-/* ── Metrônomo / aside ───────────────────────────────────────── */
-body.theme-light aside,
+/* ── 7. ASIDE / METRÔNOMO ───────────────────────────────────────── */
+body.theme-light aside { background: transparent !important; }
 body.theme-light .side-panel,
 body.theme-light .metronome-card {
   background: #FFFFFF !important;
-  border-color: rgba(0,0,0,0.09) !important;
-  box-shadow: 0 2px 16px rgba(0,0,0,0.07) !important;
+  border: 1px solid rgba(0,0,0,0.07) !important;
+  box-shadow: var(--shadow-md) !important;
 }
 body.theme-light #bpm-display,
 body.theme-light .bpm-val { color: var(--accent-primary) !important; }
-body.theme-light #trans-val { color: #1A1A22 !important; }
-body.theme-light .bpm-btn,
-body.theme-light .trans-btn,
-body.theme-light #tap-btn {
-  background: rgba(0,0,0,0.05) !important;
-  border-color: rgba(0,0,0,0.12) !important;
-  color: #1A1A22 !important;
+body.theme-light #trans-val { color: #18181B !important; }
+body.theme-light .bpm-btn, body.theme-light .trans-btn {
+  background: rgba(0,0,0,0.04) !important;
+  border: 1px solid rgba(0,0,0,0.09) !important;
+  color: #18181B !important;
 }
-body.theme-light .bpm-btn:active,
-body.theme-light .trans-btn:active { background: rgba(0,0,0,0.12) !important; }
+body.theme-light .bpm-btn:active, body.theme-light .trans-btn:active {
+  background: rgba(0,0,0,0.1) !important;
+}
+body.theme-light #tap-btn {
+  border-color: var(--accent-primary) !important;
+  color: var(--accent-primary) !important;
+  background: transparent !important;
+}
+body.theme-light #tap-btn:active {
+  background: rgba(10,143,98,0.08) !important;
+}
 body.theme-light #play-btn {
   background: var(--accent-primary) !important;
   color: #fff !important;
+  box-shadow: 0 4px 16px rgba(10,143,98,0.25) !important;
+}
+body.theme-light #play-btn:active {
+  background: #087a53 !important;
+  box-shadow: 0 2px 8px rgba(10,143,98,0.2) !important;
+}
+body.theme-light #bpm-mic-btn {
+  background: rgba(10,143,98,0.07) !important;
+  border-color: rgba(10,143,98,0.22) !important;
+  color: var(--accent-primary) !important;
 }
 
-/* ── Salvar / cifra font ctrl ────────────────────────────────── */
+/* ── 8. SALVAR / FONT CTRL ──────────────────────────────────────── */
 body.theme-light #btn-save-vitro {
   background: var(--accent-primary) !important;
   color: #fff !important;
   border: none !important;
-  box-shadow: 0 4px 16px rgba(10,158,110,0.3) !important;
+  box-shadow: 0 4px 20px rgba(10,143,98,0.28), 0 2px 6px rgba(10,143,98,0.16) !important;
+}
+body.theme-light #btn-save-vitro:active {
+  background: #087a53 !important;
+  box-shadow: 0 2px 8px rgba(10,143,98,0.2) !important;
 }
 body.theme-light #cifra-font-ctrl {
-  background: rgba(255,255,255,0.85) !important;
-  border-color: rgba(0,0,0,0.1) !important;
-  color: #1A1A22 !important;
-  box-shadow: 0 2px 12px rgba(0,0,0,0.1) !important;
+  background: rgba(255,255,255,0.9) !important;
+  border: 1px solid rgba(0,0,0,0.09) !important;
+  box-shadow: var(--shadow-md) !important;
 }
-body.theme-light #cifra-font-ctrl button { color: rgba(26,26,34,0.5) !important; background: none !important; border: none !important; }
+body.theme-light #cifra-font-ctrl button {
+  color: rgba(24,24,27,0.45) !important;
+  background: none !important;
+  border: none !important;
+}
+body.theme-light #cifra-font-ctrl button:hover { color: #18181B !important; }
+body.theme-light #cifra-font-val { color: rgba(24,24,27,0.45) !important; }
 
-/* ── Sync bar ────────────────────────────────────────────────── */
-body.theme-light .sync-bar {
-  background: rgba(10,158,110,0.08) !important;
-  border-color: rgba(10,158,110,0.22) !important;
-}
-body.theme-light .sync-bar.viewer {
-  background: rgba(180,140,0,0.08) !important;
-  border-color: rgba(180,140,0,0.28) !important;
-}
-
-/* ── Biblioteca overlay ──────────────────────────────────────── */
+/* ── 9. BIBLIOTECA ──────────────────────────────────────────────── */
 body.theme-light .biblioteca-overlay {
-  background: #F5F4EF !important;
+  background: #FAFAF8 !important;
 }
 body.theme-light .biblioteca-header {
-  background: rgba(250,249,244,0.95) !important;
-  border-color: rgba(0,0,0,0.08) !important;
-  box-shadow: 0 1px 8px rgba(0,0,0,0.06) !important;
+  background: rgba(250,250,248,0.97) !important;
+  border-bottom-color: rgba(0,0,0,0.07) !important;
+  box-shadow: 0 1px 0 rgba(0,0,0,0.05), 0 4px 16px rgba(0,0,0,0.04) !important;
 }
-body.theme-light .biblioteca-titulo { color: #1A1A22 !important; }
+body.theme-light .biblioteca-titulo { color: #18181B !important; }
 body.theme-light .biblioteca-close {
-  background: rgba(0,0,0,0.05) !important;
-  border-color: rgba(0,0,0,0.1) !important;
-  color: rgba(26,26,34,0.5) !important;
+  background: rgba(0,0,0,0.04) !important;
+  border-color: rgba(0,0,0,0.08) !important;
+  color: rgba(24,24,27,0.5) !important;
 }
-body.theme-light .biblioteca-search input {
-  background: #FFFFFF !important;
-  border-color: rgba(0,0,0,0.1) !important;
-  color: #1A1A22 !important;
-  box-shadow: 0 1px 6px rgba(0,0,0,0.05) !important;
+body.theme-light .biblioteca-close:active {
+  background: rgba(0,0,0,0.09) !important;
+  color: #18181B !important;
 }
-body.theme-light .biblioteca-search input::placeholder { color: rgba(26,26,34,0.3) !important; }
-body.theme-light .biblioteca-search input:focus { border-color: rgba(10,158,110,0.4) !important; }
-
-/* Tabs biblioteca */
+body.theme-light .biblioteca-tabs {
+  border-bottom-color: rgba(0,0,0,0.07) !important;
+}
 body.theme-light .biblioteca-tab {
-  color: rgba(26,26,34,0.4) !important;
+  color: rgba(24,24,27,0.4) !important;
   border-color: transparent !important;
 }
 body.theme-light .biblioteca-tab.active {
   color: var(--accent-primary) !important;
   border-color: var(--accent-primary) !important;
-  background: rgba(10,158,110,0.07) !important;
+}
+body.theme-light .biblioteca-search input {
+  background: #FFFFFF !important;
+  border: 1px solid rgba(0,0,0,0.09) !important;
+  color: #18181B !important;
+  box-shadow: var(--shadow-sm) !important;
+}
+body.theme-light .biblioteca-search input::placeholder { color: rgba(24,24,27,0.28) !important; }
+body.theme-light .biblioteca-search input:focus {
+  border-color: rgba(10,143,98,0.35) !important;
+  box-shadow: 0 0 0 3px rgba(10,143,98,0.08), var(--shadow-sm) !important;
 }
 
-/* Sort bar */
+/* Sort + Tags */
+body.theme-light .bib-sort-bar { border-bottom-color: rgba(0,0,0,0.05) !important; }
 body.theme-light .sort-btn {
   background: rgba(0,0,0,0.04) !important;
-  border-color: rgba(0,0,0,0.09) !important;
-  color: rgba(26,26,34,0.5) !important;
+  border-color: rgba(0,0,0,0.08) !important;
+  color: rgba(24,24,27,0.5) !important;
 }
+body.theme-light .sort-btn:hover { color: #18181B !important; border-color: rgba(0,0,0,0.15) !important; }
 body.theme-light .sort-btn.active {
-  background: rgba(10,158,110,0.1) !important;
-  border-color: rgba(10,158,110,0.35) !important;
+  background: rgba(10,143,98,0.08) !important;
+  border-color: rgba(10,143,98,0.28) !important;
   color: var(--accent-primary) !important;
 }
-
-/* Tags bar */
 body.theme-light .tag-chip {
   background: rgba(0,0,0,0.04) !important;
-  border-color: rgba(0,0,0,0.09) !important;
-  color: rgba(26,26,34,0.5) !important;
+  border-color: rgba(0,0,0,0.08) !important;
+  color: rgba(24,24,27,0.55) !important;
 }
+body.theme-light .tag-chip:hover { border-color: rgba(10,143,98,0.3) !important; color: var(--accent-primary) !important; }
 body.theme-light .tag-chip.active {
-  background: rgba(10,158,110,0.1) !important;
-  border-color: rgba(10,158,110,0.35) !important;
+  background: rgba(10,143,98,0.09) !important;
+  border-color: rgba(10,143,98,0.3) !important;
   color: var(--accent-primary) !important;
 }
 
-/* ── Album cards ─────────────────────────────────────────────── */
-body.theme-light .album-card .album-info .album-name { color: #1A1A22 !important; }
-body.theme-light .album-card .album-info .album-meta { color: rgba(26,26,34,0.45) !important; }
+/* ── 10. ALBUM CARDS ────────────────────────────────────────────── */
+body.theme-light .album-card .album-name { color: #18181B !important; }
+body.theme-light .album-card .album-meta { color: rgba(24,24,27,0.4) !important; }
 body.theme-light .album-tag {
-  background: rgba(10,158,110,0.1) !important;
-  border-color: rgba(10,158,110,0.2) !important;
-  color: #0A8A5E !important;
+  background: rgba(10,143,98,0.08) !important;
+  border-color: rgba(10,143,98,0.2) !important;
+  color: #0A8F62 !important;
 }
 body.theme-light .album-menu-btn {
+  background: rgba(255,255,255,0.9) !important;
+  backdrop-filter: blur(8px) !important;
+  border-color: rgba(0,0,0,0.1) !important;
+  color: #18181B !important;
+}
+body.theme-light .album-menu-btn:active { background: rgba(10,143,98,0.12) !important; }
+body.theme-light .album-show-btn {
   background: rgba(255,255,255,0.85) !important;
-  border-color: rgba(0,0,0,0.1) !important;
-  color: #1A1A22 !important;
+  border-color: rgba(10,143,98,0.4) !important;
 }
 
-/* ── Context menu ────────────────────────────────────────────── */
+/* ── 11. CONTEXT MENU ───────────────────────────────────────────── */
 body.theme-light .album-ctx-menu {
-  background: #FAFAF6 !important;
-  border-color: rgba(0,0,0,0.1) !important;
-  box-shadow: 0 16px 48px rgba(0,0,0,0.16), 0 4px 12px rgba(0,0,0,0.08) !important;
+  background: #FFFFFF !important;
+  border: 1px solid rgba(0,0,0,0.09) !important;
+  box-shadow: var(--shadow-xl) !important;
 }
-body.theme-light .ctx-item { color: #1A1A22 !important; }
-body.theme-light .ctx-item:hover { background: rgba(10,158,110,0.07) !important; }
-body.theme-light .ctx-item.ctx-danger { color: #cc3333 !important; }
-body.theme-light .ctx-item.ctx-danger:hover { background: rgba(200,40,40,0.07) !important; }
-body.theme-light .ctx-item.ctx-fav { color: #b8860b !important; }
+body.theme-light .ctx-item {
+  color: #18181B !important;
+}
+body.theme-light .ctx-item:hover { background: rgba(10,143,98,0.06) !important; color: #0A8F62 !important; }
+body.theme-light .ctx-item:active { background: rgba(10,143,98,0.1) !important; }
+body.theme-light .ctx-item.ctx-danger { color: #DC2626 !important; }
+body.theme-light .ctx-item.ctx-danger:hover { background: rgba(220,38,38,0.06) !important; color: #B91C1C !important; }
+body.theme-light .ctx-item.ctx-fav { color: #92400E !important; }
 
-/* ── Evento detalhe ──────────────────────────────────────────── */
+/* ── 12. EVENTO DETALHE ─────────────────────────────────────────── */
+body.theme-light .evento-detalhe { background: #FAFAF8 !important; }
 body.theme-light .evento-detalhe-header {
-  background: rgba(250,249,244,0.95) !important;
-  border-color: rgba(0,0,0,0.08) !important;
+  background: rgba(250,250,248,0.97) !important;
+  border-bottom-color: rgba(0,0,0,0.07) !important;
 }
-body.theme-light .evento-detalhe-title { color: #1A1A22 !important; }
+body.theme-light .evento-detalhe-title { color: #18181B !important; }
 body.theme-light .evento-detalhe-back {
   background: rgba(0,0,0,0.04) !important;
-  border-color: rgba(0,0,0,0.1) !important;
-  color: rgba(26,26,34,0.5) !important;
+  border-color: rgba(0,0,0,0.09) !important;
+  color: rgba(24,24,27,0.5) !important;
 }
-body.theme-light .evento-detalhe-back:hover { color: #1A1A22 !important; background: rgba(0,0,0,0.08) !important; }
+body.theme-light .evento-detalhe-back:hover {
+  background: rgba(0,0,0,0.08) !important;
+  color: #18181B !important;
+}
 body.theme-light .ev-more-btn {
-  background: rgba(0,0,0,0.05) !important;
-  border-color: rgba(0,0,0,0.1) !important;
-  color: rgba(26,26,34,0.55) !important;
+  background: rgba(0,0,0,0.04) !important;
+  border-color: rgba(0,0,0,0.09) !important;
+  color: rgba(24,24,27,0.5) !important;
+}
+body.theme-light .ev-more-btn:hover {
+  background: rgba(0,0,0,0.08) !important;
+  color: #18181B !important;
 }
 body.theme-light .ev-more-drop {
-  background: #FAFAF6 !important;
-  border-color: rgba(0,0,0,0.1) !important;
-  box-shadow: 0 12px 40px rgba(0,0,0,0.14) !important;
+  background: #FFFFFF !important;
+  border: 1px solid rgba(0,0,0,0.09) !important;
+  box-shadow: var(--shadow-lg) !important;
 }
-body.theme-light .ev-more-item { color: #1A1A22 !important; }
-body.theme-light .ev-more-item:hover { background: rgba(10,158,110,0.07) !important; }
+body.theme-light .ev-more-item { color: #18181B !important; }
+body.theme-light .ev-more-item:hover { background: rgba(10,143,98,0.06) !important; color: var(--accent-primary) !important; }
+body.theme-light .ev-more-item + .ev-more-item { border-top-color: rgba(0,0,0,0.05) !important; }
 
-/* ── Modal genérico ──────────────────────────────────────────── */
-body.theme-light .modal-overlay { background: rgba(0,0,0,0.45) !important; }
+/* ── 13. MODAIS ─────────────────────────────────────────────────── */
+body.theme-light .modal-overlay {
+  background: rgba(24,24,27,0.4) !important;
+  backdrop-filter: blur(8px) saturate(1.2) !important;
+  -webkit-backdrop-filter: blur(8px) saturate(1.2) !important;
+}
 body.theme-light .modal-box {
   background: #FFFFFF !important;
-  border-color: rgba(0,0,0,0.1) !important;
-  color: #1A1A22 !important;
-  box-shadow: 0 24px 64px rgba(0,0,0,0.18) !important;
+  border: 1px solid rgba(0,0,0,0.09) !important;
+  box-shadow: var(--shadow-xl) !important;
+  backdrop-filter: none !important;
 }
 body.theme-light .modal-box h2,
 body.theme-light .modal-box p,
-body.theme-light .modal-box label { color: #1A1A22 !important; }
+body.theme-light .modal-box label { color: #18181B !important; }
+body.theme-light .modal-box p { color: rgba(24,24,27,0.6) !important; }
 body.theme-light .modal-box input[type="text"],
 body.theme-light .modal-box input[type="email"],
-body.theme-light .modal-box input[type="password"] {
-  background: #F5F4EF !important;
-  border-color: rgba(0,0,0,0.12) !important;
-  color: #1A1A22 !important;
+body.theme-light .modal-box input[type="number"],
+body.theme-light .modal-box input[type="password"],
+body.theme-light .modal-box textarea {
+  background: #F8F8F6 !important;
+  border: 1px solid rgba(0,0,0,0.1) !important;
+  color: #18181B !important;
 }
+body.theme-light .modal-box input:focus,
+body.theme-light .modal-box textarea:focus {
+  border-color: rgba(10,143,98,0.35) !important;
+  box-shadow: 0 0 0 3px rgba(10,143,98,0.08) !important;
+}
+/* Modal editar música */
 body.theme-light .modal-editar-box {
   background: #FFFFFF !important;
-  border-color: rgba(0,0,0,0.1) !important;
-  color: #1A1A22 !important;
-  box-shadow: 0 24px 64px rgba(0,0,0,0.18) !important;
+  border: 1px solid rgba(0,0,0,0.09) !important;
+  box-shadow: var(--shadow-xl) !important;
 }
-body.theme-light .modal-editar-title,
-body.theme-light .modal-editar-label { color: #1A1A22 !important; }
+body.theme-light .modal-editar-title { color: #18181B !important; }
+body.theme-light .modal-editar-label { color: rgba(24,24,27,0.6) !important; }
 body.theme-light .modal-editar input[type="text"],
 body.theme-light .modal-editar input[type="number"] {
-  background: #F5F4EF !important;
-  border-color: rgba(0,0,0,0.12) !important;
-  color: #1A1A22 !important;
-}
-/* Modal historico, perfil, amigos, sala */
-body.theme-light [id*="modal-"]:not([class*="voc"]) > div:first-child,
-body.theme-light .amigos-sheet,
-body.theme-light .modal-perfil-box {
-  background: #FAFAF6 !important;
+  background: #F8F8F6 !important;
   border-color: rgba(0,0,0,0.1) !important;
+  color: #18181B !important;
 }
-body.theme-light .amigos-header,
-body.theme-light .amigos-title { color: #1A1A22 !important; }
-body.theme-light .amigos-tab { color: rgba(26,26,34,0.45) !important; }
-body.theme-light .amigos-tab.active { color: var(--accent-primary) !important; }
+body.theme-light .modal-editar input:focus {
+  border-color: rgba(10,143,98,0.35) !important;
+  box-shadow: 0 0 0 3px rgba(10,143,98,0.08) !important;
+}
+/* Tag editor */
+body.theme-light .tag-editor-chip {
+  background: rgba(0,0,0,0.04) !important;
+  border-color: rgba(0,0,0,0.09) !important;
+  color: rgba(24,24,27,0.6) !important;
+}
+body.theme-light .tag-editor-chip.sel {
+  background: rgba(10,143,98,0.09) !important;
+  border-color: rgba(10,143,98,0.3) !important;
+  color: var(--accent-primary) !important;
+}
+body.theme-light .tag-custom-input {
+  background: #F8F8F6 !important;
+  border-color: rgba(0,0,0,0.1) !important;
+  color: #18181B !important;
+}
+body.theme-light .tag-custom-add {
+  background: rgba(10,143,98,0.08) !important;
+  border-color: rgba(10,143,98,0.22) !important;
+  color: var(--accent-primary) !important;
+}
+/* Modal adicionar música */
+body.theme-light .modal-addmusica-box {
+  background: #FFFFFF !important;
+  border-color: rgba(0,0,0,0.09) !important;
+  box-shadow: var(--shadow-xl) !important;
+}
+body.theme-light .modal-addmusica-header { color: #18181B !important; border-bottom-color: rgba(0,0,0,0.07) !important; }
+body.theme-light .modal-addmusica-item {
+  background: #F8F8F6 !important;
+  border-color: rgba(0,0,0,0.07) !important;
+  color: #18181B !important;
+}
+body.theme-light .modal-addmusica-item:hover { background: rgba(10,143,98,0.05) !important; border-color: rgba(10,143,98,0.2) !important; }
+/* Modal sala */
+body.theme-light .modal-sala-box,
+body.theme-light [id="modal-sala"] .modal-box {
+  background: #FFFFFF !important;
+  border-color: rgba(0,0,0,0.09) !important;
+}
+/* Modal evento */
+body.theme-light .modal-evento-box {
+  background: #FFFFFF !important;
+  border-color: rgba(0,0,0,0.09) !important;
+  box-shadow: var(--shadow-xl) !important;
+}
+body.theme-light .modal-evento-title { color: #18181B !important; }
+body.theme-light .modal-evento input,
+body.theme-light .modal-evento textarea,
+body.theme-light .modal-evento select {
+  background: #F8F8F6 !important;
+  border-color: rgba(0,0,0,0.1) !important;
+  color: #18181B !important;
+}
+/* Setlist público */
+body.theme-light #modal-setlist-publico .modal-box {
+  background: #FFFFFF !important;
+}
+body.theme-light #setlist-pub-titulo { color: #18181B !important; }
+body.theme-light #setlist-pub-link {
+  color: rgba(24,24,27,0.55) !important;
+  background: #F4F4F2 !important;
+}
 
-/* ── Song list (lista antiga) ────────────────────────────────── */
+/* ── 14. AMIGOS ─────────────────────────────────────────────────── */
+body.theme-light #modal-amigos { background: rgba(24,24,27,0.4) !important; }
+body.theme-light .amigos-sheet {
+  background: #FAFAF8 !important;
+  border-top: 1px solid rgba(0,0,0,0.07) !important;
+  box-shadow: 0 -8px 40px rgba(0,0,0,0.10) !important;
+}
+body.theme-light .amigos-header { border-bottom-color: rgba(0,0,0,0.07) !important; }
+body.theme-light .amigos-title { color: #18181B !important; }
+body.theme-light .amigos-close {
+  background: rgba(0,0,0,0.04) !important;
+  border-color: rgba(0,0,0,0.09) !important;
+  color: rgba(24,24,27,0.4) !important;
+}
+body.theme-light .amigos-tabs { border-bottom-color: rgba(0,0,0,0.07) !important; }
+body.theme-light .amigos-tab { color: rgba(24,24,27,0.4) !important; }
+body.theme-light .amigos-tab.active { color: var(--accent-primary) !important; border-color: var(--accent-primary) !important; }
+body.theme-light .amigos-add-input {
+  background: #FFFFFF !important;
+  border-color: rgba(0,0,0,0.09) !important;
+  color: #18181B !important;
+}
+body.theme-light .amigos-add-input::placeholder { color: rgba(24,24,27,0.28) !important; }
+body.theme-light .amigos-add-btn {
+  background: rgba(10,143,98,0.08) !important;
+  border-color: rgba(10,143,98,0.25) !important;
+  color: var(--accent-primary) !important;
+}
+body.theme-light .amigo-item { border-bottom-color: rgba(0,0,0,0.06) !important; }
+body.theme-light .amigo-nome { color: #18181B !important; }
+body.theme-light .amigo-inst { color: rgba(24,24,27,0.45) !important; }
+body.theme-light .amigo-avatar {
+  background: rgba(10,143,98,0.1) !important;
+  color: var(--accent-primary) !important;
+  border-color: rgba(10,143,98,0.15) !important;
+}
+body.theme-light .amigos-empty { color: rgba(24,24,27,0.35) !important; }
+body.theme-light .amigo-btn-aceitar {
+  background: rgba(10,143,98,0.1) !important;
+  border-color: rgba(10,143,98,0.28) !important;
+  color: var(--accent-primary) !important;
+}
+body.theme-light .amigo-btn-recusar {
+  background: rgba(220,38,38,0.06) !important;
+  border-color: rgba(220,38,38,0.18) !important;
+  color: #DC2626 !important;
+}
+body.theme-light .amigos-sala-banner {
+  background: rgba(10,143,98,0.06) !important;
+  border-color: rgba(10,143,98,0.15) !important;
+}
+
+/* ── 15. NOTIFICAÇÕES ───────────────────────────────────────────── */
+body.theme-light .notif-btn { color: rgba(24,24,27,0.45) !important; }
+body.theme-light .notif-panel {
+  background: #FAFAF8 !important;
+  border: 1px solid rgba(0,0,0,0.09) !important;
+  box-shadow: var(--shadow-xl) !important;
+}
+body.theme-light .notif-panel-header {
+  border-bottom-color: rgba(0,0,0,0.07) !important;
+}
+body.theme-light .notif-panel-header h3 { color: #18181B !important; }
+body.theme-light .notif-clear-btn {
+  color: rgba(24,24,27,0.4) !important;
+  background: rgba(0,0,0,0.04) !important;
+  border-color: rgba(0,0,0,0.08) !important;
+}
+body.theme-light .notif-item {
+  border-bottom-color: rgba(0,0,0,0.06) !important;
+}
+body.theme-light .notif-item.unread { background: rgba(10,143,98,0.03) !important; }
+body.theme-light .notif-title { color: #18181B !important; }
+body.theme-light .notif-desc { color: rgba(24,24,27,0.55) !important; }
+body.theme-light .notif-time { color: rgba(24,24,27,0.3) !important; }
+body.theme-light .notif-empty { color: rgba(24,24,27,0.35) !important; }
+body.theme-light .notif-dot { background: var(--accent-primary) !important; }
+body.theme-light .notif-badge {
+  background: var(--accent-primary) !important;
+  color: #fff !important;
+}
+
+/* ── 16. PERFIL ─────────────────────────────────────────────────── */
+body.theme-light #modal-perfil > div:first-child {
+  background: #FAFAF8 !important;
+  border-top: 1px solid rgba(0,0,0,0.07) !important;
+}
+body.theme-light #perfil-nome-input {
+  background: #F4F4F2 !important;
+  border-color: rgba(0,0,0,0.1) !important;
+  color: #18181B !important;
+}
+body.theme-light #perfil-nome-input:focus {
+  border-color: rgba(10,143,98,0.35) !important;
+  box-shadow: 0 0 0 3px rgba(10,143,98,0.08) !important;
+}
+
+/* ── 17. HISTÓRICO SHOWS ────────────────────────────────────────── */
+body.theme-light #modal-historico-shows > div {
+  background: #FAFAF8 !important;
+  border-top: 1px solid rgba(0,0,0,0.07) !important;
+}
+body.theme-light #hist-modal-count { color: rgba(24,24,27,0.45) !important; }
+
+/* ── 18. SONG ITEM (lista lateral) ─────────────────────────────── */
 body.theme-light .song-item {
   background: #FFFFFF !important;
-  border-color: rgba(0,0,0,0.07) !important;
-  color: #1A1A22 !important;
-  box-shadow: 0 1px 6px rgba(0,0,0,0.05) !important;
+  border: 1px solid rgba(0,0,0,0.07) !important;
+  box-shadow: var(--shadow-sm) !important;
 }
-body.theme-light .song-item:hover { background: #F0EFE9 !important; }
-body.theme-light .song-name { color: #1A1A22 !important; }
-body.theme-light .song-meta { color: rgba(26,26,34,0.45) !important; }
+body.theme-light .song-item:hover { background: #F4F4F2 !important; }
+body.theme-light .song-item.active { border-color: rgba(10,143,98,0.3) !important; background: rgba(10,143,98,0.03) !important; }
+body.theme-light .song-name { color: #18181B !important; }
+body.theme-light .song-meta { color: rgba(24,24,27,0.4) !important; }
 
-/* ── Perfil ──────────────────────────────────────────────────── */
-body.theme-light #modal-perfil > div {
-  background: #FAFAF6 !important;
+/* ── 19. CAMPO HARMÔNICO ────────────────────────────────────────── */
+body.theme-light .harmonic-popup {
+  background: #FFFFFF !important;
+  border: 1px solid rgba(0,0,0,0.09) !important;
+  box-shadow: var(--shadow-lg) !important;
 }
-body.theme-light .perfil-nome,
-body.theme-light #perfil-nome-input { color: #1A1A22 !important; }
-body.theme-light #perfil-nome-input {
-  background: #F5F4EF !important;
-  border-color: rgba(0,0,0,0.12) !important;
-}
+body.theme-light .hp-header { border-bottom-color: rgba(0,0,0,0.07) !important; }
+body.theme-light .hp-key { color: #18181B !important; }
+body.theme-light .hp-close { color: rgba(24,24,27,0.4) !important; }
 
-/* ── Performance mode ────────────────────────────────────────── */
+/* ── 20. PERFORMANCE MODE ───────────────────────────────────────── */
 body.theme-light .perf-song-name,
-body.theme-light .perf-song-pos { color: #1A1A22 !important; }
-
-/* ── Inputs genéricos ────────────────────────────────────────── */
-body.theme-light .search-input,
-body.theme-light input[type="search"],
-body.theme-light input[type="text"]:not([class*="voc"]):not([class*="adm"]):not([class*="ob-"]),
-body.theme-light input[type="number"] {
-  background: #FFFFFF !important;
-  border-color: rgba(0,0,0,0.11) !important;
-  color: #1A1A22 !important;
+body.theme-light .perf-song-pos { color: #18181B !important; }
+body.theme-light .perf-bottom-panel {
+  background: rgba(250,250,248,0.95) !important;
+  border-top: 1px solid rgba(0,0,0,0.07) !important;
+  backdrop-filter: blur(16px) !important;
+  -webkit-backdrop-filter: blur(16px) !important;
 }
-body.theme-light input::placeholder { color: rgba(26,26,34,0.3) !important; }
-body.theme-light textarea:not([class*="voc"]):not([class*="adm"]) {
-  background: #FFFFFF !important;
-  border-color: rgba(0,0,0,0.11) !important;
-  color: #1A1A22 !important;
+body.theme-light .teleprompter-panel {
+  background: rgba(255,255,255,0.9) !important;
+  border-color: rgba(0,0,0,0.08) !important;
+}
+body.theme-light .tp-label { color: rgba(24,24,27,0.5) !important; }
+body.theme-light .tp-stop {
+  background: rgba(220,38,38,0.08) !important;
+  border-color: rgba(220,38,38,0.18) !important;
+  color: #DC2626 !important;
 }
 
-/* ── Notificações ────────────────────────────────────────────── */
-body.theme-light #notif-panel {
-  background: #FAFAF6 !important;
+/* ── 21. BOTÕES GENÉRICOS ───────────────────────────────────────── */
+body.theme-light .modal-btn.primary,
+body.theme-light .modal-btn-primary {
+  background: var(--accent-primary) !important;
+  color: #fff !important;
+  border-color: transparent !important;
+  box-shadow: 0 4px 14px rgba(10,143,98,0.22) !important;
+}
+body.theme-light .modal-btn.secondary,
+body.theme-light .modal-btn-secondary,
+body.theme-light .btn-secondary {
+  background: rgba(0,0,0,0.04) !important;
   border-color: rgba(0,0,0,0.1) !important;
-  box-shadow: 0 16px 48px rgba(0,0,0,0.14) !important;
+  color: #18181B !important;
 }
-body.theme-light .notif-item { border-color: rgba(0,0,0,0.07) !important; }
-body.theme-light .notif-title { color: #1A1A22 !important; }
-body.theme-light .notif-desc { color: rgba(26,26,34,0.55) !important; }
-body.theme-light .notif-time { color: rgba(26,26,34,0.35) !important; }
-body.theme-light .notif-empty { color: rgba(26,26,34,0.35) !important; }
+body.theme-light .modal-btn.secondary:hover,
+body.theme-light .btn-secondary:hover {
+  background: rgba(0,0,0,0.08) !important;
+}
+body.theme-light .modal-evento-save {
+  background: var(--accent-primary) !important;
+  color: #fff !important;
+  border-color: transparent !important;
+}
+body.theme-light .modal-evento-cancel {
+  background: transparent !important;
+  color: rgba(24,24,27,0.5) !important;
+  border-color: rgba(0,0,0,0.09) !important;
+}
 
-/* ── Scrollbar ───────────────────────────────────────────────── */
-body.theme-light ::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.15) !important; }
-body.theme-light ::-webkit-scrollbar-track { background: rgba(0,0,0,0.04) !important; }
+/* ── 22. INPUTS GENÉRICOS ───────────────────────────────────────── */
+body.theme-light input[type="text"]:not([class*="voc"]):not([class*="adm"]):not([class*="ob-"]):not([class*="chord"]):not([class*="part-title"]):not([class*="cifra"]),
+body.theme-light input[type="number"]:not([class*="voc"]):not([class*="adm"]),
+body.theme-light input[type="email"]:not([class*="voc"]):not([class*="adm"]),
+body.theme-light input[type="password"]:not([class*="voc"]):not([class*="adm"]),
+body.theme-light input[type="search"]:not([class*="voc"]):not([class*="adm"]) {
+  background: #FFFFFF !important;
+  border-color: rgba(0,0,0,0.1) !important;
+  color: #18181B !important;
+}
+body.theme-light input::placeholder { color: rgba(24,24,27,0.28) !important; }
+body.theme-light textarea:not([class*="voc"]):not([class*="adm"]):not(.chord-area):not(.cifra-textarea) {
+  background: #FFFFFF !important;
+  border-color: rgba(0,0,0,0.1) !important;
+  color: #18181B !important;
+}
+
+/* ── 23. SCROLLBAR ──────────────────────────────────────────────── */
+/* ── 23b. BOTTOM SHEETS & INLINE DARK ELEMENTS ────────────────────────── */
+/* Cobre elementos HTML estáticos com background inline escuro */
+body.theme-light [style*="background:#0c0c14"],
+body.theme-light [style*="background:#111119"],
+body.theme-light [style*="background:#0d0d1a"],
+body.theme-light [style*="background:#1a1a28"],
+body.theme-light [style*="background:#111"] {
+  background: #FFFFFF !important;
+  border-color: rgba(0,0,0,0.09) !important;
+  color: #18181B !important;
+}
+/* Textos brancos dentro de sheets no modo claro */
+body.theme-light [style*="background:#0c0c14"] *:not(button):not(svg):not(path):not(circle):not(line):not(polyline):not(polygon):not(rect):not(input):not(textarea),
+body.theme-light [style*="background:#111119"] *:not(button):not(svg):not(path):not(circle):not(line):not(polyline):not(polygon):not(rect):not(input):not(textarea) {
+  color: inherit;
+}
+/* Bordas internas de seções dentro dos sheets */
+body.theme-light [style*="background:#0c0c14"] [style*="border-bottom:1px solid rgba(255,255,255"],
+body.theme-light [style*="background:#111119"] [style*="border-bottom:1px solid rgba(255,255,255"],
+body.theme-light [style*="background:#0c0c14"] [style*="border-top:1px solid rgba(255,255,255"],
+body.theme-light [style*="background:#111119"] [style*="border-top:1px solid rgba(255,255,255"] {
+  border-color: rgba(0,0,0,0.07) !important;
+}
+/* Inputs dentro de sheets dark */
+body.theme-light [style*="background:#0c0c14"] input,
+body.theme-light [style*="background:#111119"] input,
+body.theme-light [style*="background:#0c0c14"] textarea,
+body.theme-light [style*="background:#111119"] textarea {
+  background: #F4F4F2 !important;
+  border-color: rgba(0,0,0,0.1) !important;
+  color: #18181B !important;
+}
+/* Menus dropdown inline (banner-menu, foto-menu) */
+body.theme-light [id="banner-menu"],
+body.theme-light [id="foto-menu"] {
+  background: #FFFFFF !important;
+  border-color: rgba(0,0,0,0.09) !important;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.12) !important;
+}
+
+body.theme-light ::-webkit-scrollbar-thumb {
+  background: rgba(0,0,0,0.14) !important;
+  border-radius: 8px !important;
+}
+body.theme-light ::-webkit-scrollbar-thumb:hover { background: rgba(0,0,0,0.22) !important; }
+body.theme-light ::-webkit-scrollbar-track { background: rgba(0,0,0,0.03) !important; }
+
 body, body * { transition: background-color 0.25s, color 0.15s, border-color 0.15s; }
 body.performance-mode {
   --bg-primary: #050000;
@@ -5336,12 +5688,16 @@ body.auth-pending #toast {
       <p style="font-size:11px;color:var(--text-secondary);margin:0;" id="setlist-pub-data"></p>
     </div>
     <div id="setlist-pub-lista" style="overflow-y:auto;flex:1;padding:12px 20px 8px;display:flex;flex-direction:column;gap:6px;"></div>
-    <div style="padding:14px 20px 20px;border-top:1px solid var(--glass-border);flex-shrink:0;">
-      <div style="display:flex;align-items:center;gap:8px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.09);border-radius:10px;padding:10px 12px;margin-bottom:10px;">
+    <div style="padding:14px 20px 20px;border-top:1px solid var(--glass-border);flex-shrink:0;display:flex;flex-direction:column;gap:8px;">
+      <div style="display:flex;align-items:center;gap:8px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.09);border-radius:10px;padding:10px 12px;">
         <span id="setlist-pub-link" style="font-size:11px;color:rgba(255,255,255,0.5);flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-family:monospace;"></span>
-        <button onclick="copiarLinkSetlist()" style="background:rgba(10,158,110,0.12);border:1px solid rgba(10,158,110,0.3);border-radius:7px;color:#0A9E6E;font-size:10px;font-weight:800;padding:5px 10px;cursor:pointer;flex-shrink:0;font-family:inherit;">Copiar</button>
+        <button onclick="copiarLinkSetlist()" style="background:rgba(10,158,110,0.12);border:1px solid rgba(10,158,110,0.3);border-radius:7px;color:#0A9E6E;font-size:10px;font-weight:800;padding:5px 10px;cursor:pointer;flex-shrink:0;font-family:inherit;touch-action:manipulation;">Copiar</button>
       </div>
-      <p style="font-size:10px;color:rgba(255,255,255,0.2);text-align:center;margin:0;">Qualquer pessoa com o link pode ver este setlist</p>
+      <button id="btn-share-nativo" onclick="compartilharNativo()" style="width:100%;padding:12px;border-radius:12px;background:rgba(10,158,110,0.15);border:1px solid rgba(10,158,110,0.35);color:#0A9E6E;font-size:13px;font-weight:800;cursor:pointer;font-family:inherit;touch-action:manipulation;display:flex;align-items:center;justify-content:center;gap:8px;">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
+        Compartilhar
+      </button>
+      <p style="font-size:10px;color:rgba(255,255,255,0.2);text-align:center;margin:0;">Compartilhe o link ou copie o texto acima</p>
     </div>
   </div>
 </div>
@@ -5828,10 +6184,10 @@ function abrirModalPerfil() {
 async function sairDaConta() {
   // confirm() nativo bloqueado em iOS em contextos de overlay — usar modal próprio
   const overlay = document.createElement('div');
-  overlay.style.cssText = 'position:fixed;inset:0;z-index:100020;background:rgba(0,0,0,0.88);display:flex;align-items:center;justify-content:center;padding:24px;';
+  overlay.style.cssText = _overlayBg();
   overlay.innerHTML =
-    '<div style="background:#111119;border:1px solid rgba(255,255,255,0.1);border-radius:20px;padding:26px 22px;width:100%;max-width:320px;display:flex;flex-direction:column;gap:14px;">'
-  + '<div style="font-size:16px;font-weight:900;color:#fff;">Sair do perfil?</div>'
+    '<div style="' + _boxBg('padding:26px 22px;width:100%;max-width:320px;display:flex;flex-direction:column;gap:14px;') + '">'
+  + '<div style="font-size:16px;font-weight:900;color:' + _txtColor() + ';">Sair do perfil?</div>'
   + '<div style="font-size:13px;color:rgba(255,255,255,0.45);line-height:1.5;">Os dados locais serão apagados. As músicas e eventos guardados na nuvem ficam seguros.</div>'
   + '<div style="display:flex;gap:10px;margin-top:4px;">'
   + '<button id="_sair-cancel" style="flex:1;padding:12px;border-radius:12px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);color:rgba(255,255,255,0.4);font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;touch-action:manipulation;">Cancelar</button>'
@@ -6237,10 +6593,10 @@ function fecharHistoricoShows() {
 
 function _limparHistoricoShow() {
   var overlay = document.createElement('div');
-  overlay.style.cssText = 'position:fixed;inset:0;z-index:100060;background:rgba(0,0,0,0.88);display:flex;align-items:center;justify-content:center;padding:24px;';
+  overlay.style.cssText = _overlayBg().replace('100020','100060');
   overlay.innerHTML =
-    '<div style="background:#111119;border:1px solid rgba(255,255,255,0.1);border-radius:20px;padding:24px 20px;width:100%;max-width:280px;display:flex;flex-direction:column;gap:14px;text-align:center;">'
-  + '<div style="font-size:14px;font-weight:900;color:#fff;">Limpar histórico?</div>'
+    '<div style="' + _boxBg('padding:24px 20px;width:100%;max-width:280px;display:flex;flex-direction:column;gap:14px;text-align:center;') + '">'
+  + '<div style="font-size:14px;font-weight:900;color:' + _txtColor() + ';">Limpar histórico?</div>'
   + '<div style="font-size:12px;color:rgba(255,255,255,0.35);">Todos os registros de shows serão apagados.</div>'
   + '<div style="display:flex;gap:10px;">'
   + '<button id="_lhs-nao" style="flex:1;padding:11px;border-radius:10px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);color:rgba(255,255,255,0.5);font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;">Cancelar</button>'
@@ -6784,11 +7140,11 @@ function togglePerf() {
   // Ao SAIR do show — pede confirmação
   var overlay = document.createElement('div');
   overlay.id = '_confirm-sair-show';
-  overlay.style.cssText = 'position:fixed;inset:0;z-index:100030;background:rgba(0,0,0,0.88);display:flex;align-items:center;justify-content:center;padding:24px;';
+  overlay.style.cssText = _overlayBg().replace('100020','100030');
   overlay.innerHTML =
-    '<div style="background:#111119;border:1px solid rgba(255,255,255,0.1);border-radius:20px;padding:28px 24px;width:100%;max-width:300px;display:flex;flex-direction:column;gap:14px;text-align:center;">'
+    '<div style="' + _boxBg('padding:28px 24px;width:100%;max-width:300px;display:flex;flex-direction:column;gap:14px;text-align:center;') + '">'
   + '<div style="font-size:32px;line-height:1;"></div>'
-  + '<div style="font-size:16px;font-weight:900;color:#fff;">Encerrar o show?</div>'
+  + '<div style="font-size:16px;font-weight:900;color:' + _txtColor() + ';">Encerrar o show?</div>'
   + '<div style="font-size:13px;color:rgba(255,255,255,0.4);line-height:1.5;">O modo show será desativado e o scroll parado.</div>'
   + '<div style="display:flex;gap:10px;margin-top:4px;">'
   + '<button id="_sair-show-nao" style="flex:1;padding:13px;border-radius:12px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);color:rgba(255,255,255,0.5);font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;touch-action:manipulation;">Cancelar</button>'
@@ -7174,9 +7530,9 @@ window.addEventListener('touchend', function(e) {
 
 function resetSection() {
   var overlay = document.createElement('div');
-  overlay.style.cssText = 'position:fixed;inset:0;z-index:100020;background:rgba(0,0,0,0.88);display:flex;align-items:center;justify-content:center;padding:24px;';
-  overlay.innerHTML = '<div style="background:#111119;border:1px solid rgba(255,255,255,0.1);border-radius:20px;padding:24px 20px;width:100%;max-width:300px;display:flex;flex-direction:column;gap:14px;">'
-    + '<div style="font-size:15px;font-weight:900;color:#fff;">Limpar seção?</div>'
+  overlay.style.cssText = _overlayBg();
+  overlay.innerHTML = '<div style="' + _boxBg('padding:24px 20px;width:100%;max-width:300px;display:flex;flex-direction:column;gap:14px;') + '">'
+    + '<div style="font-size:15px;font-weight:900;color:' + _txtColor() + ';">Limpar seção?</div>'
     + '<div style="font-size:13px;color:rgba(255,255,255,0.4);line-height:1.5;">Todas as partes e acordes serão removidos. O metrônomo voltará para 120 BPM.</div>'
     + '<div style="display:flex;gap:10px;">'
     + '<button id="_rs-cancel" style="flex:1;padding:12px;border-radius:12px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);color:rgba(255,255,255,0.4);font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;touch-action:manipulation;">Cancelar</button>'
@@ -7594,11 +7950,11 @@ function saveSong() {
   } else {
     // Nova música — usa modal customizado em vez de prompt() nativo (bloqueado no iOS)
     var overlay = document.createElement('div');
-    overlay.style.cssText = 'position:fixed;inset:0;z-index:100020;background:rgba(0,0,0,0.88);display:flex;align-items:center;justify-content:center;padding:24px;';
-    overlay.innerHTML = '<div style="background:#111119;border:1px solid rgba(255,255,255,0.1);border-radius:20px;padding:24px 20px;width:100%;max-width:320px;display:flex;flex-direction:column;gap:14px;">'
-      + '<div style="font-size:15px;font-weight:900;color:#fff;">Salvar música</div>'
+    overlay.style.cssText = _overlayBg();
+    overlay.innerHTML = '<div style="' + _boxBg('padding:24px 20px;width:100%;max-width:320px;display:flex;flex-direction:column;gap:14px;') + '">'
+      + '<div style="font-size:15px;font-weight:900;color:' + _txtColor() + ';">Salvar música</div>'
       + '<input id="_save-name-input" type="text" placeholder="Nome da música..." maxlength="80"'
-      +   ' style="background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.12);border-radius:10px;color:#fff;font-size:14px;padding:12px 14px;outline:none;font-family:inherit;width:100%;box-sizing:border-box;"'
+      +   ' style="' + _inputBg() + '"'
       +   '>'
       + '<div style="display:flex;gap:10px;">'
       + '<button id="_save-cancel" style="flex:1;padding:12px;border-radius:12px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);color:rgba(255,255,255,0.4);font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;touch-action:manipulation;">Cancelar</button>'
@@ -7693,10 +8049,10 @@ function deleteSong(id, e) {
   var song = songs.find(function(s){ return s.id === id; });
   var nome = song ? song.name : 'esta música';
   var overlay = document.createElement('div');
-  overlay.style.cssText = 'position:fixed;inset:0;z-index:100020;background:rgba(0,0,0,0.88);display:flex;align-items:center;justify-content:center;padding:24px;';
-  overlay.innerHTML = '<div style="background:#111119;border:1px solid rgba(255,255,255,0.1);border-radius:20px;padding:24px 20px;width:100%;max-width:300px;display:flex;flex-direction:column;gap:14px;">'
-    + '<div style="font-size:15px;font-weight:900;color:#fff;">Excluir música?</div>'
-    + '<div style="font-size:13px;color:rgba(255,255,255,0.4);line-height:1.5;"><b style="color:#fff;">' + nome.replace(/</g,'&lt;') + '</b> será removida permanentemente.</div>'
+  overlay.style.cssText = _overlayBg();
+  overlay.innerHTML = '<div style="' + _boxBg('padding:24px 20px;width:100%;max-width:300px;display:flex;flex-direction:column;gap:14px;') + '">'
+    + '<div style="font-size:15px;font-weight:900;color:' + _txtColor() + ';">Excluir música?</div>'
+    + '<div style="font-size:13px;color:' + _txtSecColor() + ';line-height:1.5;"><b style="color:' + _txtColor() + ';">' + nome.replace(/</g,'&lt;') + '</b> será removida permanentemente.</div>'
     + '<div style="display:flex;gap:10px;">'
     + '<button id="_ds-cancel" style="flex:1;padding:12px;border-radius:12px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);color:rgba(255,255,255,0.4);font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;touch-action:manipulation;">Cancelar</button>'
     + '<button id="_ds-confirm" style="flex:2;padding:12px;border-radius:12px;background:rgba(255,60,60,0.8);border:none;color:#fff;font-size:12px;font-weight:900;cursor:pointer;font-family:inherit;touch-action:manipulation;">Excluir</button>'
@@ -7925,74 +8281,121 @@ function _gerarSlug() {
 
 async function compartilharSetlist() {
   try {
+    var ev = eventos.find(function(e) { return e.id === eventoAbertoId; });
+    if (!ev) return;
+    var lista = (ev.musicIds || []).map(function(id) {
+      return songs.find(function(s) { return s.id === id; });
+    }).filter(Boolean);
+    if (!lista.length) { showToast('Evento sem músicas para compartilhar.'); return; }
 
-  var ev = eventos.find(function(e) { return e.id === eventoAbertoId; });
-  if (!ev) return;
-  var lista = (ev.musicIds || []).map(function(id) {
-    return songs.find(function(s) { return s.id === id; });
-  }).filter(Boolean);
-  if (!lista.length) { showToast('Evento sem músicas para compartilhar.'); return; }
+    // ── Monta texto do setlist para share nativo ──────────────────────────────
+    var dataStr = ev.data
+      ? new Date(ev.data + 'T12:00:00').toLocaleDateString('pt-BR', {day:'2-digit',month:'long',year:'numeric'})
+      : '';
+    var linhas = lista.map(function(s, i) {
+      return (i + 1) + '. ' + s.name + (s.bpm ? ' — ' + s.bpm + ' BPM' : '');
+    });
+    var textoShare = '🎵 Setlist: ' + ev.nome
+      + (dataStr ? '\n📅 ' + dataStr : '')
+      + '\n\n' + linhas.join('\n')
+      + '\n\n— Map Music PRO';
 
-  // Mostra modal imediatamente com loading
-  var modal = document.getElementById('modal-setlist-publico');
-  document.getElementById('setlist-pub-titulo').innerText = ev.nome;
-  var dataStr = ev.data ? new Date(ev.data + 'T12:00:00').toLocaleDateString('pt-BR', {day:'2-digit',month:'long',year:'numeric'}) : '';
-  document.getElementById('setlist-pub-data').innerText = dataStr;
-  document.getElementById('setlist-pub-link').innerText = 'Gerando link…';
-  document.getElementById('setlist-pub-lista').innerHTML = '<div style="text-align:center;padding:20px;color:rgba(255,255,255,0.3);font-size:12px;">Publicando…</div>';
-  modal.classList.add('show');
+    // ── Tenta gerar link público via Firebase (melhor opção) ──────────────────
+    var link = null;
+    if (window._fb && window._fbReady) {
+      try {
+        var slug = ev._pubSlug || _gerarSlug();
+        var dados = {
+          nome: ev.nome, data: ev.data || '', criadoEm: Date.now(),
+          musicas: lista.map(function(s, i) {
+            return { pos: i+1, nome: s.name, bpm: s.bpm || 0, tags: (s.tags||[]).join(', ') };
+          })
+        };
+        var ok = await window._fb._set('setlists_publicos/' + slug, dados, false);
+        if (ok) {
+          ev._pubSlug = slug;
+          _setlistPubSlug = slug;
+          link = window.location.origin + window.location.pathname + '?setlist=' + slug;
+          textoShare += (link ? '\n\n🔗 ' + link : '');
+        }
+      } catch(e) { /* Firebase falhou — compartilha só o texto */ }
+    }
 
-  // Slug: reusa se já existir para este evento nesta sessão
-  var slug = (ev._pubSlug) || _gerarSlug();
-  var dados = {
-    nome: ev.nome,
-    data: ev.data || '',
-    criadoEm: Date.now(),
-    musicas: lista.map(function(s, i) {
-      return { pos: i + 1, nome: s.name, bpm: s.bpm || 0, tags: (s.tags || []).join(', ') };
-    })
-  };
+    // ── Web Share API (sheet nativa iOS/Android/desktop) ─────────────────────
+    if (navigator.share) {
+      var shareData = { title: 'Setlist — ' + ev.nome, text: textoShare };
+      if (link) shareData.url = link;
+      try {
+        await navigator.share(shareData);
+        return; // share nativo abriu — não precisa do modal
+      } catch(err) {
+        if (err.name === 'AbortError') return; // usuário fechou o share sheet
+        // Outro erro → cai no modal abaixo
+      }
+    }
 
-  var ok = await window._fb._set('setlists_publicos/' + slug, dados, false);
-  if (!ok) {
-    document.getElementById('setlist-pub-link').innerText = 'Erro ao publicar. Tenta novamente.';
-    document.getElementById('setlist-pub-lista').innerHTML = '';
-    showToast('Erro ao gerar link.');
-    return;
-  }
-
-  // Guarda slug no evento (memória, não persiste — slug gerado de novo se recarregar)
-  ev._pubSlug = slug;
-  _setlistPubSlug = slug;
-
-  var link = window.location.origin + window.location.pathname + '?setlist=' + slug;
-  document.getElementById('setlist-pub-link').innerText = link;
-
-  // Renderiza lista de músicas no modal
-  document.getElementById('setlist-pub-lista').innerHTML = lista.map(function(s, i) {
-    var tags = (s.tags && s.tags.length) ? '<span style="font-size:9px;color:#0A9E6E;margin-left:4px;">' + s.tags.join(' · ') + '</span>' : '';
-    return '<div style="display:flex;align-items:center;gap:10px;padding:8px 10px;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.06);border-radius:9px;">'
-      + '<span style="font-size:11px;font-weight:800;color:rgba(255,255,255,0.25);min-width:18px;text-align:center;">' + (i+1) + '</span>'
-      + '<div style="flex:1;min-width:0;">'
-      +   '<div style="font-size:13px;font-weight:700;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + (s.name||'').replace(/</g,'&lt;') + tags + '</div>'
-      + '</div>'
-      + '<span style="font-size:11px;font-weight:700;color:rgba(255,62,62,0.7);white-space:nowrap;">' + (s.bpm||'—') + ' BPM</span>'
-      + '</div>';
-  }).join('');
+    // ── Fallback: modal com link/texto e botões copiar + share ───────────────
+    var modal = document.getElementById('modal-setlist-publico');
+    document.getElementById('setlist-pub-titulo').innerText = ev.nome;
+    document.getElementById('setlist-pub-data').innerText = dataStr;
+    document.getElementById('setlist-pub-link').innerText = link || textoShare;
+    document.getElementById('setlist-pub-lista').innerHTML = lista.map(function(s, i) {
+      var tags = (s.tags && s.tags.length)
+        ? '<span style="font-size:9px;color:#0A9E6E;margin-left:4px;">' + s.tags.join(' · ') + '</span>' : '';
+      return '<div style="display:flex;align-items:center;gap:10px;padding:8px 10px;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.06);border-radius:9px;">'
+        + '<span style="font-size:11px;font-weight:800;color:rgba(255,255,255,0.25);min-width:18px;text-align:center;">' + (i+1) + '</span>'
+        + '<div style="flex:1;min-width:0;"><div style="font-size:13px;font-weight:700;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">'
+        + (s.name||'').replace(/</g,'&lt;') + tags + '</div></div>'
+        + '<span style="font-size:11px;font-weight:700;color:rgba(255,62,62,0.7);white-space:nowrap;">' + (s.bpm||'—') + ' BPM</span>'
+        + '</div>';
+    }).join('');
+    // Guarda texto para copiar (link se tiver, senão texto completo)
+    modal._shareText = textoShare;
+    modal.classList.add('show');
 
   } catch(e) {
+    console.error('compartilharSetlist:', e);
     showToast('Erro ao compartilhar setlist.');
   }
 }
 
 function copiarLinkSetlist() {
-  var link = document.getElementById('setlist-pub-link').innerText;
-  if (!link || link.startsWith('Gerando') || link.startsWith('Erro')) return;
-  navigator.clipboard.writeText(link).then(function() {
-    showToast('Link copiado!');
-  }).catch(function() {
-    showToast('Copia o link manualmente.');
+  var modal = document.getElementById('modal-setlist-publico');
+  // Usa o texto de share completo se disponível, senão o conteúdo do campo
+  var texto = (modal && modal._shareText)
+    ? modal._shareText
+    : (document.getElementById('setlist-pub-link').innerText || '');
+  if (!texto || texto.startsWith('Gerando') || texto.startsWith('Erro')) return;
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(texto).then(function() {
+      showToast('Copiado!');
+    }).catch(function() { _copiarFallback(texto); });
+  } else {
+    _copiarFallback(texto);
+  }
+}
+
+function compartilharNativo() {
+  var modal = document.getElementById('modal-setlist-publico');
+  var texto = (modal && modal._shareText) || document.getElementById('setlist-pub-link').innerText || '';
+  var titulo = document.getElementById('setlist-pub-titulo').innerText || 'Setlist';
+  if (!navigator.share) { copiarLinkSetlist(); return; }
+  navigator.share({ title: titulo, text: texto }).catch(function(e) {
+    if (e.name !== 'AbortError') copiarLinkSetlist();
   });
+}
+
+function _copiarFallback(texto) {
+  try {
+    var ta = document.createElement('textarea');
+    ta.value = texto;
+    ta.style.cssText = 'position:fixed;opacity:0;top:0;left:0;';
+    document.body.appendChild(ta);
+    ta.select(); ta.setSelectionRange(0, 99999);
+    document.execCommand('copy');
+    document.body.removeChild(ta);
+    showToast('Copiado!');
+  } catch(e) { showToast('Não foi possível copiar.'); }
 }
 
 // ── Carrega setlist público quando URL tem ?setlist=SLUG ──────────────────
@@ -9003,11 +9406,11 @@ function deleteSongBiblioteca(id, e) {
   var song = songs.find(function(s) { return s.id === id; });
   var nome = song ? song.name : 'esta música';
   var overlay = document.createElement('div');
-  overlay.style.cssText = 'position:fixed;inset:0;z-index:100020;background:rgba(0,0,0,0.88);display:flex;align-items:center;justify-content:center;padding:24px;';
+  overlay.style.cssText = _overlayBg();
   overlay.innerHTML =
-    '<div style="background:#111119;border:1px solid rgba(255,255,255,0.1);border-radius:20px;padding:24px 20px;width:100%;max-width:300px;display:flex;flex-direction:column;gap:14px;">'
-  + '<div style="font-size:15px;font-weight:900;color:#fff;">Excluir música?</div>'
-  + '<div style="font-size:13px;color:rgba(255,255,255,0.4);line-height:1.5;"><b style="color:#fff;">' + nome + '</b> será removida da biblioteca permanentemente.</div>'
+    '<div style="' + _boxBg('padding:24px 20px;width:100%;max-width:300px;display:flex;flex-direction:column;gap:14px;') + '">'
+  + '<div style="font-size:15px;font-weight:900;color:' + _txtColor() + ';">Excluir música?</div>'
+  + '<div style="font-size:13px;color:' + _txtSecColor() + ';line-height:1.5;"><b style="color:' + _txtColor() + ';">' + nome + '</b> será removida da biblioteca permanentemente.</div>'
   + '<div style="display:flex;gap:10px;margin-top:4px;">'
   + '<button id="_del-cancel" style="flex:1;padding:12px;border-radius:12px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);color:rgba(255,255,255,0.4);font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;touch-action:manipulation;">Cancelar</button>'
   + '<button id="_del-confirm" style="flex:2;padding:12px;border-radius:12px;background:rgba(255,60,60,0.8);border:none;color:#fff;font-size:12px;font-weight:900;cursor:pointer;font-family:inherit;touch-action:manipulation;">Excluir</button>'
@@ -10760,9 +11163,9 @@ async function convidarAmigo(nome, amigoUid) {
 async function removerAmigo(uid, nome) {
   // Modal proprio — confirm() nativo bloqueado em iOS dentro de overlays
   var overlay = document.createElement('div');
-  overlay.style.cssText = 'position:fixed;inset:0;z-index:100020;background:rgba(0,0,0,0.88);display:flex;align-items:center;justify-content:center;padding:24px;';
+  overlay.style.cssText = _overlayBg();
   overlay.innerHTML =
-    '<div style="background:#111119;border:1px solid rgba(255,255,255,0.1);border-radius:20px;padding:24px 20px;width:100%;max-width:300px;display:flex;flex-direction:column;gap:14px;">'
+    '<div style="' + _boxBg('padding:24px 20px;width:100%;max-width:300px;display:flex;flex-direction:column;gap:14px;') + '">'
   + '<div style="font-size:15px;font-weight:900;color:#fff;">Remover amigo?</div>'
   + '<div style="font-size:13px;color:rgba(255,255,255,0.4);line-height:1.5;">Remover <b style="color:#fff;">' + (nome||'') + '</b> da sua lista de amigos.</div>'
   + '<div style="display:flex;gap:10px;margin-top:4px;">'
@@ -14369,12 +14772,12 @@ function admAbrirMensagem() {
 
   var overlay = document.createElement('div');
   overlay.id = '_admMsgOverlay';
-  overlay.style.cssText = 'position:fixed;inset:0;z-index:100030;background:rgba(0,0,0,0.88);display:flex;align-items:flex-end;justify-content:center;';
+  overlay.style.cssText = _overlayBgBottom().replace('100020','100030');
 
   // Sanitiza nome para evitar XSS no innerHTML
   var _nomeAdmSafe = (nome||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
   var box = document.createElement('div');
-  box.style.cssText = 'background:#111119;border:1px solid rgba(255,255,255,0.1);border-radius:24px 24px 0 0;padding:24px 20px 36px;width:100%;max-width:480px;';
+  box.style.cssText = _boxBgBottom('padding:24px 20px 36px;width:100%;max-width:480px;');
   box.innerHTML =
     '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;">'
   +   '<div style="font-size:15px;font-weight:900;color:#fff;">Mensagem para ' + _nomeAdmSafe + '</div>'
@@ -14445,7 +14848,7 @@ function admMensagemGlobal() {
 
   var overlay = document.createElement('div');
   overlay.id = '_admGlobalOverlay';
-  overlay.style.cssText = 'position:fixed;inset:0;z-index:100030;background:rgba(0,0,0,0.92);display:flex;align-items:flex-end;justify-content:center;';
+  overlay.style.cssText = _overlayBgBottom().replace('100020','100030');
 
   var total = _admCache.filter(function(u){ return !u.status || u.status === 'ativo'; }).length;
 
@@ -14560,9 +14963,9 @@ function admAcao(tipo) {
 
   // Modal de confirmacao proprio (confirm() nativo falha em iOS dentro de modais)
   var overlay = document.createElement('div');
-  overlay.style.cssText = 'position:fixed;inset:0;z-index:100020;background:rgba(0,0,0,0.85);display:flex;align-items:center;justify-content:center;padding:24px;';
+  overlay.style.cssText = _overlayBg();
   overlay.innerHTML =
-    '<div style="background:#111119;border:1px solid rgba(255,255,255,0.1);border-radius:18px;padding:24px 20px;width:100%;max-width:320px;display:flex;flex-direction:column;gap:14px;">'
+    '<div style="' + _boxBg('padding:24px 20px;width:100%;max-width:320px;display:flex;flex-direction:column;gap:14px;') + '">'
   + '<div style="font-size:15px;font-weight:900;color:#fff;">' + c.titulo + '</div>'
   + '<div style="font-size:13px;color:rgba(255,255,255,0.5);line-height:1.5;">' + c.msg + '</div>'
   + '<div style="display:flex;gap:10px;margin-top:4px;">'
@@ -14607,7 +15010,7 @@ function admAcao(tipo) {
 function admAbrirLiberarEmail() {
   var overlay = document.createElement('div');
   overlay.id = 'modal-liberar-email';
-  overlay.style.cssText = 'position:fixed;inset:0;z-index:100025;background:rgba(0,0,0,0.92);display:flex;align-items:center;justify-content:center;padding:24px;';
+  overlay.style.cssText = _overlayBg().replace('100020','100025');
   overlay.innerHTML =
     '<div style="background:#111119;border:1px solid rgba(80,200,255,0.2);border-radius:18px;padding:24px 20px;width:100%;max-width:360px;display:flex;flex-direction:column;gap:14px;">'
   + '<div style="font-size:15px;font-weight:900;color:#fff;">Liberar Email para Novo Cadastro</div>'
@@ -14693,7 +15096,7 @@ async function admReativarEmail() {
   var nome  = '@' + (u.nomeUsuario || u.nome || 'usuario');
 
   var overlay = document.createElement('div');
-  overlay.style.cssText = 'position:fixed;inset:0;z-index:100025;background:rgba(0,0,0,0.92);display:flex;align-items:center;justify-content:center;padding:24px;';
+  overlay.style.cssText = _overlayBg().replace('100020','100025');
   overlay.innerHTML =
     '<div style="background:#111119;border:1px solid rgba(80,200,255,0.2);border-radius:18px;padding:24px 20px;width:100%;max-width:340px;display:flex;flex-direction:column;gap:14px;">'
   + '<div style="font-size:15px;font-weight:900;color:#fff;">Liberar email para novo cadastro</div>'
@@ -19274,6 +19677,41 @@ function _themeInit() {
   _themeAplicar(saved, false);
 }
 
+// ── Helpers de tema para modais criados dinamicamente ───────────────────────
+function _isLight() {
+  return (document.getElementById('app-body') || document.body).classList.contains('theme-light');
+}
+// Retorna estilos inline adaptados ao tema para overlay e box dos modais JS
+function _overlayBg() {
+  return _isLight()
+    ? 'position:fixed;inset:0;z-index:100020;background:rgba(24,24,27,0.38);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);display:flex;align-items:center;justify-content:center;padding:24px;'
+    : 'position:fixed;inset:0;z-index:100020;background:rgba(0,0,0,0.88);display:flex;align-items:center;justify-content:center;padding:24px;';
+}
+function _overlayBgBottom() {
+  return _isLight()
+    ? 'position:fixed;inset:0;z-index:100020;background:rgba(24,24,27,0.38);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);display:flex;align-items:flex-end;justify-content:center;'
+    : 'position:fixed;inset:0;z-index:100020;background:rgba(0,0,0,0.88);display:flex;align-items:flex-end;justify-content:center;';
+}
+function _boxBg(extra) {
+  extra = extra || '';
+  return _isLight()
+    ? 'background:#FFFFFF;border:1px solid rgba(0,0,0,0.09);border-radius:20px;' + extra
+    : 'background:#111119;border:1px solid rgba(255,255,255,0.1);border-radius:20px;' + extra;
+}
+function _boxBgBottom(extra) {
+  extra = extra || '';
+  return _isLight()
+    ? 'background:#FAFAF8;border:1px solid rgba(0,0,0,0.08);border-radius:24px 24px 0 0;' + extra
+    : 'background:#111119;border:1px solid rgba(255,255,255,0.1);border-radius:24px 24px 0 0;' + extra;
+}
+function _txtColor() { return _isLight() ? '#18181B' : '#fff'; }
+function _txtSecColor() { return _isLight() ? 'rgba(24,24,27,0.5)' : 'rgba(255,255,255,0.45)'; }
+function _inputBg() {
+  return _isLight()
+    ? 'background:#F4F4F2;border:1px solid rgba(0,0,0,0.1);border-radius:10px;color:#18181B;font-size:14px;padding:12px 14px;outline:none;font-family:inherit;width:100%;box-sizing:border-box;'
+    : 'background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.12);border-radius:10px;color:#fff;font-size:14px;padding:12px 14px;outline:none;font-family:inherit;width:100%;box-sizing:border-box;';
+}
+
 function _themeAplicar(tema, salvar) {
   var body  = document.getElementById('app-body') || document.body;
   var iconD = document.getElementById('theme-icon-dark');
@@ -19445,7 +19883,7 @@ function toggleTheme() {
     }).join('');
 
     ov.innerHTML =
-      '<div style="background:#111119;border:1px solid rgba(255,255,255,0.1);border-radius:20px;padding:24px 22px;width:100%;max-width:360px;">'
+      '<div style="' + _boxBg('padding:24px 22px;width:100%;max-width:360px;') + '">'
     + '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;">'
     +   '<div style="font-size:15px;font-weight:900;color:#fff;">Atalhos de teclado</div>'
     +   '<button onclick="document.getElementById(\'_atalhos-overlay\').remove()" style="background:none;border:none;color:rgba(255,255,255,0.3);font-size:20px;cursor:pointer;line-height:1;padding:0;">×</button>'
@@ -20408,7 +20846,7 @@ window._mapNotifConfigAbrir = function() {
     var isMobile = /iPhone|Android/i.test(navigator.userAgent);
     modal.innerHTML =
       '<div style="background:#0d0d1a;border:1px solid rgba(255,100,100,0.25);border-radius:20px;padding:24px 20px;width:100%;max-width:360px;display:flex;flex-direction:column;gap:14px;" onclick="event.stopPropagation()">'
-      + '<div style="font-size:15px;font-weight:900;color:#fff;">Notificações bloqueadas</div>'
+      + '<div style="font-size:15px;font-weight:900;color:' + _txtColor() + ';">Notificações bloqueadas</div>'
       + '<div style="font-size:12px;color:rgba(255,255,255,0.45);line-height:1.7;">'
       + (isMobile
           ? 'Para ativar: <b style="color:#fff;">Ajustes → Safari → Notificações</b> e permita para este site.'
