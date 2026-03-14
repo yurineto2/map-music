@@ -443,6 +443,7 @@ window.addEventListener('unhandledrejection', function(e) {
           return { ok: false, msg };
         }
       }
+      return { ok: false, msg: 'Não foi possível conectar. Tente novamente.' };
     },
 
     async enviarEmailRecuperacao(email) {
@@ -1434,6 +1435,21 @@ function obAbrirEsqueciSenha() {
   if (typeof _esqueciValidar === 'function') _esqueciValidar();
 }
 
+// ── Cache de perfil em memória — evita JSON.parse repetido em cada função ────
+window._perfilCache = null;
+window._getPerfil = function() {
+  if (!window._perfilCache) {
+    try { window._perfilCache = JSON.parse(localStorage.getItem('map_perfil_v1') || '{}'); }
+    catch(e) { window._perfilCache = {}; }
+  }
+  return window._perfilCache;
+};
+window._setPerfil = function(dados) {
+  window._perfilCache = dados;
+  try { localStorage.setItem('map_perfil_v1', JSON.stringify(dados)); } catch(e) {}
+};
+window._invalidarCachePerfil = function() { window._perfilCache = null; };
+
 document.addEventListener('DOMContentLoaded', function() {
 
   // ── Link seguro de acesso — verificar antes de qualquer render ───────────────
@@ -1618,6 +1634,12 @@ document.addEventListener('DOMContentLoaded', function() {
       _mostrarApp();
       const ov = document.getElementById('onboarding-overlay');
       if (ov) ov.remove();
+      // Atualiza badge/painel com notificacoes ja salvas no localStorage
+      // (sem esperar Firebase — corrige sino zerado ao recarregar o app)
+      setTimeout(function() {
+        if (typeof atualizarBadge === 'function') atualizarBadge();
+        if (typeof renderNotifPanel === 'function') renderNotifPanel();
+      }, 300);
       setTimeout(function() { _verificarPinNaEntrada(); }, 750);
       // Verificar status em background (sem bloquear UI)
       // Se bloqueado/banido, fecha o app e mostra mensagem
@@ -1653,6 +1675,18 @@ document.addEventListener('DOMContentLoaded', function() {
     setTimeout(function() {
       if (splash) splash.remove();
       document.body.classList.add('pronto'); // garante
+      // Aplica tamanho de fonte salvo (uma única vez no carregamento)
+      try {
+        if (typeof _FONTE_SHOW_KEY !== 'undefined') {
+          window._fonteShow = parseInt(localStorage.getItem(_FONTE_SHOW_KEY) || '48');
+        }
+        if (typeof _aplicarFontePartes === 'function' && typeof _fontePartes !== 'undefined') {
+          _aplicarFontePartes(_fontePartes);
+        }
+        if (typeof _cifraFontSincLabel === 'function') _cifraFontSincLabel();
+      } catch(e) {}
+      // Verifica se URL tem ?setlist= (view pública) — apenas no carregamento
+      if (typeof _verificarSetlistPublico === 'function') _verificarSetlistPublico();
     }, 300);
   // Usuário já registado: splash mais curto (1800ms); novo usuário: 4000ms
   }, perfil.nome ? 1800 : 4000);
@@ -5478,12 +5512,6 @@ let perfilFotoBase64 = null; // foto atual em edição
 (function _initStatusWatch() {
   var CHECK_MS = 5 * 60 * 1000; // 5 minutos
   async function _checarStatus() {
-  // Aplica tamanho de fonte salvo
-  _fonteShow = parseInt(localStorage.getItem(_FONTE_SHOW_KEY) || '48');
-  _aplicarFontePartes(_fontePartes);
-  _cifraFontSincLabel();
-  // Verifica se URL tem ?setlist= (view pública)
-  _verificarSetlistPublico();
     try {
       var uid = localStorage.getItem('map_uid_v1');
       var perfil = JSON.parse(localStorage.getItem('map_perfil_v1') || '{}');
@@ -10699,7 +10727,7 @@ function adicionarNotif(tipo, titulo, desc, id, action) {
 }
 
 // Limpeza periodica de notificacoes expiradas (a cada minuto)
-setInterval(function() {
+window._notifCleanupInterval = setInterval(function() {
   const agora = Date.now();
   const antes = notificacoes.length;
   notificacoes = notificacoes.filter(n => !n.ts || (agora - n.ts) < NOTIF_EXPIRY_MS);
@@ -11441,8 +11469,22 @@ function perfilCarregarFoto(input) {
   if (!file) return;
   const reader = new FileReader();
   reader.onload = function(e) {
-    perfilFotoBase64 = e.target.result;
-    atualizarPreviewPerfil();
+    // Comprime a imagem para max 400x400 e qualidade 0.75 antes de salvar
+    const img = new Image();
+    img.onload = function() {
+      const MAX = 400;
+      let w = img.width, h = img.height;
+      if (w > MAX || h > MAX) {
+        if (w > h) { h = Math.round(h * MAX / w); w = MAX; }
+        else { w = Math.round(w * MAX / h); h = MAX; }
+      }
+      const canvas = document.createElement('canvas');
+      canvas.width = w; canvas.height = h;
+      canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+      perfilFotoBase64 = canvas.toDataURL('image/jpeg', 0.75);
+      atualizarPreviewPerfil();
+    };
+    img.src = e.target.result;
   };
   reader.readAsDataURL(file);
 }
@@ -11458,8 +11500,10 @@ function salvarPerfil() {
   // instrumento definido no cadastro, não alterado aqui
   if (perfilFotoBase64) perfil.foto = perfilFotoBase64;
   localStorage.setItem('map_perfil_v1', JSON.stringify(perfil));
+  if (window._invalidarCachePerfil) window._invalidarCachePerfil();
 
-  // Sincroniza Firebase (mantém todos os campos incluindo foto)
+  // Sincroniza Firebase — foto de perfil vai ao Firestore (usada em notificações)
+  // Banner NÃO vai (não aparece em notificações e pode ser grande demais)
   if (window._fb && window._fbReady) {
     const fbData = {
       nome: perfil.nome,
@@ -11468,14 +11512,15 @@ function salvarPerfil() {
       profileId: perfil.profileId || _getProfileId(),
       criadoEm: perfil.criadoEm || Date.now()
     };
-    // Só sincroniza foto se tiver (evita enviar null e apagar foto existente)
+    // Foto de perfil (já comprimida para ~40KB pela compressão no carregamento)
     if (perfil.foto) fbData.foto = perfil.foto;
+    // Metadados de posição da foto
     if (perfil.fotoOffX !== undefined) fbData.fotoOffX = perfil.fotoOffX;
     if (perfil.fotoOffY !== undefined) fbData.fotoOffY = perfil.fotoOffY;
     if (perfil.fotoZoom !== undefined) fbData.fotoZoom = perfil.fotoZoom;
     if (perfil.fotoPosX !== undefined) fbData.fotoPosX = perfil.fotoPosX;
     if (perfil.fotoPosY !== undefined) fbData.fotoPosY = perfil.fotoPosY;
-    if (perfil.bannerFoto) fbData.bannerFoto = perfil.bannerFoto;
+    // Metadados de posição do banner (sem o base64)
     if (perfil.bannerOffX !== undefined) fbData.bannerOffX = perfil.bannerOffX;
     if (perfil.bannerOffY !== undefined) fbData.bannerOffY = perfil.bannerOffY;
     if (perfil.bannerZoom !== undefined) fbData.bannerZoom = perfil.bannerZoom;
@@ -11497,13 +11542,27 @@ function perfilBannerChange(input) {
   if (!file) return;
   const reader = new FileReader();
   reader.onload = function(e) {
-    const base64 = e.target.result;
-    try {
-      const perfil = JSON.parse(localStorage.getItem('map_perfil_v1') || '{}');
-      perfil.bannerFoto = base64;
-      localStorage.setItem('map_perfil_v1', JSON.stringify(perfil));
-    } catch(err) {}
-    _aplicarBannerFoto(base64);
+    // Comprime banner para max 1200x400 e qualidade 0.75 antes de salvar
+    const img = new Image();
+    img.onload = function() {
+      const MAX_W = 1200, MAX_H = 400;
+      let w = img.width, h = img.height;
+      const ratio = w / h;
+      if (w > MAX_W) { w = MAX_W; h = Math.round(w / ratio); }
+      if (h > MAX_H) { h = MAX_H; w = Math.round(h * ratio); }
+      const canvas = document.createElement('canvas');
+      canvas.width = w; canvas.height = h;
+      canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+      const base64 = canvas.toDataURL('image/jpeg', 0.75);
+      try {
+        const perfil = JSON.parse(localStorage.getItem('map_perfil_v1') || '{}');
+        perfil.bannerFoto = base64;
+        localStorage.setItem('map_perfil_v1', JSON.stringify(perfil));
+        if (window._invalidarCachePerfil) window._invalidarCachePerfil();
+      } catch(err) {}
+      _aplicarBannerFoto(base64);
+    };
+    img.src = e.target.result;
   };
   reader.readAsDataURL(file);
 }
@@ -13837,7 +13896,8 @@ async function admLibBuscarInline() {
     var u = await window._fb.admBuscarPorEmail(email);
     if (!u) { if (res) res.textContent = 'Nenhum usuário encontrado com esse e-mail.'; return; }
     _admLibUID = u.uid;
-    if (res) res.innerHTML = '<span style="color:#fff;font-weight:700;">' + (u.nome || u.nomeUsuario || 'Sem nome') + '</span> &nbsp;<span style="color:rgba(255,255,255,0.35);">@' + (u.nomeUsuario || '—') + '</span>';
+    var _xss = function(s){ return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); };
+    if (res) res.innerHTML = '<span style="color:#fff;font-weight:700;">' + _xss(u.nome || u.nomeUsuario || 'Sem nome') + '</span> &nbsp;<span style="color:rgba(255,255,255,0.35);">@' + _xss(u.nomeUsuario || '—') + '</span>';
     if (btn) btn.style.display = 'block';
   } catch(e) { if (res) res.textContent = 'Erro na busca.'; }
 }
@@ -19917,16 +19977,17 @@ var _swReady = false;
 async function _mapNotifRegistrarSW() {
   try {
     if (!('serviceWorker' in navigator)) return false;
-    // Criar blob do SW
+    // SW so funciona em http:// ou https:// — sai silenciosamente em file://, blob://, etc.
+    var proto = window.location.protocol;
+    if (proto !== 'http:' && proto !== 'https:') return false;
     var blob = new Blob([_SW_CODE], { type: 'application/javascript' });
     var swUrl = URL.createObjectURL(blob);
     _swRegistration = await navigator.serviceWorker.register(swUrl, { scope: './' });
     await navigator.serviceWorker.ready;
     _swReady = true;
-    console.log('[MapNotif] Service Worker registrado via Blob');
     return true;
   } catch(e) {
-    console.warn('[MapNotif] SW falhou (normal em file://):', e.message);
+    // Falha silenciosa — notificacoes via Notification API direta continuam funcionando
     return false;
   }
 }
