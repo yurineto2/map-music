@@ -7492,12 +7492,19 @@ function _atualizarBadgeEvento() {
 
 // ─── ATIVAR SHOW COM EVENTO ───────────────────────────────────────────────────
 function ativarShowEvento(eventoId, startSongId) {
-  const ev = eventos.find(e => e.id === eventoId);
+  // Normaliza tipos: IDs vindos de onclick HTML chegam como string, musicIds são number
+  var eventoIdN   = eventoId   != null ? Number(eventoId)   : null;
+  var startSongN  = startSongId != null ? Number(startSongId) : null;
+
+  const ev = eventos.find(e => e.id === eventoIdN);
   if (!ev || !ev.musicIds || ev.musicIds.length === 0) {
     showToast('O evento não tem músicas.');
     return;
   }
-  const idsValidos = ev.musicIds.filter(id => songs.find(s => s.id === id));
+  // Garante que todos os IDs do evento também sejam números para comparação segura
+  const idsValidos = ev.musicIds
+    .map(Number)
+    .filter(id => songs.find(s => s.id === id));
   if (idsValidos.length === 0) {
     showToast('Nenhuma música encontrada.');
     return;
@@ -7508,7 +7515,7 @@ function ativarShowEvento(eventoId, startSongId) {
   showSetlistEventoNome = ev.nome;
 
   // Se veio uma música específica, começa por ela; senão começa pela primeira
-  const startId = startSongId && idsValidos.includes(startSongId) ? startSongId : idsValidos[0];
+  const startId = startSongN && idsValidos.includes(startSongN) ? startSongN : idsValidos[0];
   showSetlistPos = idsValidos.indexOf(startId);
 
   const musicaInicial = songs.find(s => s.id === startId);
@@ -8279,6 +8286,7 @@ function renderSetlist() {
 }
 
 function loadSong(id) {
+  id = Number(id); // normaliza tipo: pode chegar como string via onclick
   const idx = songs.findIndex(x => x.id === id);
   if (idx === -1) return;
   // Incrementa contador de reproduções (usado na ordenação "mais tocadas")
@@ -8336,7 +8344,8 @@ let ctxModo = null; // 'biblioteca' | 'evento'
 
 function abrirCtxMenu(e, songId, modo) {
   e.stopPropagation();
-  ctxSongId = songId;
+  ctxSongId = Number(songId); // normaliza tipo: pode chegar como string via onclick
+  songId = ctxSongId;
   ctxModo = modo;
 
   const song = songs.find(s => s.id === songId);
@@ -8387,6 +8396,7 @@ function ctxAcao(acao) {
 }
 
 function duplicarMusica(id) {
+  id = Number(id); // normaliza tipo
   var original = songs.find(function(s) { return s.id === id; });
   if (!original) return;
   var novoId = Date.now();
@@ -9647,6 +9657,7 @@ let editarEventoId = null;
 
 function abrirEditarEvento(id, e) {
   if (e) e.stopPropagation();
+  id = Number(id); // normaliza tipo
   editarEventoId = id;
   const ev = eventos.find(x => x.id === id);
   if (!ev) return;
@@ -9663,6 +9674,7 @@ function abrirEditarEventoAtual() {
 
 function favoritarBiblioteca(id, e) {
   if (e) e.stopPropagation();
+  id = Number(id); // normaliza tipo: pode chegar como string via onclick
   var s = songs.find(function(x) { return x.id === id; });
   if (s) {
     s.favorite = !s.favorite;
@@ -9675,6 +9687,7 @@ function favoritarBiblioteca(id, e) {
 
 function deleteSongBiblioteca(id, e) {
   if (e) e.stopPropagation();
+  id = Number(id); // normaliza tipo: pode chegar como string via onclick
   var song = songs.find(function(s) { return s.id === id; });
   var nome = song ? song.name : 'esta música';
   var overlay = document.createElement('div');
@@ -9855,6 +9868,7 @@ function deletarEvento(id, e) {
 
 // ── DETALHE DO EVENTO ──
 function abrirEventoDetalhe(id) {
+  id = Number(id); // normaliza tipo: pode chegar como string via onclick
   eventoAbertoId = id;
   const ev = eventos.find(e => e.id === id);
   if (!ev) return;
@@ -9957,10 +9971,11 @@ function renderEventoDetalhe() {
 }
 
 function removerDoEvento(songId, e) {
-  e.stopPropagation();
+  if (e) e.stopPropagation();
+  songId = Number(songId); // normaliza tipo: onclick HTML entrega string
   const ev = eventos.find(e => e.id === eventoAbertoId);
   if (!ev) return;
-  ev.musicIds = ev.musicIds.filter(id => id !== songId);
+  ev.musicIds = ev.musicIds.map(Number).filter(id => id !== songId);
   salvarEventos();
   renderEventoDetalhe();
   showToast('Removida do evento.');
@@ -10089,9 +10104,10 @@ function fecharAddMusica() {
 }
 
 function adicionarAoEvento(songId) {
+  songId = Number(songId); // normaliza tipo: onclick HTML entrega string
   const ev = eventos.find(e => e.id === eventoAbertoId);
   if (!ev) return;
-  if (!ev.musicIds.includes(songId)) {
+  if (!ev.musicIds.map(Number).includes(songId)) {
     ev.musicIds.push(songId);
     salvarEventos();
     renderEventoDetalhe();
