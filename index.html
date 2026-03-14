@@ -2084,6 +2084,9 @@ body.theme-light #cifra-font-ctrl button:hover { color: #18181B !important; }
 body.theme-light #cifra-font-val { color: rgba(24,24,27,0.45) !important; }
 
 /* ── 9. BIBLIOTECA ──────────────────────────────────────────────── */
+body.theme-light {
+  --bib-bg: #FAFAF8;
+}
 body.theme-light .biblioteca-overlay {
   background: #FAFAF8 !important;
 }
@@ -2683,7 +2686,7 @@ body { font-family: -apple-system, 'Inter', BlinkMacSystemFont, 'Segoe UI', sans
 /* ── BIBLIOTECA ── */
 .biblioteca-overlay {
   position: fixed; inset: 0; z-index: 5500;
-  background: #030309;
+  background: var(--bib-bg, #030309);
   display: flex; flex-direction: column;
   overflow: hidden;
   opacity: 0;
@@ -2700,11 +2703,12 @@ body { font-family: -apple-system, 'Inter', BlinkMacSystemFont, 'Segoe UI', sans
 .biblioteca-header {
   display: flex; align-items: center; justify-content: space-between;
   padding: 20px 20px 14px;
-  border-bottom: 1px solid rgba(255,255,255,0.06);
+  border-bottom: 1px solid var(--border-color);
   flex-shrink: 0;
+  background: var(--bib-bg, #030309);
 }
 .biblioteca-titulo {
-  font-size: 21px; font-weight: 900; color: #fff; letter-spacing: -0.5px;
+  font-size: 21px; font-weight: 900; color: var(--text-primary); letter-spacing: -0.5px;
   display: flex; align-items: center; gap: 8px;
 }
 .biblioteca-close {
@@ -2718,6 +2722,7 @@ body { font-family: -apple-system, 'Inter', BlinkMacSystemFont, 'Segoe UI', sans
 
 .biblioteca-search {
   padding: 12px 20px 8px; flex-shrink: 0;
+  background: var(--bib-bg, #030309);
 }
 .biblioteca-search input {
   width: 100%; background: rgba(255,255,255,0.04);
@@ -2737,6 +2742,7 @@ body { font-family: -apple-system, 'Inter', BlinkMacSystemFont, 'Segoe UI', sans
   -webkit-overflow-scrolling: touch;
   scroll-behavior: smooth;
   overscroll-behavior-y: contain;
+  background: var(--bib-bg, #030309);
 }
 
 /* ── ALBUM CARD ──────────────────────────────────────────────── */
@@ -2761,6 +2767,7 @@ body { font-family: -apple-system, 'Inter', BlinkMacSystemFont, 'Segoe UI', sans
   overflow-x: auto;
   -webkit-overflow-scrolling: touch;
   scrollbar-width: none;
+  background: var(--bib-bg, #030309);
 }
 .bib-sort-bar::-webkit-scrollbar { display: none; }
 .bib-sort-bar.visible { display: flex; }
@@ -2789,6 +2796,7 @@ body { font-family: -apple-system, 'Inter', BlinkMacSystemFont, 'Segoe UI', sans
   gap: 6px;
   padding: 8px 16px 4px;
   flex-shrink: 0;
+  background: var(--bib-bg, #030309);
 }
 .bib-tags-bar.visible { display: flex; }
 .tag-chip {
@@ -3119,13 +3127,14 @@ body { font-family: -apple-system, 'Inter', BlinkMacSystemFont, 'Segoe UI', sans
 /* Nav tabs biblioteca */
 .biblioteca-tabs {
   display: flex; gap: 0; padding: 0 24px;
-  border-bottom: 1px solid rgba(255,255,255,0.06);
+  border-bottom: 1px solid var(--border-color);
   flex-shrink: 0;
+  background: var(--bib-bg, #030309);
 }
 .biblioteca-tab {
   padding: 10px 20px; font-size: 11px; font-weight: 800;
   letter-spacing: 1px; text-transform: uppercase;
-  color: rgba(255,255,255,0.3); cursor: pointer;
+  color: var(--text-secondary); cursor: pointer;
   border-bottom: 2px solid transparent; transition: 0.2s;
 }
 .biblioteca-tab.active {
@@ -3139,8 +3148,8 @@ body { font-family: -apple-system, 'Inter', BlinkMacSystemFont, 'Segoe UI', sans
 }
 .evento-card {
   grid-column: 1 / -1;
-  background: rgba(255,255,255,0.03);
-  border: 1px solid rgba(255,255,255,0.07);
+  background: var(--glass-bg);
+  border: 1px solid var(--border-color);
   border-radius: 14px; overflow: hidden; cursor: pointer;
   transition: border-color 0.2s, transform 0.2s;
   display: flex; flex-direction: row; align-items: stretch;
