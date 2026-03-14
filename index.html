@@ -21111,18 +21111,19 @@ window._mapNotifConfigAbrir = function() {
     if (!drop || document.getElementById('_btn-notif-config')) return;
     var sep = document.createElement('div');
     sep.className = 'menu-separator';
-    var btn = document.createElement('button');
+    var btn = document.createElement('div');
     btn.id = '_btn-notif-config';
     btn.className = 'menu-item';
-    btn.style.cssText = 'display:flex;align-items:center;gap:10px;width:100%;';
-    btn.onclick = function() {
+    btn.style.cssText = 'cursor:pointer;';
+    btn.onclick = function(e) {
+      e.stopPropagation();
       drop.classList.remove('show');
       window._mapNotifConfigAbrir();
     };
     btn.innerHTML =
-      '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>'
+      '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>'
       + '<span>Notificações</span>'
-      + '<span id="_notif-status-badge" style="margin-left:auto;font-size:9px;font-weight:800;padding:2px 7px;border-radius:6px;background:rgba(10,158,110,0.15);border:1px solid rgba(10,158,110,0.3);color:#0A9E6E;"></span>';
+      + '<span id="_notif-status-badge" style="margin-left:auto;font-size:9px;font-weight:800;padding:2px 7px;border-radius:6px;"></span>';
     drop.appendChild(sep);
     drop.appendChild(btn);
     _mapNotifAtualizarBadge();
@@ -21133,9 +21134,20 @@ window._mapNotifConfigAbrir = function() {
     if (!badge || !('Notification' in window)) return;
     var p = Notification.permission;
     badge.textContent    = p === 'granted' ? 'ATIVA' : p === 'denied' ? 'BLOQUEADA' : 'INATIVA';
-    badge.style.color    = p === 'granted' ? '#0A9E6E' : p === 'denied' ? '#ff6060' : 'rgba(255,255,255,0.3)';
-    badge.style.background   = p === 'granted' ? 'rgba(10,158,110,0.12)' : p === 'denied' ? 'rgba(255,60,60,0.1)' : 'rgba(255,255,255,0.04)';
-    badge.style.borderColor  = p === 'granted' ? 'rgba(10,158,110,0.25)' : p === 'denied' ? 'rgba(255,60,60,0.2)' : 'rgba(255,255,255,0.08)';
+    var isLight = (document.getElementById('app-body') || document.body).classList.contains('theme-light');
+    if (p === 'granted') {
+      badge.style.color       = '#0A9E6E';
+      badge.style.background  = 'rgba(10,158,110,0.12)';
+      badge.style.borderColor = 'rgba(10,158,110,0.25)';
+    } else if (p === 'denied') {
+      badge.style.color       = '#cc3333';
+      badge.style.background  = 'rgba(220,38,38,0.09)';
+      badge.style.borderColor = 'rgba(220,38,38,0.2)';
+    } else {
+      badge.style.color       = isLight ? 'rgba(24,24,27,0.35)' : 'rgba(255,255,255,0.3)';
+      badge.style.background  = isLight ? 'rgba(0,0,0,0.05)' : 'rgba(255,255,255,0.04)';
+      badge.style.borderColor = isLight ? 'rgba(0,0,0,0.1)' : 'rgba(255,255,255,0.08)';
+    }
   }
   window._mapNotifAtualizarBadge = _mapNotifAtualizarBadge;
 
