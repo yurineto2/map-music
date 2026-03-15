@@ -10056,6 +10056,9 @@ function bibTab(aba) {
   ativarTab(aba);
   document.getElementById('biblioteca-search').value = '';
   _tagAtiva = null;
+  // Invalida cache de ambas as abas ao trocar — garante re-render completo
+  _bibLastSig = null;
+  _evLastSig  = null;
   if (aba === 'musicas') { _bibRenderSortBar(); _bibRenderTagBar(); }
   else {
     var b = document.getElementById('bib-tags-bar'); if (b) b.classList.remove('visible');
@@ -10094,6 +10097,11 @@ function renderBiblioteca(filtro) {
   if (!grid) return;
   // Garante que classe de eventos não fica colada quando troca de aba
   grid.classList.remove('eventos-mode');
+  // Se o grid ainda contém cards de eventos (não de músicas), limpa para forçar re-render
+  if (grid.querySelector('.evento-card') || grid.querySelector('[onclick*="abrirEventoDetalhe"]')) {
+    grid.innerHTML = '';
+    _bibLastSig = null;
+  }
   var termo = filtro.toLowerCase();
   var lista = songs.filter(function(s) {
     // s.name pode ser undefined em músicas corrompidas — protege contra TypeError
@@ -10603,6 +10611,7 @@ function voltarEventos() {
   eventoAbertoId = null;
   mostrarBibMain();
   bibTabAtiva = 'eventos';
+  _bibLastSig = null; // força re-render da aba músicas se o usuário trocar
   ativarTab('eventos');
   renderEventos('');
 }
