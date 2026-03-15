@@ -3519,6 +3519,7 @@ body { font-family: -apple-system, 'Inter', BlinkMacSystemFont, 'Segoe UI', sans
 .dc-pads-grid {
   display: grid; grid-template-columns: repeat(4, 1fr);
   gap: 8px; flex-shrink: 0;
+  touch-action: none;
 }
 .dc-pad {
   aspect-ratio: 1; border-radius: 12px;
@@ -3529,8 +3530,9 @@ body { font-family: -apple-system, 'Inter', BlinkMacSystemFont, 'Segoe UI', sans
   padding: 0 6px 8px;
   cursor: pointer; user-select: none; touch-action: manipulation;
   position: relative; overflow: hidden;
-  transition: transform 0.08s, filter 0.08s;
+  transition: transform 0.06s;
   -webkit-tap-highlight-color: transparent;
+  will-change: transform;
 }
 .dc-pad::before {
   content: ''; position: absolute; inset: 0; border-radius: 11px;
@@ -3540,10 +3542,10 @@ body { font-family: -apple-system, 'Inter', BlinkMacSystemFont, 'Segoe UI', sans
 .dc-pad-glow {
   content: ''; position: absolute; inset: 0; border-radius: 11px;
   background: rgba(255,255,255,0.5); opacity: 0;
-  transition: opacity 0.06s; pointer-events: none;
+  transition: opacity 0.04s; pointer-events: none;
 }
 .dc-pad.hit .dc-pad-glow { opacity: 0.4; }
-.dc-pad.hit { transform: scale(0.93); filter: brightness(1.4); }
+.dc-pad.hit { transform: scale(0.93); background: rgba(255,255,255,0.18) !important; }
 .dc-pad-name {
   font-size: 10px; font-weight: 900; letter-spacing: 0.5px;
   color: rgba(255,255,255,0.88); text-transform: uppercase;
@@ -7618,7 +7620,7 @@ let audioCtx = null;
 function _getAudioCtx() {
   if (!audioCtx) {
     try {
-      audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      audioCtx = new (window.AudioContext || window.webkitAudioContext)({ latencyHint: 'interactive', sampleRate: 44100 });
     } catch(e) { return null; }
   }
   try {
@@ -11004,6 +11006,8 @@ function _dcInitVols() {
 _dcInitVols();
 
 function abrirDrumCam() {
+  // Pre-aquece o AudioContext para minimizar latência no primeiro hit
+  var _wCtx = _getAudioCtx(); if (_wCtx && _wCtx.state === 'suspended') _wCtx.resume();
   fecharMenu();
   var el = document.getElementById('drumcam-overlay');
   el.classList.add('show');
@@ -11145,7 +11149,7 @@ function dcImportarSample(padIdx) {
 function dcHitPad(padIdx, el) {
   var ctx = _getAudioCtx();
   if (!ctx) return;
-  if (ctx.state === 'suspended') ctx.resume();
+  // ctx.resume() already handled in _getAudioCtx — avoid async overhead here
   var key = _dcBank * 16 + padIdx;
   var vol = (_dcVolumes[key] !== undefined ? _dcVolumes[key] : 0.8) * _dcMasterVol;
   // Visual hit
@@ -11157,14 +11161,15 @@ function dcHitPad(padIdx, el) {
   if (_dcFxEnabled.sidechain && parseInt(_dcFxParams.sidechain.src) === padIdx) {
     _dcSidechainTrigger(ctx);
   }
+  // Cache FX check once per hit (avoid repeated Object.values iteration)
+  var _anyFx = typeof _dcFxEnabled !== 'undefined' && Object.values(_dcFxEnabled).some(Boolean);
   // Play sample if imported
   if (_dcSamples[key]) {
     var src = ctx.createBufferSource();
     src.buffer = _dcSamples[key];
     _dcApplyPitch(src);
     var g = ctx.createGain(); g.gain.value = vol;
-    var anyFx = Object.values(_dcFxEnabled).some(Boolean);
-    if (anyFx) {
+    if (_anyFx) {
       src.connect(g);
       var fxOut = _dcBuildFxChain(ctx, g);
       fxOut.connect(ctx.destination);
@@ -11176,17 +11181,17 @@ function dcHitPad(padIdx, el) {
   }
   // Synthesize
   var pad = DC_BANKS[_dcBank][padIdx];
-  _dcSynth(ctx, pad, vol);
+  _dcSynth(ctx, pad, vol, _anyFx);
 }
 
 // ── Synthesizer: generates each drum sound via Web Audio ──
-function _dcSynth(ctx, pad, vol) {
+function _dcSynth(ctx, pad, vol, _anyFxActive) {
   var now = ctx.currentTime;
   var t = pad.synth;
 
   // Master gain — route through FX chain if any effect is active
   var mg = ctx.createGain();
-  var _anyFxActive = typeof _dcFxEnabled !== 'undefined' && Object.values(_dcFxEnabled).some(Boolean);
+  if (_anyFxActive === undefined) _anyFxActive = typeof _dcFxEnabled !== 'undefined' && Object.values(_dcFxEnabled).some(Boolean);
   if (_anyFxActive) {
     var _fxOut = _dcBuildFxChain(ctx, mg);
     _fxOut.connect(ctx.destination);
