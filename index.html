@@ -8476,7 +8476,10 @@ function playClick() {
 }
 function scheduler() {
   const actx = _getAudioCtx(); if (!actx) return;
-  // Evita rafaga de clicks ao voltar do background: reseta nextNoteTime se muito atrasado
+  // Cancela qualquer timer anterior para evitar loops duplicados
+  if (timerID) { clearTimeout(timerID); timerID = null; }
+  if (!isPlaying) return; // segurança: não reinicia se parou
+  // Evita rafaga de clicks ao voltar do background
   if (nextNoteTime < actx.currentTime - 0.5) nextNoteTime = actx.currentTime;
   while (nextNoteTime < actx.currentTime + 0.1) { playClick(); nextNoteTime += 60.0 / bpm; }
   timerID = setTimeout(scheduler, 25);
@@ -12208,11 +12211,12 @@ document.addEventListener('visibilitychange', function() {
     // Resume AudioContext se suspenso (browser suspende automaticamente em background)
     var actx = _getAudioCtx();
     if (actx && actx.state === 'suspended') actx.resume();
-    // Corrigir metrônomo: se estava tocando, reinicia o scheduler limpo
-    if (isPlaying && actx) {
-      clearTimeout(timerID);
-      nextNoteTime = actx.currentTime;
-      scheduler();
+    // Corrigir metrônomo: só reinicia se o AudioContext estava suspenso
+    // (não reiniciar em toda troca de aba — evita loops duplicados)
+    if (isPlaying && actx && actx.state !== 'suspended') {
+      // AudioContext já estava rodando — o scheduler existente continua
+      // Apenas reseta nextNoteTime para evitar rafaga caso esteja muito atrasado
+      if (nextNoteTime < actx.currentTime - 0.5) nextNoteTime = actx.currentTime;
     }
     // Reiniciar scroll se estava ativo antes de ir ao background
     if (_scrollSpeedBefore > 0) {
