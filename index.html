@@ -8082,6 +8082,8 @@ function togglePerf() {
   overlay.addEventListener('click', function(e) { if (e.target === overlay) overlay.remove(); });
   overlay.addEventListener('touchend', function(e) { if (e.target === overlay) { e.preventDefault(); overlay.remove(); } });
 }
+
+function _ativarModoShow() {
   setTimeout(atualizarLetreiroDrumCam, 50);
   document.getElementById('app-body').classList.add('performance-mode');
   _perfFontCarregar(); // aplica fonte da música atual no show
@@ -8840,14 +8842,13 @@ function onChordInput(ta) {
 // ─── TRANSPOSIÇÃO ─────────────────────────────────────────────────────────
 function transposeAll(dir) {
   document.getElementById('trans-val').innerText = parseInt(document.getElementById('trans-val').innerText) + dir;
-  // Regex: [root][qualidade][/baixo] — so captura tokens de acorde validos, nunca palavras comuns
-  // Qualidade: m/maj/dim/aug/sus/add + numeros + alteracoes (b5, #9, etc)
-  // Baixo: nota apos / (acorde de inversao)
-  var _QUALITY = '(?:(?:m(?:aj)?|M(?:aj)?|min|dim(?:7)?|aug|\\+|\°|sus|add)(?:[0-9]*))?(?:[0-9]+)?(?:[b#][0-9]+)*(?:sus[0-9]*|add[0-9]+)?';
-  var _tPat = new RegExp('\\b([A-G][#b]?)(' + _QUALITY + ')(?:\\/([A-G][#b]?))?(?=[\\s|,\\(\\)\\[\\]]|$)', 'g');
   function _normNote(n) {
     return n.replace('Db','C#').replace('Eb','D#').replace('Gb','F#').replace('Ab','G#').replace('Bb','A#');
   }
+  // Regex: [root][qualidade][/baixo]
+  // Qualidade: m/maj/min/dim/aug/sus/add + numeros + alteracoes (b5, #9, etc)
+  // Lookahead: so transpoe quando seguido de separador ou fim — nunca parte de palavra
+  var _tPat = /\b([A-G][#b]?)((?:(?:m(?:aj)?|M(?:aj)?|min|dim7?|aug|sus|add)(?:[0-9]*))?(?:[0-9]+)?(?:[b#][0-9]+)*(?:sus[0-9]*|add[0-9]+)?)(?:\/([A-G][#b]?))?(?=[\s|,()\[\]]|$)/g;
   document.querySelectorAll('.chord-area').forEach(function(area) {
     area.value = area.value.replace(_tPat, function(match, root, quality, bass) {
       quality = quality || '';
@@ -8868,7 +8869,6 @@ function transposeAll(dir) {
   broadcastEstado();
 }
 
-// ─── SALVAR ───────────────────────────────────────────────────────────────
 
 function atualizarBtnSalvar() {
   const btn = document.getElementById('btn-save-vitro');
