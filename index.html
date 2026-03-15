@@ -8028,39 +8028,60 @@ function togglePerf() {
   const appBody = document.getElementById('app-body');
   const isPerf = appBody.classList.contains('performance-mode');
 
-  // Ao ENTRAR no show — sem confirmação
+  // Ao ENTRAR no show — sem confirmacao
   if (!isPerf) {
     _ativarModoShow();
     return;
   }
 
-  // Ao SAIR do show — pede confirmação
-  if (document.getElementById('_confirm-sair-show')) return; // já aberto
+  // Ao SAIR do show — remove overlay anterior (evita estado preso) e cria novo
+  var _prev = document.getElementById('_confirm-sair-show');
+  if (_prev) _prev.remove();
+
   var overlay = document.createElement('div');
   overlay.id = '_confirm-sair-show';
   overlay.style.cssText = _overlayBg().replace('100020','100030');
-  overlay.innerHTML =
-    '<div style="' + _boxBg('padding:28px 24px;width:100%;max-width:300px;display:flex;flex-direction:column;gap:14px;text-align:center;') + '">'
-  + '<div style="font-size:32px;line-height:1;"></div>'
-  + '<div style="font-size:16px;font-weight:900;color:' + _txtColor() + ';">Encerrar o show?</div>'
-  + '<div style="font-size:13px;color:rgba(255,255,255,0.4);line-height:1.5;">O modo show será desativado e o scroll parado.</div>'
-  + '<div style="display:flex;gap:10px;margin-top:4px;">'
-  + '<button id="_sair-show-nao" style="flex:1;padding:13px;border-radius:12px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);color:rgba(255,255,255,0.5);font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;touch-action:manipulation;">Cancelar</button>'
-  + '<button id="_sair-show-sim" style="flex:2;padding:13px;border-radius:12px;background:rgba(220,50,50,0.8);border:none;color:#fff;font-size:13px;font-weight:900;cursor:pointer;font-family:inherit;touch-action:manipulation;">Encerrar show</button>'
-  + '</div>'
-  + '</div>';
+
+  var box = document.createElement('div');
+  box.style.cssText = _boxBg('padding:28px 24px;width:100%;max-width:300px;display:flex;flex-direction:column;gap:14px;text-align:center;');
+  box.addEventListener('click', function(e) { e.stopPropagation(); });
+  box.addEventListener('touchend', function(e) { e.stopPropagation(); });
+
+  var titulo = document.createElement('div');
+  titulo.style.cssText = 'font-size:16px;font-weight:900;color:' + _txtColor() + ';margin-top:4px;';
+  titulo.textContent = 'Encerrar o show?';
+
+  var sub = document.createElement('div');
+  sub.style.cssText = 'font-size:13px;color:rgba(255,255,255,0.4);line-height:1.5;';
+  sub.textContent = 'O modo show sera desativado e o scroll parado.';
+
+  var row = document.createElement('div');
+  row.style.cssText = 'display:flex;gap:10px;margin-top:4px;';
+
+  var btnNao = document.createElement('button');
+  btnNao.style.cssText = 'flex:1;padding:13px;border-radius:12px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);color:rgba(255,255,255,0.5);font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;touch-action:manipulation;';
+  btnNao.textContent = 'Cancelar';
+  btnNao.addEventListener('click', function(e) { e.stopPropagation(); overlay.remove(); });
+  btnNao.addEventListener('touchend', function(e) { e.preventDefault(); e.stopPropagation(); overlay.remove(); });
+
+  var btnSim = document.createElement('button');
+  btnSim.style.cssText = 'flex:2;padding:13px;border-radius:12px;background:rgba(220,50,50,0.85);border:none;color:#fff;font-size:13px;font-weight:900;cursor:pointer;font-family:inherit;touch-action:manipulation;';
+  btnSim.textContent = 'Encerrar show';
+  btnSim.addEventListener('click', function(e) { e.stopPropagation(); overlay.remove(); _desativarModoShow(); });
+  btnSim.addEventListener('touchend', function(e) { e.preventDefault(); e.stopPropagation(); overlay.remove(); _desativarModoShow(); });
+
+  row.appendChild(btnNao);
+  row.appendChild(btnSim);
+  box.appendChild(titulo);
+  box.appendChild(sub);
+  box.appendChild(row);
+  overlay.appendChild(box);
   document.body.appendChild(overlay);
 
-  document.getElementById('_sair-show-nao').onclick = function() { overlay.remove(); };
-  document.getElementById('_sair-show-sim').onclick = function() {
-    overlay.remove();
-    _desativarModoShow();
-  };
-  // Toque fora também cancela
+  // Toque fora cancela
   overlay.addEventListener('click', function(e) { if (e.target === overlay) overlay.remove(); });
+  overlay.addEventListener('touchend', function(e) { if (e.target === overlay) { e.preventDefault(); overlay.remove(); } });
 }
-
-function _ativarModoShow() {
   setTimeout(atualizarLetreiroDrumCam, 50);
   document.getElementById('app-body').classList.add('performance-mode');
   _perfFontCarregar(); // aplica fonte da música atual no show
@@ -8190,6 +8211,7 @@ function ativarShowEvento(eventoId, startSongId) {
   }
 
   fecharBiblioteca();
+  _antiGhostClick(); // evita ghost tap no botao SAIR DO SHOW nos primeiros 320ms
 
   const isPerf = document.getElementById('app-body').classList.contains('performance-mode');
   if (!isPerf) togglePerf();
@@ -8818,12 +8840,34 @@ function onChordInput(ta) {
 // ─── TRANSPOSIÇÃO ─────────────────────────────────────────────────────────
 function transposeAll(dir) {
   document.getElementById('trans-val').innerText = parseInt(document.getElementById('trans-val').innerText) + dir;
-  document.querySelectorAll('.chord-area').forEach(area => {
-    area.value = area.value.replace(/\b([A-G][#b]?)(m|maj|min|sus|dim|aug|add|[0-9])?(?=\s|$|\|)/g, (match, root, suffix) => {
-      const normalized = root.replace('Db','C#').replace('Eb','D#').replace('Gb','F#').replace('Ab','G#').replace('Bb','A#');
-      const i = notesArr.indexOf(normalized);
-      if (i === -1) return match;
-      return notesArr[(i + dir + 12) % 12] + (suffix || '');
+  // Regex: root + toda a qualidade (sem espacos) + nota de baixo opcional apos /
+  var _tPat = /\b([A-G][#b]?)((?:[^\s|,\(\)\[\]\/]*)(?:\/([A-G][#b]?[^\s|,\(\)\[\]]*))?)?(?=[\s|,\(\)\[\]]|$)/g;
+  function _normNote(n) {
+    return n.replace('Db','C#').replace('Eb','D#').replace('Gb','F#').replace('Ab','G#').replace('Bb','A#');
+  }
+  document.querySelectorAll('.chord-area').forEach(function(area) {
+    area.value = area.value.replace(_tPat, function(match, root, fullQuality) {
+      fullQuality = fullQuality || '';
+      var rNorm = _normNote(root);
+      var ri = notesArr.indexOf(rNorm);
+      if (ri === -1) return match;
+      var newRoot = notesArr[(ri + dir + 12) % 12];
+      // Transpoe nota de baixo em acordes com / (ex: D/F# -> D#/G)
+      if (fullQuality.indexOf('/') !== -1) {
+        var slashPos = fullQuality.indexOf('/');
+        var afterSlash = fullQuality.slice(slashPos + 1);
+        var bassMatch = afterSlash.match(/^([A-G][#b]?)/);
+        if (bassMatch) {
+          var bassNorm = _normNote(bassMatch[1]);
+          var bi = notesArr.indexOf(bassNorm);
+          if (bi !== -1) {
+            var newBass = notesArr[(bi + dir + 12) % 12];
+            afterSlash = newBass + afterSlash.slice(bassMatch[1].length);
+            fullQuality = fullQuality.slice(0, slashPos + 1) + afterSlash;
+          }
+        }
+      }
+      return newRoot + fullQuality;
     });
     area.style.height = ''; area.style.height = area.scrollHeight + 'px';
   });
