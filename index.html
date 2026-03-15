@@ -10388,7 +10388,8 @@ function deleteSongBiblioteca(id, e) {
   overlay.setAttribute('data-confirm-modal', '1');
   overlay.style.cssText = _overlayBg();
   // Fecha ao clicar no backdrop (fora do box)
-  overlay.addEventListener('click', function(ev) { if (ev.target === overlay) overlay.remove(); });
+  overlay.addEventListener('click', function(ev) { if (ev.target === overlay) { ev.preventDefault(); overlay.remove(); _antiGhostClick(); } });
+  overlay.addEventListener('touchend', function(ev) { if (ev.target === overlay) { ev.preventDefault(); overlay.remove(); _antiGhostClick(); } });
   var box = document.createElement('div');
   box.style.cssText = _boxBg('padding:24px 20px;width:100%;max-width:300px;display:flex;flex-direction:column;gap:14px;');
   box.addEventListener('click', function(ev) { ev.stopPropagation(); });
@@ -10403,7 +10404,7 @@ function deleteSongBiblioteca(id, e) {
   var btnCancel = document.createElement('button');
   btnCancel.style.cssText = 'flex:1;padding:12px;border-radius:12px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);color:rgba(255,255,255,0.4);font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;touch-action:manipulation;';
   btnCancel.textContent = 'Cancelar';
-  btnCancel.onclick = function() { overlay.remove(); };
+  btnCancel.onclick = function() { overlay.remove(); _antiGhostClick(); };
   var btnConfirm = document.createElement('button');
   btnConfirm.style.cssText = 'flex:2;padding:12px;border-radius:12px;background:rgba(255,60,60,0.8);border:none;color:#fff;font-size:12px;font-weight:900;cursor:pointer;font-family:inherit;touch-action:manipulation;';
   btnConfirm.textContent = 'Excluir';
@@ -10579,7 +10580,8 @@ function deletarEvento(id, e) {
   overlay.setAttribute('data-confirm-modal', '1');
   overlay.style.cssText = _overlayBg();
   // Fecha ao clicar no backdrop
-  overlay.addEventListener('click', function(ev) { if (ev.target === overlay) overlay.remove(); });
+  overlay.addEventListener('click', function(ev) { if (ev.target === overlay) { ev.preventDefault(); overlay.remove(); _antiGhostClick(); } });
+  overlay.addEventListener('touchend', function(ev) { if (ev.target === overlay) { ev.preventDefault(); overlay.remove(); _antiGhostClick(); } });
   var box = document.createElement('div');
   box.style.cssText = _boxBg('padding:24px 20px;width:100%;max-width:300px;display:flex;flex-direction:column;gap:14px;');
   box.addEventListener('click', function(ev) { ev.stopPropagation(); });
@@ -10594,7 +10596,7 @@ function deletarEvento(id, e) {
   var btnCancel = document.createElement('button');
   btnCancel.style.cssText = 'flex:1;padding:12px;border-radius:12px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);color:rgba(255,255,255,0.5);font-size:12px;font-weight:800;cursor:pointer;font-family:inherit;touch-action:manipulation;';
   btnCancel.textContent = 'Cancelar';
-  btnCancel.onclick = function() { overlay.remove(); };
+  btnCancel.onclick = function() { overlay.remove(); _antiGhostClick(); };
   var btnConfirm = document.createElement('button');
   btnConfirm.style.cssText = 'flex:2;padding:12px;border-radius:12px;background:rgba(255,60,60,0.8);border:none;color:#fff;font-size:12px;font-weight:900;cursor:pointer;font-family:inherit;touch-action:manipulation;';
   btnConfirm.textContent = 'Excluir';
@@ -21565,6 +21567,22 @@ function _isLight() {
 }
 // Retorna estilos inline adaptados ao tema para overlay e box dos modais JS
 
+// ─── Anti-ghost-click: bloqueia pointer-events por 320ms após fechar modal ────
+function _antiGhostClick() {
+  var targets = [
+    document.getElementById('biblioteca-overlay'),
+    document.getElementById('pads-overlay'),
+    document.getElementById('notes-grid'),
+    document.querySelector('.main-layout')
+  ];
+  targets.forEach(function(el) {
+    if (!el) return;
+    var prev = el.style.pointerEvents;
+    el.style.pointerEvents = 'none';
+    setTimeout(function() { el.style.pointerEvents = prev || ''; }, 320);
+  });
+}
+
 // ─── Helper: modal de confirmação sem IDs fixos ──────────────────────────────
 function _confirmarAcao(titulo, msg, labelConfirm, corConfirm, onConfirm) {
   // Remove qualquer modal de confirmação pendente
@@ -21573,7 +21591,20 @@ function _confirmarAcao(titulo, msg, labelConfirm, corConfirm, onConfirm) {
   var overlay = document.createElement('div');
   overlay.setAttribute('data-confirm-modal', '1');
   overlay.style.cssText = _overlayBg();
-  overlay.addEventListener('click', function(e) { if (e.target === overlay) overlay.remove(); });
+
+  // Bloqueia ghost click após fechar — evita tap passar para elemento abaixo
+  function _fecharSemFantasma() {
+    overlay.remove();
+    _antiGhostClick();
+  }
+
+  overlay.addEventListener('click', function(e) {
+    if (e.target === overlay) { e.preventDefault(); e.stopPropagation(); _fecharSemFantasma(); }
+  });
+  overlay.addEventListener('touchend', function(e) {
+    if (e.target === overlay) { e.preventDefault(); e.stopPropagation(); _fecharSemFantasma(); }
+  });
+
   var box = document.createElement('div');
   box.style.cssText = _boxBg('padding:24px 20px;width:100%;max-width:300px;display:flex;flex-direction:column;gap:14px;');
   box.addEventListener('click', function(e) { e.stopPropagation(); });
@@ -21588,7 +21619,7 @@ function _confirmarAcao(titulo, msg, labelConfirm, corConfirm, onConfirm) {
   var btnN = document.createElement('button');
   btnN.style.cssText = 'flex:1;padding:12px;border-radius:12px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);color:rgba(255,255,255,0.45);font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;touch-action:manipulation;';
   btnN.textContent = 'Cancelar';
-  btnN.onclick = function() { overlay.remove(); };
+  btnN.onclick = function() { _fecharSemFantasma(); };
   var btnS = document.createElement('button');
   btnS.style.cssText = 'flex:2;padding:12px;border-radius:12px;background:' + (corConfirm||'rgba(255,60,60,0.85)') + ';border:none;color:#fff;font-size:12px;font-weight:900;cursor:pointer;font-family:inherit;touch-action:manipulation;';
   btnS.textContent = labelConfirm || 'Confirmar';
