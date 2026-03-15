@@ -3561,8 +3561,8 @@ body { font-family: -apple-system, 'Inter', BlinkMacSystemFont, 'Segoe UI', sans
 
 /* Volume mixer row */
 .dc-mixrow {
-  display: grid; grid-template-columns: repeat(4,1fr);
-  gap: 6px; padding: 8px 2px 2px;
+  display: grid; grid-template-columns: repeat(8,1fr);
+  gap: 5px; padding: 8px 2px 2px;
   border-top: 1px solid rgba(255,255,255,0.05); flex-shrink: 0;
 }
 .dc-mix-item { display: flex; flex-direction: column; align-items: center; gap: 3px; }
@@ -3801,7 +3801,6 @@ body { font-family: -apple-system, 'Inter', BlinkMacSystemFont, 'Segoe UI', sans
 @media (min-width: 1025px) {
   .dc-machine { max-width: 780px; }
   .dc-pads-grid { gap: 12px; }
-  .dc-mixrow { grid-template-columns: repeat(8,1fr); }
   .dc-fx-row { grid-template-columns: 1fr 1fr 1fr 1fr; }
   .dc-topbar { margin-bottom: 4px; }
 }
@@ -10919,18 +10918,35 @@ function renderDcMix() {
   var row = document.getElementById('dc-mixrow');
   if (!row) return;
   var bank = DC_BANKS[_dcBank];
-  // Show 8 sliders for first 8 pads (top row × 2)
-  row.innerHTML = bank.slice(0, 8).map(function(pad, i) {
+  row.innerHTML = '';
+  // Render all 16 pad volume sliders (2 rows of 8 in CSS grid)
+  bank.forEach(function(pad, i) {
     var key = _dcBank * 16 + i;
-    var vol = Math.round((_dcVolumes[key] || 0.8) * 100);
-    return '<div class="dc-mix-item">' +
-      '<div class="dc-mix-label">' + pad.name.split(' ')[0].slice(0,4) + '</div>' +
-      '<input type="range" class="dc-mix-slider s-' + pad.color + '"' +
-        ' min="0" max="100" value="' + vol + '"' +
-        ' oninput="dcVolPad(' + i + ',this.value);this.nextElementSibling.textContent=this.value+'%'">' +
-      '<div class="dc-mix-pct">' + vol + '%</div>' +
-      '</div>';
-  }).join('');
+    var vol = Math.round((_dcVolumes[key] !== undefined ? _dcVolumes[key] : 0.8) * 100);
+    var item = document.createElement('div');
+    item.className = 'dc-mix-item';
+    var label = document.createElement('div');
+    label.className = 'dc-mix-label';
+    label.textContent = pad.name.split(' ')[0].slice(0,4);
+    var slider = document.createElement('input');
+    slider.type = 'range';
+    slider.className = 'dc-mix-slider s-' + pad.color;
+    slider.min = 0; slider.max = 100; slider.value = vol;
+    // Capture i by value via closure
+    (function(padIndex, keyVal) {
+      slider.addEventListener('input', function() {
+        _dcVolumes[keyVal] = parseInt(this.value) / 100;
+        pct.textContent = this.value + '%';
+      });
+    })(i, key);
+    var pct = document.createElement('div');
+    pct.className = 'dc-mix-pct';
+    pct.textContent = vol + '%';
+    item.appendChild(label);
+    item.appendChild(slider);
+    item.appendChild(pct);
+    row.appendChild(item);
+  });
 }
 
 function dcVolPad(padIdx, val) {
