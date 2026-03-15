@@ -3538,11 +3538,13 @@ body { font-family: -apple-system, 'Inter', BlinkMacSystemFont, 'Segoe UI', sans
   position: relative; z-index: 1; pointer-events: none; margin-top: 1px;
 }
 .dc-pad-import {
-  position: absolute; top: 5px; right: 5px;
-  width: 18px; height: 18px; border-radius: 5px;
+  position: absolute; top: 4px; right: 4px;
+  width: 22px; height: 22px; border-radius: 6px;
   background: rgba(0,0,0,0.4); border: 1px solid rgba(255,255,255,0.15);
   display: flex; align-items: center; justify-content: center;
   opacity: 0; transition: opacity 0.2s; z-index: 3; cursor: pointer;
+  /* Larger tap area via padding */
+  padding: 4px; box-sizing: content-box;
 }
 .dc-pad:hover .dc-pad-import { opacity: 1; }
 .dc-pad.has-sample .dc-pad-import {
@@ -3619,7 +3621,309 @@ body { font-family: -apple-system, 'Inter', BlinkMacSystemFont, 'Segoe UI', sans
 }
 #dc-file-input { display: none; }
 /* Legacy elements hidden */
+
+/* ── FX Panel ── */
+.dc-fx-bar {
+  display: flex; align-items: center; gap: 6px;
+  padding: 6px 2px 0; flex-shrink: 0;
+}
+.dc-fx-toggle {
+  background: rgba(255,255,255,0.04);
+  border: 1px solid rgba(255,255,255,0.1);
+  color: rgba(255,255,255,0.45);
+  padding: 7px 12px; border-radius: 8px;
+  font-size: 9px; font-weight: 900; letter-spacing: 1.5px;
+  cursor: pointer; transition: 0.18s; text-transform: uppercase;
+  touch-action: manipulation; flex-shrink: 0;
+}
+.dc-fx-toggle.ativo {
+  background: rgba(138,92,246,0.18);
+  border-color: rgba(138,92,246,0.55); color: #a78bfa;
+}
+.dc-fx-chips { display: flex; gap: 4px; flex: 1; overflow-x: auto; scrollbar-width: none; }
+.dc-fx-chips::-webkit-scrollbar { display: none; }
+.dc-fx-chip {
+  flex-shrink: 0; padding: 5px 10px; border-radius: 20px;
+  background: rgba(255,255,255,0.04);
+  border: 1px solid rgba(255,255,255,0.09);
+  color: rgba(255,255,255,0.35); font-size: 8px; font-weight: 900;
+  letter-spacing: 0.8px; cursor: pointer; transition: 0.15s;
+  touch-action: manipulation; text-transform: uppercase;
+}
+.dc-fx-chip.ativo {
+  background: rgba(138,92,246,0.2);
+  border-color: rgba(138,92,246,0.6); color: #c4b5fd;
+}
+/* FX Panel drawer */
+.dc-fx-panel {
+  display: none; flex-direction: column; gap: 8px;
+  padding: 10px 4px 4px; flex-shrink: 0;
+  border-top: 1px solid rgba(255,255,255,0.05);
+  animation: dcFxIn 0.2s ease;
+}
+.dc-fx-panel.show { display: flex; }
+@keyframes dcFxIn {
+  from { opacity: 0; transform: translateY(6px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.dc-fx-row {
+  display: grid; grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+.dc-fx-block {
+  background: rgba(255,255,255,0.03);
+  border: 1px solid rgba(255,255,255,0.07);
+  border-radius: 10px; padding: 8px 10px;
+  display: flex; flex-direction: column; gap: 6px;
+}
+.dc-fx-block.ativo {
+  border-color: rgba(138,92,246,0.4);
+  background: rgba(138,92,246,0.06);
+}
+.dc-fx-block-header {
+  display: flex; align-items: center; justify-content: space-between;
+}
+.dc-fx-name {
+  font-size: 9px; font-weight: 900; letter-spacing: 1.5px;
+  text-transform: uppercase; color: rgba(255,255,255,0.45);
+}
+.dc-fx-block.ativo .dc-fx-name { color: #a78bfa; }
+.dc-fx-onoff {
+  width: 32px; height: 18px; border-radius: 9px;
+  background: rgba(255,255,255,0.08);
+  border: none; cursor: pointer; position: relative;
+  transition: background 0.2s; flex-shrink: 0;
+  padding: 0;
+  /* Invisible tap area expansion */
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+}
+.dc-fx-onoff::after {
+  content: ''; position: absolute; top: 3px; left: 3px;
+  width: 12px; height: 12px; border-radius: 50%;
+  background: rgba(255,255,255,0.4); transition: 0.2s;
+}
+.dc-fx-onoff.on { background: rgba(138,92,246,0.5); }
+.dc-fx-onoff.on::after {
+  left: 17px; background: #a78bfa;
+}
+.dc-fx-knobs {
+  display: flex; gap: 6px;
+}
+.dc-fx-knob-wrap {
+  flex: 1; display: flex; flex-direction: column; align-items: center; gap: 2px;
+}
+.dc-fx-knob-label {
+  font-size: 6px; font-weight: 800; letter-spacing: 0.5px;
+  color: rgba(255,255,255,0.25); text-transform: uppercase;
+}
+.dc-fx-knob-val {
+  font-size: 7px; font-weight: 700; color: rgba(255,255,255,0.35);
+}
+.dc-fx-slider {
+  -webkit-appearance: none; width: 100%; height: 2px;
+  border-radius: 2px; outline: none; cursor: pointer;
+  background: rgba(255,255,255,0.1);
+}
+.dc-fx-slider::-webkit-slider-thumb {
+  -webkit-appearance: none; width: 10px; height: 10px;
+  border-radius: 50%; background: #a78bfa; cursor: pointer;
+  box-shadow: 0 0 4px rgba(138,92,246,0.6);
+}
+/* Pad FX indicator dot */
+.dc-pad-fx-dot {
+  position: absolute; top: 5px; left: 5px;
+  width: 5px; height: 5px; border-radius: 50%;
+  background: #a78bfa; opacity: 0;
+  transition: opacity 0.2s; z-index: 2;
+  pointer-events: none;
+}
+.dc-pad.has-fx .dc-pad-fx-dot { opacity: 1; }
+/* Pad FX config button */
+.dc-pad-fxbtn {
+  position: absolute; bottom: 5px; right: 5px;
+  width: 16px; height: 16px; border-radius: 4px;
+  background: rgba(138,92,246,0.2); border: 1px solid rgba(138,92,246,0.35);
+  display: flex; align-items: center; justify-content: center;
+  opacity: 0; transition: opacity 0.2s; z-index: 3; cursor: pointer;
+  pointer-events: auto;
+}
+.dc-pad:hover .dc-pad-fxbtn { opacity: 1; }
+.dc-pad.has-fx .dc-pad-fxbtn { opacity: 0.8; }
+/* Per-pad FX modal */
+.dc-pad-fx-modal {
+  position: absolute; inset: 0; z-index: 50;
+  background: rgba(8,8,16,0.97);
+  border-radius: 12px; padding: 8px;
+  display: none; flex-direction: column; gap: 6px;
+  overflow-y: auto;
+}
+.dc-pad-fx-modal.show { display: flex; }
+.dc-pad-fx-modal-header {
+  display: flex; align-items: center; justify-content: space-between;
+  flex-shrink: 0;
+}
+.dc-pad-fx-modal-title {
+  font-size: 8px; font-weight: 900; letter-spacing: 1.5px;
+  color: rgba(255,255,255,0.4); text-transform: uppercase;
+}
+.dc-pad-fx-modal-close {
+  background: none; border: none; color: rgba(255,255,255,0.4);
+  font-size: 14px; cursor: pointer; line-height: 1; padding: 2px;
+}
+
 .drumcam-pads-row,.drumcam-tap,.drumcam-tap-btn,.drumcam-metro-btn,.drumcam-octave { display: none !important; }
+/* ── DrumCam Responsive ── */
+
+/* Desktop: constrain width and center */
+@media (min-width: 641px) {
+  .dc-machine {
+    max-width: 680px;
+    margin: 0 auto;
+    width: 100%;
+  }
+  .dc-pads-grid {
+    gap: 10px;
+  }
+  .dc-pad {
+    border-radius: 14px;
+  }
+  .dc-fx-row {
+    grid-template-columns: 1fr 1fr 1fr;
+  }
+  .dc-fx-panel { padding: 12px 4px 6px; }
+  .dc-bottombar { padding: 8px 4px 2px; }
+  .drumcam-header { padding: 16px 24px 12px; }
+  .drumcam-bpm { font-size: 28px; }
+}
+
+/* Large desktop */
+@media (min-width: 1025px) {
+  .dc-machine { max-width: 780px; }
+  .dc-pads-grid { gap: 12px; }
+  .dc-mixrow { grid-template-columns: repeat(8,1fr); }
+  .dc-fx-row { grid-template-columns: 1fr 1fr 1fr 1fr; }
+  .dc-topbar { margin-bottom: 4px; }
+}
+
+/* Mobile: safe area + compact */
+@media (max-width: 640px) {
+  .dc-machine { padding: 8px 8px 10px; gap: 7px; }
+  .dc-pads-grid { gap: 6px; }
+  .dc-pad { border-radius: 10px; }
+  .dc-pad-name { font-size: 9px; }
+  .dc-pad-sub  { font-size: 6px; }
+  .dc-bank-tab { font-size: 8px; padding: 6px 2px; }
+  .dc-tap-btn  { padding: 6px 10px; font-size: 8px; }
+  .dc-mixrow   { gap: 4px; padding: 6px 0 0; }
+  .dc-mix-slider { height: 2px; }
+  .dc-bottombar { padding: 5px 0 0; gap: 6px; }
+  .dc-metro-btn { padding: 8px 6px; font-size: 8px; }
+  .dc-fx-bar    { padding: 5px 0 0; gap: 5px; }
+  .dc-fx-toggle { padding: 6px 10px; font-size: 8px; }
+  .dc-fx-chip   { padding: 4px 8px; font-size: 7px; }
+  .dc-fx-panel  { padding: 8px 2px 2px; gap: 6px; }
+  .dc-fx-row    { gap: 6px; }
+  .dc-fx-block  { padding: 7px 8px; }
+  .dc-fx-name   { font-size: 8px; letter-spacing: 1px; }
+  .dc-fx-knob-label { font-size: 5px; }
+  .dc-fx-knob-val   { font-size: 6px; }
+  .drumcam-bpm  { font-size: 18px; }
+  /* iOS safe area */
+  .dc-machine { padding-bottom: calc(10px + env(safe-area-inset-bottom)); }
+}
+
+/* Very small (320px) */
+@media (max-width: 360px) {
+  .dc-pads-grid { gap: 5px; }
+  .dc-pad-name  { font-size: 8px; }
+  .dc-bank-tab  { font-size: 7px; }
+  .dc-fx-row    { grid-template-columns: 1fr; }
+}
+
+/* ── Desktop & Global Responsive ── */
+
+/* Onboarding: centra e limita largura no desktop */
+@media (min-width: 641px) {
+  #onboarding-overlay {
+    align-items: center;
+    justify-content: center;
+  }
+  .ob-hero {
+    max-width: 520px;
+    width: 100%;
+    padding: 60px 40px 32px;
+    flex-shrink: 0;
+  }
+  .ob-form {
+    max-width: 520px;
+    width: 100%;
+    border-radius: 0 0 20px 20px;
+    border-left: 1px solid rgba(255,255,255,0.06);
+    border-right: 1px solid rgba(255,255,255,0.06);
+    border-bottom: 1px solid rgba(255,255,255,0.06);
+  }
+}
+
+/* Admin painel: limita largura do conteúdo */
+@media (min-width: 641px) {
+  #adm-user-list {
+    max-width: 760px;
+    margin: 0 auto;
+    width: 100%;
+    align-self: center;
+  }
+  #adm-bottom-nav > div:first-child {
+    max-width: 760px;
+    margin: 0 auto;
+    width: 100%;
+  }
+}
+
+/* Biblioteca: limita grid em telas muito largas */
+@media (min-width: 1200px) {
+  .biblioteca-grid {
+    grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  }
+}
+
+/* Modais: garantia de max-width em todos os tamanhos */
+.modal-overlay .modal-box { max-width: min(540px, 94vw); }
+#modal-sala .modal-box    { max-width: min(400px, 94vw); }
+
+/* Sync bar: não ultrapassar largura do header */
+.sync-bar { max-width: 640px; }
+
+/* Scroll controls area: não esconde em desktop quando no modo show */
+@media (min-width: 641px) {
+  body.performance-mode .teleprompter-panel { display: block; }
+}
+
+/* Perf bottom panel: ajuste fino desktop */
+@media (min-width: 641px) {
+  .perf-bottom-panel { bottom: 28px; right: 28px; }
+  .mode-show-container { padding: 13px 26px; font-size: 12px; }
+}
+
+/* Header: expande bem no desktop */
+@media (min-width: 1024px) {
+  .app-header { padding: 0 32px; }
+  .header-content { gap: 24px; }
+}
+
+/* Modais de perfil e amigos: desktop layout mais amplo */
+@media (min-width: 641px) {
+  #modal-perfil > div { max-width: 480px; margin: 0 auto; }
+  #modal-amigos .amigos-sheet { border-radius: 20px; max-width: 480px; margin: 20px auto 0; }
+}
+
+/* DC FX chips: barra de chips não overflow no desktop */
+@media (min-width: 641px) {
+  .dc-fx-chips { flex-wrap: wrap; overflow: visible; }
+  .dc-fx-chip { font-size: 9px; }
+}
+
+
 .btn-pad-flutuante {
   position: fixed; bottom: 90px; left: 50%; transform: translateX(-50%);
   z-index: 910; display: none;
@@ -4380,6 +4684,9 @@ body.theme-light .toast-info .toast-icon { background: rgba(0,0,0,0.05) !importa
   border-bottom: 1px solid rgba(255,255,255,0.05);
   flex-shrink: 0;
 }
+@media (min-width: 641px) {
+  .pads-header { padding: 18px 28px 14px; }
+}
 .pads-header-left { display: flex; align-items: center; gap: 10px; }
 .pads-header-right { display: flex; align-items: center; gap: 12px; }
 .pads-title {
@@ -4445,8 +4752,21 @@ body.theme-light .toast-info .toast-icon { background: rgba(0,0,0,0.05) !importa
 
 /* ── Grid ── */
 .pads-grid-wrap {
-  flex: 1; display: flex; align-items: stretch;
+  flex: 1; display: flex; align-items: center; justify-content: center;
   padding: 16px 14px; overflow: hidden;
+}
+/* Desktop: constrain pad grid width */
+@media (min-width: 641px) {
+  .pads-grid-wrap { padding: 20px 24px; }
+  .pads-grid {
+    max-width: 700px; margin: 0 auto;
+    grid-template-columns: repeat(6, 1fr);
+    gap: 12px;
+  }
+}
+@media (min-width: 1025px) {
+  .pads-grid { max-width: 820px; gap: 16px; }
+  .pad { border-radius: 16px; }
 }
 .pads-grid {
   display: grid;
@@ -6324,6 +6644,212 @@ body.auth-pending #toast {
         <span class="dc-vol-label">VOL</span>
         <input type="range" class="dc-vol-slider" id="dc-vol-master" min="0" max="100" value="80"
           oninput="dcVolMaster(this.value)">
+      </div>
+    </div>
+    <!-- FX Bar -->
+    <div class="dc-fx-bar">
+      <button class="dc-fx-toggle" id="dc-fx-toggle" onclick="dcFxTogglePanel()">FX</button>
+      <div class="dc-fx-chips" id="dc-fx-chips">
+        <div class="dc-fx-chip" data-fx="reverb"   onclick="dcFxToggleChip('reverb')">Reverb</div>
+        <div class="dc-fx-chip" data-fx="delay"    onclick="dcFxToggleChip('delay')">Delay</div>
+        <div class="dc-fx-chip" data-fx="comp"     onclick="dcFxToggleChip('comp')">Comp</div>
+        <div class="dc-fx-chip" data-fx="dist"     onclick="dcFxToggleChip('dist')">Dist</div>
+        <div class="dc-fx-chip" data-fx="filter"   onclick="dcFxToggleChip('filter')">Filter</div>
+        <div class="dc-fx-chip" data-fx="pitch"    onclick="dcFxToggleChip('pitch')">Pitch</div>
+        <div class="dc-fx-chip" data-fx="sidechain" onclick="dcFxToggleChip('sidechain')">Sidechain</div>
+      </div>
+    </div>
+    <!-- FX Panel -->
+    <div class="dc-fx-panel" id="dc-fx-panel">
+      <div class="dc-fx-row">
+        <!-- Reverb -->
+        <div class="dc-fx-block" id="dc-fxb-reverb">
+          <div class="dc-fx-block-header">
+            <span class="dc-fx-name">Reverb</span>
+            <button class="dc-fx-onoff" id="dc-fx-on-reverb" onclick="dcFxOnOff('reverb')"></button>
+          </div>
+          <div class="dc-fx-knobs">
+            <div class="dc-fx-knob-wrap">
+              <div class="dc-fx-knob-label">Tamanho</div>
+              <input type="range" class="dc-fx-slider" id="dc-fx-reverb-size" min="0" max="100" value="40"
+                oninput="dcFxParam('reverb','size',this.value);this.nextElementSibling.textContent=this.value+'%'">
+              <div class="dc-fx-knob-val">40%</div>
+            </div>
+            <div class="dc-fx-knob-wrap">
+              <div class="dc-fx-knob-label">Mix</div>
+              <input type="range" class="dc-fx-slider" id="dc-fx-reverb-mix" min="0" max="100" value="30"
+                oninput="dcFxParam('reverb','mix',this.value);this.nextElementSibling.textContent=this.value+'%'">
+              <div class="dc-fx-knob-val">30%</div>
+            </div>
+          </div>
+        </div>
+        <!-- Delay -->
+        <div class="dc-fx-block" id="dc-fxb-delay">
+          <div class="dc-fx-block-header">
+            <span class="dc-fx-name">Delay</span>
+            <button class="dc-fx-onoff" id="dc-fx-on-delay" onclick="dcFxOnOff('delay')"></button>
+          </div>
+          <div class="dc-fx-knobs">
+            <div class="dc-fx-knob-wrap">
+              <div class="dc-fx-knob-label">Tempo</div>
+              <input type="range" class="dc-fx-slider" id="dc-fx-delay-time" min="1" max="100" value="25"
+                oninput="dcFxParam('delay','time',this.value);this.nextElementSibling.textContent=Math.round(this.value*6)+'ms'">
+              <div class="dc-fx-knob-val">150ms</div>
+            </div>
+            <div class="dc-fx-knob-wrap">
+              <div class="dc-fx-knob-label">Feedback</div>
+              <input type="range" class="dc-fx-slider" id="dc-fx-delay-fb" min="0" max="85" value="35"
+                oninput="dcFxParam('delay','feedback',this.value);this.nextElementSibling.textContent=this.value+'%'">
+              <div class="dc-fx-knob-val">35%</div>
+            </div>
+            <div class="dc-fx-knob-wrap">
+              <div class="dc-fx-knob-label">Mix</div>
+              <input type="range" class="dc-fx-slider" id="dc-fx-delay-mix" min="0" max="100" value="25"
+                oninput="dcFxParam('delay','mix',this.value);this.nextElementSibling.textContent=this.value+'%'">
+              <div class="dc-fx-knob-val">25%</div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="dc-fx-row">
+        <!-- Compressor -->
+        <div class="dc-fx-block" id="dc-fxb-comp">
+          <div class="dc-fx-block-header">
+            <span class="dc-fx-name">Compressor</span>
+            <button class="dc-fx-onoff" id="dc-fx-on-comp" onclick="dcFxOnOff('comp')"></button>
+          </div>
+          <div class="dc-fx-knobs">
+            <div class="dc-fx-knob-wrap">
+              <div class="dc-fx-knob-label">Threshold</div>
+              <input type="range" class="dc-fx-slider" id="dc-fx-comp-thr" min="-60" max="0" value="-18"
+                oninput="dcFxParam('comp','threshold',this.value);this.nextElementSibling.textContent=this.value+'dB'">
+              <div class="dc-fx-knob-val">-18dB</div>
+            </div>
+            <div class="dc-fx-knob-wrap">
+              <div class="dc-fx-knob-label">Ratio</div>
+              <input type="range" class="dc-fx-slider" id="dc-fx-comp-ratio" min="1" max="20" value="4"
+                oninput="dcFxParam('comp','ratio',this.value);this.nextElementSibling.textContent=this.value+':1'">
+              <div class="dc-fx-knob-val">4:1</div>
+            </div>
+          </div>
+        </div>
+        <!-- Distortion -->
+        <div class="dc-fx-block" id="dc-fxb-dist">
+          <div class="dc-fx-block-header">
+            <span class="dc-fx-name">Distortion</span>
+            <button class="dc-fx-onoff" id="dc-fx-on-dist" onclick="dcFxOnOff('dist')"></button>
+          </div>
+          <div class="dc-fx-knobs">
+            <div class="dc-fx-knob-wrap">
+              <div class="dc-fx-knob-label">Drive</div>
+              <input type="range" class="dc-fx-slider" id="dc-fx-dist-drive" min="0" max="100" value="40"
+                oninput="dcFxParam('dist','drive',this.value);this.nextElementSibling.textContent=this.value+'%'">
+              <div class="dc-fx-knob-val">40%</div>
+            </div>
+            <div class="dc-fx-knob-wrap">
+              <div class="dc-fx-knob-label">Tone</div>
+              <input type="range" class="dc-fx-slider" id="dc-fx-dist-tone" min="200" max="8000" value="3000"
+                oninput="dcFxParam('dist','tone',this.value);this.nextElementSibling.textContent=Math.round(this.value/100)/10+'k'">
+              <div class="dc-fx-knob-val">3.0k</div>
+            </div>
+            <div class="dc-fx-knob-wrap">
+              <div class="dc-fx-knob-label">Mix</div>
+              <input type="range" class="dc-fx-slider" id="dc-fx-dist-mix" min="0" max="100" value="50"
+                oninput="dcFxParam('dist','mix',this.value);this.nextElementSibling.textContent=this.value+'%'">
+              <div class="dc-fx-knob-val">50%</div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="dc-fx-row">
+        <!-- Filter -->
+        <div class="dc-fx-block" id="dc-fxb-filter">
+          <div class="dc-fx-block-header">
+            <span class="dc-fx-name">Filter</span>
+            <button class="dc-fx-onoff" id="dc-fx-on-filter" onclick="dcFxOnOff('filter')"></button>
+          </div>
+          <div class="dc-fx-knobs">
+            <div class="dc-fx-knob-wrap">
+              <div class="dc-fx-knob-label">Freq</div>
+              <input type="range" class="dc-fx-slider" id="dc-fx-filter-freq" min="80" max="18000" value="8000"
+                oninput="dcFxParam('filter','freq',this.value);this.nextElementSibling.textContent=this.value>=1000?Math.round(this.value/100)/10+'k':this.value+'Hz'">
+              <div class="dc-fx-knob-val">8.0k</div>
+            </div>
+            <div class="dc-fx-knob-wrap">
+              <div class="dc-fx-knob-label">Tipo</div>
+              <select id="dc-fx-filter-type" onchange="dcFxParam('filter','type',this.value)"
+                style="background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.1);color:rgba(255,255,255,0.5);border-radius:4px;font-size:8px;font-weight:700;padding:2px 4px;cursor:pointer;width:100%;outline:none;">
+                <option value="lowpass">LP</option>
+                <option value="highpass">HP</option>
+                <option value="bandpass">BP</option>
+                <option value="notch">Notch</option>
+              </select>
+            </div>
+            <div class="dc-fx-knob-wrap">
+              <div class="dc-fx-knob-label">Q</div>
+              <input type="range" class="dc-fx-slider" id="dc-fx-filter-q" min="0.1" max="20" step="0.1" value="1"
+                oninput="dcFxParam('filter','q',this.value);this.nextElementSibling.textContent=parseFloat(this.value).toFixed(1)">
+              <div class="dc-fx-knob-val">1.0</div>
+            </div>
+          </div>
+        </div>
+        <!-- Pitch Shift -->
+        <div class="dc-fx-block" id="dc-fxb-pitch">
+          <div class="dc-fx-block-header">
+            <span class="dc-fx-name">Pitch</span>
+            <button class="dc-fx-onoff" id="dc-fx-on-pitch" onclick="dcFxOnOff('pitch')"></button>
+          </div>
+          <div class="dc-fx-knobs">
+            <div class="dc-fx-knob-wrap">
+              <div class="dc-fx-knob-label">Semitoms</div>
+              <input type="range" class="dc-fx-slider" id="dc-fx-pitch-semi" min="-12" max="12" value="0" step="1"
+                oninput="dcFxParam('pitch','semi',this.value);this.nextElementSibling.textContent=(this.value>0?'+':'')+this.value">
+              <div class="dc-fx-knob-val">0</div>
+            </div>
+            <div class="dc-fx-knob-wrap">
+              <div class="dc-fx-knob-label">Cents</div>
+              <input type="range" class="dc-fx-slider" id="dc-fx-pitch-cents" min="-100" max="100" value="0"
+                oninput="dcFxParam('pitch','cents',this.value);this.nextElementSibling.textContent=(this.value>0?'+':'')+this.value">
+              <div class="dc-fx-knob-val">0</div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <!-- Sidechain (full row) -->
+      <div class="dc-fx-block" id="dc-fxb-sidechain">
+        <div class="dc-fx-block-header">
+          <span class="dc-fx-name">Sidechain (ducker)</span>
+          <button class="dc-fx-onoff" id="dc-fx-on-sidechain" onclick="dcFxOnOff('sidechain')"></button>
+        </div>
+        <div class="dc-fx-knobs">
+          <div class="dc-fx-knob-wrap">
+            <div class="dc-fx-knob-label">Reducao</div>
+            <input type="range" class="dc-fx-slider" id="dc-fx-sc-depth" min="0" max="100" value="70"
+              oninput="dcFxParam('sidechain','depth',this.value);this.nextElementSibling.textContent=this.value+'%'">
+            <div class="dc-fx-knob-val">70%</div>
+          </div>
+          <div class="dc-fx-knob-wrap">
+            <div class="dc-fx-knob-label">Attack</div>
+            <input type="range" class="dc-fx-slider" id="dc-fx-sc-att" min="1" max="100" value="5"
+              oninput="dcFxParam('sidechain','attack',this.value);this.nextElementSibling.textContent=this.value+'ms'">
+            <div class="dc-fx-knob-val">5ms</div>
+          </div>
+          <div class="dc-fx-knob-wrap">
+            <div class="dc-fx-knob-label">Release</div>
+            <input type="range" class="dc-fx-slider" id="dc-fx-sc-rel" min="10" max="500" value="120"
+              oninput="dcFxParam('sidechain','release',this.value);this.nextElementSibling.textContent=this.value+'ms'">
+            <div class="dc-fx-knob-val">120ms</div>
+          </div>
+          <div class="dc-fx-knob-wrap">
+            <div class="dc-fx-knob-label">Trigger</div>
+            <select id="dc-fx-sc-src" onchange="dcFxParam('sidechain','src',this.value)"
+              style="background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.1);color:rgba(255,255,255,0.5);border-radius:4px;font-size:8px;font-weight:700;padding:2px 4px;cursor:pointer;width:100%;outline:none;">
+              <option value="0">Kick (P1)</option>
+              <option value="1">Snare (P2)</option>
+              <option value="4">Tom H</option>
+            </select>
+          </div>
+        </div>
       </div>
     </div>
   </div>
@@ -10337,6 +10863,7 @@ function abrirDrumCam() {
   renderDcMix();
   atualizarBtnMetroDC();
   atualizarLetreiroDrumCam();
+  _dcRenderPresets();
 }
 
 function fecharDrumCam() {
@@ -10459,12 +10986,24 @@ function dcHitPad(padIdx, el) {
     el.classList.add('hit');
     setTimeout(function() { if (el) el.classList.remove('hit'); }, 120);
   }
+  // Sidechain trigger if this pad is the trigger source
+  if (_dcFxEnabled.sidechain && parseInt(_dcFxParams.sidechain.src) === padIdx) {
+    _dcSidechainTrigger(ctx);
+  }
   // Play sample if imported
   if (_dcSamples[key]) {
     var src = ctx.createBufferSource();
     src.buffer = _dcSamples[key];
+    _dcApplyPitch(src);
     var g = ctx.createGain(); g.gain.value = vol;
-    src.connect(g); g.connect(ctx.destination);
+    var anyFx = Object.values(_dcFxEnabled).some(Boolean);
+    if (anyFx) {
+      src.connect(g);
+      var fxOut = _dcBuildFxChain(ctx, g);
+      fxOut.connect(ctx.destination);
+    } else {
+      src.connect(g); g.connect(ctx.destination);
+    }
     src.start(ctx.currentTime);
     return;
   }
@@ -10478,8 +11017,15 @@ function _dcSynth(ctx, pad, vol) {
   var now = ctx.currentTime;
   var t = pad.synth;
 
-  // Master gain
-  var mg = ctx.createGain(); mg.connect(ctx.destination);
+  // Master gain — route through FX chain if any effect is active
+  var mg = ctx.createGain();
+  var _anyFxActive = typeof _dcFxEnabled !== 'undefined' && Object.values(_dcFxEnabled).some(Boolean);
+  if (_anyFxActive) {
+    var _fxOut = _dcBuildFxChain(ctx, mg);
+    _fxOut.connect(ctx.destination);
+  } else {
+    mg.connect(ctx.destination);
+  }
 
   if (t === 'kick' || t === '808') {
     // Sub kick / 808
@@ -10658,6 +11204,284 @@ function _dcSynth(ctx, pad, vol) {
     fb.connect(fbg); fbg.connect(mg);
     fb.start(now); fb.stop(now + 0.05);
   }
+}
+
+
+// ─── DRUM CAM FX ENGINE ──────────────────────────────────────────────────────
+
+// FX state
+var _dcFxEnabled = {
+  reverb: false, delay: false, comp: false,
+  dist: false, filter: false, pitch: false, sidechain: false
+};
+var _dcFxParams = {
+  reverb:    { size: 40, mix: 30 },
+  delay:     { time: 25, feedback: 35, mix: 25 },
+  comp:      { threshold: -18, ratio: 4 },
+  dist:      { drive: 40, tone: 3000, mix: 50 },
+  filter:    { freq: 8000, type: 'lowpass', q: 1 },
+  pitch:     { semi: 0, cents: 0 },
+  sidechain: { depth: 70, attack: 5, release: 120, src: 0 }
+};
+var _dcFxPanelOpen = false;
+
+// Shared FX nodes (built fresh on each pad hit for accuracy)
+function dcFxTogglePanel() {
+  _dcFxPanelOpen = !_dcFxPanelOpen;
+  var panel = document.getElementById('dc-fx-panel');
+  var btn   = document.getElementById('dc-fx-toggle');
+  if (panel) panel.classList.toggle('show', _dcFxPanelOpen);
+  if (btn)   btn.classList.toggle('ativo', _dcFxPanelOpen);
+}
+
+function dcFxToggleChip(fx) {
+  _dcFxEnabled[fx] = !_dcFxEnabled[fx];
+  // Sync toggle button inside block
+  var onoff = document.getElementById('dc-fx-on-' + fx);
+  var block  = document.getElementById('dc-fxb-' + fx);
+  var chip   = document.querySelector('[data-fx="' + fx + '"]');
+  if (onoff) onoff.classList.toggle('on', _dcFxEnabled[fx]);
+  if (block) block.classList.toggle('ativo', _dcFxEnabled[fx]);
+  if (chip)  chip.classList.toggle('ativo', _dcFxEnabled[fx]);
+  // Open panel if closed
+  if (_dcFxEnabled[fx] && !_dcFxPanelOpen) dcFxTogglePanel();
+}
+
+function dcFxOnOff(fx) {
+  dcFxToggleChip(fx);
+}
+
+function dcFxParam(fx, key, val) {
+  if (_dcFxParams[fx]) _dcFxParams[fx][key] = isNaN(val) ? val : parseFloat(val);
+}
+
+// Build the FX chain and return final output node
+// source → [dist] → [filter] → [comp] → [reverb+delay wet/dry] → [sidechain] → dest
+function _dcBuildFxChain(ctx, dryGain) {
+  var nodes = [];
+  var chain = dryGain; // current last node
+
+  // ── Distortion ──
+  if (_dcFxEnabled.dist) {
+    var drive = _dcFxParams.dist.drive / 100;
+    var mix   = _dcFxParams.dist.mix   / 100;
+    var waveShaper = ctx.createWaveShaper();
+    waveShaper.curve = _dcMakeDistCurve(drive * 400);
+    waveShaper.oversample = '4x';
+    var distTone = ctx.createBiquadFilter();
+    distTone.type = 'lowpass';
+    distTone.frequency.value = _dcFxParams.dist.tone;
+    var distWet = ctx.createGain(); distWet.gain.value = mix;
+    var distDry = ctx.createGain(); distDry.gain.value = 1 - mix;
+    var distOut = ctx.createGain();
+    chain.connect(waveShaper); waveShaper.connect(distTone); distTone.connect(distWet); distWet.connect(distOut);
+    chain.connect(distDry); distDry.connect(distOut);
+    nodes.push(waveShaper, distTone, distWet, distDry, distOut);
+    chain = distOut;
+  }
+
+  // ── Filter ──
+  if (_dcFxEnabled.filter) {
+    var filt = ctx.createBiquadFilter();
+    filt.type = _dcFxParams.filter.type;
+    filt.frequency.value = _dcFxParams.filter.freq;
+    filt.Q.value = _dcFxParams.filter.q;
+    chain.connect(filt);
+    nodes.push(filt);
+    chain = filt;
+  }
+
+  // ── Compressor ──
+  if (_dcFxEnabled.comp) {
+    var comp = ctx.createDynamicsCompressor();
+    comp.threshold.value = _dcFxParams.comp.threshold;
+    comp.ratio.value     = _dcFxParams.comp.ratio;
+    comp.knee.value      = 6;
+    comp.attack.value    = 0.003;
+    comp.release.value   = 0.15;
+    chain.connect(comp);
+    nodes.push(comp);
+    chain = comp;
+  }
+
+  // ── Reverb ──
+  if (_dcFxEnabled.reverb) {
+    var rvSize = _dcFxParams.reverb.size / 100;
+    var rvMix  = _dcFxParams.reverb.mix  / 100;
+    var rvLen  = 0.3 + rvSize * 4; // 0.3 to 4.3 seconds
+    var rvBuf  = _dcMakeImpulse(ctx, rvLen, rvSize);
+    var conv   = ctx.createConvolver(); conv.buffer = rvBuf;
+    var rvWet  = ctx.createGain(); rvWet.gain.value = rvMix;
+    var rvDry  = ctx.createGain(); rvDry.gain.value = 1 - rvMix;
+    var rvOut  = ctx.createGain();
+    chain.connect(conv); conv.connect(rvWet); rvWet.connect(rvOut);
+    chain.connect(rvDry); rvDry.connect(rvOut);
+    nodes.push(conv, rvWet, rvDry, rvOut);
+    chain = rvOut;
+  }
+
+  // ── Delay ──
+  if (_dcFxEnabled.delay) {
+    var dlTime = _dcFxParams.delay.time * 6 / 1000; // ms → seconds
+    var dlFb   = _dcFxParams.delay.feedback / 100;
+    var dlMix  = _dcFxParams.delay.mix      / 100;
+    var dNode  = ctx.createDelay(5);
+    dNode.delayTime.value = Math.max(0.01, dlTime);
+    var fbGain = ctx.createGain(); fbGain.gain.value = dlFb;
+    var dlWet  = ctx.createGain(); dlWet.gain.value = dlMix;
+    var dlDry  = ctx.createGain(); dlDry.gain.value = 1 - dlMix;
+    var dlOut  = ctx.createGain();
+    chain.connect(dNode); dNode.connect(fbGain); fbGain.connect(dNode); dNode.connect(dlWet); dlWet.connect(dlOut);
+    chain.connect(dlDry); dlDry.connect(dlOut);
+    nodes.push(dNode, fbGain, dlWet, dlDry, dlOut);
+    chain = dlOut;
+  }
+
+  // ── Sidechain ducker ──
+  if (_dcFxEnabled.sidechain) {
+    // Uses a gain node that we'll duck when trigger pad is hit
+    var scGain = ctx.createGain();
+    scGain.gain.value = 1;
+    chain.connect(scGain);
+    nodes.push(scGain);
+    chain = scGain;
+    window._dcSidechainGain = scGain; // expose for trigger
+  }
+
+  return chain; // caller connects chain → ctx.destination
+}
+
+// Pitch shift via playbackRate on BufferSource (approximation)
+function _dcApplyPitch(src) {
+  if (!_dcFxEnabled.pitch) return;
+  var semi  = _dcFxParams.pitch.semi  || 0;
+  var cents = _dcFxParams.pitch.cents || 0;
+  var totalCents = semi * 100 + parseFloat(cents);
+  src.playbackRate.value = Math.pow(2, totalCents / 1200);
+}
+
+// Sidechain trigger: duck all output when trigger pad fires
+function _dcSidechainTrigger(ctx) {
+  if (!_dcFxEnabled.sidechain || !window._dcSidechainGain) return;
+  var now    = ctx.currentTime;
+  var att    = _dcFxParams.sidechain.attack   / 1000;
+  var rel    = _dcFxParams.sidechain.release  / 1000;
+  var depth  = 1 - (_dcFxParams.sidechain.depth / 100);
+  var g = window._dcSidechainGain.gain;
+  g.cancelScheduledValues(now);
+  g.setValueAtTime(g.value, now);
+  g.linearRampToValueAtTime(depth, now + att);
+  g.linearRampToValueAtTime(1, now + att + rel);
+}
+
+// Helpers
+function _dcMakeDistCurve(amount) {
+  var n = 256, curve = new Float32Array(n);
+  for (var i = 0; i < n; i++) {
+    var x = (i * 2) / n - 1;
+    curve[i] = ((Math.PI + amount) * x) / (Math.PI + amount * Math.abs(x));
+  }
+  return curve;
+}
+
+function _dcMakeImpulse(ctx, duration, decay) {
+  var rate = ctx.sampleRate;
+  var len  = Math.floor(rate * duration);
+  var buf  = ctx.createBuffer(2, len, rate);
+  for (var c = 0; c < 2; c++) {
+    var d = buf.getChannelData(c);
+    for (var i = 0; i < len; i++) {
+      d[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / len, decay * 3 + 1);
+    }
+  }
+  return buf;
+}
+
+// Presets
+var DC_FX_PRESETS = {
+  'Limpo':    { enabled: {}, params: {} },
+  'Sala':     { enabled: { reverb: true, comp: true },
+                params:  { reverb: { size: 35, mix: 25 }, comp: { threshold: -16, ratio: 3 } } },
+  'Estudio':  { enabled: { reverb: true, comp: true, filter: true },
+                params:  { reverb: { size: 20, mix: 15 }, comp: { threshold: -20, ratio: 6 }, filter: { freq: 12000, type: 'lowpass', q: 0.7 } } },
+  'Galpao':   { enabled: { reverb: true, delay: true },
+                params:  { reverb: { size: 80, mix: 50 }, delay: { time: 40, feedback: 45, mix: 30 } } },
+  'Trap':     { enabled: { reverb: true, sidechain: true },
+                params:  { reverb: { size: 30, mix: 20 }, sidechain: { depth: 80, attack: 3, release: 150, src: 0 } } },
+  'Lo-Fi':    { enabled: { filter: true, dist: true },
+                params:  { filter: { freq: 3500, type: 'lowpass', q: 1.2 }, dist: { drive: 20, tone: 2000, mix: 40 } } },
+  'Punk':     { enabled: { dist: true, comp: true },
+                params:  { dist: { drive: 85, tone: 4000, mix: 70 }, comp: { threshold: -24, ratio: 12 } } },
+  'Espacial': { enabled: { reverb: true, delay: true, pitch: true },
+                params:  { reverb: { size: 90, mix: 60 }, delay: { time: 50, feedback: 55, mix: 40 }, pitch: { semi: 0, cents: -15 } } },
+};
+
+function dcFxAplicarPreset(nome) {
+  var preset = DC_FX_PRESETS[nome];
+  if (!preset) return;
+  // Reset all
+  Object.keys(_dcFxEnabled).forEach(function(k) {
+    _dcFxEnabled[k] = false;
+    var onoff = document.getElementById('dc-fx-on-' + k);
+    var block  = document.getElementById('dc-fxb-' + k);
+    var chip   = document.querySelector('[data-fx="' + k + '"]');
+    if (onoff) onoff.classList.remove('on');
+    if (block) block.classList.remove('ativo');
+    if (chip)  chip.classList.remove('ativo');
+  });
+  // Apply preset enabled
+  Object.keys(preset.enabled).forEach(function(k) {
+    if (preset.enabled[k]) dcFxToggleChip(k);
+  });
+  // Apply preset params
+  Object.keys(preset.params).forEach(function(fx) {
+    Object.assign(_dcFxParams[fx], preset.params[fx]);
+    _dcFxSyncUI(fx);
+  });
+  showToast('Preset "' + nome + '" aplicado');
+}
+
+function _dcFxSyncUI(fx) {
+  // Sync slider values to DOM after preset change
+  var p = _dcFxParams[fx];
+  if (!p) return;
+  var mapping = {
+    reverb:    [['reverb-size','size','%'],['reverb-mix','mix','%']],
+    delay:     [['delay-time','time','ms',6],['delay-fb','feedback','%'],['delay-mix','mix','%']],
+    comp:      [['comp-thr','threshold','dB'],['comp-ratio','ratio',':1']],
+    dist:      [['dist-drive','drive','%'],['dist-tone','tone','k',0.01],['dist-mix','mix','%']],
+    filter:    [['filter-freq','freq','Hz'],['filter-q','q','']],
+    pitch:     [['pitch-semi','semi',''],['pitch-cents','cents','']],
+    sidechain: [['sc-depth','depth','%'],['sc-att','attack','ms'],['sc-rel','release','ms']],
+  };
+  (mapping[fx] || []).forEach(function(m) {
+    var el = document.getElementById('dc-fx-' + m[0]);
+    if (!el) return;
+    el.value = p[m[1]];
+    var valEl = el.nextElementSibling;
+    if (valEl && valEl.classList.contains('dc-fx-knob-val')) {
+      var mult = m[3] || 1;
+      var raw  = p[m[1]] * mult;
+      valEl.textContent = (Number.isInteger(raw) ? raw : raw.toFixed(1)) + m[2];
+    }
+  });
+}
+
+// Render presets row in FX panel (appended on abrirDrumCam)
+function _dcRenderPresets() {
+  var panel = document.getElementById('dc-fx-panel');
+  if (!panel || document.getElementById('dc-fx-presets-row')) return;
+  var row = document.createElement('div');
+  row.id = 'dc-fx-presets-row';
+  row.style.cssText = 'display:flex;gap:4px;flex-wrap:wrap;padding:4px 0 2px;border-top:1px solid rgba(255,255,255,0.05);';
+  Object.keys(DC_FX_PRESETS).forEach(function(nome) {
+    var btn = document.createElement('button');
+    btn.textContent = nome;
+    btn.style.cssText = 'padding:4px 9px;border-radius:20px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.09);color:rgba(255,255,255,0.4);font-size:8px;font-weight:900;cursor:pointer;letter-spacing:0.8px;touch-action:manipulation;';
+    btn.onclick = function() { dcFxAplicarPreset(nome); };
+    row.appendChild(btn);
+  });
+  panel.appendChild(row);
 }
 
 // Legacy compat stubs
