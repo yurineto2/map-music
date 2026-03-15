@@ -1031,10 +1031,17 @@ async function terminarOnboarding() {
     return;
   }
 
-  const authResult = await window._fb.registarComEmail(_obEmail, senha);
-  if (!authResult.ok) {
+  let authResult;
+  try {
+    authResult = await window._fb.registarComEmail(_obEmail, senha);
+  } catch(err) {
     if (cta) { cta.disabled = false; cta.textContent = 'Criar conta'; }
-    if (typeof showToast === 'function') showToast(authResult.msg);
+    if (typeof showToast === 'function') showToast('Erro de conexão. Verifique sua internet.');
+    return;
+  }
+  if (!authResult || !authResult.ok) {
+    if (cta) { cta.disabled = false; cta.textContent = 'Criar conta'; }
+    if (typeof showToast === 'function') showToast((authResult && authResult.msg) || 'Erro ao criar conta.');
     return;
   }
 
@@ -1274,9 +1281,16 @@ async function obFazerLogin() {
   }
 
   if (btn) btn.textContent = 'Verificando...';
-  const result = await window._fb.loginComEmail(email, senha);
-  if (!result.ok) {
-    if (msg) msg.textContent = result.msg || 'Email ou senha incorretos.';
+  let result;
+  try {
+    result = await window._fb.loginComEmail(email, senha);
+  } catch(err) {
+    if (msg) msg.textContent = 'Erro de conexão. Verifique sua internet e tente novamente.';
+    if (btn) { btn.disabled = false; btn.textContent = 'Entrar'; }
+    return;
+  }
+  if (!result || !result.ok) {
+    if (msg) msg.textContent = (result && result.msg) || 'Email ou senha incorretos.';
     if (btn) { btn.disabled = false; btn.textContent = 'Entrar'; }
     return;
   }
@@ -1401,6 +1415,10 @@ async function obFazerLogin() {
       }
       if (typeof eventos !== 'undefined') {
         try { eventos = _lsGet('map_pro_eventos_v1', []); } catch(e) {}
+      }
+      // Reseta índice se necessário após reload dos dados
+      if (typeof currentSongIndex !== 'undefined' && currentSongIndex >= 0) {
+        if (!songs || currentSongIndex >= songs.length) currentSongIndex = -1;
       }
       if (typeof renderBiblioteca === 'function') renderBiblioteca();
       if (typeof renderEventos === 'function') renderEventos('');
@@ -7292,9 +7310,16 @@ async function confirmarFormalizarConta() {
   setMsg('', null);
 
   // 1. Regista no Firebase Auth
-  const authResult = await window._fb.registarComEmail(email, senha);
-  if (!authResult.ok) {
-    setMsg(authResult.msg || 'Erro ao criar conta.', '#ff5555');
+  let authResult;
+  try {
+    authResult = await window._fb.registarComEmail(email, senha);
+  } catch(err) {
+    setMsg('Erro de conexão. Verifique sua internet.', '#ff5555');
+    if (btn) { btn.disabled = false; btn.textContent = 'Criar conta e salvar dados'; }
+    return;
+  }
+  if (!authResult || !authResult.ok) {
+    setMsg((authResult && authResult.msg) || 'Erro ao criar conta.', '#ff5555');
     if (btn) { btn.disabled = false; btn.textContent = 'Criar conta e salvar dados'; }
     return;
   }
@@ -7747,7 +7772,8 @@ var _avisoTimer  = null;
 
 function enviarAvisoSala() {
   var input = document.getElementById('sala-chat-input');
-  var texto = (input.value || '').trim();
+  if (!input) return;
+  var texto = (input ? input.value || '' : '').trim();
   if (!texto || !isHost || !myRoomCode) return;
   var perfil = _getPerfilLocal();
   var uid    = _getUid();
@@ -7849,8 +7875,14 @@ async function entrarNaSala() {
   const uid    = _getUid();
   const nome   = perfil.nome || 'Músico';
 
-  const salaData = await window._fb.entrarSalaFb(code, uid, nome);
-
+  let salaData;
+  try {
+    salaData = await window._fb.entrarSalaFb(code, uid, nome);
+  } catch(err) {
+    setConnStatus('Erro de conexão. Verifique sua internet.', 'error');
+    if (btn) btn.disabled = false;
+    return;
+  }
   if (!salaData) {
     setConnStatus('Sala não encontrada ou encerrada.', 'error');
     if (btn) btn.disabled = false;
@@ -8149,12 +8181,12 @@ function ativarShowEvento(eventoId, startSongId) {
   const musicaInicial = songs.find(s => s.id === startId);
   if (musicaInicial) {
     currentSongIndex = songs.findIndex(s => s.id === startId);
-    bpm = musicaInicial.bpm;
+    bpm = musicaInicial.bpm || 120;
     document.getElementById('bpm-display').innerText = bpm;
     const grid = document.getElementById('notes-grid');
     grid.innerHTML = '';
-    musicaInicial.parts.forEach(p => addPart(p.title, p.content));
-    grid.dataset.lastParts = JSON.stringify(musicaInicial.parts);
+    (musicaInicial.parts || []).forEach(p => addPart(p.title || '', p.content || ''));
+    grid.dataset.lastParts = JSON.stringify(musicaInicial.parts || []);
     window.scrollTo(0, 0);
     atualizarBtnSalvar();
   }
@@ -8820,8 +8852,8 @@ function atualizarBtnSalvar() {
 }
 function saveSong() {
   const parts = Array.from(document.querySelectorAll('.song-part')).map(p => ({
-    title: p.querySelector('input').value,
-    content: p.querySelector('textarea').value
+    title:   (p.querySelector('input')   || {}).value || '',
+    content: (p.querySelector('textarea')|| {}).value || ''
   }));
 
   if (currentSongIndex >= 0 && songs[currentSongIndex]) {
@@ -8932,9 +8964,10 @@ function loadSong(id) {
   document.getElementById('dc-song-name').textContent = songs[idx] ? songs[idx].name : '—';
   atualizarLetreiroDrumCam();
   const s = songs[idx];
-  bpm = s.bpm; document.getElementById('bpm-display').innerText = bpm;
+  bpm = s.bpm || 120;
+  document.getElementById('bpm-display').innerText = bpm;
   document.getElementById('notes-grid').innerHTML = '';
-  s.parts.forEach(p => addPart(p.title, p.content));
+  (s.parts || []).forEach(p => addPart(p.title || '', p.content || ''));
   _perfFontCarregar(); // atualiza fonte show da nova música
   atualizarIndicador();
   broadcastEstado();
@@ -9671,7 +9704,8 @@ function iniciarPad(el) {
   el.classList.add('playing');
 
   const midi = parseInt(el.dataset.midi);
-  const vol  = parseInt(document.getElementById('pads-vol').value) / 100;
+  const _pv = document.getElementById('pads-vol');
+  const vol  = _pv ? parseInt(_pv.value) / 100 : 0.7;
   const ctx  = _getAudioCtx();
   const now  = ctx.currentTime;
   const freq = midiToFreq(midi);
@@ -10603,7 +10637,7 @@ function renderEventoDetalhe() {
   var filtro = ((document.getElementById('evento-search') || {}).value || '').toLowerCase();
   var musicIds = ev.musicIds || [];
   var lista = songs.filter(function(s) {
-    return musicIds.includes(s.id) && s.name.toLowerCase().includes(filtro);
+    return musicIds.includes(s.id) && (s.name || '').toLowerCase().includes(filtro);
   });
   // Preservar ordem definida no evento
   lista.sort(function(a, b) { return musicIds.indexOf(a.id) - musicIds.indexOf(b.id); });
@@ -10638,7 +10672,7 @@ function renderEventoDetalhe() {
       +   '<button onclick="event.stopPropagation();ativarShowEvento(eventoAbertoId,' + s.id + ')" title="Modo Show" class="album-show-btn">'
       +     '<svg width="9" height="9" viewBox="0 0 24 24" fill="#0A9E6E"><polygon points="5 3 19 12 5 21 5 3"/></svg>'
       +   '</button>'
-      +   '<button class="album-menu-btn" data-modo="evento" onclick="event.stopPropagation();abrirCtxMenu(event,' + s.id + ',\'evento\')" title="Opções">'
+      +   '<button class="album-menu-btn" data-sid="' + s.id + '" data-modo="evento" onclick="event.stopPropagation();abrirCtxMenu(event,this.dataset.sid,this.dataset.modo)" title="Opcoes">'
       +     '<svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="12" cy="19" r="2"/></svg>'
       +   '</button>'
       + '</div>'
@@ -12149,13 +12183,22 @@ async function _fbRestaurarBackup() {
     if (totalM > 0) {
       songs = backup.musicas;
       try { localStorage.setItem('map_pro_elite_v1', JSON.stringify(songs)); } catch(e) {}
+      // Reseta índice da música atual — pode apontar para posição inexistente após restaurar
+      if (typeof currentSongIndex !== 'undefined') {
+        currentSongIndex = -1;
+        if (typeof atualizarBtnSalvar === 'function') atualizarBtnSalvar();
+      }
       if (typeof renderSetlist === 'function') renderSetlist();
       if (typeof renderBiblioteca === 'function') renderBiblioteca();
     }
     if (totalE > 0) {
       eventos = backup.eventos;
       _lsSet('map_pro_eventos_v1', eventos);
+      _evLastSig = null;
     }
+    if (typeof renderEventos === 'function') renderEventos('');
+    if (typeof renderSetlist === 'function') renderSetlist();
+    _bibLastSig = null;
     showToast(totalM + ' músicas e ' + totalE + ' eventos restaurados');
     if (typeof adicionarNotif === 'function') adicionarNotif('update', 'Backup restaurado', totalM + ' músicas e ' + totalE + ' eventos carregados.', 'restore_v1');
     const ms = document.getElementById('modal-stats');
@@ -12220,7 +12263,14 @@ window.addEventListener('firebase-ready', function() {
         // Nuvem mais recente: atualiza
         if (backup.musicas && backup.musicas.length > 0) {
           localStorage.setItem('map_pro_elite_v1', JSON.stringify(backup.musicas));
-          if (typeof songs !== 'undefined') songs = backup.musicas;
+          if (typeof songs !== 'undefined') {
+            songs = backup.musicas;
+            // Garante que currentSongIndex não aponta para posição inválida
+            if (typeof currentSongIndex !== 'undefined' &&
+                (currentSongIndex >= songs.length || currentSongIndex < 0)) {
+              currentSongIndex = -1;
+            }
+          }
           atualizou = true;
         }
         if (backup.eventos && backup.eventos.length > 0) {
@@ -13436,8 +13486,8 @@ window.addEventListener('load', function() {
 
 function capturarEstado() {
   const parts = Array.from(document.querySelectorAll('.song-part')).map(p => ({
-    title: p.querySelector('input').value,
-    content: p.querySelector('textarea').value
+    title:   (p.querySelector('input')   || {}).value || '',
+    content: (p.querySelector('textarea')|| {}).value || ''
   }));
   return {
     bpm,
@@ -13468,18 +13518,18 @@ function aplicarEstado(estado) {
   syncPaused = true;
 
   // BPM
-  bpm = estado.bpm;
+  bpm = estado.bpm || 120;
   document.getElementById('bpm-display').innerText = bpm;
   document.getElementById('dc-bpm').textContent = bpm;
-  document.getElementById('trans-val').innerText = estado.transVal;
+  document.getElementById('trans-val').innerText = estado.transVal || 0;
 
   // Partes / acordes — só reconstrói se o conteúdo mudou (evita reset de scroll)
   const grid = document.getElementById('notes-grid');
-  const partsJson = JSON.stringify(estado.parts);
+  const partsJson = JSON.stringify(estado.parts || []);
   if (grid.dataset.lastParts !== partsJson) {
     grid.dataset.lastParts = partsJson;
     grid.innerHTML = '';
-    estado.parts.forEach(p => addPart(p.title, p.content));
+    (estado.parts || []).forEach(p => addPart(p.title || '', p.content || ''));
   }
 
   // Modo show
