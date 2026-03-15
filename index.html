@@ -8840,34 +8840,28 @@ function onChordInput(ta) {
 // ─── TRANSPOSIÇÃO ─────────────────────────────────────────────────────────
 function transposeAll(dir) {
   document.getElementById('trans-val').innerText = parseInt(document.getElementById('trans-val').innerText) + dir;
-  // Regex: root + toda a qualidade (sem espacos) + nota de baixo opcional apos /
-  var _tPat = /\b([A-G][#b]?)((?:[^\s|,\(\)\[\]\/]*)(?:\/([A-G][#b]?[^\s|,\(\)\[\]]*))?)?(?=[\s|,\(\)\[\]]|$)/g;
+  // Regex: [root][qualidade][/baixo] — so captura tokens de acorde validos, nunca palavras comuns
+  // Qualidade: m/maj/dim/aug/sus/add + numeros + alteracoes (b5, #9, etc)
+  // Baixo: nota apos / (acorde de inversao)
+  var _QUALITY = '(?:(?:m(?:aj)?|M(?:aj)?|min|dim(?:7)?|aug|\\+|\°|sus|add)(?:[0-9]*))?(?:[0-9]+)?(?:[b#][0-9]+)*(?:sus[0-9]*|add[0-9]+)?';
+  var _tPat = new RegExp('\\b([A-G][#b]?)(' + _QUALITY + ')(?:\\/([A-G][#b]?))?(?=[\\s|,\\(\\)\\[\\]]|$)', 'g');
   function _normNote(n) {
     return n.replace('Db','C#').replace('Eb','D#').replace('Gb','F#').replace('Ab','G#').replace('Bb','A#');
   }
   document.querySelectorAll('.chord-area').forEach(function(area) {
-    area.value = area.value.replace(_tPat, function(match, root, fullQuality) {
-      fullQuality = fullQuality || '';
+    area.value = area.value.replace(_tPat, function(match, root, quality, bass) {
+      quality = quality || '';
       var rNorm = _normNote(root);
       var ri = notesArr.indexOf(rNorm);
       if (ri === -1) return match;
       var newRoot = notesArr[(ri + dir + 12) % 12];
-      // Transpoe nota de baixo em acordes com / (ex: D/F# -> D#/G)
-      if (fullQuality.indexOf('/') !== -1) {
-        var slashPos = fullQuality.indexOf('/');
-        var afterSlash = fullQuality.slice(slashPos + 1);
-        var bassMatch = afterSlash.match(/^([A-G][#b]?)/);
-        if (bassMatch) {
-          var bassNorm = _normNote(bassMatch[1]);
-          var bi = notesArr.indexOf(bassNorm);
-          if (bi !== -1) {
-            var newBass = notesArr[(bi + dir + 12) % 12];
-            afterSlash = newBass + afterSlash.slice(bassMatch[1].length);
-            fullQuality = fullQuality.slice(0, slashPos + 1) + afterSlash;
-          }
-        }
+      var result = newRoot + quality;
+      if (bass != null) {
+        var bNorm = _normNote(bass);
+        var bi = notesArr.indexOf(bNorm);
+        result += '/' + (bi !== -1 ? notesArr[(bi + dir + 12) % 12] : bass);
       }
-      return newRoot + fullQuality;
+      return result;
     });
     area.style.height = ''; area.style.height = area.scrollHeight + 'px';
   });
