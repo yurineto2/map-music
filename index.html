@@ -7063,8 +7063,12 @@ function abrirModalPerfil() {
 
 async function sairDaConta() {
   // confirm() nativo bloqueado em iOS em contextos de overlay — usar modal próprio
+  var existing = document.querySelector('[data-confirm-modal]');
+  if (existing) existing.remove();
   const overlay = document.createElement('div');
+  overlay.setAttribute('data-confirm-modal', '1');
   overlay.style.cssText = _overlayBg();
+  overlay.addEventListener('click', function(e) { if (e.target === overlay) overlay.remove(); });
   overlay.innerHTML =
     '<div style="' + _boxBg('padding:26px 22px;width:100%;max-width:320px;display:flex;flex-direction:column;gap:14px;') + '">'
   + '<div style="font-size:16px;font-weight:900;color:' + _txtColor() + ';">Sair do perfil?</div>'
@@ -7486,30 +7490,22 @@ function fecharHistoricoShows() {
 }
 
 function _limparHistoricoShow() {
-  var overlay = document.createElement('div');
-  overlay.style.cssText = _overlayBg().replace('100020','100060');
-  overlay.innerHTML =
-    '<div style="' + _boxBg('padding:24px 20px;width:100%;max-width:280px;display:flex;flex-direction:column;gap:14px;text-align:center;') + '">'
-  + '<div style="font-size:14px;font-weight:900;color:' + _txtColor() + ';">Limpar histórico?</div>'
-  + '<div style="font-size:12px;color:rgba(255,255,255,0.35);">Todos os registros de shows serão apagados.</div>'
-  + '<div style="display:flex;gap:10px;">'
-  + '<button id="_lhs-nao" style="flex:1;padding:11px;border-radius:10px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);color:rgba(255,255,255,0.5);font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;">Cancelar</button>'
-  + '<button id="_lhs-sim" style="flex:2;padding:11px;border-radius:10px;background:rgba(220,50,50,0.75);border:none;color:#fff;font-size:12px;font-weight:900;cursor:pointer;font-family:inherit;">Limpar tudo</button>'
-  + '</div></div>';
-  document.body.appendChild(overlay);
-  document.getElementById('_lhs-nao').onclick = function() { overlay.remove(); };
-  document.getElementById('_lhs-sim').onclick = function() {
-    localStorage.removeItem('map_historico_shows_v1');
-    overlay.remove();
-    _renderHistoricoShow();
-    fecharHistoricoShows();
-    showToast('Histórico apagado.');
-  };
-  overlay.addEventListener('click', function(e) { if (e.target === overlay) overlay.remove(); });
+  _confirmarAcao(
+    'Limpar histórico?',
+    'Todos os registros de shows serão apagados.',
+    'Limpar tudo', 'rgba(220,50,50,0.85)',
+    function() {
+      localStorage.removeItem('map_historico_shows_v1');
+      _renderHistoricoShow();
+      fecharHistoricoShows();
+      showToast('Histórico apagado.');
+    }
+  );
 }
 
 function fecharModalPerfil() {
-  document.getElementById('modal-perfil').style.display = 'none';
+  var _mp = document.getElementById('modal-perfil');
+  if (_mp) _mp.style.display = 'none';
 }
 
 // ─── PERFIL PUBLICO DE OUTROS USUARIOS ──────────────────────────────────────
@@ -8039,6 +8035,7 @@ function togglePerf() {
   }
 
   // Ao SAIR do show — pede confirmação
+  if (document.getElementById('_confirm-sair-show')) return; // já aberto
   var overlay = document.createElement('div');
   overlay.id = '_confirm-sair-show';
   overlay.style.cssText = _overlayBg().replace('100020','100030');
@@ -8071,12 +8068,13 @@ function _ativarModoShow() {
   atualizarIndicador();
   ativarWakeLock();
   const slider = document.getElementById('scroll-speed');
-  const prevSpeed = parseInt(slider.value) || 0;
-  if (prevSpeed === 0) {
+  const prevSpeed = slider ? (parseInt(slider.value) || 0) : 0;
+  if (prevSpeed === 0 && slider) {
     slider.value = 9;
-    document.getElementById('scroll-speed-val').innerText = '9';
+    var _ssv = document.getElementById('scroll-speed-val');
+    if (_ssv) _ssv.innerText = '9';
   }
-  _setScroll(parseInt(slider.value));
+  _setScroll(slider ? parseInt(slider.value) : 9);
   broadcastEstado();
 }
 
@@ -8439,34 +8437,27 @@ window.addEventListener('touchend', function(e) {
 }, { passive: true });
 
 function resetSection() {
-  var overlay = document.createElement('div');
-  overlay.style.cssText = _overlayBg();
-  overlay.innerHTML = '<div style="' + _boxBg('padding:24px 20px;width:100%;max-width:300px;display:flex;flex-direction:column;gap:14px;') + '">'
-    + '<div style="font-size:15px;font-weight:900;color:' + _txtColor() + ';">Limpar seção?</div>'
-    + '<div style="font-size:13px;color:rgba(255,255,255,0.4);line-height:1.5;">Todas as partes e acordes serão removidos. O metrônomo voltará para 120 BPM.</div>'
-    + '<div style="display:flex;gap:10px;">'
-    + '<button id="_rs-cancel" style="flex:1;padding:12px;border-radius:12px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);color:rgba(255,255,255,0.4);font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;touch-action:manipulation;">Cancelar</button>'
-    + '<button id="_rs-confirm" style="flex:2;padding:12px;border-radius:12px;background:rgba(255,60,60,0.8);border:none;color:#fff;font-size:12px;font-weight:900;cursor:pointer;font-family:inherit;touch-action:manipulation;">Limpar</button>'
-    + '</div></div>';
-  document.body.appendChild(overlay);
-  document.getElementById('_rs-cancel').onclick = function(){ overlay.remove(); };
-  document.getElementById('_rs-confirm').onclick = function(){
-    overlay.remove();
-    document.getElementById('notes-grid').innerHTML = "";
-    ["INTRO","VERSO","REFRÃO","PONTE","FINAL"].forEach(p => addPart(p));
-    bpm = 120;
-    document.getElementById('bpm-display').innerText = 120;
-    if (isPlaying) togglePlay();
-    document.getElementById('trans-val').innerText = 0;
-    document.getElementById('tom-original-badge').style.display = 'none';
-    document.getElementById('tom-original-val').innerText = '—';
-    stopScroll();
-    currentSongIndex = -1;
-    atualizarIndicador();
-    atualizarBtnSalvar();
-    broadcastEstado();
-    showToast('Seção reiniciada.');
-  };
+  _confirmarAcao(
+    'Limpar seção?',
+    'Todas as partes e acordes serão removidos. O metrônomo voltará para 120 BPM.',
+    'Limpar', 'rgba(255,60,60,0.85)',
+    function() {
+      document.getElementById('notes-grid').innerHTML = "";
+      ["INTRO","VERSO","REFRÃO","PONTE","FINAL"].forEach(p => addPart(p));
+      bpm = 120;
+      document.getElementById('bpm-display').innerText = 120;
+      if (isPlaying) togglePlay();
+      document.getElementById('trans-val').innerText = 0;
+      document.getElementById('tom-original-badge').style.display = 'none';
+      document.getElementById('tom-original-val').innerText = '—';
+      stopScroll();
+      currentSongIndex = -1;
+      atualizarIndicador();
+      atualizarBtnSalvar();
+      broadcastEstado();
+      showToast('Seção reiniciada.');
+    }
+  );
 }
 
 
@@ -8865,7 +8856,10 @@ function saveSong() {
     showToast('Alterações salvas!');
   } else {
     // Nova música — usa modal customizado em vez de prompt() nativo (bloqueado no iOS)
+    var _prevSave = document.querySelector('[data-confirm-modal]');
+    if (_prevSave) _prevSave.remove();
     var overlay = document.createElement('div');
+    overlay.setAttribute('data-confirm-modal', '1');
     overlay.style.cssText = _overlayBg();
     overlay.innerHTML = '<div style="' + _boxBg('padding:24px 20px;width:100%;max-width:320px;display:flex;flex-direction:column;gap:14px;') + '">'
       + '<div style="font-size:15px;font-weight:900;color:' + _txtColor() + ';">Salvar música</div>'
@@ -8877,6 +8871,7 @@ function saveSong() {
       + '<button id="_save-confirm" style="flex:2;padding:12px;border-radius:12px;background:#0A9E6E;border:none;color:#000;font-size:12px;font-weight:900;cursor:pointer;font-family:inherit;touch-action:manipulation;">Salvar</button>'
       + '</div></div>';
     document.body.appendChild(overlay);
+    overlay.addEventListener('click', function(e){ if(e.target===overlay) overlay.remove(); });
     var inp = document.getElementById('_save-name-input');
     setTimeout(function(){ inp.focus(); }, 100);
     var _doSave = function() {
@@ -8977,24 +8972,17 @@ function loadSong(id) {
 function deleteSong(id, e) {
   e.stopPropagation();
   var song = songs.find(function(s){ return s.id === id; });
-  var nome = song ? song.name : 'esta música';
-  var overlay = document.createElement('div');
-  overlay.style.cssText = _overlayBg();
-  overlay.innerHTML = '<div style="' + _boxBg('padding:24px 20px;width:100%;max-width:300px;display:flex;flex-direction:column;gap:14px;') + '">'
-    + '<div style="font-size:15px;font-weight:900;color:' + _txtColor() + ';">Excluir música?</div>'
-    + '<div style="font-size:13px;color:' + _txtSecColor() + ';line-height:1.5;"><b style="color:' + _txtColor() + ';">' + nome.replace(/</g,'&lt;') + '</b> será removida permanentemente.</div>'
-    + '<div style="display:flex;gap:10px;">'
-    + '<button id="_ds-cancel" style="flex:1;padding:12px;border-radius:12px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);color:rgba(255,255,255,0.4);font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;touch-action:manipulation;">Cancelar</button>'
-    + '<button id="_ds-confirm" style="flex:2;padding:12px;border-radius:12px;background:rgba(255,60,60,0.8);border:none;color:#fff;font-size:12px;font-weight:900;cursor:pointer;font-family:inherit;touch-action:manipulation;">Excluir</button>'
-    + '</div></div>';
-  document.body.appendChild(overlay);
-  document.getElementById('_ds-cancel').onclick  = function(){ overlay.remove(); };
-  document.getElementById('_ds-confirm').onclick = function(){
-    overlay.remove();
-    songs = songs.filter(function(s){ return s.id !== id; });
-    updateStorage();
-    showToast('Removida.', 'warning');
-  };
+  var nome = (song ? song.name : 'esta música') || 'esta música';
+  _confirmarAcao(
+    'Excluir música?',
+    '<b style="color:' + _txtColor() + ';">' + nome.replace(/&/g,'&amp;').replace(/</g,'&lt;') + '</b> será removida permanentemente.',
+    'Excluir', 'rgba(255,60,60,0.85)',
+    function() {
+      songs = songs.filter(function(s){ return s.id !== id; });
+      updateStorage();
+      showToast('Removida.', 'warning');
+    }
+  );
 }
 
 // ─── MODO SHOW ─────────────────────────────────────────────────────────────
@@ -9149,8 +9137,9 @@ if (scrollSlider) scrollSlider.oninput = () => {
 };
 function stopScroll() {
   _setScroll(0);
-  scrollSlider.value = 0;
-  document.getElementById('scroll-speed-val').innerText = '0';
+  if (scrollSlider) scrollSlider.value = 0;
+  var _ssv = document.getElementById('scroll-speed-val');
+  if (_ssv) _ssv.innerText = '0';
 }
 
 // ─── FONTE DAS PARTES ────────────────────────────────────────────────────────
@@ -10389,22 +10378,36 @@ function favoritarBiblioteca(id, e) {
 
 function deleteSongBiblioteca(id, e) {
   if (e) e.stopPropagation();
-  id = Number(id); // normaliza tipo: pode chegar como string via onclick
+  id = Number(id);
+  // Remove qualquer modal de confirmação anterior que possa ter ficado no DOM
+  var existing = document.querySelector('[data-confirm-modal]');
+  if (existing) existing.remove();
   var song = songs.find(function(s) { return s.id === id; });
-  var nome = song ? song.name : 'esta música';
+  var nome = (song ? song.name : 'esta música') || 'esta música';
   var overlay = document.createElement('div');
+  overlay.setAttribute('data-confirm-modal', '1');
   overlay.style.cssText = _overlayBg();
-  overlay.innerHTML =
-    '<div style="' + _boxBg('padding:24px 20px;width:100%;max-width:300px;display:flex;flex-direction:column;gap:14px;') + '">'
-  + '<div style="font-size:15px;font-weight:900;color:' + _txtColor() + ';">Excluir música?</div>'
-  + '<div style="font-size:13px;color:' + _txtSecColor() + ';line-height:1.5;"><b style="color:' + _txtColor() + ';">' + nome + '</b> será removida da biblioteca permanentemente.</div>'
-  + '<div style="display:flex;gap:10px;margin-top:4px;">'
-  + '<button id="_del-cancel" style="flex:1;padding:12px;border-radius:12px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);color:rgba(255,255,255,0.4);font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;touch-action:manipulation;">Cancelar</button>'
-  + '<button id="_del-confirm" style="flex:2;padding:12px;border-radius:12px;background:rgba(255,60,60,0.8);border:none;color:#fff;font-size:12px;font-weight:900;cursor:pointer;font-family:inherit;touch-action:manipulation;">Excluir</button>'
-  + '</div></div>';
-  document.body.appendChild(overlay);
-  document.getElementById('_del-cancel').onclick = function() { overlay.remove(); };
-  document.getElementById('_del-confirm').onclick = function() {
+  // Fecha ao clicar no backdrop (fora do box)
+  overlay.addEventListener('click', function(ev) { if (ev.target === overlay) overlay.remove(); });
+  var box = document.createElement('div');
+  box.style.cssText = _boxBg('padding:24px 20px;width:100%;max-width:300px;display:flex;flex-direction:column;gap:14px;');
+  box.addEventListener('click', function(ev) { ev.stopPropagation(); });
+  var title = document.createElement('div');
+  title.style.cssText = 'font-size:15px;font-weight:900;color:' + _txtColor() + ';';
+  title.textContent = 'Excluir música?';
+  var msg = document.createElement('div');
+  msg.style.cssText = 'font-size:13px;color:' + _txtSecColor() + ';line-height:1.5;';
+  msg.innerHTML = '<b style="color:' + _txtColor() + ';">' + nome.replace(/&/g,'&amp;').replace(/</g,'&lt;') + '</b> será removida da biblioteca permanentemente.';
+  var btns = document.createElement('div');
+  btns.style.cssText = 'display:flex;gap:10px;margin-top:4px;';
+  var btnCancel = document.createElement('button');
+  btnCancel.style.cssText = 'flex:1;padding:12px;border-radius:12px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);color:rgba(255,255,255,0.4);font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;touch-action:manipulation;';
+  btnCancel.textContent = 'Cancelar';
+  btnCancel.onclick = function() { overlay.remove(); };
+  var btnConfirm = document.createElement('button');
+  btnConfirm.style.cssText = 'flex:2;padding:12px;border-radius:12px;background:rgba(255,60,60,0.8);border:none;color:#fff;font-size:12px;font-weight:900;cursor:pointer;font-family:inherit;touch-action:manipulation;';
+  btnConfirm.textContent = 'Excluir';
+  btnConfirm.onclick = function() {
     overlay.remove();
     songs = songs.filter(function(s) { return s.id !== id; });
     updateStorage();
@@ -10412,6 +10415,10 @@ function deleteSongBiblioteca(id, e) {
     renderBiblioteca(searchEl ? searchEl.value : '');
     showToast('Removida.', 'warning');
   };
+  btns.appendChild(btnCancel); btns.appendChild(btnConfirm);
+  box.appendChild(title); box.appendChild(msg); box.appendChild(btns);
+  overlay.appendChild(box);
+  document.body.appendChild(overlay);
 }
 
 // ── ABA EVENTOS ──
@@ -10563,21 +10570,35 @@ function salvarEvento() {
 function deletarEvento(id, e) {
   if (e) e.stopPropagation();
   id = Number(id);
-  var ev = eventos.find(function(x) { return x.id === id; });
-  var nome = ev ? ev.nome : 'este evento';
+  // Remove qualquer modal de confirmação anterior que possa ter ficado no DOM
+  var existing = document.querySelector('[data-confirm-modal]');
+  if (existing) existing.remove();
+  var evObj = eventos.find(function(x) { return x.id === id; });
+  var nome = (evObj ? evObj.nome : 'este evento') || 'este evento';
   var overlay = document.createElement('div');
+  overlay.setAttribute('data-confirm-modal', '1');
   overlay.style.cssText = _overlayBg();
-  overlay.innerHTML =
-    '<div style="' + _boxBg('padding:24px 20px;width:100%;max-width:300px;display:flex;flex-direction:column;gap:14px;') + '">'
-    + '<div style="font-size:15px;font-weight:900;color:' + _txtColor() + ';">Excluir evento?</div>'
-    + '<div style="font-size:13px;color:' + _txtSecColor() + ';line-height:1.5;"><b style="color:' + _txtColor() + ';">' + (nome || '').replace(/</g,'&lt;') + '</b> será removido permanentemente.</div>'
-    + '<div style="display:flex;gap:10px;margin-top:4px;">'
-    + '<button id="_dev-cancel" style="flex:1;padding:12px;border-radius:12px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);color:rgba(255,255,255,0.5);font-size:12px;font-weight:800;cursor:pointer;font-family:inherit;">Cancelar</button>'
-    + '<button id="_dev-confirm" style="flex:2;padding:12px;border-radius:12px;background:rgba(255,60,60,0.8);border:none;color:#fff;font-size:12px;font-weight:900;cursor:pointer;font-family:inherit;touch-action:manipulation;">Excluir</button>'
-    + '</div></div>';
-  document.body.appendChild(overlay);
-  document.getElementById('_dev-cancel').onclick = function() { overlay.remove(); };
-  document.getElementById('_dev-confirm').onclick = function() {
+  // Fecha ao clicar no backdrop
+  overlay.addEventListener('click', function(ev) { if (ev.target === overlay) overlay.remove(); });
+  var box = document.createElement('div');
+  box.style.cssText = _boxBg('padding:24px 20px;width:100%;max-width:300px;display:flex;flex-direction:column;gap:14px;');
+  box.addEventListener('click', function(ev) { ev.stopPropagation(); });
+  var title = document.createElement('div');
+  title.style.cssText = 'font-size:15px;font-weight:900;color:' + _txtColor() + ';';
+  title.textContent = 'Excluir evento?';
+  var msg = document.createElement('div');
+  msg.style.cssText = 'font-size:13px;color:' + _txtSecColor() + ';line-height:1.5;';
+  msg.innerHTML = '<b style="color:' + _txtColor() + ';">' + nome.replace(/&/g,'&amp;').replace(/</g,'&lt;') + '</b> será removido permanentemente.';
+  var btns = document.createElement('div');
+  btns.style.cssText = 'display:flex;gap:10px;margin-top:4px;';
+  var btnCancel = document.createElement('button');
+  btnCancel.style.cssText = 'flex:1;padding:12px;border-radius:12px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);color:rgba(255,255,255,0.5);font-size:12px;font-weight:800;cursor:pointer;font-family:inherit;touch-action:manipulation;';
+  btnCancel.textContent = 'Cancelar';
+  btnCancel.onclick = function() { overlay.remove(); };
+  var btnConfirm = document.createElement('button');
+  btnConfirm.style.cssText = 'flex:2;padding:12px;border-radius:12px;background:rgba(255,60,60,0.8);border:none;color:#fff;font-size:12px;font-weight:900;cursor:pointer;font-family:inherit;touch-action:manipulation;';
+  btnConfirm.textContent = 'Excluir';
+  btnConfirm.onclick = function() {
     overlay.remove();
     eventos = eventos.filter(function(x) { return x.id !== id; });
     salvarEventos();
@@ -10587,6 +10608,10 @@ function deletarEvento(id, e) {
     mostrarBibMain();
     showToast('Evento removido.', 'warning');
   };
+  btns.appendChild(btnCancel); btns.appendChild(btnConfirm);
+  box.appendChild(title); box.appendChild(msg); box.appendChild(btns);
+  overlay.appendChild(box);
+  document.body.appendChild(overlay);
 }
 
 // ── DETALHE DO EVENTO ──
@@ -12185,6 +12210,7 @@ async function _fbRestaurarBackup() {
   + '<button id="_rest-confirmar" style="flex:2;padding:12px;border-radius:12px;background:#0A9E6E;border:none;color:#000;font-size:12px;font-weight:900;cursor:pointer;font-family:inherit;touch-action:manipulation;">Restaurar</button>'
   + '</div></div>';
   document.body.appendChild(msgModal);
+  msgModal.addEventListener('click', function(e) { if (e.target === msgModal) msgModal.remove(); });
 
   document.getElementById('_rest-cancelar').onclick = function() { msgModal.remove(); };
   document.getElementById('_rest-confirmar').onclick = function() {
@@ -12795,6 +12821,7 @@ async function abrirModalAmigos() {
 
 function fecharModalAmigos() {
   var _ma = document.getElementById('modal-amigos');
+  if (!_ma) return;
   _ma.classList.remove('show');
   _ma.style.pointerEvents = 'none';
 }
@@ -12990,32 +13017,24 @@ async function convidarAmigo(nome, amigoUid) {
 // ── Render principal ─────────────────────────────────────────────────────────
 
 async function removerAmigo(uid, nome) {
-  // Modal proprio — confirm() nativo bloqueado em iOS dentro de overlays
-  var overlay = document.createElement('div');
-  overlay.style.cssText = _overlayBg();
-  overlay.innerHTML =
-    '<div style="' + _boxBg('padding:24px 20px;width:100%;max-width:300px;display:flex;flex-direction:column;gap:14px;') + '">'
-  + '<div style="font-size:15px;font-weight:900;color:#fff;">Remover amigo?</div>'
-  + '<div style="font-size:13px;color:rgba(255,255,255,0.4);line-height:1.5;">Remover <b style="color:#fff;">' + (nome||'') + '</b> da sua lista de amigos.</div>'
-  + '<div style="display:flex;gap:10px;margin-top:4px;">'
-  + '<button id="_rm-cancel" style="flex:1;padding:12px;border-radius:12px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);color:rgba(255,255,255,0.4);font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;touch-action:manipulation;">Cancelar</button>'
-  + '<button id="_rm-confirm" style="flex:2;padding:12px;border-radius:12px;background:rgba(255,60,60,0.8);border:none;color:#fff;font-size:12px;font-weight:900;cursor:pointer;font-family:inherit;touch-action:manipulation;">Remover</button>'
-  + '</div></div>';
-  document.body.appendChild(overlay);
-  document.getElementById('_rm-cancel').onclick = function() { overlay.remove(); };
-  document.getElementById('_rm-confirm').onclick = async function() {
-    overlay.remove();
-    if (!_isFbReady()) { showToast('Firebase nao disponivel'); return; }
-    try {
-      await window._fb.removerAmigo(_getUid(), uid);
-      adicionarNotif('info', 'Amigo removido', (_ve(nome)||'') + ' foi removido da sua lista.', 'rm_' + uid);
-      showToast((_ve(nome)||'Usuário') + ' removido');
-      _amigosCache = _amigosCache.filter(function(a) { return a.uid !== uid; });
-      _renderAmigos();
-    } catch(e) {
-      showToast('Erro ao remover amigo');
+  var _nomeSeguro = (_ve(nome) || 'este usuário');
+  _confirmarAcao(
+    'Remover amigo?',
+    'Remover <b style="color:#fff;">' + _nomeSeguro + '</b> da sua lista de amigos.',
+    'Remover', 'rgba(255,60,60,0.85)',
+    async function() {
+      if (!_isFbReady()) { showToast('Firebase nao disponivel'); return; }
+      try {
+        await window._fb.removerAmigo(_getUid(), uid);
+        adicionarNotif('info', 'Amigo removido', _nomeSeguro + ' foi removido da sua lista.', 'rm_' + uid);
+        showToast(_nomeSeguro + ' removido');
+        _amigosCache = _amigosCache.filter(function(a) { return a.uid !== uid; });
+        _renderAmigos();
+      } catch(e) {
+        showToast('Erro ao remover amigo');
+      }
     }
-  };
+  );
 }
 
 async function _renderAmigos() {
@@ -13516,7 +13535,7 @@ function capturarEstado() {
       ? showSetlist.map(function(id){ var s=songs.find(function(x){return x.id===id;}); return s?s.name:''; }).filter(Boolean)
       : [],
     eventoNome: showSetlistEventoNome || null,
-    scrollSpeed: parseInt(document.getElementById('scroll-speed').value),
+    scrollSpeed: parseInt((document.getElementById('scroll-speed') || {value:'0'}).value),
     onlineCount: 1 + Object.keys(_viewersOnline || {}).length,
     roomCode: myRoomCode
   };
@@ -21545,6 +21564,41 @@ function _isLight() {
   return (document.getElementById('app-body') || document.body).classList.contains('theme-light');
 }
 // Retorna estilos inline adaptados ao tema para overlay e box dos modais JS
+
+// ─── Helper: modal de confirmação sem IDs fixos ──────────────────────────────
+function _confirmarAcao(titulo, msg, labelConfirm, corConfirm, onConfirm) {
+  // Remove qualquer modal de confirmação pendente
+  var prev = document.querySelector('[data-confirm-modal]');
+  if (prev) prev.remove();
+  var overlay = document.createElement('div');
+  overlay.setAttribute('data-confirm-modal', '1');
+  overlay.style.cssText = _overlayBg();
+  overlay.addEventListener('click', function(e) { if (e.target === overlay) overlay.remove(); });
+  var box = document.createElement('div');
+  box.style.cssText = _boxBg('padding:24px 20px;width:100%;max-width:300px;display:flex;flex-direction:column;gap:14px;');
+  box.addEventListener('click', function(e) { e.stopPropagation(); });
+  var h = document.createElement('div');
+  h.style.cssText = 'font-size:15px;font-weight:900;color:' + _txtColor() + ';';
+  h.textContent = titulo;
+  var m = document.createElement('div');
+  m.style.cssText = 'font-size:13px;color:' + _txtSecColor() + ';line-height:1.5;';
+  m.innerHTML = msg;
+  var row = document.createElement('div');
+  row.style.cssText = 'display:flex;gap:10px;margin-top:4px;';
+  var btnN = document.createElement('button');
+  btnN.style.cssText = 'flex:1;padding:12px;border-radius:12px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);color:rgba(255,255,255,0.45);font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;touch-action:manipulation;';
+  btnN.textContent = 'Cancelar';
+  btnN.onclick = function() { overlay.remove(); };
+  var btnS = document.createElement('button');
+  btnS.style.cssText = 'flex:2;padding:12px;border-radius:12px;background:' + (corConfirm||'rgba(255,60,60,0.85)') + ';border:none;color:#fff;font-size:12px;font-weight:900;cursor:pointer;font-family:inherit;touch-action:manipulation;';
+  btnS.textContent = labelConfirm || 'Confirmar';
+  btnS.onclick = function() { overlay.remove(); if (onConfirm) onConfirm(); };
+  row.appendChild(btnN); row.appendChild(btnS);
+  box.appendChild(h); box.appendChild(m); box.appendChild(row);
+  overlay.appendChild(box);
+  document.body.appendChild(overlay);
+}
+
 function _overlayBg() {
   return _isLight()
     ? 'position:fixed;inset:0;z-index:100020;background:rgba(24,24,27,0.38);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);display:flex;align-items:center;justify-content:center;padding:24px;'
