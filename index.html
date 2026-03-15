@@ -9982,10 +9982,22 @@ function abrirBiblioteca() {
   _bo2.style.pointerEvents = '';
   _bo2.classList.add('show');
   document.getElementById('biblioteca-search').value = '';
-  bibTabAtiva = 'eventos';
+  // Invalida cache e reseta filtros para garantir render fresco ao abrir
+  _bibLastSig = null;
+  _evLastSig  = null;
+  _tagAtiva   = null;
+  // Abre na aba músicas se houver músicas, senão eventos
+  var abaInicial = songs.length > 0 ? 'musicas' : 'eventos';
+  bibTabAtiva = abaInicial;
   mostrarBibMain();
-  ativarTab('eventos');
-  renderEventos('');
+  ativarTab(abaInicial);
+  if (abaInicial === 'musicas') {
+    _bibRenderSortBar();
+    _bibRenderTagBar();
+    renderBiblioteca('');
+  } else {
+    renderEventos('');
+  }
 }
 
 function fecharBiblioteca() {
@@ -9993,6 +10005,9 @@ function fecharBiblioteca() {
   _bo.classList.remove('show');
   _bo.style.pointerEvents = 'none'; // bloqueia imediatamente durante transição de saída
   eventoAbertoId = null;
+  // Invalida cache ao fechar — próxima abertura sempre re-renderiza
+  _bibLastSig = null;
+  _evLastSig  = null;
 }
 
 function mostrarBibMain() {
@@ -10043,9 +10058,13 @@ function renderBiblioteca(filtro) {
   filtro = filtro || '';
   var grid = document.getElementById('biblioteca-grid');
   if (!grid) return;
+  // Garante que classe de eventos não fica colada quando troca de aba
+  grid.classList.remove('eventos-mode');
   var termo = filtro.toLowerCase();
   var lista = songs.filter(function(s) {
-    var nomeOk = s.name.toLowerCase().includes(termo);
+    // s.name pode ser undefined em músicas corrompidas — protege contra TypeError
+    var nome = (s.name || '');
+    var nomeOk = nome.toLowerCase().includes(termo);
     var tagOk  = !_tagAtiva || (s.tags && s.tags.includes(_tagAtiva));
     return nomeOk && tagOk;
   });
@@ -10081,7 +10100,7 @@ function renderBiblioteca(filtro) {
       +     '<div class="album-cover-bpm">' + bpm + ' <span>BPM</span></div>'
       +   '</div>'
       +   (s.favorite ? '<div class="album-cover-fav"><svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor" stroke="none"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg></div>' : '')
-      +   '<button class="album-menu-btn" onclick="event.stopPropagation();abrirCtxMenu(event,' + s.id + ',\'biblioteca\')" title="Opções">'
+      +   '<button class="album-menu-btn" data-sid="' + s.id + '" data-modo="biblioteca" onclick="event.stopPropagation();abrirCtxMenu(event,this.dataset.sid,this.dataset.modo)" title="Opcoes">'
       +     '<svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="12" cy="19" r="2"/></svg>'
       +   '</button>'
       + '</div>'
@@ -10357,8 +10376,9 @@ function deleteSongBiblioteca(id, e) {
 var _evLastSig = null;
 function renderEventos(filtro = '') {
   const grid = document.getElementById('biblioteca-grid');
+  if (!grid) return;
   const termo = (filtro || '').toLowerCase();
-  const lista = eventos.filter(e => e.nome.toLowerCase().includes(termo));
+  const lista = eventos.filter(e => (e.nome || '').toLowerCase().includes(termo));
 
   const sig = filtro + '||' + lista.map(e => e.id + '|' + (e.nome || '') + '|' + (e.data || '') + '|' + (e.musicas ? e.musicas.length : 0)).join(',');
   if (sig === _evLastSig) return;
@@ -10375,6 +10395,7 @@ function renderEventos(filtro = '') {
   </div>`;
 
   if (!lista.length) {
+    grid.classList.remove('eventos-mode');
     grid.innerHTML = btnCriar + `<div class="biblioteca-vazia" style="grid-column:1/-1">
       <div class="biblioteca-vazia-icon"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg></div>
       <div>Nenhum evento</div>
@@ -10498,13 +10519,32 @@ function salvarEvento() {
 }
 
 function deletarEvento(id, e) {
-  e.stopPropagation();
-  if (true) { showToast('Evento excluído', 'warning');
-    eventos = eventos.filter(ev => ev.id !== id);
+  if (e) e.stopPropagation();
+  id = Number(id);
+  var ev = eventos.find(function(x) { return x.id === id; });
+  var nome = ev ? ev.nome : 'este evento';
+  var overlay = document.createElement('div');
+  overlay.style.cssText = _overlayBg();
+  overlay.innerHTML =
+    '<div style="' + _boxBg('padding:24px 20px;width:100%;max-width:300px;display:flex;flex-direction:column;gap:14px;') + '">'
+    + '<div style="font-size:15px;font-weight:900;color:' + _txtColor() + ';">Excluir evento?</div>'
+    + '<div style="font-size:13px;color:' + _txtSecColor() + ';line-height:1.5;"><b style="color:' + _txtColor() + ';">' + (nome || '').replace(/</g,'&lt;') + '</b> será removido permanentemente.</div>'
+    + '<div style="display:flex;gap:10px;margin-top:4px;">'
+    + '<button id="_dev-cancel" style="flex:1;padding:12px;border-radius:12px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);color:rgba(255,255,255,0.5);font-size:12px;font-weight:800;cursor:pointer;font-family:inherit;">Cancelar</button>'
+    + '<button id="_dev-confirm" style="flex:2;padding:12px;border-radius:12px;background:rgba(255,60,60,0.8);border:none;color:#fff;font-size:12px;font-weight:900;cursor:pointer;font-family:inherit;touch-action:manipulation;">Excluir</button>'
+    + '</div></div>';
+  document.body.appendChild(overlay);
+  document.getElementById('_dev-cancel').onclick = function() { overlay.remove(); };
+  document.getElementById('_dev-confirm').onclick = function() {
+    overlay.remove();
+    eventos = eventos.filter(function(x) { return x.id !== id; });
     salvarEventos();
-    renderEventos(document.getElementById('biblioteca-search').value);
-    showToast('Evento removido.');
-  }
+    _evLastSig = null;
+    var searchEl = document.getElementById('biblioteca-search');
+    renderEventos(searchEl ? searchEl.value : '');
+    mostrarBibMain();
+    showToast('Evento removido.', 'warning');
+  };
 }
 
 // ── DETALHE DO EVENTO ──
