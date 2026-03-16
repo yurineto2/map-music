@@ -1519,11 +1519,30 @@ document.addEventListener('DOMContentLoaded', function() {
   // Detectar mobile (iOS/Android) — file:// só bloqueia em mobile
   var _isMobileDevice = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
   var semRede  = isSrcdoc || ((proto === 'file:' || proto === 'blob:') && _isMobileDevice);
-  // PC via file:// — Firebase REST funciona normalmente via fetch com API key
-  // Deixar o fluxo normal rodar (Firebase carrega via fetch, não precisa de servidor)
+  // PC via file:// — Firebase REST via fetch (API key, sem SDK)
+  // Fluxo normal roda mas com failsafe rápido de 2s caso Firebase demore
   if ((proto === 'file:' || proto === 'blob:') && !_isMobileDevice) {
-    // Continuar fluxo normal — o Firebase vai carregar e chamar _mostrarApp
-    // Não fazer return — deixar o código abaixo rodar normalmente
+    setTimeout(function() {
+      if (!document.body.classList.contains('auth-pending')) return; // já iniciou
+      // Firebase demorou — forçar início com dados locais
+      document.body.classList.remove('auth-pending');
+      document.body.classList.add('pronto');
+      var _sp2 = document.getElementById('ob-splash');
+      if (_sp2) _sp2.remove();
+      var _pcPerfil2 = _lsGet('map_perfil_v1', {});
+      if (_pcPerfil2.nome && _pcPerfil2.nome.trim().length >= 2) {
+        if (typeof _mostrarApp === 'function') _mostrarApp();
+        setTimeout(function() {
+          if (typeof _verificarPinNaEntrada === 'function') _verificarPinNaEntrada();
+          if (typeof renderBibAtivo === 'function') renderBibAtivo('');
+          if (typeof atualizarBadge === 'function') atualizarBadge();
+        }, 300);
+      } else {
+        var _ov3 = document.getElementById('onboarding-overlay');
+        if (_ov3) { _ov3.style.pointerEvents='auto'; requestAnimationFrame(function(){ _ov3.classList.add('visible'); }); }
+      }
+    }, 2500);
+    // Continuar fluxo normal — Firebase pode carregar normalmente se fetch funcionar
   }
   if (semRede) {
     document.body.classList.remove('auth-pending');
@@ -1561,11 +1580,15 @@ document.addEventListener('DOMContentLoaded', function() {
       var splash = document.getElementById('ob-splash');
       if (splash) splash.remove();
       // Se onboarding não foi mostrado, mostra agora
-      var ov = document.getElementById('onboarding-overlay');
-      if (ov && ov.style.opacity === '0') {
-        ov.style.opacity = '1';
-        ov.style.transform = 'translateY(0)';
-        ov.style.pointerEvents = 'auto';
+      var _pcPerfil3 = _lsGet('map_perfil_v1', {});
+      if (_pcPerfil3.nome && _pcPerfil3.nome.trim().length >= 2) {
+        if (typeof _mostrarApp === 'function') _mostrarApp();
+        setTimeout(function() {
+          if (typeof _verificarPinNaEntrada === 'function') _verificarPinNaEntrada();
+        }, 400);
+      } else {
+        var ov = document.getElementById('onboarding-overlay');
+        if (ov) { ov.style.pointerEvents='auto'; requestAnimationFrame(function(){ ov.classList.add('visible'); }); }
       }
     }
   }, 6000);
