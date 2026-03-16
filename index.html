@@ -6918,7 +6918,7 @@ body.auth-pending #toast {
       <span class="scroll-speed-val" id="scroll-speed-val">0</span>
     </div>
   </div>
-  <div class="mode-show-container" ontouchstart="togglePerf();event.preventDefault();" onclick="togglePerf()">
+  <div class="mode-show-container" ontouchstart="togglePerf();event.preventDefault();" onclick="togglePerf()" style="touch-action:manipulation;">
     <span id="mode-text">MODO SHOW</span>
   </div>
 </div>
@@ -8026,17 +8026,14 @@ document.addEventListener('visibilitychange', function() {
   }
 });
 
-var _togglePerfLastMs = 0;
+var _showReentryGuardMs = 0; // protege APENAS re-entrada apos sair
 function togglePerf() {
-  // Debounce: ignora chamadas com menos de 400ms entre si (previne ghost click)
-  var _now = Date.now();
-  if (_now - _togglePerfLastMs < 400) return;
-  _togglePerfLastMs = _now;
   const appBody = document.getElementById('app-body');
   const isPerf = appBody.classList.contains('performance-mode');
 
-  // Ao ENTRAR no show — sem confirmacao
+  // Ao ENTRAR no show — bloqueia apenas se acabou de sair (evita ghost re-enter)
   if (!isPerf) {
+    if (Date.now() - _showReentryGuardMs < 600) return;
     _ativarModoShow();
     return;
   }
@@ -8047,7 +8044,7 @@ function togglePerf() {
 
   var overlay = document.createElement('div');
   overlay.id = '_confirm-sair-show';
-  overlay.style.cssText = _overlayBg().replace('100020','100030');
+  overlay.style.cssText = _overlayBg().replace('100020','200000');
 
   var box = document.createElement('div');
   box.style.cssText = _boxBg('padding:28px 24px;width:100%;max-width:300px;display:flex;flex-direction:column;gap:14px;text-align:center;');
@@ -8124,11 +8121,13 @@ function _desativarModoShow() {
   const _b = document.getElementById('perf-evento-badge');
   if (_b) _b.style.display = 'none';
   broadcastEstado();
-  // Bloqueia o botao SAIR DO SHOW por 400ms — evita ghost click reativar o show
+  // Guarda timestamp de saida — impede ghost click reativar o show por 600ms
+  _showReentryGuardMs = Date.now();
+  // Bloqueia pointer-events no botao por 600ms como camada extra de protecao
   var _pbp = document.querySelector('.perf-bottom-panel');
   if (_pbp) {
     _pbp.style.pointerEvents = 'none';
-    setTimeout(function() { _pbp.style.pointerEvents = ''; }, 400);
+    setTimeout(function() { _pbp.style.pointerEvents = ''; }, 600);
   }
 }
 
