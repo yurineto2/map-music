@@ -6918,7 +6918,7 @@ body.auth-pending #toast {
       <span class="scroll-speed-val" id="scroll-speed-val">0</span>
     </div>
   </div>
-  <div class="mode-show-container" onclick="togglePerf()">
+  <div class="mode-show-container" ontouchstart="togglePerf();event.preventDefault();" onclick="togglePerf()">
     <span id="mode-text">MODO SHOW</span>
   </div>
 </div>
@@ -8026,7 +8026,12 @@ document.addEventListener('visibilitychange', function() {
   }
 });
 
+var _togglePerfLastMs = 0;
 function togglePerf() {
+  // Debounce: ignora chamadas com menos de 400ms entre si (previne ghost click)
+  var _now = Date.now();
+  if (_now - _togglePerfLastMs < 400) return;
+  _togglePerfLastMs = _now;
   const appBody = document.getElementById('app-body');
   const isPerf = appBody.classList.contains('performance-mode');
 
@@ -8119,6 +8124,12 @@ function _desativarModoShow() {
   const _b = document.getElementById('perf-evento-badge');
   if (_b) _b.style.display = 'none';
   broadcastEstado();
+  // Bloqueia o botao SAIR DO SHOW por 400ms — evita ghost click reativar o show
+  var _pbp = document.querySelector('.perf-bottom-panel');
+  if (_pbp) {
+    _pbp.style.pointerEvents = 'none';
+    setTimeout(function() { _pbp.style.pointerEvents = ''; }, 400);
+  }
 }
 
 function _salvarHistoricoShow() {
@@ -8782,7 +8793,11 @@ function _perfFontAplicar(size) {
 
 function perfFontAjustar(delta) {
   var atual = _perfFontAtual();
-  var novo = Math.min(96, Math.max(20, atual + delta));  // limites expandidos: 20–96
+  var novo = Math.min(96, Math.max(20, atual + delta));
+  // Sempre persiste no estado global (evita "voltar para 48" no próximo press)
+  _fonteShow = novo;
+  localStorage.setItem(_FONTE_SHOW_KEY, String(novo));
+  // Também salva por música se houver uma carregada
   if (currentSongIndex >= 0 && songs[currentSongIndex]) {
     songs[currentSongIndex].fonteShow = novo;
     updateStorage();
@@ -8791,7 +8806,7 @@ function perfFontAjustar(delta) {
 }
 
 function _cifraFontAjustar(delta) {
-  var novo = Math.min(32, Math.max(13, _fontePartes + delta));
+  var novo = Math.min(48, Math.max(10, _fontePartes + delta));
   _fontePartes = novo;
   localStorage.setItem(_FONTE_KEY, String(_fontePartes));
   _aplicarFontePartes(_fontePartes);
