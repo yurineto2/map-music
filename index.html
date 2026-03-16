@@ -3485,7 +3485,7 @@ body { font-family: -apple-system, 'Inter', BlinkMacSystemFont, 'Segoe UI', sans
 /* ── Drum Machine Body ── */
 .dc-machine {
   flex: 1; display: flex; flex-direction: column;
-  overflow: hidden;
+  overflow-y: auto; -webkit-overflow-scrolling: touch;
   padding: 10px 10px 14px; gap: 8px; position: relative; z-index: 2;
 }
 .dc-topbar {
@@ -3675,179 +3675,17 @@ body { font-family: -apple-system, 'Inter', BlinkMacSystemFont, 'Segoe UI', sans
   border-color: rgba(138,92,246,0.6); color: #c4b5fd;
 }
 /* FX Panel drawer */
-/* ── dc-fx-panel agora é o drawer — display:none preservado para compat ── */
-.dc-fx-panel { display: none; }
-
-/* ══ FX DRAWER — modal deslizante sobre os pads ══════════════════════════ */
-.dc-fx-drawer {
-  position: absolute; inset: 0; z-index: 20;
-  background: rgba(6,6,14,0.98);
-  backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
-  display: flex; flex-direction: column;
-  transform: translateY(100%);
-  transition: transform 0.28s cubic-bezier(0.32,0.72,0,1);
-  border-radius: 16px 16px 0 0;
-  overflow: hidden;
+.dc-fx-panel {
+  display: none; flex-direction: column; gap: 8px;
+  padding: 10px 4px 4px; flex-shrink: 0;
+  border-top: 1px solid rgba(255,255,255,0.05);
+  animation: dcFxIn 0.2s ease;
 }
-.dc-fx-drawer.show {
-  transform: translateY(0);
-}
+.dc-fx-panel.show { display: flex; }
 @keyframes dcFxIn {
   from { opacity: 0; transform: translateY(6px); }
   to   { opacity: 1; transform: translateY(0); }
 }
-
-/* Header do drawer */
-.dc-fx-drawer-header {
-  display: flex; align-items: center; gap: 8px;
-  padding: 14px 14px 10px; flex-shrink: 0;
-  border-bottom: 1px solid rgba(255,255,255,0.07);
-}
-.dc-fx-drawer-title {
-  display: flex; align-items: center; gap: 6px;
-  font-size: 10px; font-weight: 900; letter-spacing: 2px;
-  text-transform: uppercase; color: rgba(255,255,255,0.5);
-  flex-shrink: 0;
-}
-.dc-fx-drawer-chips {
-  display: flex; gap: 5px; flex: 1; overflow-x: auto;
-  -webkit-overflow-scrolling: touch;
-  scrollbar-width: none; padding: 2px 0;
-}
-.dc-fx-drawer-chips::-webkit-scrollbar { display: none; }
-.dc-fx-drawer-close {
-  background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.1);
-  color: rgba(255,255,255,0.5); border-radius: 8px;
-  width: 34px; height: 34px; display: flex; align-items: center; justify-content: center;
-  cursor: pointer; flex-shrink: 0; touch-action: manipulation;
-}
-.dc-fx-drawer-close:active { background: rgba(255,255,255,0.12); }
-
-/* Presets row */
-.dc-fx-presets-row {
-  display: flex; gap: 5px; padding: 10px 14px 6px;
-  overflow-x: auto; -webkit-overflow-scrolling: touch;
-  scrollbar-width: none; flex-shrink: 0;
-  border-bottom: 1px solid rgba(255,255,255,0.05);
-}
-.dc-fx-presets-row::-webkit-scrollbar { display: none; }
-.dc-fx-preset-btn {
-  padding: 6px 12px; border-radius: 20px; flex-shrink: 0;
-  background: rgba(255,255,255,0.05);
-  border: 1px solid rgba(255,255,255,0.1);
-  color: rgba(255,255,255,0.55); font-size: 10px; font-weight: 700;
-  cursor: pointer; touch-action: manipulation;
-  transition: all 0.15s;
-}
-.dc-fx-preset-btn:active { background: rgba(138,92,246,0.25); border-color: #a78bfa; color: #a78bfa; }
-
-/* Scrollable FX blocks body */
-.dc-fx-drawer-body {
-  flex: 1; overflow-y: auto; -webkit-overflow-scrolling: touch;
-  padding: 10px 14px 20px;
-}
-
-/* FX row no drawer: 2 colunas no mobile, mais no desktop */
-.dc-fx-drawer-body .dc-fx-row {
-  display: grid; grid-template-columns: 1fr 1fr;
-  gap: 8px; margin-bottom: 8px;
-}
-@media (min-width: 641px) {
-  .dc-fx-drawer-body .dc-fx-row { grid-template-columns: repeat(3, 1fr); }
-}
-@media (min-width: 1025px) {
-  .dc-fx-drawer-body .dc-fx-row { grid-template-columns: repeat(4, 1fr); }
-}
-
-/* ── FX Open Button na bottombar ─────────────────────────────────────── */
-.dc-fx-bar {
-  flex-shrink: 0; padding: 4px 0 0;
-}
-.dc-fx-open-btn {
-  display: flex; align-items: center; gap: 7px;
-  width: 100%; padding: 11px 16px;
-  background: rgba(138,92,246,0.08);
-  border: 1px solid rgba(138,92,246,0.25);
-  border-radius: 10px; color: #a78bfa;
-  font-size: 11px; font-weight: 900; letter-spacing: 1.5px;
-  text-transform: uppercase; cursor: pointer;
-  touch-action: manipulation; transition: all 0.15s;
-  -webkit-tap-highlight-color: transparent;
-}
-.dc-fx-open-btn:active,
-.dc-fx-open-btn.ativo {
-  background: rgba(138,92,246,0.2);
-  border-color: rgba(138,92,246,0.6);
-}
-.dc-fx-active-count {
-  margin-left: auto;
-  background: #a78bfa; color: #1a0a3a;
-  font-size: 9px; font-weight: 900;
-  width: 18px; height: 18px; border-radius: 50%;
-  display: flex !important; align-items: center; justify-content: center;
-}
-
-/* ── FX Chips no drawer ─────────────────────────────────────────────── */
-.dc-fx-chip {
-  padding: 5px 10px; border-radius: 20px; flex-shrink: 0;
-  background: rgba(255,255,255,0.05);
-  border: 1px solid rgba(255,255,255,0.1);
-  color: rgba(255,255,255,0.45); font-size: 10px; font-weight: 700;
-  cursor: pointer; touch-action: manipulation;
-  transition: all 0.15s;
-}
-.dc-fx-chip.ativo {
-  background: rgba(138,92,246,0.2);
-  border-color: rgba(138,92,246,0.55);
-  color: #c4b5fd;
-}
-
-/* ── Pads maiores e mais espaçados ──────────────────────────────────── */
-.dc-pads-grid {
-  display: grid; grid-template-columns: repeat(4, 1fr);
-  gap: 8px; flex-shrink: 0; touch-action: none;
-  flex: 1; /* preenche espaço disponível */
-}
-.dc-pad {
-  aspect-ratio: 1; border-radius: 12px;
-  border: 1px solid rgba(255,255,255,0.08);
-  background: rgba(255,255,255,0.04);
-  display: flex; flex-direction: column;
-  align-items: center; justify-content: flex-end;
-  padding: 0 6px 10px;
-  cursor: pointer; user-select: none; touch-action: none;
-  position: relative; overflow: hidden;
-  transition: transform 0.06s;
-  -webkit-tap-highlight-color: transparent;
-  will-change: transform;
-  min-height: 64px; /* garante tamanho mínimo */
-}
-
-/* ── Bottombar mais limpa com botões grandes ─────────────────────────── */
-.dc-bottombar {
-  display: flex; align-items: center; gap: 8px;
-  padding: 8px 0 4px; flex-shrink: 0;
-}
-.dc-metro-btn {
-  flex: 0 0 auto; min-width: 70px;
-  background: rgba(255,255,255,0.05);
-  border: 1px solid rgba(255,255,255,0.1); color: rgba(255,255,255,0.55);
-  padding: 12px 8px; border-radius: 10px; font-size: 9px; font-weight: 900;
-  letter-spacing: 1.5px; cursor: pointer; transition: 0.2s; text-transform: uppercase;
-  touch-action: manipulation;
-}
-.dc-metro-btn.ativo {
-  background: rgba(10,158,110,0.15); border-color: rgba(10,158,110,0.4);
-  color: #22c55e;
-}
-.dc-vol-wrap {
-  flex: 1; display: flex; align-items: center; gap: 8px;
-}
-.dc-vol-label {
-  font-size: 8px; font-weight: 900; letter-spacing: 1.5px;
-  color: rgba(255,255,255,0.25); text-transform: uppercase; flex-shrink: 0;
-}
-
 .dc-fx-row {
   display: grid; grid-template-columns: 1fr 1fr;
   gap: 8px;
@@ -6835,236 +6673,213 @@ body.auth-pending #toast {
           oninput="dcVolMaster(this.value)">
       </div>
     </div>
-    <!-- FX Button — abre drawer lateral -->
+    <!-- FX Bar -->
     <div class="dc-fx-bar">
-      <button class="dc-fx-open-btn" id="dc-fx-toggle" onclick="dcFxTogglePanel()" ontouchstart="dcFxTogglePanel();event.preventDefault()">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M4.22 4.22l2.12 2.12M17.66 17.66l2.12 2.12M2 12h3M19 12h3M4.22 19.78l2.12-2.12M17.66 6.34l2.12-2.12"/></svg>
-        <span>FX</span>
-        <span class="dc-fx-active-count" id="dc-fx-active-count" style="display:none">0</span>
-      </button>
+      <button class="dc-fx-toggle" id="dc-fx-toggle" onclick="dcFxTogglePanel()">FX</button>
+      <div class="dc-fx-chips" id="dc-fx-chips">
+        <div class="dc-fx-chip" data-fx="reverb"   onclick="dcFxToggleChip('reverb')">Reverb</div>
+        <div class="dc-fx-chip" data-fx="delay"    onclick="dcFxToggleChip('delay')">Delay</div>
+        <div class="dc-fx-chip" data-fx="comp"     onclick="dcFxToggleChip('comp')">Comp</div>
+        <div class="dc-fx-chip" data-fx="dist"     onclick="dcFxToggleChip('dist')">Dist</div>
+        <div class="dc-fx-chip" data-fx="filter"   onclick="dcFxToggleChip('filter')">Filter</div>
+        <div class="dc-fx-chip" data-fx="pitch"    onclick="dcFxToggleChip('pitch')">Pitch</div>
+        <div class="dc-fx-chip" data-fx="sidechain" onclick="dcFxToggleChip('sidechain')">Sidechain</div>
+      </div>
     </div>
-    <!-- FX Drawer — abre como modal sobre os pads -->
-    <div class="dc-fx-drawer" id="dc-fx-panel">
-      <div class="dc-fx-drawer-header">
-        <span class="dc-fx-drawer-title">
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M4.22 4.22l2.12 2.12M17.66 17.66l2.12 2.12M2 12h3M19 12h3M4.22 19.78l2.12-2.12M17.66 6.34l2.12-2.12"/></svg>
-          Efeitos
-        </span>
-        <!-- FX chips selecionáveis no topo do drawer -->
-        <div class="dc-fx-drawer-chips" id="dc-fx-chips">
-          <div class="dc-fx-chip" data-fx="reverb"    onclick="dcFxToggleChip('reverb')">Reverb</div>
-          <div class="dc-fx-chip" data-fx="delay"     onclick="dcFxToggleChip('delay')">Delay</div>
-          <div class="dc-fx-chip" data-fx="comp"      onclick="dcFxToggleChip('comp')">Comp</div>
-          <div class="dc-fx-chip" data-fx="dist"      onclick="dcFxToggleChip('dist')">Dist</div>
-          <div class="dc-fx-chip" data-fx="filter"    onclick="dcFxToggleChip('filter')">Filter</div>
-          <div class="dc-fx-chip" data-fx="pitch"     onclick="dcFxToggleChip('pitch')">Pitch</div>
-          <div class="dc-fx-chip" data-fx="sidechain" onclick="dcFxToggleChip('sidechain')">Sidechain</div>
+    <!-- FX Panel -->
+    <div class="dc-fx-panel" id="dc-fx-panel">
+      <div class="dc-fx-row">
+        <!-- Reverb -->
+        <div class="dc-fx-block" id="dc-fxb-reverb">
+          <div class="dc-fx-block-header">
+            <span class="dc-fx-name">Reverb</span>
+            <button class="dc-fx-onoff" id="dc-fx-on-reverb" onclick="dcFxOnOff('reverb')"></button>
+          </div>
+          <div class="dc-fx-knobs">
+            <div class="dc-fx-knob-wrap">
+              <div class="dc-fx-knob-label">Tamanho</div>
+              <input type="range" class="dc-fx-slider" id="dc-fx-reverb-size" min="0" max="100" value="40"
+                oninput="dcFxParam('reverb','size',this.value);this.nextElementSibling.textContent=this.value+'%'">
+              <div class="dc-fx-knob-val">40%</div>
+            </div>
+            <div class="dc-fx-knob-wrap">
+              <div class="dc-fx-knob-label">Mix</div>
+              <input type="range" class="dc-fx-slider" id="dc-fx-reverb-mix" min="0" max="100" value="30"
+                oninput="dcFxParam('reverb','mix',this.value);this.nextElementSibling.textContent=this.value+'%'">
+              <div class="dc-fx-knob-val">30%</div>
+            </div>
+          </div>
         </div>
-        <button class="dc-fx-drawer-close" onclick="dcFxTogglePanel()" ontouchstart="dcFxTogglePanel();event.preventDefault()">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-        </button>
-      </div>
-      <!-- Presets row -->
-      <div class="dc-fx-presets-row" id="dc-fx-presets-row">
-        <button class="dc-fx-preset-btn" onclick="dcFxAplicarPreset('Clean')">Clean</button>
-        <button class="dc-fx-preset-btn" onclick="dcFxAplicarPreset('Room')">Room</button>
-        <button class="dc-fx-preset-btn" onclick="dcFxAplicarPreset('Hall')">Hall</button>
-        <button class="dc-fx-preset-btn" onclick="dcFxAplicarPreset('Punchy')">Punchy</button>
-        <button class="dc-fx-preset-btn" onclick="dcFxAplicarPreset('Warm')">Warm</button>
-        <button class="dc-fx-preset-btn" onclick="dcFxAplicarPreset('Lo-Fi')">Lo-Fi</button>
-        <button class="dc-fx-preset-btn" onclick="dcFxAplicarPreset('Heavy')">Heavy</button>
-        <button class="dc-fx-preset-btn" onclick="dcFxAplicarPreset('Space')">Space</button>
-      </div>
-      <!-- FX blocks scrollable -->
-      <div class="dc-fx-drawer-body">
-        <div class="dc-fx-row">
-          <!-- Reverb -->
-          <div class="dc-fx-block" id="dc-fxb-reverb">
-            <div class="dc-fx-block-header">
-              <span class="dc-fx-name">Reverb</span>
-              <button class="dc-fx-onoff" id="dc-fx-on-reverb" onclick="dcFxOnOff('reverb')"></button>
-            </div>
-            <div class="dc-fx-knobs">
-              <div class="dc-fx-knob-wrap">
-                <div class="dc-fx-knob-label">Tamanho</div>
-                <input type="range" class="dc-fx-slider" id="dc-fx-reverb-size" min="0" max="100" value="40"
-                  oninput="dcFxParam('reverb','size',this.value);this.nextElementSibling.textContent=this.value+'%'">
-                <div class="dc-fx-knob-val">40%</div>
-              </div>
-              <div class="dc-fx-knob-wrap">
-                <div class="dc-fx-knob-label">Mix</div>
-                <input type="range" class="dc-fx-slider" id="dc-fx-reverb-mix" min="0" max="100" value="30"
-                  oninput="dcFxParam('reverb','mix',this.value);this.nextElementSibling.textContent=this.value+'%'">
-                <div class="dc-fx-knob-val">30%</div>
-              </div>
-            </div>
+        <!-- Delay -->
+        <div class="dc-fx-block" id="dc-fxb-delay">
+          <div class="dc-fx-block-header">
+            <span class="dc-fx-name">Delay</span>
+            <button class="dc-fx-onoff" id="dc-fx-on-delay" onclick="dcFxOnOff('delay')"></button>
           </div>
-          <!-- Delay -->
-          <div class="dc-fx-block" id="dc-fxb-delay">
-            <div class="dc-fx-block-header">
-              <span class="dc-fx-name">Delay</span>
-              <button class="dc-fx-onoff" id="dc-fx-on-delay" onclick="dcFxOnOff('delay')"></button>
+          <div class="dc-fx-knobs">
+            <div class="dc-fx-knob-wrap">
+              <div class="dc-fx-knob-label">Tempo</div>
+              <input type="range" class="dc-fx-slider" id="dc-fx-delay-time" min="1" max="100" value="25"
+                oninput="dcFxParam('delay','time',this.value);this.nextElementSibling.textContent=Math.round(this.value*6)+'ms'">
+              <div class="dc-fx-knob-val">150ms</div>
             </div>
-            <div class="dc-fx-knobs">
-              <div class="dc-fx-knob-wrap">
-                <div class="dc-fx-knob-label">Tempo</div>
-                <input type="range" class="dc-fx-slider" id="dc-fx-delay-time" min="1" max="100" value="25"
-                  oninput="dcFxParam('delay','time',this.value);this.nextElementSibling.textContent=Math.round(this.value*6)+'ms'">
-                <div class="dc-fx-knob-val">150ms</div>
-              </div>
-              <div class="dc-fx-knob-wrap">
-                <div class="dc-fx-knob-label">Feedback</div>
-                <input type="range" class="dc-fx-slider" id="dc-fx-delay-fb" min="0" max="85" value="35"
-                  oninput="dcFxParam('delay','feedback',this.value);this.nextElementSibling.textContent=this.value+'%'">
-                <div class="dc-fx-knob-val">35%</div>
-              </div>
-              <div class="dc-fx-knob-wrap">
-                <div class="dc-fx-knob-label">Mix</div>
-                <input type="range" class="dc-fx-slider" id="dc-fx-delay-mix" min="0" max="100" value="25"
-                  oninput="dcFxParam('delay','mix',this.value);this.nextElementSibling.textContent=this.value+'%'">
-                <div class="dc-fx-knob-val">25%</div>
-              </div>
+            <div class="dc-fx-knob-wrap">
+              <div class="dc-fx-knob-label">Feedback</div>
+              <input type="range" class="dc-fx-slider" id="dc-fx-delay-fb" min="0" max="85" value="35"
+                oninput="dcFxParam('delay','feedback',this.value);this.nextElementSibling.textContent=this.value+'%'">
+              <div class="dc-fx-knob-val">35%</div>
             </div>
-          </div>
-          <!-- Compressor -->
-          <div class="dc-fx-block" id="dc-fxb-comp">
-            <div class="dc-fx-block-header">
-              <span class="dc-fx-name">Compressor</span>
-              <button class="dc-fx-onoff" id="dc-fx-on-comp" onclick="dcFxOnOff('comp')"></button>
-            </div>
-            <div class="dc-fx-knobs">
-              <div class="dc-fx-knob-wrap">
-                <div class="dc-fx-knob-label">Threshold</div>
-                <input type="range" class="dc-fx-slider" id="dc-fx-comp-thr" min="-60" max="0" value="-18"
-                  oninput="dcFxParam('comp','threshold',this.value);this.nextElementSibling.textContent=this.value+'dB'">
-                <div class="dc-fx-knob-val">-18dB</div>
-              </div>
-              <div class="dc-fx-knob-wrap">
-                <div class="dc-fx-knob-label">Ratio</div>
-                <input type="range" class="dc-fx-slider" id="dc-fx-comp-ratio" min="1" max="20" value="4"
-                  oninput="dcFxParam('comp','ratio',this.value);this.nextElementSibling.textContent=this.value+':1'">
-                <div class="dc-fx-knob-val">4:1</div>
-              </div>
-            </div>
-          </div>
-          <!-- Distortion -->
-          <div class="dc-fx-block" id="dc-fxb-dist">
-            <div class="dc-fx-block-header">
-              <span class="dc-fx-name">Distortion</span>
-              <button class="dc-fx-onoff" id="dc-fx-on-dist" onclick="dcFxOnOff('dist')"></button>
-            </div>
-            <div class="dc-fx-knobs">
-              <div class="dc-fx-knob-wrap">
-                <div class="dc-fx-knob-label">Drive</div>
-                <input type="range" class="dc-fx-slider" id="dc-fx-dist-drive" min="0" max="100" value="40"
-                  oninput="dcFxParam('dist','drive',this.value);this.nextElementSibling.textContent=this.value+'%'">
-                <div class="dc-fx-knob-val">40%</div>
-              </div>
-              <div class="dc-fx-knob-wrap">
-                <div class="dc-fx-knob-label">Tone</div>
-                <input type="range" class="dc-fx-slider" id="dc-fx-dist-tone" min="200" max="8000" value="3000"
-                  oninput="dcFxParam('dist','tone',this.value);this.nextElementSibling.textContent=Math.round(this.value/100)/10+'k'">
-                <div class="dc-fx-knob-val">3.0k</div>
-              </div>
-              <div class="dc-fx-knob-wrap">
-                <div class="dc-fx-knob-label">Mix</div>
-                <input type="range" class="dc-fx-slider" id="dc-fx-dist-mix" min="0" max="100" value="50"
-                  oninput="dcFxParam('dist','mix',this.value);this.nextElementSibling.textContent=this.value+'%'">
-                <div class="dc-fx-knob-val">50%</div>
-              </div>
-            </div>
-          </div>
-          <!-- Filter -->
-          <div class="dc-fx-block" id="dc-fxb-filter">
-            <div class="dc-fx-block-header">
-              <span class="dc-fx-name">Filter</span>
-              <button class="dc-fx-onoff" id="dc-fx-on-filter" onclick="dcFxOnOff('filter')"></button>
-            </div>
-            <div class="dc-fx-knobs">
-              <div class="dc-fx-knob-wrap">
-                <div class="dc-fx-knob-label">Freq</div>
-                <input type="range" class="dc-fx-slider" id="dc-fx-filter-freq" min="80" max="18000" value="8000"
-                  oninput="dcFxParam('filter','freq',this.value);this.nextElementSibling.textContent=this.value>=1000?Math.round(this.value/100)/10+'k':this.value+'Hz'">
-                <div class="dc-fx-knob-val">8.0k</div>
-              </div>
-              <div class="dc-fx-knob-wrap">
-                <div class="dc-fx-knob-label">Tipo</div>
-                <select id="dc-fx-filter-type" onchange="dcFxParam('filter','type',this.value)"
-                  style="background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.1);color:rgba(255,255,255,0.7);padding:5px;border-radius:6px;font-size:10px;width:100%">
-                  <option value="lowpass">LP</option>
-                  <option value="highpass">HP</option>
-                  <option value="bandpass">BP</option>
-                  <option value="notch">Notch</option>
-                </select>
-              </div>
-              <div class="dc-fx-knob-wrap">
-                <div class="dc-fx-knob-label">Q</div>
-                <input type="range" class="dc-fx-slider" id="dc-fx-filter-q" min="0.1" max="20" step="0.1" value="1"
-                  oninput="dcFxParam('filter','q',this.value);this.nextElementSibling.textContent=parseFloat(this.value).toFixed(1)">
-                <div class="dc-fx-knob-val">1.0</div>
-              </div>
-            </div>
-          </div>
-          <!-- Pitch -->
-          <div class="dc-fx-block" id="dc-fxb-pitch">
-            <div class="dc-fx-block-header">
-              <span class="dc-fx-name">Pitch</span>
-              <button class="dc-fx-onoff" id="dc-fx-on-pitch" onclick="dcFxOnOff('pitch')"></button>
-            </div>
-            <div class="dc-fx-knobs">
-              <div class="dc-fx-knob-wrap">
-                <div class="dc-fx-knob-label">Semitons</div>
-                <input type="range" class="dc-fx-slider" id="dc-fx-pitch-semi" min="-12" max="12" value="0" step="1"
-                  oninput="dcFxParam('pitch','semi',this.value);this.nextElementSibling.textContent=(this.value>0?'+':'')+this.value">
-                <div class="dc-fx-knob-val">0</div>
-              </div>
-              <div class="dc-fx-knob-wrap">
-                <div class="dc-fx-knob-label">Cents</div>
-                <input type="range" class="dc-fx-slider" id="dc-fx-pitch-cents" min="-100" max="100" value="0"
-                  oninput="dcFxParam('pitch','cents',this.value);this.nextElementSibling.textContent=(this.value>0?'+':'')+this.value">
-                <div class="dc-fx-knob-val">0</div>
-              </div>
-            </div>
-          </div>
-          <!-- Sidechain -->
-          <div class="dc-fx-block" id="dc-fxb-sidechain">
-            <div class="dc-fx-block-header">
-              <span class="dc-fx-name">Sidechain</span>
-              <button class="dc-fx-onoff" id="dc-fx-on-sidechain" onclick="dcFxOnOff('sidechain')"></button>
-            </div>
-            <div class="dc-fx-knobs">
-              <div class="dc-fx-knob-wrap">
-                <div class="dc-fx-knob-label">Reducao</div>
-                <input type="range" class="dc-fx-slider" id="dc-fx-sc-depth" min="0" max="100" value="70"
-                  oninput="dcFxParam('sidechain','depth',this.value);this.nextElementSibling.textContent=this.value+'%'">
-                <div class="dc-fx-knob-val">70%</div>
-              </div>
-              <div class="dc-fx-knob-wrap">
-                <div class="dc-fx-knob-label">Attack</div>
-                <input type="range" class="dc-fx-slider" id="dc-fx-sc-att" min="1" max="100" value="5"
-                  oninput="dcFxParam('sidechain','attack',this.value);this.nextElementSibling.textContent=this.value+'ms'">
-                <div class="dc-fx-knob-val">5ms</div>
-              </div>
-              <div class="dc-fx-knob-wrap">
-                <div class="dc-fx-knob-label">Release</div>
-                <input type="range" class="dc-fx-slider" id="dc-fx-sc-rel" min="10" max="500" value="120"
-                  oninput="dcFxParam('sidechain','release',this.value);this.nextElementSibling.textContent=this.value+'ms'">
-                <div class="dc-fx-knob-val">120ms</div>
-              </div>
-              <div class="dc-fx-knob-wrap">
-                <div class="dc-fx-knob-label">Trigger</div>
-                <select id="dc-fx-sc-src" onchange="dcFxParam('sidechain','src',this.value)"
-                  style="background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.1);color:rgba(255,255,255,0.7);padding:5px;border-radius:6px;font-size:10px;width:100%">
-                  <option value="0">Kick (P1)</option>
-                  <option value="1">Snare (P2)</option>
-                  <option value="4">Tom H</option>
-                </select>
-              </div>
+            <div class="dc-fx-knob-wrap">
+              <div class="dc-fx-knob-label">Mix</div>
+              <input type="range" class="dc-fx-slider" id="dc-fx-delay-mix" min="0" max="100" value="25"
+                oninput="dcFxParam('delay','mix',this.value);this.nextElementSibling.textContent=this.value+'%'">
+              <div class="dc-fx-knob-val">25%</div>
             </div>
           </div>
         </div>
       </div>
+      <div class="dc-fx-row">
+        <!-- Compressor -->
+        <div class="dc-fx-block" id="dc-fxb-comp">
+          <div class="dc-fx-block-header">
+            <span class="dc-fx-name">Compressor</span>
+            <button class="dc-fx-onoff" id="dc-fx-on-comp" onclick="dcFxOnOff('comp')"></button>
+          </div>
+          <div class="dc-fx-knobs">
+            <div class="dc-fx-knob-wrap">
+              <div class="dc-fx-knob-label">Threshold</div>
+              <input type="range" class="dc-fx-slider" id="dc-fx-comp-thr" min="-60" max="0" value="-18"
+                oninput="dcFxParam('comp','threshold',this.value);this.nextElementSibling.textContent=this.value+'dB'">
+              <div class="dc-fx-knob-val">-18dB</div>
+            </div>
+            <div class="dc-fx-knob-wrap">
+              <div class="dc-fx-knob-label">Ratio</div>
+              <input type="range" class="dc-fx-slider" id="dc-fx-comp-ratio" min="1" max="20" value="4"
+                oninput="dcFxParam('comp','ratio',this.value);this.nextElementSibling.textContent=this.value+':1'">
+              <div class="dc-fx-knob-val">4:1</div>
+            </div>
+          </div>
+        </div>
+        <!-- Distortion -->
+        <div class="dc-fx-block" id="dc-fxb-dist">
+          <div class="dc-fx-block-header">
+            <span class="dc-fx-name">Distortion</span>
+            <button class="dc-fx-onoff" id="dc-fx-on-dist" onclick="dcFxOnOff('dist')"></button>
+          </div>
+          <div class="dc-fx-knobs">
+            <div class="dc-fx-knob-wrap">
+              <div class="dc-fx-knob-label">Drive</div>
+              <input type="range" class="dc-fx-slider" id="dc-fx-dist-drive" min="0" max="100" value="40"
+                oninput="dcFxParam('dist','drive',this.value);this.nextElementSibling.textContent=this.value+'%'">
+              <div class="dc-fx-knob-val">40%</div>
+            </div>
+            <div class="dc-fx-knob-wrap">
+              <div class="dc-fx-knob-label">Tone</div>
+              <input type="range" class="dc-fx-slider" id="dc-fx-dist-tone" min="200" max="8000" value="3000"
+                oninput="dcFxParam('dist','tone',this.value);this.nextElementSibling.textContent=Math.round(this.value/100)/10+'k'">
+              <div class="dc-fx-knob-val">3.0k</div>
+            </div>
+            <div class="dc-fx-knob-wrap">
+              <div class="dc-fx-knob-label">Mix</div>
+              <input type="range" class="dc-fx-slider" id="dc-fx-dist-mix" min="0" max="100" value="50"
+                oninput="dcFxParam('dist','mix',this.value);this.nextElementSibling.textContent=this.value+'%'">
+              <div class="dc-fx-knob-val">50%</div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="dc-fx-row">
+        <!-- Filter -->
+        <div class="dc-fx-block" id="dc-fxb-filter">
+          <div class="dc-fx-block-header">
+            <span class="dc-fx-name">Filter</span>
+            <button class="dc-fx-onoff" id="dc-fx-on-filter" onclick="dcFxOnOff('filter')"></button>
+          </div>
+          <div class="dc-fx-knobs">
+            <div class="dc-fx-knob-wrap">
+              <div class="dc-fx-knob-label">Freq</div>
+              <input type="range" class="dc-fx-slider" id="dc-fx-filter-freq" min="80" max="18000" value="8000"
+                oninput="dcFxParam('filter','freq',this.value);this.nextElementSibling.textContent=this.value>=1000?Math.round(this.value/100)/10+'k':this.value+'Hz'">
+              <div class="dc-fx-knob-val">8.0k</div>
+            </div>
+            <div class="dc-fx-knob-wrap">
+              <div class="dc-fx-knob-label">Tipo</div>
+              <select id="dc-fx-filter-type" onchange="dcFxParam('filter','type',this.value)"
+                style="background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.1);color:rgba(255,255,255,0.5);border-radius:4px;font-size:8px;font-weight:700;padding:2px 4px;cursor:pointer;width:100%;outline:none;">
+                <option value="lowpass">LP</option>
+                <option value="highpass">HP</option>
+                <option value="bandpass">BP</option>
+                <option value="notch">Notch</option>
+              </select>
+            </div>
+            <div class="dc-fx-knob-wrap">
+              <div class="dc-fx-knob-label">Q</div>
+              <input type="range" class="dc-fx-slider" id="dc-fx-filter-q" min="0.1" max="20" step="0.1" value="1"
+                oninput="dcFxParam('filter','q',this.value);this.nextElementSibling.textContent=parseFloat(this.value).toFixed(1)">
+              <div class="dc-fx-knob-val">1.0</div>
+            </div>
+          </div>
+        </div>
+        <!-- Pitch Shift -->
+        <div class="dc-fx-block" id="dc-fxb-pitch">
+          <div class="dc-fx-block-header">
+            <span class="dc-fx-name">Pitch</span>
+            <button class="dc-fx-onoff" id="dc-fx-on-pitch" onclick="dcFxOnOff('pitch')"></button>
+          </div>
+          <div class="dc-fx-knobs">
+            <div class="dc-fx-knob-wrap">
+              <div class="dc-fx-knob-label">Semitoms</div>
+              <input type="range" class="dc-fx-slider" id="dc-fx-pitch-semi" min="-12" max="12" value="0" step="1"
+                oninput="dcFxParam('pitch','semi',this.value);this.nextElementSibling.textContent=(this.value>0?'+':'')+this.value">
+              <div class="dc-fx-knob-val">0</div>
+            </div>
+            <div class="dc-fx-knob-wrap">
+              <div class="dc-fx-knob-label">Cents</div>
+              <input type="range" class="dc-fx-slider" id="dc-fx-pitch-cents" min="-100" max="100" value="0"
+                oninput="dcFxParam('pitch','cents',this.value);this.nextElementSibling.textContent=(this.value>0?'+':'')+this.value">
+              <div class="dc-fx-knob-val">0</div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <!-- Sidechain (full row) -->
+      <div class="dc-fx-block" id="dc-fxb-sidechain">
+        <div class="dc-fx-block-header">
+          <span class="dc-fx-name">Sidechain (ducker)</span>
+          <button class="dc-fx-onoff" id="dc-fx-on-sidechain" onclick="dcFxOnOff('sidechain')"></button>
+        </div>
+        <div class="dc-fx-knobs">
+          <div class="dc-fx-knob-wrap">
+            <div class="dc-fx-knob-label">Reducao</div>
+            <input type="range" class="dc-fx-slider" id="dc-fx-sc-depth" min="0" max="100" value="70"
+              oninput="dcFxParam('sidechain','depth',this.value);this.nextElementSibling.textContent=this.value+'%'">
+            <div class="dc-fx-knob-val">70%</div>
+          </div>
+          <div class="dc-fx-knob-wrap">
+            <div class="dc-fx-knob-label">Attack</div>
+            <input type="range" class="dc-fx-slider" id="dc-fx-sc-att" min="1" max="100" value="5"
+              oninput="dcFxParam('sidechain','attack',this.value);this.nextElementSibling.textContent=this.value+'ms'">
+            <div class="dc-fx-knob-val">5ms</div>
+          </div>
+          <div class="dc-fx-knob-wrap">
+            <div class="dc-fx-knob-label">Release</div>
+            <input type="range" class="dc-fx-slider" id="dc-fx-sc-rel" min="10" max="500" value="120"
+              oninput="dcFxParam('sidechain','release',this.value);this.nextElementSibling.textContent=this.value+'ms'">
+            <div class="dc-fx-knob-val">120ms</div>
+          </div>
+          <div class="dc-fx-knob-wrap">
+            <div class="dc-fx-knob-label">Trigger</div>
+            <select id="dc-fx-sc-src" onchange="dcFxParam('sidechain','src',this.value)"
+              style="background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.1);color:rgba(255,255,255,0.5);border-radius:4px;font-size:8px;font-weight:700;padding:2px 4px;cursor:pointer;width:100%;outline:none;">
+              <option value="0">Kick (P1)</option>
+              <option value="1">Snare (P2)</option>
+              <option value="4">Tom H</option>
+            </select>
+          </div>
+        </div>
+      </div>
     </div>
+  </div>
   <input type="file" id="dc-file-input" accept="audio/*">
 </div>
 
@@ -11616,17 +11431,6 @@ function dcFxTogglePanel() {
   if (panel) panel.classList.toggle('show', _dcFxPanelOpen);
   if (btn)   btn.classList.toggle('ativo', _dcFxPanelOpen);
 }
-function _dcFxAtualizarContador() {
-  var count = Object.values(_dcFxEnabled).filter(Boolean).length;
-  var el = document.getElementById('dc-fx-active-count');
-  if (!el) return;
-  if (count > 0) {
-    el.textContent = count;
-    el.style.display = 'flex';
-  } else {
-    el.style.display = 'none';
-  }
-}
 
 function dcFxToggleChip(fx) {
   _dcFxEnabled[fx] = !_dcFxEnabled[fx];
@@ -11637,7 +11441,6 @@ function dcFxToggleChip(fx) {
   if (onoff) onoff.classList.toggle('on', _dcFxEnabled[fx]);
   if (block) block.classList.toggle('ativo', _dcFxEnabled[fx]);
   if (chip)  chip.classList.toggle('ativo', _dcFxEnabled[fx]);
-  _dcFxAtualizarContador();
   // Open panel if closed
   if (_dcFxEnabled[fx] && !_dcFxPanelOpen) dcFxTogglePanel();
 }
