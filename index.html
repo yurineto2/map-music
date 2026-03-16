@@ -718,7 +718,7 @@ window._DEBUG = (window.location.hostname === 'localhost' || window.location.hos
           return;
         }
         // Detetou mudança — descobre quem entrou/saiu
-        const oldV = JSON.parse(_lastViewers || '{}');
+        var _lvRaw = _lastViewers || '{}'; const oldV = (function(){try{return JSON.parse(_lvRaw);}catch(e){return {};}})();
         const newV = viewers;
         const msgs = [];
         // Entrou
@@ -7065,7 +7065,7 @@ body.auth-pending #toast {
 <button class="mode-show-container" id="mode-show-btn" 
   ontouchstart="_togglePerfTouch=Date.now();togglePerf();event.preventDefault();" 
   onclick="if(!window._togglePerfTouch||Date.now()-_togglePerfTouch>300)togglePerf();" 
-  style="touch-action:manipulation;background:none;border:none;font-family:inherit;cursor:pointer;">
+  >
   <span id="mode-text">MODO SHOW</span>
 </button>
 
@@ -8234,6 +8234,7 @@ function togglePerf() {
 }
 
 function _ativarModoShow() {
+  document.querySelectorAll('[data-drag-clone]').forEach(function(el){el.remove();});
   setTimeout(atualizarLetreiroDrumCam, 50);
   document.getElementById('app-body').classList.add('performance-mode');
   _perfFontCarregar(); // aplica fonte da música atual no show
@@ -8970,7 +8971,9 @@ function _perfFontCarregar() {
 }
 
 // ─── PARTES ───────────────────────────────────────────────────────────────
-function addPart(title = "PARTE", content = "") {
+function addPart(title, content) {
+  title = (title === undefined || title === null) ? "PARTE" : String(title);
+  content = (content === undefined || content === null) ? "" : String(content);
   const div = document.createElement('div');
   div.className = 'song-part';
   // Escapa title e content para evitar quebra de HTML e XSS
@@ -10226,11 +10229,12 @@ function abrirBiblioteca() {
 function fecharBiblioteca() {
   var _bo = document.getElementById('biblioteca-overlay');
   _bo.classList.remove('show');
-  _bo.style.pointerEvents = 'none'; // bloqueia imediatamente durante transição de saída
+  _bo.style.pointerEvents = 'none';
   eventoAbertoId = null;
-  // Invalida cache ao fechar — próxima abertura sempre re-renderiza
   _bibLastSig = null;
   _evLastSig  = null;
+  // Limpa clone de drag preso (evita card flutuando sobre o modo show)
+  document.querySelectorAll('[data-drag-clone]').forEach(function(el) { el.remove(); });
 }
 
 function mostrarBibMain() {
@@ -10979,6 +10983,7 @@ function _initEventoDragDrop(grid) {
     var t = e.touches[0];
     var rect = this.getBoundingClientRect();
     _touchClone = this.cloneNode(true);
+    _touchClone.setAttribute('data-drag-clone','1');
     _touchClone.style.cssText = 'position:fixed;left:' + rect.left + 'px;top:' + rect.top + 'px;width:' + rect.width + 'px;opacity:0.75;pointer-events:none;z-index:99999;transition:none;border-radius:12px;';
     document.body.appendChild(_touchClone);
     this.classList.add('dragging');
@@ -11031,6 +11036,7 @@ function _initEventoDragDrop(grid) {
     card.addEventListener('touchstart', onTouchStart, { passive: true });
     card.addEventListener('touchmove',  onTouchMove,  { passive: false });
     card.addEventListener('touchend',   onTouchEnd,   { passive: true });
+    card.addEventListener('touchcancel', onTouchEnd,   { passive: true }); // limpa clone se touch cancelado
   });
 }
 
@@ -12511,7 +12517,7 @@ window.addEventListener('firebase-ready', function() {
       var backup = await window._fb.restaurarMusicas(uid);
       if (backup && backup.updatedAt && backup.updatedAt > localTs) {
         var atualizou = false;
-        var localMusicas = JSON.parse(localStorage.getItem('map_pro_elite_v1') || '[]');
+        var localMusicas = (function(){try{return JSON.parse(localStorage.getItem('map_pro_elite_v1')||'[]');}catch(e){return [];}})();
         // Nuvem mais recente: atualiza
         if (backup.musicas && backup.musicas.length > 0) {
           localStorage.setItem('map_pro_elite_v1', JSON.stringify(backup.musicas));
@@ -19782,7 +19788,7 @@ function _vocLS(k,v){
     if(v===undefined){
       if(_vocCache[k]!==undefined) return _vocCache[k];
       var raw=localStorage.getItem(k);
-      _vocCache[k]=raw?JSON.parse(raw):null;
+      try{_vocCache[k]=raw?JSON.parse(raw):null;}catch(e){_vocCache[k]=null;}
       return _vocCache[k];
     }
     _vocCache[k]=v;
