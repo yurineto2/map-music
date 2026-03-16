@@ -4022,6 +4022,207 @@ body { font-family: -apple-system, 'Inter', BlinkMacSystemFont, 'Segoe UI', sans
   .dc-fx-row    { grid-template-columns: 1fr; }
 }
 
+/* ══ TABLET LANDSCAPE — layout de 2 colunas ══════════════════════════════
+   Breakpoint: largura >= 600px E orientação landscape (altura < largura)
+   Também ativa em desktop para uma experiência mais rica
+═════════════════════════════════════════════════════════════════════════ */
+
+/* Estrutura base das colunas (portrait / mobile) */
+.dc-pads-col {
+  flex: 1; display: flex; align-items: stretch;
+  min-height: 0;
+}
+.dc-ctrl-col {
+  display: flex; flex-direction: column; gap: 6px;
+  flex-shrink: 0;
+}
+
+/* Portrait padrão: tudo em coluna, ctrl-col sem nada especial */
+.dc-machine {
+  flex-direction: column;
+}
+.dc-pads-col {
+  flex: 1;
+}
+.dc-pads-grid {
+  width: 100%; height: 100%;
+}
+
+/* ── TABLET LANDSCAPE ── */
+@media (orientation: landscape) and (min-width: 600px) {
+  /* Overlay: flex-row */
+  .drumcam-overlay {
+    flex-direction: row;
+  }
+  /* Header vira coluna lateral esquerda estreita */
+  .drumcam-header {
+    flex-direction: column;
+    align-items: center;
+    justify-content: space-between;
+    padding: 16px 10px;
+    width: 72px;
+    flex-shrink: 0;
+    border-bottom: none;
+    border-right: 1px solid rgba(255,255,255,0.06);
+    gap: 16px;
+  }
+  .drumcam-song-info {
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+    writing-mode: vertical-rl;
+    text-orientation: mixed;
+    transform: rotate(180deg);
+  }
+  .drumcam-song-name {
+    font-size: 10px;
+    max-width: 120px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .drumcam-bpm { font-size: 18px; }
+  .drumcam-bpm-label { font-size: 7px; }
+  .drumcam-close {
+    writing-mode: initial;
+    transform: none;
+  }
+
+  /* dc-machine: flex-row, ocupa o espaço restante */
+  .dc-machine {
+    flex-direction: row;
+    padding: 10px;
+    gap: 10px;
+    overflow: hidden;
+  }
+
+  /* Coluna pads: quadrada, ocupa altura toda */
+  .dc-pads-col {
+    flex: 0 0 auto;
+    width: calc(100vh - 52px); /* altura disponível - header top/bottom */
+    max-width: 55%;
+    display: flex;
+    align-items: stretch;
+    position: relative;
+  }
+  .dc-pads-grid {
+    width: 100% !important;
+    height: 100% !important;
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    grid-template-rows: repeat(4, 1fr);
+    gap: 8px;
+  }
+  .dc-pad {
+    aspect-ratio: unset; /* deixa o grid definir a altura */
+    border-radius: 14px;
+  }
+
+  /* Coluna controles: flex-column, cresce para ocupar espaço */
+  .dc-ctrl-col {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    min-width: 0;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  /* Topbar em landscape: bank tabs em 2x2 grid */
+  .dc-topbar {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    grid-template-rows: 1fr 1fr;
+    gap: 5px;
+  }
+  .dc-bank-tabs {
+    display: contents; /* os filhos vão direto pro grid */
+  }
+  .dc-bank-tab {
+    padding: 10px 8px;
+    font-size: 10px;
+    border-radius: 10px;
+  }
+  .dc-tap-btn {
+    grid-column: 1 / -1; /* ocupa largura toda */
+    padding: 10px;
+    font-size: 10px;
+    border-radius: 10px;
+    background: rgba(10,158,110,0.12);
+    border-color: rgba(10,158,110,0.35);
+    color: #22c55e;
+  }
+
+  /* Mixrow em landscape: 2 colunas de 8 sliders */
+  .dc-mixrow {
+    display: grid;
+    grid-template-columns: repeat(8, 1fr);
+    gap: 4px;
+    padding: 6px 0;
+  }
+
+  /* Bottombar em landscape: compacta */
+  .dc-bottombar {
+    padding: 4px 0 0;
+  }
+  .dc-metro-btn {
+    padding: 10px 8px;
+    font-size: 9px;
+  }
+
+  /* FX bar em landscape: botão full-width */
+  .dc-fx-bar {
+    padding: 4px 0 0;
+  }
+  .dc-fx-open-btn {
+    padding: 10px 14px;
+    font-size: 10px;
+  }
+
+  /* FX drawer em landscape: vem da direita */
+  .dc-fx-drawer {
+    position: absolute;
+    top: 0; right: 0; bottom: 0;
+    width: min(420px, 55%);
+    border-radius: 0;
+    transform: translateX(100%);
+    transition: transform 0.28s cubic-bezier(0.32,0.72,0,1);
+    border-left: 1px solid rgba(255,255,255,0.08);
+  }
+  .dc-fx-drawer.show {
+    transform: translateX(0);
+  }
+  .dc-fx-drawer-body .dc-fx-row {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+
+
+/* Tablet grande landscape (iPad Pro, etc) */
+@media (orientation: landscape) and (min-width: 1024px) {
+  .dc-pads-col {
+    max-width: 50%;
+    width: auto;
+    flex: 1;
+  }
+  .dc-ctrl-col {
+    flex: 1;
+    max-width: 380px;
+  }
+  .dc-pad {
+    border-radius: 16px;
+  }
+  .dc-bank-tab { font-size: 11px; padding: 11px 10px; }
+  .dc-fx-drawer {
+    width: min(480px, 45%);
+  }
+  .dc-fx-drawer-body .dc-fx-row {
+    grid-template-columns: 1fr 1fr 1fr;
+  }
+}
+
 /* ── Desktop & Global Responsive ── */
 
 /* Onboarding: centra e limita largura no desktop */
@@ -6816,32 +7017,38 @@ body.auth-pending #toast {
   </div>
   <!-- New drum machine body -->
   <div class="dc-machine" id="dc-machine">
-    <div class="dc-topbar">
-      <div class="dc-bank-tabs" id="dc-bank-tabs">
-        <div class="dc-bank-tab ativo" data-bank="0" onclick="dcTrocarBank(0)">Kit 1</div>
-        <div class="dc-bank-tab" data-bank="1" onclick="dcTrocarBank(1)">Kit 2</div>
-        <div class="dc-bank-tab" data-bank="2" onclick="dcTrocarBank(2)">Tonal 1</div>
-        <div class="dc-bank-tab" data-bank="3" onclick="dcTrocarBank(3)">Tonal 2</div>
-      </div>
-      <button class="dc-tap-btn" onmousedown="dcTap()" ontouchstart="dcTap();event.preventDefault()">TAP</button>
+    <!-- Coluna pads (esquerda em landscape) -->
+    <div class="dc-pads-col">
+      <div class="dc-pads-grid" id="dc-pads-grid"></div>
     </div>
-    <div class="dc-pads-grid" id="dc-pads-grid"></div>
-    <div class="dc-mixrow" id="dc-mixrow"></div>
-    <div class="dc-bottombar">
-      <button class="dc-metro-btn" id="dc-metro-btn2" onclick="dcToggleMetro()">METRO</button>
-      <div class="dc-vol-wrap">
-        <span class="dc-vol-label">VOL</span>
-        <input type="range" class="dc-vol-slider" id="dc-vol-master" min="0" max="100" value="80"
-          oninput="dcVolMaster(this.value)">
+    <!-- Coluna controles (direita em landscape / abaixo em portrait) -->
+    <div class="dc-ctrl-col">
+      <div class="dc-topbar">
+        <div class="dc-bank-tabs" id="dc-bank-tabs">
+          <div class="dc-bank-tab ativo" data-bank="0" onclick="dcTrocarBank(0)">Kit 1</div>
+          <div class="dc-bank-tab" data-bank="1" onclick="dcTrocarBank(1)">Kit 2</div>
+          <div class="dc-bank-tab" data-bank="2" onclick="dcTrocarBank(2)">Tonal 1</div>
+          <div class="dc-bank-tab" data-bank="3" onclick="dcTrocarBank(3)">Tonal 2</div>
+        </div>
+        <button class="dc-tap-btn" onmousedown="dcTap()" ontouchstart="dcTap();event.preventDefault()">TAP</button>
       </div>
-    </div>
-    <!-- FX Button — abre drawer lateral -->
-    <div class="dc-fx-bar">
-      <button class="dc-fx-open-btn" id="dc-fx-toggle" onclick="dcFxTogglePanel()" ontouchstart="dcFxTogglePanel();event.preventDefault()">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M4.22 4.22l2.12 2.12M17.66 17.66l2.12 2.12M2 12h3M19 12h3M4.22 19.78l2.12-2.12M17.66 6.34l2.12-2.12"/></svg>
-        <span>FX</span>
-        <span class="dc-fx-active-count" id="dc-fx-active-count" style="display:none">0</span>
-      </button>
+      <div class="dc-mixrow" id="dc-mixrow"></div>
+      <div class="dc-bottombar">
+        <button class="dc-metro-btn" id="dc-metro-btn2" onclick="dcToggleMetro()">METRO</button>
+        <div class="dc-vol-wrap">
+          <span class="dc-vol-label">VOL</span>
+          <input type="range" class="dc-vol-slider" id="dc-vol-master" min="0" max="100" value="80"
+            oninput="dcVolMaster(this.value)">
+        </div>
+      </div>
+      <!-- FX Button dentro do ctrl-col — fica na coluna direita em landscape -->
+      <div class="dc-fx-bar">
+        <button class="dc-fx-open-btn" id="dc-fx-toggle" onclick="dcFxTogglePanel()" ontouchstart="dcFxTogglePanel();event.preventDefault()">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M4.22 4.22l2.12 2.12M17.66 17.66l2.12 2.12M2 12h3M19 12h3M4.22 19.78l2.12-2.12M17.66 6.34l2.12-2.12"/></svg>
+          <span>FX</span>
+          <span class="dc-fx-active-count" id="dc-fx-active-count" style="display:none">0</span>
+        </button>
+      </div>
     </div>
     <!-- FX Drawer — abre como modal sobre os pads -->
     <div class="dc-fx-drawer" id="dc-fx-panel">
