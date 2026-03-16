@@ -4268,7 +4268,7 @@ body.performance-mode .scroll-controls { display: none; } /* movido para painel 
 /* Esconde modo show quando Drum Cam está aberto */
 /* Botão MODO SHOW — fixo no canto inferior direito, sempre visível */
 .mode-show-container {
-  display: flex !important;
+  display: flex;
   align-items: center; justify-content: center;
   position: fixed !important;
   bottom: max(24px, calc(16px + env(safe-area-inset-bottom))) !important;
@@ -4317,8 +4317,12 @@ body.performance-mode .mode-show-container:hover {
   background: rgba(255,62,62,0.15);
   border-color: #ff3e3e;
 }
-/* Esconde MODO SHOW dentro do Drum Cam — deve vir DEPOIS do CSS do botão */
+/* Esconde MODO SHOW dentro do Drum Cam */
 .drumcam-overlay.show ~ .mode-show-container {
+  display: none !important;
+}
+/* Fallback via data-attribute (JS) */
+.mode-show-container[data-dc-hidden] {
   display: none !important;
 }
 
@@ -11233,7 +11237,7 @@ _dcInitVols();
 function abrirDrumCam() {
   // Esconde o botão MODO SHOW enquanto o Drum Cam está aberto
   var _msb = document.getElementById('mode-show-btn');
-  if (_msb) _msb.style.display = 'none';
+  if (_msb) _msb.setAttribute('data-dc-hidden', '1');
   // Pre-aquece o AudioContext para minimizar latência no primeiro hit
   var _wCtx = _getAudioCtx(); if (_wCtx && _wCtx.state === 'suspended') _wCtx.resume();
   fecharMenu();
@@ -11252,7 +11256,7 @@ function fecharDrumCam() {
   document.getElementById('drumcam-overlay').classList.remove('show');
   // Restaura o botão MODO SHOW
   var _msb = document.getElementById('mode-show-btn');
-  if (_msb) _msb.style.display = '';
+  if (_msb) _msb.removeAttribute('data-dc-hidden');
 }
 
 function atualizarDrumCamInfo() {
