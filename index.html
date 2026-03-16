@@ -1100,7 +1100,9 @@ function _pinGetSaved() {
 
 function _verificarPinNaEntrada() {
   const perfil = _lsGet('map_perfil_v1', {});
-  if (!perfil.nome || !perfil.pin) { _mostrarApp(); return; } // sem PIN — mostra app directo
+  const temPin   = !!(perfil.pin && perfil.pin.length === 4);
+  const pinAtivo = temPin && (perfil.pinAtivo !== false);
+  if (!perfil.nome || !temPin || !pinAtivo) { _mostrarApp(); return; } // sem PIN ou desativado
   const screen = document.getElementById('pin-lock-screen');
   const nomeEl = document.getElementById('pin-lock-nome');
   if (!screen) return;
@@ -4976,6 +4978,7 @@ body.theme-light .toast-info .toast-icon { background: rgba(0,0,0,0.05) !importa
   display: none; flex-direction: column;
   padding: 0;
   overflow: hidden;
+  height: 100%;
 }
 .pads-overlay.show { display: flex; }
 
@@ -5054,14 +5057,14 @@ body.theme-light .toast-info .toast-icon { background: rgba(0,0,0,0.05) !importa
 
 /* ── Grid ── */
 .pads-grid-wrap {
-  flex: 1; display: flex; align-items: center; justify-content: center;
-  padding: 16px 14px; overflow: hidden;
+  flex: 1; display: flex; align-items: stretch; justify-content: center;
+  padding: 16px 14px; overflow: hidden; min-height: 0;
 }
-/* Desktop: constrain pad grid width */
+/* Desktop: pads ocupam toda a tela */
 @media (min-width: 641px) {
-  .pads-grid-wrap { padding: 24px 32px; }
+  .pads-grid-wrap { padding: 20px 28px; }
   .pads-grid {
-    max-width: 900px; margin: 0 auto;
+    width: 100%; max-width: 1200px; margin: 0 auto;
     grid-template-columns: repeat(6, 1fr);
     gap: 14px;
   }
@@ -5069,17 +5072,17 @@ body.theme-light .toast-info .toast-icon { background: rgba(0,0,0,0.05) !importa
   .pad-type  { font-size: 10px; }
 }
 @media (min-width: 1025px) {
-  .pads-grid-wrap { padding: 32px 48px; }
-  .pads-grid { max-width: 1100px; gap: 18px; }
+  .pads-grid-wrap { padding: 24px 40px; }
+  .pads-grid { max-width: 100%; gap: 18px; }
   .pad { border-radius: 18px; }
-  .pad-chord { font-size: clamp(22px, 2.6vw, 34px); }
-  .pad-type  { font-size: 11px; letter-spacing: 1px; }
+  .pad-chord { font-size: clamp(22px, 2.6vw, 38px); }
+  .pad-type  { font-size: 12px; letter-spacing: 1px; }
 }
 .pads-grid {
   display: grid;
   grid-template-columns: repeat(6, 1fr);
   grid-template-rows: repeat(2, 1fr);
-  gap: 10px; width: 100%;
+  gap: 10px; width: 100%; height: 100%;
 }
 
 /* Individual pad */
@@ -6222,7 +6225,33 @@ body.auth-pending #toast {
         </div>
       </div>
 
-      
+      <!-- Toggle PIN -->
+      <div id="perfil-pin-wrap" style="display:flex;flex-direction:column;gap:8px;">
+        <!-- Linha do toggle -->
+        <div style="display:flex;align-items:center;justify-content:space-between;padding:13px 16px;border-radius:14px;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.07);">
+          <div style="display:flex;align-items:center;gap:10px;">
+            <div style="width:32px;height:32px;border-radius:9px;background:rgba(138,92,246,0.12);border:1px solid rgba(138,92,246,0.2);display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#a78bfa" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+            </div>
+            <div>
+              <div style="font-size:12px;font-weight:800;color:rgba(255,255,255,0.8);">Bloquear com PIN</div>
+              <div id="perfil-pin-status-txt" style="font-size:10px;color:rgba(255,255,255,0.3);margin-top:1px;">Desativado</div>
+            </div>
+          </div>
+          <!-- Toggle switch -->
+          <button id="perfil-pin-toggle" onclick="perfilTogglePin()" style="width:44px;height:26px;border-radius:13px;background:rgba(255,255,255,0.1);border:none;cursor:pointer;position:relative;transition:background 0.22s;touch-action:manipulation;flex-shrink:0;padding:0;">
+            <span id="perfil-pin-toggle-knob" style="position:absolute;top:3px;left:3px;width:20px;height:20px;border-radius:50%;background:#fff;transition:left 0.22s,background 0.22s;box-shadow:0 1px 4px rgba(0,0,0,0.4);"></span>
+          </button>
+        </div>
+        <!-- PIN atual mascarado + botão alterar (só visível quando ativo) -->
+        <div id="perfil-pin-ativo-row" style="display:none;align-items:center;justify-content:space-between;padding:10px 16px;border-radius:12px;background:rgba(138,92,246,0.06);border:1px solid rgba(138,92,246,0.18);">
+          <div style="display:flex;align-items:center;gap:8px;">
+            <span style="font-size:11px;color:rgba(255,255,255,0.35);font-weight:700;letter-spacing:1px;">PIN</span>
+            <span style="font-size:16px;letter-spacing:6px;color:rgba(167,139,250,0.7);font-weight:900;">••••</span>
+          </div>
+          <button onclick="perfilAlterarPin()" style="background:none;border:1px solid rgba(138,92,246,0.3);color:rgba(167,139,250,0.7);padding:5px 12px;border-radius:8px;font-size:9px;font-weight:900;letter-spacing:1px;cursor:pointer;text-transform:uppercase;touch-action:manipulation;font-family:inherit;transition:0.15s;" onmouseenter="this.style.background='rgba(138,92,246,0.1)'" onmouseleave="this.style.background='none'">Alterar</button>
+        </div>
+      </div>
 
       <!-- Sair da conta -->
       <div style="padding-top:8px;padding-bottom:2px;">
@@ -7456,6 +7485,7 @@ function abrirModalPerfil() {
 
   atualizarPreviewPerfil();
   _mostrarBotaoFormalizar();
+  _perfilRenderTogglePin(); // sincroniza estado do toggle PIN
   document.getElementById('modal-perfil').style.display = 'flex';
   document.getElementById('m-drop').classList.remove('show');
   // Se nome vazio, foca o campo para o utilizador preencher
@@ -7912,6 +7942,108 @@ function _limparHistoricoShow() {
 function fecharModalPerfil() {
   var _mp = document.getElementById('modal-perfil');
   if (_mp) _mp.style.display = 'none';
+}
+
+// ─── Toggle PIN ───────────────────────────────────────────────────────────────
+
+function _perfilRenderTogglePin() {
+  var perfil   = _lsGet('map_perfil_v1', {});
+  var temPin   = !!(perfil.pin && perfil.pin.length === 4);
+  var pinAtivo = temPin && (perfil.pinAtivo !== false); // default: ativo se tiver PIN
+
+  var toggle    = document.getElementById('perfil-pin-toggle');
+  var knob      = document.getElementById('perfil-pin-toggle-knob');
+  var statusTxt = document.getElementById('perfil-pin-status-txt');
+  var ativoRow  = document.getElementById('perfil-pin-ativo-row');
+
+  if (!toggle) return;
+
+  if (pinAtivo) {
+    toggle.style.background = 'rgba(138,92,246,0.6)';
+    knob.style.left = '21px';
+    knob.style.background = '#fff';
+    if (statusTxt) statusTxt.textContent = 'Ativado — solicitado na entrada';
+    if (ativoRow)  ativoRow.style.display = 'flex';
+  } else {
+    toggle.style.background = 'rgba(255,255,255,0.1)';
+    knob.style.left = '3px';
+    knob.style.background = 'rgba(255,255,255,0.6)';
+    if (statusTxt) statusTxt.textContent = temPin ? 'Desativado — PIN salvo mas não exigido' : 'Desativado';
+    if (ativoRow)  ativoRow.style.display = 'none';
+  }
+}
+
+function perfilTogglePin() {
+  var perfil = _lsGet('map_perfil_v1', {});
+  var temPin = !!(perfil.pin && perfil.pin.length === 4);
+
+  // Se não tem PIN ainda, abre modal para criar um
+  if (!temPin) {
+    perfilAlterarPin(true);
+    return;
+  }
+
+  // Alterna o estado
+  var pinAtivo = perfil.pinAtivo !== false; // atual
+  perfil.pinAtivo = !pinAtivo;
+  _lsSet('map_perfil_v1', perfil);
+  _perfilRenderTogglePin();
+
+  showToast(perfil.pinAtivo ? 'PIN ativado.' : 'PIN desativado.', 'success');
+}
+
+function perfilAlterarPin(ativarDepois) {
+  // Remove modal anterior se existir
+  var prev = document.getElementById('_pin-alterar-modal');
+  if (prev) prev.remove();
+
+  var overlay = document.createElement('div');
+  overlay.id = '_pin-alterar-modal';
+  overlay.style.cssText = 'position:fixed;inset:0;z-index:200010;background:rgba(0,0,0,0.82);display:flex;align-items:center;justify-content:center;padding:24px;backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);';
+
+  overlay.innerHTML =
+    '<div style="background:#0d0d1a;border:1px solid rgba(138,92,246,0.25);border-radius:20px;width:100%;max-width:320px;display:flex;flex-direction:column;overflow:hidden;box-shadow:0 24px 80px rgba(0,0,0,0.9);">' +
+    '<div style="display:flex;align-items:center;justify-content:space-between;padding:16px 20px 12px;border-bottom:1px solid rgba(255,255,255,0.06);">' +
+      '<span style="font-size:9px;font-weight:900;letter-spacing:3px;color:rgba(255,255,255,0.3);text-transform:uppercase;">' + (ativarDepois ? 'Criar PIN' : 'Alterar PIN') + '</span>' +
+      '<button onclick="document.getElementById(\'_pin-alterar-modal\').remove()" style="background:none;border:1px solid rgba(255,255,255,0.1);color:rgba(255,255,255,0.4);width:28px;height:28px;border-radius:50%;cursor:pointer;display:flex;align-items:center;justify-content:center;font-family:inherit;">' +
+        '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>' +
+      '</button>' +
+    '</div>' +
+    '<div style="padding:20px 24px 24px;display:flex;flex-direction:column;gap:14px;">' +
+      '<div style="font-size:12px;color:rgba(255,255,255,0.4);line-height:1.6;">Digite um PIN de 4 dígitos. Ele será solicitado toda vez que abrir o app.</div>' +
+      '<div style="display:flex;gap:10px;justify-content:center;">' +
+        '<input id="_pin-d0" type="password" inputmode="numeric" maxlength="1" style="width:52px;height:56px;border-radius:12px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);color:#fff;font-size:22px;font-weight:900;text-align:center;outline:none;font-family:inherit;transition:border-color 0.18s;" oninput="if(this.value.replace(/[^0-9]/g,\'\')){this.value=this.value.replace(/[^0-9]/g,\'\').slice(-1);document.getElementById(\'_pin-d1\')?.focus();} else this.value=\'\';" onfocus="this.style.borderColor=\'rgba(138,92,246,0.6)\'" onblur="this.style.borderColor=\'rgba(255,255,255,0.1)\'">' +
+        '<input id="_pin-d1" type="password" inputmode="numeric" maxlength="1" style="width:52px;height:56px;border-radius:12px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);color:#fff;font-size:22px;font-weight:900;text-align:center;outline:none;font-family:inherit;transition:border-color 0.18s;" oninput="if(this.value.replace(/[^0-9]/g,\'\')){this.value=this.value.replace(/[^0-9]/g,\'\').slice(-1);document.getElementById(\'_pin-d2\')?.focus();} else this.value=\'\';" onfocus="this.style.borderColor=\'rgba(138,92,246,0.6)\'" onblur="this.style.borderColor=\'rgba(255,255,255,0.1)\'">' +
+        '<input id="_pin-d2" type="password" inputmode="numeric" maxlength="1" style="width:52px;height:56px;border-radius:12px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);color:#fff;font-size:22px;font-weight:900;text-align:center;outline:none;font-family:inherit;transition:border-color 0.18s;" oninput="if(this.value.replace(/[^0-9]/g,\'\')){this.value=this.value.replace(/[^0-9]/g,\'\').slice(-1);document.getElementById(\'_pin-d3\')?.focus();} else this.value=\'\';" onfocus="this.style.borderColor=\'rgba(138,92,246,0.6)\'" onblur="this.style.borderColor=\'rgba(255,255,255,0.1)\'">' +
+        '<input id="_pin-d3" type="password" inputmode="numeric" maxlength="1" style="width:52px;height:56px;border-radius:12px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);color:#fff;font-size:22px;font-weight:900;text-align:center;outline:none;font-family:inherit;transition:border-color 0.18s;" oninput="this.value=this.value.replace(/[^0-9]/g,\'\').slice(-1);" onfocus="this.style.borderColor=\'rgba(138,92,246,0.6)\'" onblur="this.style.borderColor=\'rgba(255,255,255,0.1)\'">' +
+      '</div>' +
+      '<button onclick="_pinConfirmarAlterar(' + (ativarDepois ? 'true' : 'false') + ')" style="background:rgba(138,92,246,0.2);border:1px solid rgba(138,92,246,0.4);color:#a78bfa;padding:13px;border-radius:12px;font-size:11px;font-weight:900;letter-spacing:1px;cursor:pointer;text-transform:uppercase;font-family:inherit;transition:0.18s;touch-action:manipulation;" onmouseenter="this.style.background=\'rgba(138,92,246,0.3)\'" onmouseleave="this.style.background=\'rgba(138,92,246,0.2)\'">Confirmar PIN</button>' +
+    '</div>' +
+    '</div>';
+
+  overlay.addEventListener('click', function(e) { if (e.target === overlay) overlay.remove(); });
+  document.body.appendChild(overlay);
+  setTimeout(function() { document.getElementById('_pin-d0')?.focus(); }, 100);
+}
+
+function _pinConfirmarAlterar(ativarDepois) {
+  var pin = ['_pin-d0','_pin-d1','_pin-d2','_pin-d3']
+    .map(function(id) { return (document.getElementById(id) || {value:''}).value; })
+    .join('');
+
+  if (pin.length < 4 || !/^\d{4}$/.test(pin)) {
+    showToast('Digite 4 dígitos numéricos.', 'error');
+    return;
+  }
+
+  var perfil = _lsGet('map_perfil_v1', {});
+  perfil.pin = pin;
+  perfil.pinAtivo = true; // ao criar/alterar, ativa automaticamente
+  _lsSet('map_perfil_v1', perfil);
+
+  document.getElementById('_pin-alterar-modal')?.remove();
+  _perfilRenderTogglePin();
+  showToast('PIN ' + (ativarDepois ? 'criado' : 'alterado') + ' com sucesso!', 'success');
 }
 
 // ─── PERFIL PUBLICO DE OUTROS USUARIOS ──────────────────────────────────────
