@@ -12094,7 +12094,6 @@ function dcImportarSample(padIdx) {
 function dcHitPad(padIdx, el) {
   var ctx = _getAudioCtx();
   if (!ctx) return;
-  // ctx.resume() already handled in _getAudioCtx — avoid async overhead here
   var key = _dcBank * 16 + padIdx;
   var vol = (_dcVolumes[key] !== undefined ? _dcVolumes[key] : 0.8) * _dcMasterVol;
   // Visual hit
@@ -12102,18 +12101,37 @@ function dcHitPad(padIdx, el) {
     el.classList.add('hit');
     setTimeout(function() { if (el) el.classList.remove('hit'); }, 120);
   }
-  // Sidechain trigger if this pad is the trigger source
+  // Sidechain trigger
   if (_dcFxEnabled.sidechain && parseInt(_dcFxParams.sidechain.src) === padIdx) {
     _dcSidechainTrigger(ctx);
   }
-  // Cache FX check once per hit (avoid repeated Object.values iteration)
-  var _anyFx = typeof _dcFxEnabled !== 'undefined' && Object.values(_dcFxEnabled).some(Boolean);
+
+  // Verifica FX individual do pad
+  var padCfg = _dcPadFx[_dcBank] && _dcPadFx[_dcBank][padIdx];
+  var hasPadFx = !!(padCfg && padCfg.type && padCfg.enabled);
+
+  // Se tem FX individual, aplica temporariamente sobrescrevendo os globais
+  var _savedEnabled = null, _savedParams = null;
+  if (hasPadFx) {
+    _savedEnabled = JSON.parse(JSON.stringify(_dcFxEnabled));
+    _savedParams  = JSON.parse(JSON.stringify(_dcFxParams));
+    // Desativa todos os globais e ativa só o do pad
+    Object.keys(_dcFxEnabled).forEach(function(k) { _dcFxEnabled[k] = false; });
+    _dcFxEnabled[padCfg.type] = true;
+    // Aplica parâmetros do pad (com fallback para os globais)
+    if (padCfg.params && padCfg.params[padCfg.type]) {
+      _dcFxParams[padCfg.type] = Object.assign({}, _dcFxParams[padCfg.type], padCfg.params[padCfg.type]);
+    }
+  }
+
+  var _anyFx = hasPadFx || Object.values(_dcFxEnabled).some(Boolean);
+
   // Play sample if imported
   if (_dcSamples[key]) {
     var src = ctx.createBufferSource();
     src.buffer = _dcSamples[key];
     _dcApplyPitch(src);
-    var g = ctx.createGain(); g.gain.value = vol * 0.9; // leve atenuação preventiva
+    var g = ctx.createGain(); g.gain.value = vol * 0.9;
     var _mOut = _getDcMasterNode(ctx);
     if (_anyFx) {
       src.connect(g);
@@ -12123,11 +12141,16 @@ function dcHitPad(padIdx, el) {
       src.connect(g); g.connect(_mOut);
     }
     src.start(ctx.currentTime);
-    return;
+  } else {
+    var pad = DC_BANKS[_dcBank][padIdx];
+    _dcSynth(ctx, pad, vol, _anyFx);
   }
-  // Synthesize
-  var pad = DC_BANKS[_dcBank][padIdx];
-  _dcSynth(ctx, pad, vol, _anyFx);
+
+  // Restaura estado global após hit
+  if (_savedEnabled !== null) {
+    Object.assign(_dcFxEnabled, _savedEnabled);
+    Object.assign(_dcFxParams,  _savedParams);
+  }
 }
 
 // ── Synthesizer: generates each drum sound via Web Audio ──
@@ -12721,23 +12744,78 @@ function dcAbrirPadFxModal(padIdx) {
   document.getElementById('dc-pad-fx-padname').textContent = pad.name;
   // Garantir estrutura
   if (!_dcPadFx[_dcBank]) _dcPadFx[_dcBank] = {};
-  var cfg = _dcPadFx[_dcBank][padIdx] || { type: null, enabled: false };
+  var cfg = _dcPadFx[_dcBank][padIdx] || { type: null, enabled: false, params: {} };
+  if (!cfg.params) cfg.params = {};
   _dcPadFx[_dcBank][padIdx] = cfg;
-  // Renderizar lista de efeitos
+
   var body = document.getElementById('dc-pad-fx-body');
-  body.innerHTML = _DC_FX_TYPES.map(function(fx) {
+
+  // Monta HTML
+  var html = _DC_FX_TYPES.map(function(fx) {
     var isSelected = (cfg.type === fx);
     var isOn = isSelected && cfg.enabled;
-    return '<div class="dc-pad-fx-row' + (isOn ? ' ativo' : '') + '" id="dc-pf-row-' + fx + '">' +
-      '<span class="dc-pad-fx-row-name">' + _DC_FX_LABELS[fx] + '</span>' +
-      '<div style="display:flex;align-items:center;gap:10px;flex-shrink:0;">' +
-        '<button onclick="dcPadFxSelecionar(\'' + fx + '\')" style="background:' + (isSelected ? 'rgba(138,92,246,0.2)' : 'rgba(255,255,255,0.04)') + ';border:1px solid ' + (isSelected ? 'rgba(138,92,246,0.5)' : 'rgba(255,255,255,0.1)') + ';color:' + (isSelected ? '#a78bfa' : 'rgba(255,255,255,0.3)') + ';padding:5px 12px;border-radius:20px;font-size:8px;font-weight:900;letter-spacing:1px;cursor:pointer;text-transform:uppercase;touch-action:manipulation;font-family:inherit;">' + (isSelected ? 'Selecionado' : 'Selecionar') + '</button>' +
-        (isSelected ? '<button class="dc-fx-onoff' + (isOn ? ' on' : '') + '" id="dc-pf-onoff-' + fx + '" onclick="dcPadFxToggleOn()" style="flex-shrink:0"></button>' : '') +
+    var paramsHtml = '';
+    if (isSelected) {
+      // Parâmetros do efeito — usa cfg.params com fallback para _dcFxParams global
+      var p = Object.assign({}, _dcFxParams[fx] || {}, cfg.params[fx] || {});
+      paramsHtml = '<div style="margin-top:10px;padding:12px;background:rgba(138,92,246,0.06);border-radius:10px;border:1px solid rgba(138,92,246,0.15);display:flex;flex-direction:column;gap:10px;">' +
+        _dcPadFxParamsHtml(fx, p) +
+        '</div>';
+    }
+    return '<div class="dc-pad-fx-row' + (isOn ? ' ativo' : '') + '" id="dc-pf-row-' + fx + '" style="flex-direction:column;align-items:stretch;gap:0;">' +
+      '<div style="display:flex;align-items:center;justify-content:space-between;">' +
+        '<span class="dc-pad-fx-row-name">' + _DC_FX_LABELS[fx] + '</span>' +
+        '<div style="display:flex;align-items:center;gap:10px;flex-shrink:0;">' +
+          '<button onclick="dcPadFxSelecionar(\'' + fx + '\')" style="background:' + (isSelected ? 'rgba(138,92,246,0.2)' : 'rgba(255,255,255,0.04)') + ';border:1px solid ' + (isSelected ? 'rgba(138,92,246,0.5)' : 'rgba(255,255,255,0.1)') + ';color:' + (isSelected ? '#a78bfa' : 'rgba(255,255,255,0.3)') + ';padding:5px 12px;border-radius:20px;font-size:8px;font-weight:900;letter-spacing:1px;cursor:pointer;text-transform:uppercase;touch-action:manipulation;font-family:inherit;">' + (isSelected ? 'Ativo' : 'Selecionar') + '</button>' +
+          (isSelected ? '<button class="dc-fx-onoff' + (isOn ? ' on' : '') + '" id="dc-pf-onoff-' + fx + '" onclick="dcPadFxToggleOn()" style="flex-shrink:0"></button>' : '') +
+        '</div>' +
       '</div>' +
+      paramsHtml +
       '</div>';
   }).join('') +
   '<button onclick="dcPadFxRemover()" style="margin-top:4px;background:rgba(220,38,38,0.08);border:1px solid rgba(220,38,38,0.2);color:rgba(248,113,113,0.7);padding:10px;border-radius:12px;font-size:10px;font-weight:900;letter-spacing:1px;cursor:pointer;text-transform:uppercase;touch-action:manipulation;font-family:inherit;width:100%;">Remover efeito</button>';
+
+  body.innerHTML = html;
   document.getElementById('dc-pad-fx-overlay').classList.add('show');
+}
+
+// Gera sliders de parâmetros para o efeito do pad
+function _dcPadFxParamsHtml(fx, p) {
+  function slider(lbl, key, min, max, val, unit, step) {
+    step = step || 1;
+    var id = 'dc-pf-param-' + fx + '-' + key;
+    var display = val + (unit || '');
+    return '<div style="display:flex;flex-direction:column;gap:4px;">' +
+      '<div style="display:flex;justify-content:space-between;align-items:center;">' +
+        '<span style="font-size:9px;font-weight:800;letter-spacing:1px;color:rgba(255,255,255,0.4);text-transform:uppercase;">' + lbl + '</span>' +
+        '<span id="' + id + '-val" style="font-size:10px;font-weight:800;color:#a78bfa;">' + display + '</span>' +
+      '</div>' +
+      '<input type="range" min="' + min + '" max="' + max + '" step="' + step + '" value="' + val + '"' +
+        ' style="-webkit-appearance:none;width:100%;height:4px;border-radius:2px;outline:none;cursor:pointer;background:rgba(255,255,255,0.12);"' +
+        ' oninput="dcPadFxParamChange(\'' + fx + '\',\'' + key + '\',this.value,\'' + (unit||'') + '\',\'' + id + '-val\')">' +
+      '</div>';
+  }
+  if (fx === 'reverb') return slider('Tamanho','size',0,100,p.size||40,'%')+slider('Mix','mix',0,100,p.mix||30,'%');
+  if (fx === 'delay')  return slider('Tempo','time',1,100,p.time||25,'ms')+slider('Feedback','feedback',0,85,p.feedback||35,'%')+slider('Mix','mix',0,100,p.mix||25,'%');
+  if (fx === 'comp')   return slider('Threshold','threshold',-60,0,p.threshold||-18,'dB')+slider('Ratio','ratio',1,20,p.ratio||4,':1');
+  if (fx === 'dist')   return slider('Drive','drive',0,100,p.drive||40,'%')+slider('Mix','mix',0,100,p.mix||50,'%');
+  if (fx === 'filter') return slider('Freq','freq',80,18000,p.freq||8000,'Hz')+slider('Q','q',0.1,20,p.q||1,'',0.1);
+  if (fx === 'pitch')  return slider('Semitoms','semi',-12,12,p.semi||0,'')+slider('Cents','cents',-100,100,p.cents||0,'');
+  return '';
+}
+
+// Atualiza parâmetro individual do pad e salva em cfg.params
+function dcPadFxParamChange(fx, key, val, unit, valElId) {
+  if (_dcPadFxTarget < 0) return;
+  if (!_dcPadFx[_dcBank]) _dcPadFx[_dcBank] = {};
+  var cfg = _dcPadFx[_dcBank][_dcPadFxTarget];
+  if (!cfg) return;
+  if (!cfg.params) cfg.params = {};
+  if (!cfg.params[fx]) cfg.params[fx] = {};
+  cfg.params[fx][key] = isNaN(val) ? val : parseFloat(val);
+  // Atualiza label do valor
+  var el = document.getElementById(valElId);
+  if (el) el.textContent = parseFloat(val) + unit;
 }
 
 function dcFecharPadFxModal() {
@@ -23033,7 +23111,7 @@ function _confirmarAcao(titulo, msg, labelConfirm, corConfirm, onConfirm) {
   var row = document.createElement('div');
   row.style.cssText = 'display:flex;gap:10px;margin-top:4px;';
   var btnN = document.createElement('button');
-  btnN.style.cssText = 'flex:1;padding:12px;border-radius:12px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);color:rgba(255,255,255,0.45);font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;touch-action:manipulation;';
+  btnN.style.cssText = 'flex:1;padding:12px;border-radius:12px;background:' + (_isLight() ? 'rgba(0,0,0,0.06)' : 'rgba(255,255,255,0.04)') + ';border:1px solid ' + (_isLight() ? 'rgba(0,0,0,0.1)' : 'rgba(255,255,255,0.08)') + ';color:' + _txtSecColor() + ';font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;touch-action:manipulation;';
   btnN.textContent = 'Cancelar';
   btnN.onclick = function() { _fecharSemFantasma(); };
   var btnS = document.createElement('button');
