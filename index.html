@@ -3765,7 +3765,8 @@ body { font-family: -apple-system, 'Inter', BlinkMacSystemFont, 'Segoe UI', sans
 /* ── 4x4 Pad Grid ── */
 .dc-pads-grid {
   display: grid; grid-template-columns: repeat(4, 1fr);
-  gap: 8px; flex: 1; min-height: 0;
+  grid-auto-rows: 1fr;
+  gap: 8px; flex: 1; min-height: 0; height: 100%;
   touch-action: none;
 }
 .dc-pad {
@@ -4297,13 +4298,9 @@ body { font-family: -apple-system, 'Inter', BlinkMacSystemFont, 'Segoe UI', sans
 .drumcam-pads-row,.drumcam-tap,.drumcam-tap-btn,.drumcam-metro-btn,.drumcam-octave { display: none !important; }
 /* ── DrumCam Responsive ── */
 
-/* Desktop: constrain width and center */
+/* Desktop: sem restrição de largura */
 @media (min-width: 641px) {
-  .dc-machine {
-    max-width: 680px;
-    margin: 0 auto;
-    width: 100%;
-  }
+  .dc-machine { width: 100%; padding: 8px 12px 10px; }
   .dc-pads-grid { gap: 10px; }
   .dc-pad { border-radius: 14px; }
   .dc-fx-modal-box { max-width: 560px; }
@@ -4313,8 +4310,8 @@ body { font-family: -apple-system, 'Inter', BlinkMacSystemFont, 'Segoe UI', sans
 
 /* Large desktop */
 @media (min-width: 1025px) {
-  .dc-machine { max-width: 780px; }
-  .dc-pads-grid { gap: 12px; }
+  .dc-machine { padding: 10px 16px 12px; }
+  .dc-pads-grid { gap: 14px; }
   .dc-topbar { margin-bottom: 4px; }
 }
 
