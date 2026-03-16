@@ -2773,7 +2773,7 @@ body.theme-light [style*="background:#111119"],
 body.theme-light [style*="background:#0d0d1a"],
 body.theme-light [style*="background:#1a1a28"],
 body.theme-light [style*="background:#111"] {
-  background: #FFFFFF !important;
+  background: var(--bg-primary) !important;
   border-color: rgba(0,0,0,0.09) !important;
   color: #1A1A1E !important;
 }
@@ -2798,10 +2798,78 @@ body.theme-light [style*="background:#111119"] textarea {
   border-color: rgba(0,0,0,0.1) !important;
   color: #1A1A1E !important;
 }
+
+/* ── 23c. MODAL-BOX — textos e botões inline escuros ────────────────────── */
+/* Textos brancos inline dentro de modal-box */
+body.theme-light .modal-box [style*="color:#fff"],
+body.theme-light .modal-box [style*="color: #fff"] {
+  color: #1A1A1E !important;
+}
+body.theme-light .modal-box [style*="color:rgba(255,255,255,0.4)"],
+body.theme-light .modal-box [style*="color:rgba(255,255,255,0.3)"],
+body.theme-light .modal-box [style*="color:rgba(255,255,255,0.2)"],
+body.theme-light .modal-box [style*="color:rgba(255,255,255,0.5)"],
+body.theme-light .modal-box [style*="color:rgba(255,255,255,0.6)"],
+body.theme-light .modal-box [style*="color:rgba(255,255,255,0.9)"] {
+  color: rgba(26,26,30,0.5) !important;
+}
+/* Botões com fundo escuro inline dentro de modal-box */
+body.theme-light .modal-box button[style*="background:rgba(255,255,255,0.03)"],
+body.theme-light .modal-box button[style*="background:rgba(255,255,255,0.04)"],
+body.theme-light .modal-box button[style*="background:rgba(255,255,255,0.06)"],
+body.theme-light .modal-box button[style*="background:rgba(255,255,255,0.07)"] {
+  background: var(--bg-secondary) !important;
+  border-color: rgba(0,0,0,0.1) !important;
+  color: #1A1A1E !important;
+}
+/* Botão fechar (×) inline */
+body.theme-light .modal-box button[style*="color:rgba(255,255,255,0.3)"],
+body.theme-light .modal-box button[style*="color:rgba(255,255,255,0.4)"] {
+  color: rgba(26,26,30,0.4) !important;
+}
+/* Bordas internas */
+body.theme-light .modal-box [style*="border-bottom:1px solid var(--glass-border)"],
+body.theme-light .modal-box [style*="border-bottom: 1px solid var(--glass-border)"] {
+  border-bottom-color: rgba(0,0,0,0.07) !important;
+}
+body.theme-light .modal-box [style*="border:1px solid rgba(255,255,255,0.09)"],
+body.theme-light .modal-box [style*="border:1px solid rgba(255,255,255,0.1)"] {
+  border-color: rgba(0,0,0,0.09) !important;
+}
+/* Divs com fundo escuro inline dentro de modal-box */
+body.theme-light .modal-box div[style*="background:rgba(255,255,255,0.03)"],
+body.theme-light .modal-box div[style*="background:rgba(255,255,255,0.04)"],
+body.theme-light .modal-box div[style*="background:rgba(255,255,255,0.06)"] {
+  background: var(--bg-secondary) !important;
+  border-color: rgba(0,0,0,0.08) !important;
+}
+/* Ícones SVG dentro de botões no modal */
+body.theme-light .modal-box button[style*="background:rgba(255,255,255"] svg { stroke: #1A1A1E !important; }
+
+/* ── 23d. MODAL HISTÓRICO DE SHOWS ──────────────────────────────────────── */
+body.theme-light #modal-historico-shows > div {
+  background: var(--bg-primary) !important;
+  border-top: 1px solid rgba(0,0,0,0.08) !important;
+}
+body.theme-light #modal-historico-shows [style*="color:#fff"],
+body.theme-light #modal-historico-shows [style*="color:rgba(255,255,255"] {
+  color: #1A1A1E !important;
+}
+body.theme-light #modal-historico-shows [style*="background:rgba(255,255,255,0.03)"],
+body.theme-light #modal-historico-shows [style*="background:rgba(255,255,255,0.04)"],
+body.theme-light #modal-historico-shows [style*="background:rgba(255,255,255,0.05)"] {
+  background: var(--bg-secondary) !important;
+  border-color: rgba(0,0,0,0.07) !important;
+}
+body.theme-light #modal-historico-shows [style*="border-bottom:1px solid rgba(255,255,255"],
+body.theme-light #modal-historico-shows [style*="border-top:1px solid rgba(255,255,255"] {
+  border-color: rgba(0,0,0,0.07) !important;
+}
+
 /* Menus dropdown inline (banner-menu, foto-menu) */
 body.theme-light [id="banner-menu"],
 body.theme-light [id="foto-menu"] {
-  background: #FFFFFF !important;
+  background: var(--bg-primary) !important;
   border-color: rgba(0,0,0,0.09) !important;
   box-shadow: 0 8px 24px rgba(0,0,0,0.12) !important;
 }
@@ -2835,17 +2903,15 @@ body { font-family: -apple-system, 'Inter', BlinkMacSystemFont, 'Segoe UI', sans
     #8a5cf6,
     #f472b6,
     #f59e0b,
-    #0a9e6e,
-    #38bdf8,
-    #8a5cf6
+    #0a9e6e
   );
-  background-size: 300% 100%;
+  background-size: 200% 100%;
   animation: ledRun 10s linear infinite;
   opacity: 0.6;
 }
 @keyframes ledRun {
-  0%   { background-position: 100% 0; }
-  100% { background-position: -100% 0; }
+  0%   { background-position: 0% 0; }
+  100% { background-position: 200% 0; }
 }
 .header-content { max-width: 1400px; margin: 0 auto; display: flex; justify-content: space-between; align-items: center; }
 
@@ -3768,7 +3834,7 @@ body { font-family: -apple-system, 'Inter', BlinkMacSystemFont, 'Segoe UI', sans
 .dc-bottombar { display: none; }
 
 /* FX bar e panel — ocultos do layout principal, abertos via modal */
-.dc-fx-bar    { display: none; }
+.dc-fx-bar    { display: none !important; }
 .dc-fx-panel  { display: none !important; }
 
 /* ── Botão FX no header do Drum Cam ── */
@@ -4050,8 +4116,14 @@ body { font-family: -apple-system, 'Inter', BlinkMacSystemFont, 'Segoe UI', sans
   color: rgba(255,255,255,0.2); text-transform: uppercase;
 }
 
-/* Ícone de efeito por pad — canto inferior direito */
-.dc-pad-fx-ico {
+/* Anel de feedback do long press */
+.dc-pad-longpress-ring {
+  position: absolute; inset: 0; border-radius: inherit;
+  border: 2px solid rgba(138,92,246,0.8);
+  transform: scale(0); opacity: 0;
+  pointer-events: none; z-index: 4;
+  box-shadow: 0 0 12px rgba(138,92,246,0.4);
+}
   position: absolute; bottom: 5px; right: 5px;
   width: 20px; height: 20px; border-radius: 6px;
   background: rgba(0,0,0,0.45); border: 1px solid rgba(138,92,246,0.3);
@@ -4444,7 +4516,7 @@ body { font-family: -apple-system, 'Inter', BlinkMacSystemFont, 'Segoe UI', sans
   .code-input { width: 44px; height: 54px; font-size: 22px; }
 
   /* Pads */
-  .pads-grid { gap: 6px; }
+  .pads-grid { gap: 6px; grid-template-columns: repeat(3, 1fr); grid-template-rows: auto; }
   .pad-chord { font-size: 12px; }
 
   /* Sync bar */
@@ -4637,7 +4709,15 @@ body.performance-mode .teleprompter-panel { display: block; }
   display: flex; align-items: center; gap: 10px;
   padding: 8px 14px 12px;
 }
-.tp-icon { font-size: 10px; color: rgba(255,255,255,0.2); flex-shrink: 0; line-height: 1; }
+.tp-adj-btn {
+  background: none; border: 1px solid rgba(255,255,255,0.1);
+  color: rgba(255,255,255,0.35); width: 22px; height: 22px;
+  border-radius: 6px; cursor: pointer; display: flex;
+  align-items: center; justify-content: center;
+  flex-shrink: 0; transition: 0.15s; touch-action: manipulation;
+  padding: 0;
+}
+.tp-adj-btn:hover { border-color: rgba(255,62,62,0.4); color: #ff3e3e; }
 .scroll-slider {
   -webkit-appearance: none; appearance: none;
   flex: 1; height: 3px; border-radius: 2px; outline: none; cursor: pointer;
@@ -5226,31 +5306,31 @@ body.theme-light .toast-info .toast-icon { background: rgba(0,0,0,0.05) !importa
 
 /* ── Grid ── */
 .pads-grid-wrap {
-  flex: 1; display: flex; align-items: stretch; justify-content: center;
-  padding: 16px 14px; overflow: hidden; min-height: 0;
+  flex: 1; display: flex; align-items: stretch; justify-content: stretch;
+  padding: 8px; overflow: hidden; min-height: 0;
 }
 /* Desktop: pads ocupam toda a tela */
 @media (min-width: 641px) {
-  .pads-grid-wrap { padding: 20px 28px; }
+  .pads-grid-wrap { padding: 10px 14px; }
   .pads-grid {
-    width: 100%; max-width: 1200px; margin: 0 auto;
-    grid-template-columns: repeat(6, 1fr);
-    gap: 14px;
+    width: 100%;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 10px;
   }
-  .pad-chord { font-size: clamp(18px, 2.8vw, 28px); }
+  .pad-chord { font-size: clamp(16px, 2vw, 26px); }
   .pad-type  { font-size: 10px; }
 }
 @media (min-width: 1025px) {
-  .pads-grid-wrap { padding: 24px 40px; }
-  .pads-grid { max-width: 100%; gap: 18px; }
+  .pads-grid-wrap { padding: 12px 16px; }
+  .pads-grid { gap: 14px; }
   .pad { border-radius: 18px; }
-  .pad-chord { font-size: clamp(22px, 2.6vw, 38px); }
+  .pad-chord { font-size: clamp(20px, 1.8vw, 32px); }
   .pad-type  { font-size: 12px; letter-spacing: 1px; }
 }
 .pads-grid {
   display: grid;
-  grid-template-columns: repeat(6, 1fr);
-  grid-template-rows: repeat(2, 1fr);
+  grid-template-columns: repeat(4, 1fr);
+  grid-template-rows: repeat(4, 1fr);
   gap: 10px; width: 100%; height: 100%;
 }
 
@@ -7507,13 +7587,19 @@ body.auth-pending #toast {
 <div class="perf-bottom-panel">
   <div class="teleprompter-panel">
     <div class="tp-header">
-      <span class="tp-label">Teleprompter</span>
+      <span class="tp-label">Rolagem</span>
       <button class="tp-stop" onclick="stopScroll()">Parar</button>
     </div>
     <div class="tp-body">
-      <span class="tp-icon">&#9650;</span>
-      <input type="range" class="scroll-slider" id="scroll-speed" min="0" max="100" value="0">
-      <span class="scroll-speed-val" id="scroll-speed-val">0</span>
+      <button class="tp-adj-btn" onclick="scrollAdj(-1)" title="Diminuir">
+        <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/></svg>
+      </button>
+      <input type="range" class="scroll-slider" id="scroll-speed" min="1" max="100" value="1"
+        oninput="document.getElementById('scroll-speed-val').innerText=this.value;_setScroll(parseInt(this.value))">
+      <button class="tp-adj-btn" onclick="scrollAdj(1)" title="Aumentar">
+        <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+      </button>
+      <span class="scroll-speed-val" id="scroll-speed-val">1</span>
     </div>
   </div>
 </div>
@@ -8318,7 +8404,8 @@ let scrollInterval = null;
 function _setScroll(speed) {
   clearInterval(scrollInterval);
   scrollInterval = null;
-  if (speed > 0) scrollInterval = setInterval(() => window.scrollBy(0, 1), 175 - speed);
+  // 1 = muito lento (600ms/px), 100 = rápido (50ms/px)
+  if (speed > 0) scrollInterval = setInterval(() => window.scrollBy(0, 1), Math.round(600 - (speed - 1) * 5.5));
 }
 let tapTimes = [];
 let audioCtx = null;
@@ -8845,12 +8932,12 @@ function _ativarModoShow() {
   ativarWakeLock();
   const slider = document.getElementById('scroll-speed');
   const prevSpeed = slider ? (parseInt(slider.value) || 0) : 0;
-  if (prevSpeed === 0 && slider) {
-    slider.value = 9;
+  if (slider) {
+    slider.value = prevSpeed > 0 ? prevSpeed : 1;
     var _ssv = document.getElementById('scroll-speed-val');
-    if (_ssv) _ssv.innerText = '9';
+    if (_ssv) _ssv.innerText = slider.value;
   }
-  _setScroll(slider ? parseInt(slider.value) : 9);
+  _setScroll(slider ? parseInt(slider.value) : 1);
   broadcastEstado();
 }
 
@@ -9941,6 +10028,17 @@ if (scrollSlider) scrollSlider.oninput = () => {
   _setScroll(spd);
   if (!syncPaused) broadcastEstado();
 };
+function scrollAdj(dir) {
+  var slider = document.getElementById('scroll-speed');
+  var val = document.getElementById('scroll-speed-val');
+  if (!slider) return;
+  var cur = parseInt(slider.value) || 1;
+  var novo = Math.min(100, Math.max(1, cur + dir));
+  slider.value = novo;
+  if (val) val.innerText = novo;
+  _setScroll(novo);
+}
+
 function stopScroll() {
   _setScroll(0);
   if (scrollSlider) scrollSlider.value = 0;
@@ -11832,15 +11930,17 @@ function renderDcPads() {
     return '<div class="dc-pad' + (hasSample ? ' has-sample' : '') + (hasPadFx ? ' has-pad-fx' : '') + '"' +
       ' data-color="' + pad.color + '"' +
       ' data-idx="' + i + '"' +
-      ' onmousedown="dcHitPad(' + i + ',this)"' +
-      ' ontouchstart="dcHitPad(' + i + ',this);event.preventDefault()">' +
+      ' onmousedown="dcPadPressStart(' + i + ',this,event)"' +
+      ' onmouseup="dcPadPressEnd(' + i + ',this,false)"' +
+      ' onmouseleave="dcPadPressEnd(' + i + ',this,true)"' +
+      ' ontouchstart="dcPadPressStart(' + i + ',this,event);event.preventDefault()"' +
+      ' ontouchend="dcPadPressEnd(' + i + ',this,false)"' +
+      ' ontouchcancel="dcPadPressEnd(' + i + ',this,true)">' +
       '<div class="dc-pad-glow"></div>' +
       '<div class="dc-pad-fx-indicator"></div>' +
+      '<div class="dc-pad-longpress-ring"></div>' +
       '<div class="dc-pad-import" onclick="event.stopPropagation();dcImportarSample(' + i + ')" title="Importar sample">' +
         '<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>' +
-      '</div>' +
-      '<div class="dc-pad-fx-ico" onclick="event.stopPropagation();dcAbrirPadFxModal(' + i + ')" title="Efeito do pad">' +
-        '<svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14M4.93 4.93a10 10 0 0 0 0 14.14"/></svg>' +
       '</div>' +
       '<div class="dc-pad-name">' + pad.name + '</div>' +
       '<div class="dc-pad-sub">' + (hasSample ? 'SAMPLE' : pad.sub) + '</div>' +
@@ -11852,6 +11952,66 @@ function renderDcPads() {
     '<span class="dc-pad-add-label">Novo</span>' +
     '</div>';
   grid.innerHTML = padsHtml;
+}
+
+// ─── Long press nos pads — 2s abre modal de efeito individual ────────────────
+var _dcLongPressTimer = null;
+var _dcLongPressTarget = -1;
+var _dcLongPressEl = null;
+var _DC_LONGPRESS_MS = 2000;
+
+function dcPadPressStart(padIdx, el, event) {
+  // Cancela qualquer long press anterior
+  dcPadLongPressCancel();
+
+  _dcLongPressTarget = padIdx;
+  _dcLongPressEl = el;
+
+  // Inicia animação do anel
+  var ring = el.querySelector('.dc-pad-longpress-ring');
+  if (ring) {
+    ring.style.transition = 'none';
+    ring.style.transform = 'scale(0)';
+    ring.style.opacity = '0';
+    // Força reflow para reiniciar a animação
+    ring.offsetHeight;
+    ring.style.transition = 'transform ' + _DC_LONGPRESS_MS + 'ms linear, opacity 0.1s';
+    ring.style.transform = 'scale(1)';
+    ring.style.opacity = '0.6';
+  }
+
+  // Timer do long press
+  _dcLongPressTimer = setTimeout(function() {
+    dcPadLongPressCancel();
+    // Vibração háptica se disponível
+    if (navigator.vibrate) navigator.vibrate(40);
+    dcAbrirPadFxModal(padIdx);
+  }, _DC_LONGPRESS_MS);
+
+  // Toca o som imediatamente (comportamento normal)
+  dcHitPad(padIdx, el);
+}
+
+function dcPadPressEnd(padIdx, el, cancelled) {
+  dcPadLongPressCancel();
+}
+
+function dcPadLongPressCancel() {
+  if (_dcLongPressTimer) {
+    clearTimeout(_dcLongPressTimer);
+    _dcLongPressTimer = null;
+  }
+  // Remove animação do anel
+  if (_dcLongPressEl) {
+    var ring = _dcLongPressEl.querySelector('.dc-pad-longpress-ring');
+    if (ring) {
+      ring.style.transition = 'transform 0.18s ease, opacity 0.18s';
+      ring.style.transform = 'scale(0)';
+      ring.style.opacity = '0';
+    }
+    _dcLongPressEl = null;
+  }
+  _dcLongPressTarget = -1;
 }
 
 function renderDcMix() {
@@ -22845,7 +23005,8 @@ function _confirmarAcao(titulo, msg, labelConfirm, corConfirm, onConfirm) {
   if (prev) prev.remove();
   var overlay = document.createElement('div');
   overlay.setAttribute('data-confirm-modal', '1');
-  overlay.style.cssText = _overlayBg();
+  // z-index 100060 — acima de qualquer modal incluindo histórico (100050)
+  overlay.style.cssText = _overlayBg().replace('z-index:100020', 'z-index:100060');
 
   // Bloqueia ghost click após fechar — evita tap passar para elemento abaixo
   function _fecharSemFantasma() {
