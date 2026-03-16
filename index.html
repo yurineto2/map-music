@@ -3429,6 +3429,11 @@ body { font-family: -apple-system, 'Inter', BlinkMacSystemFont, 'Segoe UI', sans
 }
 
 /* ── DRUM CAM ── */
+/* ════════════════════════════════════════════════════════════════════════
+   CSS ÚNICO SEM DUPLICATAS — portrait + landscape em um só bloco limpo
+   ════════════════════════════════════════════════════════════════════════ */
+
+/* ── Overlay principal ── */
 .drumcam-overlay {
   position: fixed; inset: 0; z-index: 6000;
   background: #080810;
@@ -3437,9 +3442,10 @@ body { font-family: -apple-system, 'Inter', BlinkMacSystemFont, 'Segoe UI', sans
 }
 .drumcam-overlay.show { display: flex; }
 
+/* ── Header ── */
 .drumcam-header {
   display: flex; align-items: center; justify-content: space-between;
-  padding: 14px 18px 10px;
+  padding: 12px 16px 10px;
   background: rgba(8,8,16,0.98);
   border-bottom: 1px solid rgba(255,255,255,0.06);
   flex-shrink: 0; gap: 12px;
@@ -3449,77 +3455,84 @@ body { font-family: -apple-system, 'Inter', BlinkMacSystemFont, 'Segoe UI', sans
   text-transform: uppercase; color: rgba(255,255,255,0.25); flex-shrink: 0;
 }
 .drumcam-song-info {
-  display: flex; align-items: center; gap: 10px;
-  flex: 1; min-width: 0; justify-content: center;
+  display: flex; align-items: center; gap: 6px; flex: 1; overflow: hidden;
 }
 .drumcam-song-name {
-  font-size: 13px; font-weight: 900;
-  color: #fff; letter-spacing: 0.5px;
+  font-size: 11px; font-weight: 800; color: rgba(255,255,255,0.6);
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
-  max-width: 200px; display: none;
 }
 .drumcam-bpm {
-  font-size: 22px; font-weight: 900;
-  color: var(--accent-primary); letter-spacing: -1px; line-height: 1;
+  font-size: 22px; font-weight: 900; color: #0A9E6E;
+  font-variant-numeric: tabular-nums; line-height: 1; flex-shrink: 0;
 }
 .drumcam-bpm-label {
-  font-size: 8px; font-weight: 700; letter-spacing: 3px;
-  color: rgba(255,255,255,0.25); text-transform: uppercase;
+  font-size: 8px; font-weight: 700; color: rgba(255,255,255,0.3);
+  letter-spacing: 1px; flex-shrink: 0;
 }
 .drumcam-close {
-  background: none; border: 1px solid rgba(255,255,255,0.1);
-  color: rgba(255,255,255,0.4); padding: 5px 14px;
-  border-radius: 20px; font-size: 10px; font-weight: 700;
-  letter-spacing: 1px; cursor: pointer; text-transform: uppercase;
-  transition: 0.2s; flex-shrink: 0; touch-action: manipulation;
+  background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.1);
+  color: rgba(255,255,255,0.4); font-size: 9px; font-weight: 900;
+  letter-spacing: 1px; padding: 7px 14px; border-radius: 8px;
+  cursor: pointer; text-transform: uppercase; flex-shrink: 0;
+  touch-action: manipulation;
 }
 .drumcam-close:hover { color: #fff; border-color: rgba(255,255,255,0.3); }
-
 .drumcam-beat {
-  position: absolute; inset: 0; pointer-events: none;
-  background: rgba(10,158,110,0.06); opacity: 0; z-index: 1;
-  transition: opacity 0.04s;
+  position: absolute; inset: 0; pointer-events: none; z-index: 10;
+  background: rgba(255,255,255,0.06); opacity: 0; transition: opacity 0.05s;
 }
 .drumcam-beat.flash { opacity: 1; }
 
-/* ── Drum Machine Body ── */
+/* ── Máquina (corpo principal) ── */
 .dc-machine {
   flex: 1; display: flex; flex-direction: column;
   overflow: hidden;
-  padding: 10px 10px 14px; gap: 8px; position: relative; z-index: 2;
+  padding: 10px; gap: 8px; position: relative; z-index: 2;
 }
+
+/* ── Topbar: bank tabs + TAP ── */
 .dc-topbar {
-  display: flex; align-items: center; gap: 8px; flex-shrink: 0;
+  display: flex; align-items: center; gap: 6px; flex-shrink: 0;
 }
 .dc-bank-tabs { display: flex; gap: 4px; flex: 1; }
 .dc-bank-tab {
-  flex: 1; padding: 7px 4px; border-radius: 8px;
+  flex: 1; padding: 8px 4px; border-radius: 8px;
   background: rgba(255,255,255,0.04);
   border: 1px solid rgba(255,255,255,0.08);
   color: rgba(255,255,255,0.35); font-size: 9px; font-weight: 900;
-  letter-spacing: 1px; text-transform: uppercase;
-  cursor: pointer; text-align: center; transition: 0.15s; touch-action: manipulation;
+  letter-spacing: 0.5px; text-align: center; cursor: pointer;
+  text-transform: uppercase; touch-action: manipulation;
+  transition: all 0.15s;
 }
 .dc-bank-tab.ativo {
-  background: rgba(10,158,110,0.15); border-color: rgba(10,158,110,0.5); color: #0A9E6E;
+  background: rgba(10,158,110,0.15);
+  border-color: rgba(10,158,110,0.45);
+  color: #22c55e;
 }
 .dc-tap-btn {
-  background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.1);
-  color: rgba(255,255,255,0.5); padding: 7px 16px; border-radius: 8px;
-  font-size: 9px; font-weight: 900; letter-spacing: 1.5px;
-  cursor: pointer; transition: 0.12s; text-transform: uppercase;
-  touch-action: manipulation; flex-shrink: 0;
+  background: rgba(10,158,110,0.1);
+  border: 1px solid rgba(10,158,110,0.3);
+  color: rgba(10,158,110,0.8);
+  padding: 8px 14px; border-radius: 8px;
+  font-size: 9px; font-weight: 900; letter-spacing: 1px;
+  cursor: pointer; touch-action: manipulation; flex-shrink: 0;
+  text-transform: uppercase; transition: all 0.1s;
 }
-.dc-tap-btn:active {
-  background: rgba(10,158,110,0.2); border-color: var(--accent-primary);
-  color: var(--accent-primary); transform: scale(0.97);
+.dc-tap-btn:active { background: rgba(10,158,110,0.3); transform: scale(0.94); }
+
+/* ── Colunas (usadas em landscape) ── */
+.dc-pads-col {
+  display: flex; align-items: stretch; flex: 1; min-height: 0;
+}
+.dc-ctrl-col {
+  display: flex; flex-direction: column; gap: 6px; flex-shrink: 0;
 }
 
-/* ── 4x4 Pad Grid ── */
+/* ── Grade de pads 4×4 ── */
 .dc-pads-grid {
   display: grid; grid-template-columns: repeat(4, 1fr);
-  gap: 8px; flex-shrink: 0;
-  touch-action: none;
+  gap: 8px; flex-shrink: 0; touch-action: none;
+  width: 100%;
 }
 .dc-pad {
   aspect-ratio: 1; border-radius: 12px;
@@ -3527,12 +3540,12 @@ body { font-family: -apple-system, 'Inter', BlinkMacSystemFont, 'Segoe UI', sans
   background: rgba(255,255,255,0.04);
   display: flex; flex-direction: column;
   align-items: center; justify-content: flex-end;
-  padding: 0 6px 8px;
-  cursor: pointer; user-select: none; touch-action: manipulation;
+  padding: 0 6px 10px;
+  cursor: pointer; user-select: none; touch-action: none;
   position: relative; overflow: hidden;
   transition: transform 0.06s;
   -webkit-tap-highlight-color: transparent;
-  will-change: transform;
+  will-change: transform; min-height: 60px;
 }
 .dc-pad::before {
   content: ''; position: absolute; inset: 0; border-radius: 11px;
@@ -3563,13 +3576,13 @@ body { font-family: -apple-system, 'Inter', BlinkMacSystemFont, 'Segoe UI', sans
   background: rgba(0,0,0,0.4); border: 1px solid rgba(255,255,255,0.15);
   display: flex; align-items: center; justify-content: center;
   opacity: 0; transition: opacity 0.2s; z-index: 3; cursor: pointer;
-  /* Larger tap area via padding */
   padding: 4px; box-sizing: content-box;
 }
 .dc-pad:hover .dc-pad-import { opacity: 1; }
 .dc-pad.has-sample .dc-pad-import {
   opacity: 0.8; background: rgba(10,158,110,0.35); border-color: rgba(10,158,110,0.6);
 }
+/* Cores dos pads */
 .dc-pad[data-color="red"]    { background: linear-gradient(145deg,#7a1a1a,#3d0d0d); border-color:rgba(220,60,60,0.4); }
 .dc-pad[data-color="teal"]   { background: linear-gradient(145deg,#0d6655,#063d33); border-color:rgba(20,180,140,0.4); }
 .dc-pad[data-color="blue"]   { background: linear-gradient(145deg,#1a3a6a,#0d1f3d); border-color:rgba(60,120,220,0.4); }
@@ -3579,10 +3592,10 @@ body { font-family: -apple-system, 'Inter', BlinkMacSystemFont, 'Segoe UI', sans
 .dc-pad[data-color="orange"] { background: linear-gradient(145deg,#6a3010,#3d1a08); border-color:rgba(200,100,40,0.4); }
 .dc-pad[data-color="green"]  { background: linear-gradient(145deg,#0d5530,#06301a); border-color:rgba(20,160,80,0.4); }
 
-/* Volume mixer row */
+/* ── Mixer row ── */
 .dc-mixrow {
   display: grid; grid-template-columns: repeat(8,1fr);
-  gap: 5px; padding: 8px 2px 2px;
+  gap: 5px; padding: 6px 0 0;
   border-top: 1px solid rgba(255,255,255,0.05); flex-shrink: 0;
 }
 .dc-mix-item { display: flex; flex-direction: column; align-items: center; gap: 3px; }
@@ -3593,12 +3606,12 @@ body { font-family: -apple-system, 'Inter', BlinkMacSystemFont, 'Segoe UI', sans
 .dc-mix-pct { font-size: 7px; font-weight: 700; color: rgba(255,255,255,0.35); }
 .dc-mix-slider {
   -webkit-appearance: none; width: 100%; height: 3px;
-  border-radius: 2px; outline: none; cursor: pointer;
-  background: rgba(255,255,255,0.12);
+  background: rgba(255,255,255,0.1); border-radius: 2px; outline: none;
+  cursor: pointer;
 }
 .dc-mix-slider::-webkit-slider-thumb {
-  -webkit-appearance: none; width: 11px; height: 11px;
-  border-radius: 50%; background: #fff; cursor: pointer;
+  -webkit-appearance: none; width: 12px; height: 12px;
+  border-radius: 50%; background: rgba(255,255,255,0.5); cursor: pointer;
 }
 .dc-mix-slider.s-red::-webkit-slider-thumb    { background: #d03030; }
 .dc-mix-slider.s-teal::-webkit-slider-thumb   { background: #14b48c; }
@@ -3609,160 +3622,39 @@ body { font-family: -apple-system, 'Inter', BlinkMacSystemFont, 'Segoe UI', sans
 .dc-mix-slider.s-orange::-webkit-slider-thumb { background: #c86428; }
 .dc-mix-slider.s-green::-webkit-slider-thumb  { background: #14a050; }
 
-/* Bottom bar */
+/* ── Bottombar: metro + vol ── */
 .dc-bottombar {
   display: flex; align-items: center; gap: 8px;
-  padding: 6px 2px 0; flex-shrink: 0;
+  padding: 6px 0 0; flex-shrink: 0;
 }
 .dc-metro-btn {
-  flex: 1; background: rgba(255,255,255,0.04);
+  flex: 0 0 auto; min-width: 64px;
+  background: rgba(255,255,255,0.04);
   border: 1px solid rgba(255,255,255,0.1); color: rgba(255,255,255,0.5);
-  padding: 9px; border-radius: 8px; font-size: 9px; font-weight: 900;
+  padding: 10px 8px; border-radius: 10px; font-size: 9px; font-weight: 900;
   letter-spacing: 1.5px; cursor: pointer; transition: 0.2s; text-transform: uppercase;
   touch-action: manipulation;
 }
 .dc-metro-btn.ativo {
-  background: rgba(255,50,50,0.1); border-color: rgba(255,50,50,0.5); color: #ff5555;
-  animation: pulseBorder 1.6s ease-in-out infinite;
+  background: rgba(10,158,110,0.15); border-color: rgba(10,158,110,0.4); color: #22c55e;
 }
-.dc-vol-wrap { display: flex; align-items: center; gap: 6px; flex: 2; }
+.dc-vol-wrap { display: flex; align-items: center; gap: 8px; flex: 1; }
 .dc-vol-label {
-  font-size: 8px; font-weight: 900; letter-spacing: 1px;
-  color: rgba(255,255,255,0.3); text-transform: uppercase; flex-shrink: 0;
+  font-size: 8px; font-weight: 900; letter-spacing: 1.5px;
+  color: rgba(255,255,255,0.25); text-transform: uppercase; flex-shrink: 0;
 }
 .dc-vol-slider {
-  -webkit-appearance: none; flex: 1; height: 3px;
-  border-radius: 2px; outline: none; cursor: pointer;
-  background: rgba(255,255,255,0.12);
+  -webkit-appearance: none; flex: 1; height: 4px;
+  background: rgba(255,255,255,0.1); border-radius: 2px; outline: none; cursor: pointer;
 }
 .dc-vol-slider::-webkit-slider-thumb {
   -webkit-appearance: none; width: 14px; height: 14px;
   border-radius: 50%; background: var(--accent-primary); cursor: pointer;
 }
 #dc-file-input { display: none; }
-/* Legacy elements hidden */
 
-/* ── FX Panel ── */
-.dc-fx-bar {
-  display: flex; align-items: center; gap: 6px;
-  padding: 6px 2px 0; flex-shrink: 0;
-}
-.dc-fx-toggle {
-  background: rgba(255,255,255,0.04);
-  border: 1px solid rgba(255,255,255,0.1);
-  color: rgba(255,255,255,0.45);
-  padding: 7px 12px; border-radius: 8px;
-  font-size: 9px; font-weight: 900; letter-spacing: 1.5px;
-  cursor: pointer; transition: 0.18s; text-transform: uppercase;
-  touch-action: manipulation; flex-shrink: 0;
-}
-.dc-fx-toggle.ativo {
-  background: rgba(138,92,246,0.18);
-  border-color: rgba(138,92,246,0.55); color: #a78bfa;
-}
-.dc-fx-chips { display: flex; gap: 4px; flex: 1; overflow-x: auto; scrollbar-width: none; }
-.dc-fx-chips::-webkit-scrollbar { display: none; }
-.dc-fx-chip {
-  flex-shrink: 0; padding: 5px 10px; border-radius: 20px;
-  background: rgba(255,255,255,0.04);
-  border: 1px solid rgba(255,255,255,0.09);
-  color: rgba(255,255,255,0.35); font-size: 8px; font-weight: 900;
-  letter-spacing: 0.8px; cursor: pointer; transition: 0.15s;
-  touch-action: manipulation; text-transform: uppercase;
-}
-.dc-fx-chip.ativo {
-  background: rgba(138,92,246,0.2);
-  border-color: rgba(138,92,246,0.6); color: #c4b5fd;
-}
-/* FX Panel drawer */
-/* ── dc-fx-panel agora é o drawer — display:none preservado para compat ── */
-.dc-fx-panel { display: none; }
-
-/* ══ FX DRAWER — modal deslizante sobre os pads ══════════════════════════ */
-.dc-fx-drawer {
-  position: absolute; inset: 0; z-index: 20;
-  background: rgba(6,6,14,0.98);
-  backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
-  display: flex; flex-direction: column;
-  transform: translateY(100%);
-  transition: transform 0.28s cubic-bezier(0.32,0.72,0,1);
-  border-radius: 16px 16px 0 0;
-  overflow: hidden;
-}
-.dc-fx-drawer.show {
-  transform: translateY(0);
-}
-@keyframes dcFxIn {
-  from { opacity: 0; transform: translateY(6px); }
-  to   { opacity: 1; transform: translateY(0); }
-}
-
-/* Header do drawer */
-.dc-fx-drawer-header {
-  display: flex; align-items: center; gap: 8px;
-  padding: 14px 14px 10px; flex-shrink: 0;
-  border-bottom: 1px solid rgba(255,255,255,0.07);
-}
-.dc-fx-drawer-title {
-  display: flex; align-items: center; gap: 6px;
-  font-size: 10px; font-weight: 900; letter-spacing: 2px;
-  text-transform: uppercase; color: rgba(255,255,255,0.5);
-  flex-shrink: 0;
-}
-.dc-fx-drawer-chips {
-  display: flex; gap: 5px; flex: 1; overflow-x: auto;
-  -webkit-overflow-scrolling: touch;
-  scrollbar-width: none; padding: 2px 0;
-}
-.dc-fx-drawer-chips::-webkit-scrollbar { display: none; }
-.dc-fx-drawer-close {
-  background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.1);
-  color: rgba(255,255,255,0.5); border-radius: 8px;
-  width: 34px; height: 34px; display: flex; align-items: center; justify-content: center;
-  cursor: pointer; flex-shrink: 0; touch-action: manipulation;
-}
-.dc-fx-drawer-close:active { background: rgba(255,255,255,0.12); }
-
-/* Presets row */
-.dc-fx-presets-row {
-  display: flex; gap: 5px; padding: 10px 14px 6px;
-  overflow-x: auto; -webkit-overflow-scrolling: touch;
-  scrollbar-width: none; flex-shrink: 0;
-  border-bottom: 1px solid rgba(255,255,255,0.05);
-}
-.dc-fx-presets-row::-webkit-scrollbar { display: none; }
-.dc-fx-preset-btn {
-  padding: 6px 12px; border-radius: 20px; flex-shrink: 0;
-  background: rgba(255,255,255,0.05);
-  border: 1px solid rgba(255,255,255,0.1);
-  color: rgba(255,255,255,0.55); font-size: 10px; font-weight: 700;
-  cursor: pointer; touch-action: manipulation;
-  transition: all 0.15s;
-}
-.dc-fx-preset-btn:active { background: rgba(138,92,246,0.25); border-color: #a78bfa; color: #a78bfa; }
-
-/* Scrollable FX blocks body */
-.dc-fx-drawer-body {
-  flex: 1; overflow-y: auto; -webkit-overflow-scrolling: touch;
-  padding: 10px 14px 20px;
-}
-
-/* FX row no drawer: 2 colunas no mobile, mais no desktop */
-.dc-fx-drawer-body .dc-fx-row {
-  display: grid; grid-template-columns: 1fr 1fr;
-  gap: 8px; margin-bottom: 8px;
-}
-@media (min-width: 641px) {
-  .dc-fx-drawer-body .dc-fx-row { grid-template-columns: repeat(3, 1fr); }
-}
-@media (min-width: 1025px) {
-  .dc-fx-drawer-body .dc-fx-row { grid-template-columns: repeat(4, 1fr); }
-}
-
-/* ── FX Open Button na bottombar ─────────────────────────────────────── */
-.dc-fx-bar {
-  flex-shrink: 0; padding: 4px 0 0;
-}
+/* ── FX Bar: botão que abre o drawer ── */
+.dc-fx-bar { flex-shrink: 0; padding: 4px 0 0; }
 .dc-fx-open-btn {
   display: flex; align-items: center; gap: 7px;
   width: 100%; padding: 11px 16px;
@@ -3775,455 +3667,305 @@ body { font-family: -apple-system, 'Inter', BlinkMacSystemFont, 'Segoe UI', sans
   -webkit-tap-highlight-color: transparent;
 }
 .dc-fx-open-btn:active,
-.dc-fx-open-btn.ativo {
-  background: rgba(138,92,246,0.2);
-  border-color: rgba(138,92,246,0.6);
-}
+.dc-fx-open-btn.ativo { background: rgba(138,92,246,0.2); border-color: rgba(138,92,246,0.6); }
 .dc-fx-active-count {
   margin-left: auto;
   background: #a78bfa; color: #1a0a3a;
   font-size: 9px; font-weight: 900;
   width: 18px; height: 18px; border-radius: 50%;
-  display: flex !important; align-items: center; justify-content: center;
+  display: flex; align-items: center; justify-content: center;
 }
 
-/* ── FX Chips no drawer ─────────────────────────────────────────────── */
+/* ── FX Drawer (modal deslizante) ── */
+.dc-fx-panel { display: none; } /* compat legado */
+.dc-fx-drawer {
+  position: absolute; inset: 0; z-index: 20;
+  background: rgba(6,6,14,0.98);
+  backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+  display: flex; flex-direction: column;
+  transform: translateY(100%);
+  transition: transform 0.28s cubic-bezier(0.32,0.72,0,1);
+  border-radius: 14px 14px 0 0;
+  overflow: hidden;
+}
+.dc-fx-drawer.show { transform: translateY(0); }
+.dc-fx-drawer-header {
+  display: flex; align-items: center; gap: 8px;
+  padding: 14px 14px 10px; flex-shrink: 0;
+  border-bottom: 1px solid rgba(255,255,255,0.07);
+}
+.dc-fx-drawer-title {
+  display: flex; align-items: center; gap: 6px;
+  font-size: 10px; font-weight: 900; letter-spacing: 2px;
+  text-transform: uppercase; color: rgba(255,255,255,0.5); flex-shrink: 0;
+}
+.dc-fx-drawer-chips {
+  display: flex; gap: 5px; flex: 1; overflow-x: auto;
+  -webkit-overflow-scrolling: touch; scrollbar-width: none; padding: 2px 0;
+}
+.dc-fx-drawer-chips::-webkit-scrollbar { display: none; }
+.dc-fx-drawer-close {
+  background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.1);
+  color: rgba(255,255,255,0.5); border-radius: 8px;
+  width: 34px; height: 34px; display: flex; align-items: center; justify-content: center;
+  cursor: pointer; flex-shrink: 0; touch-action: manipulation;
+}
+.dc-fx-drawer-close:active { background: rgba(255,255,255,0.12); }
+.dc-fx-presets-row {
+  display: flex; gap: 6px; padding: 10px 14px 8px;
+  overflow-x: auto; -webkit-overflow-scrolling: touch; scrollbar-width: none; flex-shrink: 0;
+  border-bottom: 1px solid rgba(255,255,255,0.05);
+}
+.dc-fx-presets-row::-webkit-scrollbar { display: none; }
+.dc-fx-preset-btn {
+  padding: 7px 14px; border-radius: 20px; flex-shrink: 0;
+  background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1);
+  color: rgba(255,255,255,0.55); font-size: 10px; font-weight: 700;
+  cursor: pointer; touch-action: manipulation; transition: all 0.15s;
+}
+.dc-fx-preset-btn:active { background: rgba(138,92,246,0.25); border-color: #a78bfa; color: #a78bfa; }
+.dc-fx-drawer-body {
+  flex: 1; overflow-y: auto; -webkit-overflow-scrolling: touch; padding: 10px 14px 20px;
+}
+.dc-fx-drawer-body .dc-fx-row {
+  display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 8px;
+}
+
+/* ── Chips de FX ── */
 .dc-fx-chip {
   padding: 5px 10px; border-radius: 20px; flex-shrink: 0;
-  background: rgba(255,255,255,0.05);
-  border: 1px solid rgba(255,255,255,0.1);
+  background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1);
   color: rgba(255,255,255,0.45); font-size: 10px; font-weight: 700;
-  cursor: pointer; touch-action: manipulation;
-  transition: all 0.15s;
+  cursor: pointer; touch-action: manipulation; transition: all 0.15s;
+  white-space: nowrap;
 }
 .dc-fx-chip.ativo {
-  background: rgba(138,92,246,0.2);
-  border-color: rgba(138,92,246,0.55);
-  color: #c4b5fd;
+  background: rgba(138,92,246,0.2); border-color: rgba(138,92,246,0.55); color: #c4b5fd;
 }
 
-/* ── Pads maiores e mais espaçados ──────────────────────────────────── */
-.dc-pads-grid {
-  display: grid; grid-template-columns: repeat(4, 1fr);
-  gap: 8px; flex-shrink: 0; touch-action: none;
-  flex: 1; /* preenche espaço disponível */
-}
-.dc-pad {
-  aspect-ratio: 1; border-radius: 12px;
-  border: 1px solid rgba(255,255,255,0.08);
-  background: rgba(255,255,255,0.04);
-  display: flex; flex-direction: column;
-  align-items: center; justify-content: flex-end;
-  padding: 0 6px 10px;
-  cursor: pointer; user-select: none; touch-action: none;
-  position: relative; overflow: hidden;
-  transition: transform 0.06s;
-  -webkit-tap-highlight-color: transparent;
-  will-change: transform;
-  min-height: 64px; /* garante tamanho mínimo */
-}
-
-/* ── Bottombar mais limpa com botões grandes ─────────────────────────── */
-.dc-bottombar {
-  display: flex; align-items: center; gap: 8px;
-  padding: 8px 0 4px; flex-shrink: 0;
-}
-.dc-metro-btn {
-  flex: 0 0 auto; min-width: 70px;
-  background: rgba(255,255,255,0.05);
-  border: 1px solid rgba(255,255,255,0.1); color: rgba(255,255,255,0.55);
-  padding: 12px 8px; border-radius: 10px; font-size: 9px; font-weight: 900;
-  letter-spacing: 1.5px; cursor: pointer; transition: 0.2s; text-transform: uppercase;
-  touch-action: manipulation;
-}
-.dc-metro-btn.ativo {
-  background: rgba(10,158,110,0.15); border-color: rgba(10,158,110,0.4);
-  color: #22c55e;
-}
-.dc-vol-wrap {
-  flex: 1; display: flex; align-items: center; gap: 8px;
-}
-.dc-vol-label {
-  font-size: 8px; font-weight: 900; letter-spacing: 1.5px;
-  color: rgba(255,255,255,0.25); text-transform: uppercase; flex-shrink: 0;
-}
-
+/* ── FX Blocks ── */
 .dc-fx-row {
-  display: grid; grid-template-columns: 1fr 1fr;
-  gap: 8px;
+  display: grid; grid-template-columns: 1fr 1fr; gap: 8px;
 }
 .dc-fx-block {
-  background: rgba(255,255,255,0.03);
-  border: 1px solid rgba(255,255,255,0.07);
-  border-radius: 10px; padding: 8px 10px;
-  display: flex; flex-direction: column; gap: 6px;
+  background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.07);
+  border-radius: 10px; padding: 8px 10px; display: flex; flex-direction: column; gap: 6px;
 }
-.dc-fx-block.ativo {
-  border-color: rgba(138,92,246,0.4);
-  background: rgba(138,92,246,0.06);
-}
-.dc-fx-block-header {
-  display: flex; align-items: center; justify-content: space-between;
-}
+.dc-fx-block.ativo { border-color: rgba(138,92,246,0.4); background: rgba(138,92,246,0.06); }
+.dc-fx-block-header { display: flex; align-items: center; justify-content: space-between; }
 .dc-fx-name {
   font-size: 9px; font-weight: 900; letter-spacing: 1.5px;
   text-transform: uppercase; color: rgba(255,255,255,0.45);
 }
 .dc-fx-block.ativo .dc-fx-name { color: #a78bfa; }
 .dc-fx-onoff {
-  width: 32px; height: 18px; border-radius: 9px;
-  background: rgba(255,255,255,0.08);
-  border: none; cursor: pointer; position: relative;
-  transition: background 0.2s; flex-shrink: 0;
-  padding: 0;
-  /* Invisible tap area expansion */
-  touch-action: manipulation;
-  -webkit-tap-highlight-color: transparent;
+  width: 34px; height: 20px; border-radius: 10px;
+  background: rgba(255,255,255,0.08); border: none; cursor: pointer;
+  position: relative; transition: background 0.2s; flex-shrink: 0;
+  padding: 0; touch-action: manipulation; -webkit-tap-highlight-color: transparent;
 }
 .dc-fx-onoff::after {
-  content: ''; position: absolute; top: 3px; left: 3px;
+  content: ''; position: absolute; top: 4px; left: 4px;
   width: 12px; height: 12px; border-radius: 50%;
   background: rgba(255,255,255,0.4); transition: 0.2s;
 }
 .dc-fx-onoff.on { background: rgba(138,92,246,0.5); }
-.dc-fx-onoff.on::after {
-  left: 17px; background: #a78bfa;
-}
-.dc-fx-knobs {
-  display: flex; gap: 6px;
-}
+.dc-fx-onoff.on::after { left: 18px; background: #a78bfa; }
+.dc-fx-knobs { display: flex; gap: 6px; flex-wrap: wrap; }
 .dc-fx-knob-wrap {
-  flex: 1; display: flex; flex-direction: column; align-items: center; gap: 2px;
+  flex: 1; min-width: 50px; display: flex; flex-direction: column; align-items: center; gap: 2px;
 }
 .dc-fx-knob-label {
-  font-size: 6px; font-weight: 800; letter-spacing: 0.5px;
+  font-size: 7px; font-weight: 800; letter-spacing: 0.5px;
   color: rgba(255,255,255,0.25); text-transform: uppercase;
 }
-.dc-fx-knob-val {
-  font-size: 7px; font-weight: 700; color: rgba(255,255,255,0.35);
-}
+.dc-fx-knob-val { font-size: 7px; font-weight: 700; color: rgba(255,255,255,0.35); }
 .dc-fx-slider {
-  -webkit-appearance: none; width: 100%; height: 2px;
-  border-radius: 2px; outline: none; cursor: pointer;
-  background: rgba(255,255,255,0.1);
+  -webkit-appearance: none; width: 100%; height: 3px;
+  background: rgba(255,255,255,0.1); border-radius: 2px; outline: none; cursor: pointer;
 }
 .dc-fx-slider::-webkit-slider-thumb {
-  -webkit-appearance: none; width: 10px; height: 10px;
+  -webkit-appearance: none; width: 14px; height: 14px;
   border-radius: 50%; background: #a78bfa; cursor: pointer;
-  box-shadow: 0 0 4px rgba(138,92,246,0.6);
 }
-/* Pad FX indicator dot */
+
+/* ── Per-pad FX ── */
 .dc-pad-fx-dot {
-  position: absolute; top: 5px; left: 5px;
-  width: 5px; height: 5px; border-radius: 50%;
-  background: #a78bfa; opacity: 0;
-  transition: opacity 0.2s; z-index: 2;
-  pointer-events: none;
+  position: absolute; top: 5px; left: 5px; width: 5px; height: 5px; border-radius: 50%;
+  background: #a78bfa; opacity: 0; transition: opacity 0.2s; z-index: 2; pointer-events: none;
 }
 .dc-pad.has-fx .dc-pad-fx-dot { opacity: 1; }
-/* Pad FX config button */
 .dc-pad-fxbtn {
-  position: absolute; bottom: 5px; right: 5px;
-  width: 16px; height: 16px; border-radius: 4px;
+  position: absolute; bottom: 5px; right: 5px; width: 16px; height: 16px; border-radius: 4px;
   background: rgba(138,92,246,0.2); border: 1px solid rgba(138,92,246,0.35);
   display: flex; align-items: center; justify-content: center;
-  opacity: 0; transition: opacity 0.2s; z-index: 3; cursor: pointer;
-  pointer-events: auto;
+  opacity: 0; transition: opacity 0.2s; z-index: 3; cursor: pointer; pointer-events: auto;
 }
 .dc-pad:hover .dc-pad-fxbtn { opacity: 1; }
 .dc-pad.has-fx .dc-pad-fxbtn { opacity: 0.8; }
-/* Per-pad FX modal */
 .dc-pad-fx-modal {
-  position: absolute; inset: 0; z-index: 50;
-  background: rgba(8,8,16,0.97);
-  border-radius: 12px; padding: 8px;
-  display: none; flex-direction: column; gap: 6px;
+  position: absolute; inset: 0; z-index: 50; background: rgba(8,8,16,0.97);
+  border-radius: 12px; padding: 8px; display: none; flex-direction: column; gap: 6px;
   overflow-y: auto;
 }
 .dc-pad-fx-modal.show { display: flex; }
-.dc-pad-fx-modal-header {
-  display: flex; align-items: center; justify-content: space-between;
-  flex-shrink: 0;
-}
-.dc-pad-fx-modal-title {
-  font-size: 8px; font-weight: 900; letter-spacing: 1.5px;
-  color: rgba(255,255,255,0.4); text-transform: uppercase;
-}
-.dc-pad-fx-modal-close {
-  background: none; border: none; color: rgba(255,255,255,0.4);
-  font-size: 14px; cursor: pointer; line-height: 1; padding: 2px;
-}
+.dc-pad-fx-modal-header { display: flex; align-items: center; justify-content: space-between; flex-shrink: 0; }
+.dc-pad-fx-modal-title { font-size: 8px; font-weight: 900; letter-spacing: 1.5px; color: rgba(255,255,255,0.4); text-transform: uppercase; }
+.dc-pad-fx-modal-close { background: none; border: none; color: rgba(255,255,255,0.4); font-size: 14px; cursor: pointer; line-height: 1; padding: 2px; }
 
+/* Esconder elementos legados */
 .drumcam-pads-row,.drumcam-tap,.drumcam-tap-btn,.drumcam-metro-btn,.drumcam-octave { display: none !important; }
-/* ── DrumCam Responsive ── */
 
-/* Desktop: constrain width and center */
-@media (min-width: 641px) {
-  .dc-machine {
-    max-width: 680px;
-    margin: 0 auto;
-    width: 100%;
-  }
-  .dc-pads-grid {
-    gap: 10px;
-  }
-  .dc-pad {
-    border-radius: 14px;
-  }
-  .dc-fx-row {
-    grid-template-columns: 1fr 1fr 1fr;
-  }
-  .dc-fx-panel { padding: 12px 4px 6px; }
-  .dc-bottombar { padding: 8px 4px 2px; }
-  .drumcam-header { padding: 16px 24px 12px; }
-  .drumcam-bpm { font-size: 28px; }
-}
-
-/* Large desktop */
-@media (min-width: 1025px) {
-  .dc-machine { max-width: 780px; }
-  .dc-pads-grid { gap: 12px; }
-  .dc-fx-row { grid-template-columns: 1fr 1fr 1fr 1fr; }
-  .dc-topbar { margin-bottom: 4px; }
-}
-
-/* Mobile: safe area + compact */
+/* ════════════════════════════════════════════════════════════════════
+   PORTRAIT MOBILE (≤ 640px)
+   ════════════════════════════════════════════════════════════════════ */
 @media (max-width: 640px) {
-  .dc-machine { padding: 8px 8px 10px; gap: 7px; }
+  .dc-machine { padding: 8px; gap: 6px; }
   .dc-pads-grid { gap: 6px; }
-  .dc-pad { border-radius: 10px; }
+  .dc-pad { border-radius: 10px; min-height: 56px; }
   .dc-pad-name { font-size: 9px; }
   .dc-pad-sub  { font-size: 6px; }
   .dc-bank-tab { font-size: 8px; padding: 6px 2px; }
-  .dc-tap-btn  { padding: 6px 10px; font-size: 8px; }
-  .dc-mixrow   { gap: 4px; padding: 6px 0 0; }
+  .dc-tap-btn  { padding: 7px 10px; font-size: 8px; }
+  .dc-mixrow   { gap: 3px; padding: 5px 0 0; }
   .dc-mix-slider { height: 2px; }
-  .dc-bottombar { padding: 5px 0 0; gap: 6px; }
-  .dc-metro-btn { padding: 8px 6px; font-size: 8px; }
-  .dc-fx-bar    { padding: 5px 0 0; gap: 5px; }
-  .dc-fx-toggle { padding: 6px 10px; font-size: 8px; }
-  .dc-fx-chip   { padding: 4px 8px; font-size: 7px; }
-  .dc-fx-panel  { padding: 8px 2px 2px; gap: 6px; }
-  .dc-fx-row    { gap: 6px; }
-  .dc-fx-block  { padding: 7px 8px; }
-  .dc-fx-name   { font-size: 8px; letter-spacing: 1px; }
-  .dc-fx-knob-label { font-size: 5px; }
-  .dc-fx-knob-val   { font-size: 6px; }
+  .dc-bottombar { padding: 4px 0 0; gap: 6px; }
+  .dc-metro-btn { padding: 8px 6px; font-size: 8px; min-width: 52px; }
+  .dc-fx-bar    { padding: 4px 0 0; }
+  .dc-fx-open-btn { padding: 9px 14px; font-size: 10px; }
   .drumcam-bpm  { font-size: 18px; }
-  /* iOS safe area */
-  .dc-machine { padding-bottom: calc(10px + env(safe-area-inset-bottom)); }
+  .dc-machine   { padding-bottom: calc(8px + env(safe-area-inset-bottom)); }
 }
-
-/* Very small (320px) */
 @media (max-width: 360px) {
   .dc-pads-grid { gap: 5px; }
   .dc-pad-name  { font-size: 8px; }
   .dc-bank-tab  { font-size: 7px; }
-  .dc-fx-row    { grid-template-columns: 1fr; }
 }
 
-/* ══ TABLET LANDSCAPE — layout de 2 colunas ══════════════════════════════
-   Breakpoint: largura >= 600px E orientação landscape (altura < largura)
-   Também ativa em desktop para uma experiência mais rica
-═════════════════════════════════════════════════════════════════════════ */
-
-/* Estrutura base das colunas (portrait / mobile) */
-.dc-pads-col {
-  flex: 1; display: flex; align-items: stretch;
-  min-height: 0;
-}
-.dc-ctrl-col {
-  display: flex; flex-direction: column; gap: 6px;
-  flex-shrink: 0;
-}
-
-/* Portrait padrão: tudo em coluna, ctrl-col sem nada especial */
-.dc-machine {
-  flex-direction: column;
-}
-.dc-pads-col {
-  flex: 1;
-}
-.dc-pads-grid {
-  width: 100%; height: 100%;
-}
-
-/* ── TABLET LANDSCAPE ── */
+/* ════════════════════════════════════════════════════════════════════
+   TABLET LANDSCAPE — layout 2 colunas
+   Ativa quando: largura >= 600px E orientação landscape
+   ════════════════════════════════════════════════════════════════════ */
 @media (orientation: landscape) and (min-width: 600px) {
-  /* Overlay: flex-row */
-  .drumcam-overlay {
-    flex-direction: row;
-  }
-  /* Header vira coluna lateral esquerda estreita */
+
+  /* Overlay em linha: header lateral + máquina */
+  .drumcam-overlay { flex-direction: row; }
+
+  /* Header vira sidebar esquerda estreita */
   .drumcam-header {
-    flex-direction: column;
-    align-items: center;
-    justify-content: space-between;
-    padding: 16px 10px;
-    width: 72px;
-    flex-shrink: 0;
-    border-bottom: none;
-    border-right: 1px solid rgba(255,255,255,0.06);
-    gap: 16px;
+    flex-direction: column; align-items: center; justify-content: space-between;
+    padding: 16px 8px; width: 68px; flex-shrink: 0;
+    border-bottom: none; border-right: 1px solid rgba(255,255,255,0.06);
+    gap: 12px;
+  }
+  .drumcam-title {
+    writing-mode: vertical-rl; text-orientation: mixed;
+    transform: rotate(180deg); letter-spacing: 3px; font-size: 8px;
   }
   .drumcam-song-info {
-    flex-direction: column;
-    align-items: center;
-    gap: 2px;
-    writing-mode: vertical-rl;
-    text-orientation: mixed;
-    transform: rotate(180deg);
+    flex-direction: column; align-items: center; gap: 4px;
+    writing-mode: vertical-rl; transform: rotate(180deg);
   }
-  .drumcam-song-name {
-    font-size: 10px;
-    max-width: 120px;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-  }
-  .drumcam-bpm { font-size: 18px; }
-  .drumcam-bpm-label { font-size: 7px; }
+  .drumcam-song-name { font-size: 9px; max-width: 100px; }
+  .drumcam-bpm { font-size: 16px; writing-mode: initial; transform: none; }
+  .drumcam-bpm-label { writing-mode: initial; transform: none; font-size: 7px; }
   .drumcam-close {
-    writing-mode: initial;
-    transform: none;
+    writing-mode: initial; transform: none;
+    padding: 8px 6px; font-size: 8px; letter-spacing: 0.5px; width: 52px; text-align: center;
   }
 
-  /* dc-machine: flex-row, ocupa o espaço restante */
+  /* Máquina: flex-row com dois painéis */
   .dc-machine {
-    flex-direction: row;
-    padding: 10px;
-    gap: 10px;
-    overflow: hidden;
+    flex-direction: row; padding: 10px; gap: 10px; overflow: hidden;
   }
 
-  /* Coluna pads: quadrada, ocupa altura toda */
+  /* Painel ESQUERDO: só os pads, crescem para preencher altura */
   .dc-pads-col {
-    flex: 0 0 auto;
-    width: calc(100vh - 52px); /* altura disponível - header top/bottom */
-    max-width: 55%;
-    display: flex;
-    align-items: stretch;
-    position: relative;
+    flex: 1; display: flex; align-items: stretch; min-width: 0;
   }
   .dc-pads-grid {
-    width: 100% !important;
-    height: 100% !important;
-    display: grid;
-    grid-template-columns: repeat(4, 1fr);
-    grid-template-rows: repeat(4, 1fr);
-    gap: 8px;
+    display: grid !important;
+    grid-template-columns: repeat(4, 1fr) !important;
+    grid-template-rows: repeat(4, 1fr) !important;
+    gap: 8px; width: 100%; flex: 1;
   }
   .dc-pad {
-    aspect-ratio: unset; /* deixa o grid definir a altura */
-    border-radius: 14px;
+    aspect-ratio: unset !important; /* grid controla a altura */
+    border-radius: 14px; min-height: 0;
   }
 
-  /* Coluna controles: flex-column, cresce para ocupar espaço */
+  /* Painel DIREITO: controles empilhados */
   .dc-ctrl-col {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-    min-width: 0;
-    overflow-y: auto;
-    -webkit-overflow-scrolling: touch;
+    width: 220px; flex-shrink: 0;
+    display: flex; flex-direction: column; gap: 8px;
+    overflow-y: auto; -webkit-overflow-scrolling: touch;
   }
 
-  /* Topbar em landscape: bank tabs em 2x2 grid */
+  /* Bank tabs em grid 2×2 */
   .dc-topbar {
     display: grid;
     grid-template-columns: 1fr 1fr;
-    grid-template-rows: 1fr 1fr;
     gap: 5px;
   }
-  .dc-bank-tabs {
-    display: contents; /* os filhos vão direto pro grid */
-  }
+  .dc-bank-tabs { display: contents; }
   .dc-bank-tab {
-    padding: 10px 8px;
-    font-size: 10px;
-    border-radius: 10px;
+    padding: 10px 6px; font-size: 10px; border-radius: 10px;
+    grid-column: auto; flex: unset;
   }
   .dc-tap-btn {
-    grid-column: 1 / -1; /* ocupa largura toda */
-    padding: 10px;
-    font-size: 10px;
-    border-radius: 10px;
-    background: rgba(10,158,110,0.12);
-    border-color: rgba(10,158,110,0.35);
-    color: #22c55e;
+    grid-column: 1 / -1; padding: 10px; font-size: 10px;
+    border-radius: 10px; text-align: center; width: 100%;
   }
 
-  /* Mixrow em landscape: 2 colunas de 8 sliders */
+  /* Mixrow compacto */
   .dc-mixrow {
-    display: grid;
-    grid-template-columns: repeat(8, 1fr);
-    gap: 4px;
-    padding: 6px 0;
+    grid-template-columns: repeat(8, 1fr); gap: 4px; padding: 4px 0 0;
   }
+  .dc-mix-label { font-size: 6px; }
+  .dc-mix-slider { height: 3px; }
 
-  /* Bottombar em landscape: compacta */
-  .dc-bottombar {
-    padding: 4px 0 0;
-  }
-  .dc-metro-btn {
-    padding: 10px 8px;
-    font-size: 9px;
-  }
+  /* Bottombar */
+  .dc-bottombar { padding: 4px 0 0; }
+  .dc-metro-btn { padding: 10px 8px; font-size: 9px; }
 
-  /* FX bar em landscape: botão full-width */
-  .dc-fx-bar {
-    padding: 4px 0 0;
-  }
-  .dc-fx-open-btn {
-    padding: 10px 14px;
-    font-size: 10px;
-  }
+  /* FX bar */
+  .dc-fx-bar { padding: 4px 0 0; }
+  .dc-fx-open-btn { padding: 11px 14px; font-size: 10px; }
 
-  /* FX drawer em landscape: vem da direita */
+  /* FX Drawer em landscape: desliza da direita */
   .dc-fx-drawer {
     position: absolute;
-    top: 0; right: 0; bottom: 0;
-    width: min(420px, 55%);
+    top: 0; right: 0; bottom: 0; left: auto;
+    width: min(400px, 60%);
     border-radius: 0;
-    transform: translateX(100%);
+    transform: translateX(110%);
     transition: transform 0.28s cubic-bezier(0.32,0.72,0,1);
     border-left: 1px solid rgba(255,255,255,0.08);
+    border-radius: 14px 0 0 14px;
   }
-  .dc-fx-drawer.show {
-    transform: translateX(0);
-  }
-  .dc-fx-drawer-body .dc-fx-row {
-    grid-template-columns: 1fr 1fr;
-  }
+  .dc-fx-drawer.show { transform: translateX(0); }
+  .dc-fx-drawer-body .dc-fx-row { grid-template-columns: 1fr 1fr; }
 }
 
-
-
-/* Tablet grande landscape (iPad Pro, etc) */
+/* iPad Pro e tablets maiores em landscape */
 @media (orientation: landscape) and (min-width: 1024px) {
-  .dc-pads-col {
-    max-width: 50%;
-    width: auto;
-    flex: 1;
-  }
-  .dc-ctrl-col {
-    flex: 1;
-    max-width: 380px;
-  }
-  .dc-pad {
-    border-radius: 16px;
-  }
-  .dc-bank-tab { font-size: 11px; padding: 11px 10px; }
-  .dc-fx-drawer {
-    width: min(480px, 45%);
-  }
-  .dc-fx-drawer-body .dc-fx-row {
-    grid-template-columns: 1fr 1fr 1fr;
-  }
+  .dc-ctrl-col { width: 260px; }
+  .dc-bank-tab { font-size: 11px; padding: 11px 8px; }
+  .dc-tap-btn  { font-size: 11px; padding: 12px; }
+  .dc-fx-drawer { width: min(480px, 50%); }
+  .dc-fx-drawer-body .dc-fx-row { grid-template-columns: 1fr 1fr 1fr; }
+  .dc-pad { border-radius: 16px; }
+  .drumcam-header { width: 80px; }
 }
 
-/* ── Desktop & Global Responsive ── */
+/* Desktop portrait (tela grande mas vertical — edge case) */
+@media (min-width: 641px) and (orientation: portrait) {
+  .dc-machine { max-width: 680px; margin: 0 auto; width: 100%; }
+  .dc-pads-grid { gap: 10px; }
+  .dc-pad { border-radius: 14px; }
+  .drumcam-header { padding: 16px 24px 12px; }
+  .drumcam-bpm { font-size: 28px; }
+}
 
 /* Onboarding: centra e limita largura no desktop */
 @media (min-width: 641px) {
