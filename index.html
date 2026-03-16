@@ -1973,7 +1973,7 @@ body.theme-light .logo-shimmer {
   animation: shimmer 4s linear infinite !important;
 }
 body.theme-light .menu-btn { color: rgba(24,24,27,0.5) !important; }
-body.theme-light .menu-btn:hover { color: #18181B !important; }
+body.theme-light .menu-btn:hover { color: #1A1A1E !important; }
 body.theme-light #btn-theme { color: rgba(24,24,27,0.45) !important; }
 body.theme-light #btn-amigos-header { color: rgba(24,24,27,0.45) !important; }
 body.theme-light .notif-btn { color: rgba(24,24,27,0.45) !important; }
@@ -1994,7 +1994,7 @@ body.theme-light .dropdown-menu {
   box-shadow: var(--shadow-xl) !important;
 }
 body.theme-light .menu-item {
-  color: #18181B !important;
+  color: #1A1A1E !important;
   border-bottom-color: rgba(0,0,0,0.05) !important;
 }
 body.theme-light .menu-item:hover {
@@ -2040,13 +2040,13 @@ body.theme-light .toolbar-central {
 body.theme-light .toolbar-central button {
   background: rgba(0,0,0,0.04) !important;
   border: 1px solid rgba(0,0,0,0.09) !important;
-  color: #18181B !important;
+  color: #1A1A1E !important;
 }
 body.theme-light .toolbar-central button:hover {
   background: rgba(0,0,0,0.08) !important;
 }
 body.theme-light .toolbar-central span,
-body.theme-light #trans-val { color: #18181B !important; }
+body.theme-light #trans-val { color: #1A1A1E !important; }
 body.theme-light #tom-original-badge {
   background: rgba(255,255,255,0.9) !important;
   border-color: rgba(10,143,98,0.2) !important;
@@ -2066,7 +2066,7 @@ body.theme-light .song-part:focus-within {
 }
 body.theme-light .chord-area {
   background: transparent !important;
-  color: #18181B !important;
+  color: #1A1A1E !important;
 }
 body.theme-light .chord-area::placeholder { color: rgba(24,24,27,0.22) !important; }
 body.theme-light .song-part input[type="text"],
@@ -2081,17 +2081,17 @@ body.theme-light .part-title { color: var(--accent-primary) !important; font-wei
 body.theme-light aside { background: transparent !important; }
 body.theme-light .side-panel,
 body.theme-light .metronome-card {
-  background: #FFFFFF !important;
-  border: 1px solid rgba(0,0,0,0.07) !important;
+  background: var(--bg-secondary) !important;
+  border: 1px solid rgba(0,0,0,0.08) !important;
   box-shadow: var(--shadow-md) !important;
 }
 body.theme-light #bpm-display,
 body.theme-light .bpm-val { color: var(--accent-primary) !important; }
-body.theme-light #trans-val { color: #18181B !important; }
+body.theme-light #trans-val { color: #1A1A1E !important; }
 body.theme-light .bpm-btn, body.theme-light .trans-btn {
   background: rgba(0,0,0,0.04) !important;
   border: 1px solid rgba(0,0,0,0.09) !important;
-  color: #18181B !important;
+  color: #1A1A1E !important;
 }
 body.theme-light .bpm-btn:active, body.theme-light .trans-btn:active {
   background: rgba(0,0,0,0.1) !important;
@@ -2118,6 +2118,11 @@ body.theme-light #bpm-mic-btn {
   border-color: rgba(10,143,98,0.22) !important;
   color: var(--accent-primary) !important;
 }
+/* Labels BPM e labels do metrônomo */
+body.theme-light .metronome-card div[style*="color:rgba(255,255,255"],
+body.theme-light .metronome-card span[style*="color:rgba(255,255,255"] { color: rgba(26,26,30,0.45) !important; }
+body.theme-light .metronome-card div[style*="color:#fff"],
+body.theme-light .metronome-card span[style*="color:#fff"] { color: #1A1A1E !important; }
 
 /* ── 8. SALVAR / FONT CTRL ──────────────────────────────────────── */
 body.theme-light #btn-save-vitro {
@@ -2140,22 +2145,22 @@ body.theme-light #cifra-font-ctrl button {
   background: none !important;
   border: none !important;
 }
-body.theme-light #cifra-font-ctrl button:hover { color: #18181B !important; }
+body.theme-light #cifra-font-ctrl button:hover { color: #1A1A1E !important; }
 body.theme-light #cifra-font-val { color: rgba(24,24,27,0.45) !important; }
 
 /* ── 9. BIBLIOTECA ──────────────────────────────────────────────── */
 body.theme-light {
-  --bib-bg: #FAFAF8;
+  --bib-bg: var(--bg-primary);
 }
 body.theme-light .biblioteca-overlay {
-  background: #FAFAF8 !important;
+  background: var(--bg-primary) !important;
 }
 body.theme-light .biblioteca-header {
   background: rgba(250,250,248,0.97) !important;
   border-bottom-color: rgba(0,0,0,0.07) !important;
   box-shadow: 0 1px 0 rgba(0,0,0,0.05), 0 4px 16px rgba(0,0,0,0.04) !important;
 }
-body.theme-light .biblioteca-titulo { color: #18181B !important; }
+body.theme-light .biblioteca-titulo { color: #1A1A1E !important; }
 body.theme-light .biblioteca-close {
   background: rgba(0,0,0,0.04) !important;
   border-color: rgba(0,0,0,0.08) !important;
@@ -2163,7 +2168,7 @@ body.theme-light .biblioteca-close {
 }
 body.theme-light .biblioteca-close:active {
   background: rgba(0,0,0,0.09) !important;
-  color: #18181B !important;
+  color: #1A1A1E !important;
 }
 body.theme-light .biblioteca-tabs {
   border-bottom-color: rgba(0,0,0,0.07) !important;
@@ -2179,7 +2184,7 @@ body.theme-light .biblioteca-tab.active {
 body.theme-light .biblioteca-search input {
   background: #FFFFFF !important;
   border: 1px solid rgba(0,0,0,0.09) !important;
-  color: #18181B !important;
+  color: #1A1A1E !important;
   box-shadow: var(--shadow-sm) !important;
 }
 body.theme-light .biblioteca-search input::placeholder { color: rgba(24,24,27,0.28) !important; }
@@ -2197,7 +2202,7 @@ body.theme-light .bib-sort-bar,
 body.theme-light .bib-tags-bar,
 body.theme-light .evento-detalhe,
 body.theme-light .biblioteca-grid.eventos-mode {
-  background: #FAFAF8 !important;
+  background: var(--bg-primary) !important;
 }
 body.theme-light .bib-sort-bar { border-bottom-color: rgba(0,0,0,0.05) !important; }
 body.theme-light .sort-btn {
@@ -2205,7 +2210,7 @@ body.theme-light .sort-btn {
   border-color: rgba(0,0,0,0.08) !important;
   color: rgba(24,24,27,0.5) !important;
 }
-body.theme-light .sort-btn:hover { color: #18181B !important; border-color: rgba(0,0,0,0.15) !important; }
+body.theme-light .sort-btn:hover { color: #1A1A1E !important; border-color: rgba(0,0,0,0.15) !important; }
 body.theme-light .sort-btn.active {
   background: rgba(10,143,98,0.08) !important;
   border-color: rgba(10,143,98,0.28) !important;
@@ -2224,7 +2229,7 @@ body.theme-light .tag-chip.active {
 }
 
 /* ── 10. ALBUM CARDS ────────────────────────────────────────────── */
-body.theme-light .album-card .album-name { color: #18181B !important; }
+body.theme-light .album-card .album-name { color: #1A1A1E !important; }
 body.theme-light .album-card .album-meta { color: rgba(24,24,27,0.4) !important; }
 body.theme-light .album-tag {
   background: rgba(10,143,98,0.08) !important;
@@ -2235,7 +2240,7 @@ body.theme-light .album-menu-btn {
   background: rgba(255,255,255,0.9) !important;
   backdrop-filter: blur(8px) !important;
   border-color: rgba(0,0,0,0.1) !important;
-  color: #18181B !important;
+  color: #1A1A1E !important;
 }
 body.theme-light .album-menu-btn:active { background: rgba(10,143,98,0.12) !important; }
 body.theme-light .album-show-btn {
@@ -2250,7 +2255,7 @@ body.theme-light .album-ctx-menu {
   box-shadow: var(--shadow-xl) !important;
 }
 body.theme-light .ctx-item {
-  color: #18181B !important;
+  color: #1A1A1E !important;
 }
 body.theme-light .ctx-item:hover { background: rgba(10,143,98,0.06) !important; color: #0A8F62 !important; }
 body.theme-light .ctx-item:active { background: rgba(10,143,98,0.1) !important; }
@@ -2259,12 +2264,12 @@ body.theme-light .ctx-item.ctx-danger:hover { background: rgba(220,38,38,0.06) !
 body.theme-light .ctx-item.ctx-fav { color: #92400E !important; }
 
 /* ── 12. EVENTO DETALHE ─────────────────────────────────────────── */
-body.theme-light .evento-detalhe { background: #FAFAF8 !important; }
+body.theme-light .evento-detalhe { background: var(--bg-primary) !important; }
 body.theme-light .evento-detalhe-header {
   background: rgba(250,250,248,0.97) !important;
   border-bottom-color: rgba(0,0,0,0.07) !important;
 }
-body.theme-light .evento-detalhe-title { color: #18181B !important; }
+body.theme-light .evento-detalhe-title { color: #1A1A1E !important; }
 body.theme-light .evento-detalhe-back {
   background: rgba(0,0,0,0.04) !important;
   border-color: rgba(0,0,0,0.09) !important;
@@ -2272,7 +2277,7 @@ body.theme-light .evento-detalhe-back {
 }
 body.theme-light .evento-detalhe-back:hover {
   background: rgba(0,0,0,0.08) !important;
-  color: #18181B !important;
+  color: #1A1A1E !important;
 }
 body.theme-light .ev-more-btn {
   background: rgba(0,0,0,0.04) !important;
@@ -2281,14 +2286,14 @@ body.theme-light .ev-more-btn {
 }
 body.theme-light .ev-more-btn:hover {
   background: rgba(0,0,0,0.08) !important;
-  color: #18181B !important;
+  color: #1A1A1E !important;
 }
 body.theme-light .ev-more-drop {
   background: #FFFFFF !important;
   border: 1px solid rgba(0,0,0,0.09) !important;
   box-shadow: var(--shadow-lg) !important;
 }
-body.theme-light .ev-more-item { color: #18181B !important; }
+body.theme-light .ev-more-item { color: #1A1A1E !important; }
 body.theme-light .ev-more-item:hover { background: rgba(10,143,98,0.06) !important; color: var(--accent-primary) !important; }
 body.theme-light .ev-more-item + .ev-more-item { border-top-color: rgba(0,0,0,0.05) !important; }
 
@@ -2306,7 +2311,7 @@ body.theme-light .modal-box {
 }
 body.theme-light .modal-box h2,
 body.theme-light .modal-box p,
-body.theme-light .modal-box label { color: #18181B !important; }
+body.theme-light .modal-box label { color: #1A1A1E !important; }
 body.theme-light .modal-box p { color: rgba(24,24,27,0.6) !important; }
 body.theme-light .modal-box input[type="text"],
 body.theme-light .modal-box input[type="email"],
@@ -2315,7 +2320,7 @@ body.theme-light .modal-box input[type="password"],
 body.theme-light .modal-box textarea {
   background: #F8F8F6 !important;
   border: 1px solid rgba(0,0,0,0.1) !important;
-  color: #18181B !important;
+  color: #1A1A1E !important;
 }
 body.theme-light .modal-box input:focus,
 body.theme-light .modal-box textarea:focus {
@@ -2328,13 +2333,13 @@ body.theme-light .modal-editar-box {
   border: 1px solid rgba(0,0,0,0.09) !important;
   box-shadow: var(--shadow-xl) !important;
 }
-body.theme-light .modal-editar-title { color: #18181B !important; }
+body.theme-light .modal-editar-title { color: #1A1A1E !important; }
 body.theme-light .modal-editar-label { color: rgba(24,24,27,0.6) !important; }
 body.theme-light .modal-editar input[type="text"],
 body.theme-light .modal-editar input[type="number"] {
   background: #F8F8F6 !important;
   border-color: rgba(0,0,0,0.1) !important;
-  color: #18181B !important;
+  color: #1A1A1E !important;
 }
 body.theme-light .modal-editar input:focus {
   border-color: rgba(10,143,98,0.35) !important;
@@ -2354,7 +2359,7 @@ body.theme-light .tag-editor-chip.sel {
 body.theme-light .tag-custom-input {
   background: #F8F8F6 !important;
   border-color: rgba(0,0,0,0.1) !important;
-  color: #18181B !important;
+  color: #1A1A1E !important;
 }
 body.theme-light .tag-custom-add {
   background: rgba(10,143,98,0.08) !important;
@@ -2367,11 +2372,11 @@ body.theme-light .modal-addmusica-box {
   border-color: rgba(0,0,0,0.09) !important;
   box-shadow: var(--shadow-xl) !important;
 }
-body.theme-light .modal-addmusica-header { color: #18181B !important; border-bottom-color: rgba(0,0,0,0.07) !important; }
+body.theme-light .modal-addmusica-header { color: #1A1A1E !important; border-bottom-color: rgba(0,0,0,0.07) !important; }
 body.theme-light .modal-addmusica-item {
   background: #F8F8F6 !important;
   border-color: rgba(0,0,0,0.07) !important;
-  color: #18181B !important;
+  color: #1A1A1E !important;
 }
 body.theme-light .modal-addmusica-item:hover { background: rgba(10,143,98,0.05) !important; border-color: rgba(10,143,98,0.2) !important; }
 /* Modal sala */
@@ -2386,33 +2391,33 @@ body.theme-light .modal-evento-box {
   border-color: rgba(0,0,0,0.09) !important;
   box-shadow: var(--shadow-xl) !important;
 }
-body.theme-light .modal-evento-title { color: #18181B !important; }
+body.theme-light .modal-evento-title { color: #1A1A1E !important; }
 body.theme-light .modal-evento input,
 body.theme-light .modal-evento textarea,
 body.theme-light .modal-evento select {
   background: #F8F8F6 !important;
   border-color: rgba(0,0,0,0.1) !important;
-  color: #18181B !important;
+  color: #1A1A1E !important;
 }
 /* Setlist público */
 body.theme-light #modal-setlist-publico .modal-box {
   background: #FFFFFF !important;
 }
-body.theme-light #setlist-pub-titulo { color: #18181B !important; }
+body.theme-light #setlist-pub-titulo { color: #1A1A1E !important; }
 body.theme-light #setlist-pub-link {
   color: rgba(24,24,27,0.55) !important;
-  background: #F4F4F2 !important;
+  background: var(--bg-secondary) !important;
 }
 
 /* ── 14. AMIGOS ─────────────────────────────────────────────────── */
 body.theme-light #modal-amigos { background: rgba(24,24,27,0.4) !important; }
 body.theme-light .amigos-sheet {
-  background: #FAFAF8 !important;
+  background: var(--bg-primary) !important;
   border-top: 1px solid rgba(0,0,0,0.07) !important;
   box-shadow: 0 -8px 40px rgba(0,0,0,0.10) !important;
 }
 body.theme-light .amigos-header { border-bottom-color: rgba(0,0,0,0.07) !important; }
-body.theme-light .amigos-title { color: #18181B !important; }
+body.theme-light .amigos-title { color: #1A1A1E !important; }
 body.theme-light .amigos-close {
   background: rgba(0,0,0,0.04) !important;
   border-color: rgba(0,0,0,0.09) !important;
@@ -2424,7 +2429,7 @@ body.theme-light .amigos-tab.active { color: var(--accent-primary) !important; b
 body.theme-light .amigos-add-input {
   background: #FFFFFF !important;
   border-color: rgba(0,0,0,0.09) !important;
-  color: #18181B !important;
+  color: #1A1A1E !important;
 }
 body.theme-light .amigos-add-input::placeholder { color: rgba(24,24,27,0.28) !important; }
 body.theme-light .amigos-add-btn {
@@ -2433,7 +2438,7 @@ body.theme-light .amigos-add-btn {
   color: var(--accent-primary) !important;
 }
 body.theme-light .amigo-item { border-bottom-color: rgba(0,0,0,0.06) !important; }
-body.theme-light .amigo-nome { color: #18181B !important; }
+body.theme-light .amigo-nome { color: #1A1A1E !important; }
 body.theme-light .amigo-inst { color: rgba(24,24,27,0.45) !important; }
 body.theme-light .amigo-avatar {
   background: rgba(10,143,98,0.1) !important;
@@ -2459,14 +2464,14 @@ body.theme-light .amigos-sala-banner {
 /* ── 15. NOTIFICAÇÕES ───────────────────────────────────────────── */
 body.theme-light .notif-btn { color: rgba(24,24,27,0.45) !important; }
 body.theme-light .notif-panel {
-  background: #FAFAF8 !important;
+  background: var(--bg-primary) !important;
   border: 1px solid rgba(0,0,0,0.09) !important;
   box-shadow: var(--shadow-xl) !important;
 }
 body.theme-light .notif-panel-header {
   border-bottom-color: rgba(0,0,0,0.07) !important;
 }
-body.theme-light .notif-panel-header h3 { color: #18181B !important; }
+body.theme-light .notif-panel-header h3 { color: #1A1A1E !important; }
 body.theme-light .notif-clear-btn {
   color: rgba(24,24,27,0.4) !important;
   background: rgba(0,0,0,0.04) !important;
@@ -2476,7 +2481,7 @@ body.theme-light .notif-item {
   border-bottom-color: rgba(0,0,0,0.06) !important;
 }
 body.theme-light .notif-item.unread { background: rgba(10,143,98,0.03) !important; }
-body.theme-light .notif-title { color: #18181B !important; }
+body.theme-light .notif-title { color: #1A1A1E !important; }
 body.theme-light .notif-desc { color: rgba(24,24,27,0.55) !important; }
 body.theme-light .notif-time { color: rgba(24,24,27,0.3) !important; }
 body.theme-light .notif-empty { color: rgba(24,24,27,0.35) !important; }
@@ -2486,27 +2491,156 @@ body.theme-light .notif-badge {
   color: #fff !important;
 }
 
+
 /* ── 16. PERFIL ─────────────────────────────────────────────────── */
-body.theme-light #modal-perfil > div:first-child {
-  background: #FAFAF8 !important;
-  border-top: 1px solid rgba(0,0,0,0.07) !important;
+body.theme-light #modal-perfil {
+  background: rgba(0,0,0,0.4) !important;
 }
+body.theme-light #modal-perfil > div:first-child {
+  background: var(--bg-primary) !important;
+  border-top: 1px solid rgba(0,0,0,0.08) !important;
+}
+/* Hero banner */
+body.theme-light #perfil-hero-banner {
+  background: linear-gradient(135deg,#d4ede3 0%,#c8e6d8 40%,#bfe0d0 100%) !important;
+}
+body.theme-light #perfil-hero-banner > div[style*="radial-gradient"] {
+  background: radial-gradient(circle,rgba(10,143,98,0.08) 0%,transparent 70%) !important;
+}
+/* Stats no hero */
+body.theme-light #perfil-stat-musicas,
+body.theme-light #perfil-stat-eventos { color: #1A1A1E !important; }
+body.theme-light #perfil-hero-banner div[style*="MÚSICAS"],
+body.theme-light #perfil-hero-banner div[style*="EVENTOS"] { color: rgba(26,26,30,0.45) !important; }
+/* Label PERFIL */
+body.theme-light #perfil-hero-banner div[style*="letter-spacing:3px"] { color: rgba(10,143,98,0.7) !important; }
+/* Menus banner e foto */
+body.theme-light #banner-menu,
+body.theme-light #foto-menu {
+  background: var(--bg-primary) !important;
+  border-color: rgba(0,0,0,0.09) !important;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.12) !important;
+}
+body.theme-light #banner-menu div,
+body.theme-light #foto-menu div { color: #1A1A1E !important; border-color: rgba(0,0,0,0.06) !important; }
+body.theme-light #banner-remover-btn,
+body.theme-light #foto-remover-btn { color: #DC2626 !important; }
+/* Botão 3 pontos banner e foto */
+body.theme-light #perfil-hero-banner > button,
+body.theme-light #perfil-avatar + input + button {
+  background: rgba(255,255,255,0.8) !important;
+  border-color: rgba(0,0,0,0.12) !important;
+  color: #1A1A1E !important;
+}
+/* Separador */
+body.theme-light #modal-perfil div[style*="height:1px"] { background: rgba(0,0,0,0.07) !important; }
+/* Labels dos campos */
+body.theme-light #modal-perfil label[style*="rgba(255,255,255"] { color: rgba(26,26,30,0.45) !important; }
+body.theme-light #modal-perfil div[style*="rgba(255,255,255,0.3)"][style*="letter-spacing"] { color: rgba(26,26,30,0.4) !important; }
+/* Input nome */
 body.theme-light #perfil-nome-input {
-  background: #F4F4F2 !important;
+  background: var(--bg-secondary) !important;
   border-color: rgba(0,0,0,0.1) !important;
-  color: #18181B !important;
+  color: #1A1A1E !important;
 }
 body.theme-light #perfil-nome-input:focus {
-  border-color: rgba(10,143,98,0.35) !important;
+  border-color: rgba(10,143,98,0.4) !important;
   box-shadow: 0 0 0 3px rgba(10,143,98,0.08) !important;
+}
+/* ID e botão copiar */
+body.theme-light #perfil-id-display { color: rgba(26,26,30,0.45) !important; }
+body.theme-light div[style*="ID"] > span[style*="rgba(255,255,255,0.2)"] { color: rgba(26,26,30,0.35) !important; }
+/* Toggle PIN */
+body.theme-light #perfil-pin-wrap > div:first-child {
+  background: var(--bg-secondary) !important;
+  border-color: rgba(0,0,0,0.08) !important;
+}
+body.theme-light #perfil-pin-wrap div[style*="font-size:12px"] { color: rgba(26,26,30,0.75) !important; }
+body.theme-light #perfil-pin-status-txt { color: rgba(26,26,30,0.4) !important; }
+body.theme-light #perfil-pin-ativo-row {
+  background: rgba(10,143,98,0.06) !important;
+  border-color: rgba(10,143,98,0.2) !important;
+}
+body.theme-light #perfil-pin-ativo-row span[style*="rgba(255,255,255"] { color: rgba(26,26,30,0.45) !important; }
+/* Formalizar conta */
+body.theme-light #perfil-formalizar-wrap div[style*="rgba(255,255,255,0.18)"] { color: rgba(26,26,30,0.35) !important; }
+/* Botão cancelar */
+body.theme-light #modal-perfil button[style*="background:#000"] {
+  background: var(--bg-tertiary) !important;
+  border-color: rgba(0,0,0,0.1) !important;
+  color: rgba(26,26,30,0.5) !important;
+}
+/* Histórico de shows botão */
+body.theme-light #btn-historico-shows {
+  background: var(--bg-secondary) !important;
+  border-color: rgba(0,0,0,0.08) !important;
+  color: rgba(26,26,30,0.45) !important;
+}
+body.theme-light #hist-shows-count { color: rgba(26,26,30,0.3) !important; }
+body.theme-light #modal-perfil div[style*="border-top:1px solid rgba(255,255,255,0.05)"] {
+  border-top-color: rgba(0,0,0,0.07) !important;
 }
 
 /* ── 17. HISTÓRICO SHOWS ────────────────────────────────────────── */
 body.theme-light #modal-historico-shows > div {
-  background: #FAFAF8 !important;
+  background: var(--bg-primary) !important;
   border-top: 1px solid rgba(0,0,0,0.07) !important;
 }
-body.theme-light #hist-modal-count { color: rgba(24,24,27,0.45) !important; }
+body.theme-light #hist-modal-count { color: rgba(26,26,30,0.45) !important; }
+
+/* ── Modais gerais com fundo escuro inline ───────────────────────── */
+/* Cobre modal-sala, modal-alterar-senha, modal-esqueci-senha, modal-formalizar-conta, modal-bpm-mic */
+body.theme-light #modal-sala-box,
+body.theme-light #modal-sala .modal-sala-box,
+body.theme-light #modal-esqueci-senha > div,
+body.theme-light #modal-alterar-senha > div,
+body.theme-light #modal-formalizar-conta > div,
+body.theme-light #modal-bpm-mic > div,
+body.theme-light #modal-excluir-conta > div {
+  background: var(--bg-primary) !important;
+  border-color: rgba(0,0,0,0.09) !important;
+  color: #1A1A1E !important;
+}
+body.theme-light #modal-esqueci-senha,
+body.theme-light #modal-alterar-senha,
+body.theme-light #modal-formalizar-conta,
+body.theme-light #modal-bpm-mic,
+body.theme-light #modal-excluir-conta {
+  background: rgba(0,0,0,0.4) !important;
+}
+/* Inputs dentro de modais com fundo claro */
+body.theme-light #modal-esqueci-senha input,
+body.theme-light #modal-alterar-senha input,
+body.theme-light #modal-formalizar-conta input,
+body.theme-light #modal-bpm-mic input {
+  background: var(--bg-secondary) !important;
+  border-color: rgba(0,0,0,0.1) !important;
+  color: #1A1A1E !important;
+}
+/* Textos dentro de modais */
+body.theme-light #modal-esqueci-senha div[style*="color:#fff"],
+body.theme-light #modal-esqueci-senha div[style*="color:rgba(255,255,255"],
+body.theme-light #modal-alterar-senha div[style*="color:#fff"],
+body.theme-light #modal-alterar-senha div[style*="color:rgba(255,255,255"],
+body.theme-light #modal-formalizar-conta div[style*="color:#fff"],
+body.theme-light #modal-formalizar-conta div[style*="color:rgba(255,255,255"],
+body.theme-light #modal-excluir-conta div[style*="color:#fff"],
+body.theme-light #modal-excluir-conta div[style*="color:rgba(255,255,255"] {
+  color: #1A1A1E !important;
+}
+/* Modal PIN alterar */
+body.theme-light #_pin-alterar-modal > div {
+  background: var(--bg-primary) !important;
+  border-color: rgba(0,0,0,0.09) !important;
+}
+body.theme-light #_pin-alterar-modal input {
+  background: var(--bg-secondary) !important;
+  border-color: rgba(0,0,0,0.1) !important;
+  color: #1A1A1E !important;
+}
+body.theme-light #_pin-alterar-modal div[style*="color:rgba(255,255,255"] { color: rgba(26,26,30,0.5) !important; }
+body.theme-light #_pin-alterar-modal span[style*="color:rgba(255,255,255"],
+body.theme-light #_pin-alterar-modal span[style*="letter-spacing:3px"] { color: rgba(26,26,30,0.4) !important; }
 
 /* ── 18. SONG ITEM (lista lateral) ─────────────────────────────── */
 body.theme-light .song-item {
@@ -2514,9 +2648,9 @@ body.theme-light .song-item {
   border: 1px solid rgba(0,0,0,0.07) !important;
   box-shadow: var(--shadow-sm) !important;
 }
-body.theme-light .song-item:hover { background: #F4F4F2 !important; }
+body.theme-light .song-item:hover { background: var(--bg-secondary) !important; }
 body.theme-light .song-item.active { border-color: rgba(10,143,98,0.3) !important; background: rgba(10,143,98,0.03) !important; }
-body.theme-light .song-name { color: #18181B !important; }
+body.theme-light .song-name { color: #1A1A1E !important; }
 body.theme-light .song-meta { color: rgba(24,24,27,0.4) !important; }
 
 /* ── 19. CAMPO HARMÔNICO ────────────────────────────────────────── */
@@ -2526,12 +2660,12 @@ body.theme-light .harmonic-popup {
   box-shadow: var(--shadow-lg) !important;
 }
 body.theme-light .hp-header { border-bottom-color: rgba(0,0,0,0.07) !important; }
-body.theme-light .hp-key { color: #18181B !important; }
+body.theme-light .hp-key { color: #1A1A1E !important; }
 body.theme-light .hp-close { color: rgba(24,24,27,0.4) !important; }
 
 /* ── 20. PERFORMANCE MODE ───────────────────────────────────────── */
 body.theme-light .perf-song-name,
-body.theme-light .perf-song-pos { color: #18181B !important; }
+body.theme-light .perf-song-pos { color: #1A1A1E !important; }
 body.theme-light .perf-bottom-panel {
   background: rgba(250,250,248,0.95) !important;
   border-top: 1px solid rgba(0,0,0,0.07) !important;
@@ -2562,7 +2696,7 @@ body.theme-light .modal-btn-secondary,
 body.theme-light .btn-secondary {
   background: rgba(0,0,0,0.04) !important;
   border-color: rgba(0,0,0,0.1) !important;
-  color: #18181B !important;
+  color: #1A1A1E !important;
 }
 body.theme-light .modal-btn.secondary:hover,
 body.theme-light .btn-secondary:hover {
@@ -2585,18 +2719,53 @@ body.theme-light input[type="number"]:not([class*="voc"]):not([class*="adm"]),
 body.theme-light input[type="email"]:not([class*="voc"]):not([class*="adm"]),
 body.theme-light input[type="password"]:not([class*="voc"]):not([class*="adm"]),
 body.theme-light input[type="search"]:not([class*="voc"]):not([class*="adm"]) {
-  background: #FFFFFF !important;
+  background: var(--bg-secondary) !important;
   border-color: rgba(0,0,0,0.1) !important;
-  color: #18181B !important;
+  color: #1A1A1E !important;
 }
 body.theme-light input::placeholder { color: rgba(24,24,27,0.28) !important; }
 body.theme-light textarea:not([class*="voc"]):not([class*="adm"]):not(.chord-area):not(.cifra-textarea) {
-  background: #FFFFFF !important;
+  background: var(--bg-secondary) !important;
   border-color: rgba(0,0,0,0.1) !important;
-  color: #18181B !important;
+  color: #1A1A1E !important;
 }
 
-/* ── 23. SCROLLBAR ──────────────────────────────────────────────── */
+/* ── 22b. MODAL IMPORTAR CIFRA ──────────────────────────────────── */
+body.theme-light .cifra-textarea {
+  background: var(--bg-secondary) !important;
+  border-color: rgba(0,0,0,0.1) !important;
+  color: #1A1A1E !important;
+}
+body.theme-light .cifra-textarea::placeholder { color: rgba(26,26,30,0.3) !important; }
+body.theme-light .cifra-textarea:focus { border-color: rgba(10,143,98,0.4) !important; }
+/* Botão buscar arquivo */
+body.theme-light #modal-cifra div[style*="border:1px dashed"],
+body.theme-light #modal-cifra div[style*="border: 1px dashed"] {
+  background: var(--bg-secondary) !important;
+  border-color: rgba(10,143,98,0.3) !important;
+}
+body.theme-light #cifra-file-name { color: #1A1A1E !important; }
+body.theme-light #modal-cifra div[style*="color:rgba(255,255,255"] { color: rgba(26,26,30,0.45) !important; }
+/* Preview sections */
+body.theme-light .preview-section { background: var(--bg-secondary) !important; }
+body.theme-light .cifra-preview-chord { color: #1A1A1E !important; }
+
+/* ── 22c. TOOLBAR PRINCIPAL (TOM, + PARTE, inline styles) ────────── */
+body.theme-light .tool-group button[style*="color:#fff"],
+body.theme-light .toolbar-central button[style*="color:#fff"] { color: #1A1A1E !important; }
+body.theme-light #tom-original-badge span[style*="color:rgba(255,255,255"] { color: rgba(26,26,30,0.4) !important; }
+body.theme-light .toolbar-central button[style*="color:#fff"][style*="+ PARTE"],
+body.theme-light button[onclick="addPart()"] { color: #1A1A1E !important; }
+
+/* Botões inline da toolbar e metrônomo com color:#fff */
+body.theme-light button[style*="color:#fff"]:not(.modal-btn):not(#play-btn):not([class*="voc"]):not([class*="adm"]):not([class*="dc-"]):not(.drumcam-close):not(.biblioteca-close) {
+  color: #1A1A1E !important;
+}
+body.theme-light button[onclick="addPart()"] {
+  background: var(--bg-tertiary) !important;
+  border-color: rgba(0,0,0,0.1) !important;
+  color: #1A1A1E !important;
+}
 /* ── 23b. BOTTOM SHEETS & INLINE DARK ELEMENTS ────────────────────────── */
 /* Cobre elementos HTML estáticos com background inline escuro */
 body.theme-light [style*="background:#0c0c14"],
@@ -2606,7 +2775,7 @@ body.theme-light [style*="background:#1a1a28"],
 body.theme-light [style*="background:#111"] {
   background: #FFFFFF !important;
   border-color: rgba(0,0,0,0.09) !important;
-  color: #18181B !important;
+  color: #1A1A1E !important;
 }
 /* Textos brancos dentro de sheets no modo claro */
 body.theme-light [style*="background:#0c0c14"] *:not(button):not(svg):not(path):not(circle):not(line):not(polyline):not(polygon):not(rect):not(input):not(textarea),
@@ -2625,9 +2794,9 @@ body.theme-light [style*="background:#0c0c14"] input,
 body.theme-light [style*="background:#111119"] input,
 body.theme-light [style*="background:#0c0c14"] textarea,
 body.theme-light [style*="background:#111119"] textarea {
-  background: #F4F4F2 !important;
+  background: var(--bg-secondary) !important;
   border-color: rgba(0,0,0,0.1) !important;
-  color: #18181B !important;
+  color: #1A1A1E !important;
 }
 /* Menus dropdown inline (banner-menu, foto-menu) */
 body.theme-light [id="banner-menu"],
@@ -4247,7 +4416,7 @@ body { font-family: -apple-system, 'Inter', BlinkMacSystemFont, 'Segoe UI', sans
   .logo-icon { width: 30px; height: 30px; border-radius: 7px; }
   .logo-icon span { font-size: 15px; }
   .logo-name { font-size: 13px; }
-  .logo-tag { display: none; }
+  .logo-tag { font-size: 7px; letter-spacing: 1.5px; }
   .app-logo { gap: 7px; }
   #btn-sala { padding: 6px 12px; font-size: 9px; }
 
@@ -4965,7 +5134,7 @@ body.theme-light .toast-warning {
 body.theme-light .toast-warning .toast-icon { background: rgba(217,119,6,0.1) !important; color: #92400E !important; }
 body.theme-light .toast-info {
   background: rgba(250,250,248,0.97) !important;
-  border-color: rgba(0,0,0,0.1) !important; color: #18181B !important;
+  border-color: rgba(0,0,0,0.1) !important; color: #1A1A1E !important;
   box-shadow: 0 8px 32px rgba(0,0,0,0.12), 0 2px 6px rgba(0,0,0,0.06) !important;
 }
 body.theme-light .toast-info .toast-icon { background: rgba(0,0,0,0.05) !important; color: rgba(24,24,27,0.5) !important; }
@@ -22735,14 +22904,14 @@ function _boxBg(extra) {
 function _boxBgBottom(extra) {
   extra = extra || '';
   return _isLight()
-    ? 'background:#FAFAF8;border:1px solid rgba(0,0,0,0.08);border-radius:24px 24px 0 0;' + extra
+    ? 'background:var(--bg-primary);border:1px solid rgba(0,0,0,0.08);border-radius:24px 24px 0 0;' + extra
     : 'background:#111119;border:1px solid rgba(255,255,255,0.1);border-radius:24px 24px 0 0;' + extra;
 }
-function _txtColor() { return _isLight() ? '#18181B' : '#fff'; }
+function _txtColor() { return _isLight() ? '#1A1A1E' : '#fff'; }
 function _txtSecColor() { return _isLight() ? 'rgba(24,24,27,0.5)' : 'rgba(255,255,255,0.45)'; }
 function _inputBg() {
   return _isLight()
-    ? 'background:#F4F4F2;border:1px solid rgba(0,0,0,0.1);border-radius:10px;color:#18181B;font-size:14px;padding:12px 14px;outline:none;font-family:inherit;width:100%;box-sizing:border-box;'
+    ? 'background:var(--bg-secondary);border:1px solid rgba(0,0,0,0.1);border-radius:10px;color:#1A1A1E;font-size:14px;padding:12px 14px;outline:none;font-family:inherit;width:100%;box-sizing:border-box;'
     : 'background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.12);border-radius:10px;color:#fff;font-size:14px;padding:12px 14px;outline:none;font-family:inherit;width:100%;box-sizing:border-box;';
 }
 
