@@ -5307,31 +5307,31 @@ body.theme-light .toast-info .toast-icon { background: rgba(0,0,0,0.05) !importa
 /* ── Grid ── */
 .pads-grid-wrap {
   flex: 1; display: flex; align-items: stretch; justify-content: stretch;
-  padding: 8px; overflow: hidden; min-height: 0;
+  padding: 6px; overflow: hidden; min-height: 0;
 }
 /* Desktop: pads ocupam toda a tela */
 @media (min-width: 641px) {
-  .pads-grid-wrap { padding: 10px 14px; }
+  .pads-grid-wrap { padding: 8px 10px; }
   .pads-grid {
     width: 100%;
     grid-template-columns: repeat(4, 1fr);
-    gap: 10px;
+    gap: 8px;
   }
-  .pad-chord { font-size: clamp(16px, 2vw, 26px); }
+  .pad-chord { font-size: clamp(14px, 1.8vw, 24px); }
   .pad-type  { font-size: 10px; }
 }
 @media (min-width: 1025px) {
-  .pads-grid-wrap { padding: 12px 16px; }
-  .pads-grid { gap: 14px; }
-  .pad { border-radius: 18px; }
-  .pad-chord { font-size: clamp(20px, 1.8vw, 32px); }
-  .pad-type  { font-size: 12px; letter-spacing: 1px; }
+  .pads-grid-wrap { padding: 10px 12px; }
+  .pads-grid { gap: 12px; }
+  .pad { border-radius: 16px; }
+  .pad-chord { font-size: clamp(18px, 1.6vw, 28px); }
+  .pad-type  { font-size: 11px; letter-spacing: 1px; }
 }
 .pads-grid {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
-  grid-template-rows: repeat(4, 1fr);
-  gap: 10px; width: 100%; height: 100%;
+  grid-auto-rows: 1fr;
+  gap: 8px; width: 100%; height: 100%;
 }
 
 /* Individual pad */
@@ -7211,6 +7211,11 @@ body.auth-pending #toast {
       <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14M4.93 4.93a10 10 0 0 0 0 14.14"/></svg>
       FX
     </button>
+    <!-- Botão Stereo Split -->
+    <button class="dc-header-fx-btn" id="dc-stereo-btn" onclick="dcToggleStereo()" title="Separar canais: Pads R / Click L">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 18v-6a9 9 0 0 1 18 0v6"/><path d="M21 19a2 2 0 0 1-2 2h-1a2 2 0 0 1-2-2v-3a2 2 0 0 1 2-2h3zM3 19a2 2 0 0 0 2 2h1a2 2 0 0 0 2-2v-3a2 2 0 0 0-2-2H3z"/></svg>
+      ST
+    </button>
     <button class="drumcam-close" onclick="fecharDrumCam()">Fechar</button>
   </div>
   <!-- Legacy hidden elements for JS compat -->
@@ -7555,6 +7560,45 @@ body.auth-pending #toast {
 </div>
 <!-- BOTÃO PAD FLUTUANTE -->
 <button class="btn-pad-flutuante" id="btn-pad-flutuante" onclick="togglePadFlutuante()">PAD TOCANDO — PARAR</button>
+
+<!-- FRASES PRONTAS — modo show (só host) -->
+<div id="frases-prontas-btn" style="display:none;position:fixed;bottom:24px;left:20px;z-index:200010;">
+  <button onclick="toggleFrasesProntas()" id="frases-toggle-btn"
+    style="background:rgba(138,92,246,0.12);border:1px solid rgba(138,92,246,0.4);color:rgba(167,139,250,0.9);padding:11px 18px;border-radius:999px;font-size:11px;font-weight:900;letter-spacing:1.5px;text-transform:uppercase;cursor:pointer;font-family:inherit;touch-action:manipulation;backdrop-filter:blur(24px);-webkit-backdrop-filter:blur(24px);box-shadow:0 4px 20px rgba(0,0,0,0.4);display:flex;align-items:center;gap:8px;transition:0.2s;">
+    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+    Avisos
+  </button>
+</div>
+
+<!-- PAINEL DE FRASES PRONTAS -->
+<div id="frases-prontas-painel" style="display:none;position:fixed;bottom:80px;left:20px;z-index:200009;width:min(320px,calc(100vw - 40px));">
+  <div style="background:rgba(10,10,20,0.96);border:1px solid rgba(138,92,246,0.3);border-radius:16px;padding:14px;backdrop-filter:blur(24px);-webkit-backdrop-filter:blur(24px);box-shadow:0 16px 48px rgba(0,0,0,0.7);">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
+      <span style="font-size:9px;font-weight:900;letter-spacing:2px;color:rgba(167,139,250,0.7);text-transform:uppercase;">Frases Prontas</span>
+      <button onclick="abrirEditarFrases()" style="background:none;border:none;color:rgba(255,255,255,0.25);font-size:10px;font-weight:700;cursor:pointer;letter-spacing:0.5px;font-family:inherit;touch-action:manipulation;padding:2px 6px;border-radius:4px;transition:0.15s;" onmouseenter="this.style.color='rgba(255,255,255,0.6)'" onmouseleave="this.style.color='rgba(255,255,255,0.25)'">Editar</button>
+    </div>
+    <div id="frases-grid" style="display:grid;grid-template-columns:1fr 1fr;gap:6px;"></div>
+  </div>
+</div>
+
+<!-- MODAL EDITAR FRASES -->
+<div id="modal-editar-frases" style="display:none;position:fixed;inset:0;z-index:200020;background:rgba(0,0,0,0.82);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);align-items:center;justify-content:center;padding:20px;" onclick="if(event.target===this)fecharEditarFrases()">
+  <div style="background:#0d0d1a;border:1px solid rgba(138,92,246,0.25);border-radius:20px;width:100%;max-width:360px;max-height:85vh;display:flex;flex-direction:column;overflow:hidden;box-shadow:0 24px 80px rgba(0,0,0,0.9);">
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:16px 20px 12px;border-bottom:1px solid rgba(255,255,255,0.06);">
+      <span style="font-size:9px;font-weight:900;letter-spacing:3px;color:rgba(255,255,255,0.3);text-transform:uppercase;">Editar Frases</span>
+      <button onclick="fecharEditarFrases()" style="background:none;border:1px solid rgba(255,255,255,0.1);color:rgba(255,255,255,0.4);width:28px;height:28px;border-radius:50%;cursor:pointer;display:flex;align-items:center;justify-content:center;">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    </div>
+    <div style="overflow-y:auto;padding:14px 18px 18px;display:flex;flex-direction:column;gap:8px;" id="frases-edit-lista"></div>
+    <div style="padding:0 18px 18px;display:flex;gap:8px;">
+      <input id="frases-nova-input" type="text" maxlength="40" placeholder="Nova frase..."
+        style="flex:1;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);border-radius:10px;padding:9px 12px;color:#fff;font-size:12px;font-weight:700;outline:none;font-family:inherit;"
+        onkeydown="if(event.key==='Enter')adicionarFrasePronta()">
+      <button onclick="adicionarFrasePronta()" style="background:rgba(138,92,246,0.2);border:1px solid rgba(138,92,246,0.4);color:#a78bfa;padding:9px 14px;border-radius:10px;font-size:11px;font-weight:900;cursor:pointer;font-family:inherit;touch-action:manipulation;">+</button>
+    </div>
+  </div>
+</div>
 
 <!-- INDICADOR DE MUSICA NO MODO SHOW -->
 <div class="perf-song-indicator" id="perf-indicator">
@@ -8421,15 +8465,18 @@ function _getDcMasterNode(ctx) {
   var masterGain = ctx.createGain();
   masterGain.gain.value = 0.72;
 
-  // 2. Compressor master: suaviza picos sem alterar o caráter sonoro
-  var comp = ctx.createDynamicsCompressor();
-  comp.threshold.value = -14;   // começa a comprimir a partir de -14 dBFS
-  comp.knee.value      = 8;     // soft-knee — transparente
-  comp.ratio.value     = 4;     // 4:1 — não "aperta" o som
-  comp.attack.value    = 0.002; // 2 ms — rápido para pegar transientes
-  comp.release.value   = 0.18;  // 180 ms — solta natural
+  // 2. Panner estéreo (pads → R quando stereo ativo, centro quando não)
+  var panner = _getDcPadPanner(ctx);
 
-  // 3. Limiter — teto rígido de -2 dBFS (brick-wall)
+  // 3. Compressor master
+  var comp = ctx.createDynamicsCompressor();
+  comp.threshold.value = -14;
+  comp.knee.value      = 8;
+  comp.ratio.value     = 4;
+  comp.attack.value    = 0.002;
+  comp.release.value   = 0.18;
+
+  // 4. Limiter brick-wall
   var limiter = ctx.createDynamicsCompressor();
   limiter.threshold.value = -2;
   limiter.knee.value      = 0;
@@ -8437,8 +8484,13 @@ function _getDcMasterNode(ctx) {
   limiter.attack.value    = 0.001;
   limiter.release.value   = 0.05;
 
-  // Encadeia: masterGain → comp → limiter → destination
-  masterGain.connect(comp);
+  // Encadeia: masterGain → [panner] → comp → limiter → destination
+  if (panner) {
+    masterGain.connect(panner);
+    panner.connect(comp);
+  } else {
+    masterGain.connect(comp);
+  }
   comp.connect(limiter);
   limiter.connect(ctx.destination);
 
@@ -8939,6 +8991,7 @@ function _ativarModoShow() {
   }
   _setScroll(slider ? parseInt(slider.value) : 1);
   broadcastEstado();
+  setTimeout(_frasesAtualizarVisibilidade, 100);
 }
 
 function _desativarModoShow() {
@@ -8957,6 +9010,7 @@ function _desativarModoShow() {
   const _b = document.getElementById('perf-evento-badge');
   if (_b) _b.style.display = 'none';
   broadcastEstado();
+  _frasesAtualizarVisibilidade();
   // Guarda timestamp de saida — impede ghost click reativar o show por 600ms
   _showReentryGuardMs = Date.now();
   // Bloqueia pointer-events no botao por 600ms como camada extra de protecao
@@ -9369,7 +9423,17 @@ function playClick() {
   osc.frequency.value = (window._metroFreq || 1000);
   env.gain.value = 0.8;
   env.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.08);
-  osc.connect(env); env.connect(_getAudioChain(ctx));
+
+  // Panner do click (L quando stereo ativo, centro quando não)
+  var clickPanner = _dcStereoAtivo ? _getDcClickPanner(ctx) : null;
+  if (clickPanner) {
+    osc.connect(env);
+    env.connect(clickPanner);
+    clickPanner.connect(_getAudioChain(ctx));
+  } else {
+    osc.connect(env);
+    env.connect(_getAudioChain(ctx));
+  }
   osc.start(); osc.stop(ctx.currentTime + 0.08);
 }
 function scheduler() {
@@ -9549,18 +9613,35 @@ function mostrarHarmonic(textarea, acordes) {
       <span class="hp-chord-degree">${c.grau}</span>
     </div>`).join('');
 
-  // Posiciona o popup acima do textarea
-  const rect = textarea.getBoundingClientRect();
-  const popupH = 160;
-  let top  = rect.top + window.scrollY - popupH - 10;
-  let left = rect.left + window.scrollX;
-  if (top < 10) top = rect.bottom + window.scrollY + 10;
-  if (left + 280 > window.innerWidth - 10) left = window.innerWidth - 290;
+  // Posiciona o popup usando apenas getBoundingClientRect — funciona corretamente
+  // no iOS com teclado aberto pois usa coordenadas da viewport sem scrollY
+  const posicionarPopup = function() {
+    const rect = textarea.getBoundingClientRect();
+    const popupH = popup.offsetHeight || 170;
+    const margin = 8;
 
-  popup.style.top  = top + 'px';
-  popup.style.left = left + 'px';
+    // Tenta posicionar acima da seção
+    var top = rect.top - popupH - margin;
+    // Se não couber acima, coloca abaixo
+    if (top < 60) top = rect.bottom + margin;
+    // Garante que não saia da tela verticalmente
+    top = Math.max(60, Math.min(top, window.innerHeight - popupH - margin));
+
+    var left = rect.left;
+    // Garante que não saia da tela horizontalmente
+    if (left + 280 > window.innerWidth - 10) left = window.innerWidth - 290;
+    left = Math.max(10, left);
+
+    popup.style.top  = top + 'px';
+    popup.style.left = left + 'px';
+  };
+
   popup.classList.add('visible');
   activeTextarea = textarea;
+
+  // Posiciona imediatamente e depois de um frame (garante offsetHeight correto)
+  posicionarPopup();
+  requestAnimationFrame(posicionarPopup);
 }
 
 function fecharHarmonic() {
@@ -9594,12 +9675,11 @@ document.addEventListener('click', e => {
   }
 });
 
-// Fecha ao deslizar o dedo (touchmove) ou scroll — mas NÃO dentro de overlays
+// Fecha ao deslizar o dedo (touchmove) — mas NÃO dentro de overlays ou do próprio popup
 document.addEventListener('touchmove', function(e) {
   if (e.target.closest('[id$="-overlay"], #notif-panel, .modal, .modal-box, .amigos-sheet, #harmonic-popup, .chord-area')) return;
   fecharHarmonic();
 }, { passive: true });
-document.addEventListener('scroll', () => fecharHarmonic(), { passive: true });
 
 // Fecha ao mudar de seção (foco em outro campo)
 document.addEventListener('focusin', e => {
@@ -13089,7 +13169,162 @@ dcAbrirFxModal = function() {
   dcRenderPresetsSalvos();
 };
 
-// ── Fim das funções de preset do Drum Cam ────────────────────────────────────
+// ─── Stereo Split — Pads R / Click L ────────────────────────────────────────
+var _dcStereoAtivo = false;
+var _dcPadPanner   = null; // StereoPannerNode para os pads
+var _dcClickPanner = null; // StereoPannerNode para o click
+
+function dcToggleStereo() {
+  _dcStereoAtivo = !_dcStereoAtivo;
+  var btn = document.getElementById('dc-stereo-btn');
+  if (btn) btn.classList.toggle('ativo', _dcStereoAtivo);
+
+  // Reseta o master node para recriar com panner
+  _dcMasterNode = null;
+  _dcPadPanner  = null;
+  _dcClickPanner = null;
+
+  showToast(_dcStereoAtivo ? 'Stereo: Pads R · Click L' : 'Stereo desativado', 'success');
+}
+
+// Retorna (ou cria) o panner dos pads
+function _getDcPadPanner(ctx) {
+  if (_dcPadPanner) return _dcPadPanner;
+  if (!ctx.createStereoPanner) return null; // fallback para browsers antigos
+  _dcPadPanner = ctx.createStereoPanner();
+  _dcPadPanner.pan.value = _dcStereoAtivo ? 1 : 0; // R quando ativo
+  return _dcPadPanner;
+}
+
+// Retorna (ou cria) o panner do click
+function _getDcClickPanner(ctx) {
+  if (_dcClickPanner) return _dcClickPanner;
+  if (!ctx.createStereoPanner) return null;
+  _dcClickPanner = ctx.createStereoPanner();
+  _dcClickPanner.pan.value = _dcStereoAtivo ? -1 : 0; // L quando ativo
+  return _dcClickPanner;
+}
+
+// ─── Frases Prontas — modo show ──────────────────────────────────────────────
+var _FRASES_KEY = 'map_frases_prontas_v1';
+var _FRASES_DEFAULT = [
+  'Repetir refrão', 'Ir pro final', 'Mais suave', 'Mais forte',
+  'Parar', 'Próxima música', 'Voltar ao início', 'Mais lento',
+  'Mais rápido', 'Só violão'
+];
+var _frasesPainelAberto = false;
+
+function _frasesCarregar() {
+  return _lsGet(_FRASES_KEY, _FRASES_DEFAULT);
+}
+
+function _frasesSalvar(lista) {
+  _lsSet(_FRASES_KEY, lista);
+}
+
+function _frasesRenderGrid() {
+  var grid = document.getElementById('frases-grid');
+  if (!grid) return;
+  var lista = _frasesCarregar();
+  grid.innerHTML = lista.map(function(f) {
+    return '<button onclick="enviarFrasePronta(\'' + _ve(f) + '\')" ' +
+      'style="background:rgba(138,92,246,0.08);border:1px solid rgba(138,92,246,0.2);color:rgba(255,255,255,0.8);' +
+      'padding:10px 8px;border-radius:10px;font-size:11px;font-weight:700;cursor:pointer;' +
+      'font-family:inherit;touch-action:manipulation;transition:0.15s;text-align:center;line-height:1.3;" ' +
+      'onmouseenter="this.style.background=\'rgba(138,92,246,0.2)\'" ' +
+      'onmouseleave="this.style.background=\'rgba(138,92,246,0.08)\'">' +
+      _ve(f) + '</button>';
+  }).join('');
+}
+
+function toggleFrasesProntas() {
+  _frasesPainelAberto = !_frasesPainelAberto;
+  var painel = document.getElementById('frases-prontas-painel');
+  var btn    = document.getElementById('frases-toggle-btn');
+  if (_frasesPainelAberto) {
+    _frasesRenderGrid();
+    painel.style.display = 'block';
+    if (btn) btn.style.background = 'rgba(138,92,246,0.25)';
+  } else {
+    painel.style.display = 'none';
+    if (btn) btn.style.background = 'rgba(138,92,246,0.12)';
+  }
+}
+
+function enviarFrasePronta(frase) {
+  if (!isHost || !myRoomCode) return;
+  // Reutiliza a função existente de aviso
+  var perfil  = _getPerfilLocal();
+  var uid     = _getUid();
+  var hora    = new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+  var avisoObj = { tipo: 'aviso', uid: uid, nome: perfil.nome || 'Host', texto: frase, _t: Date.now() };
+  window._fb && window._fb.enviarMensagemSala(myRoomCode, avisoObj).catch(function(){});
+  window._fb && window._fb._set && window._fb._set('salas/' + myRoomCode, { ultimoAviso: avisoObj }, true).catch(function(){});
+  _salaAvisos && _salaAvisos.unshift({ texto: frase, hora: hora });
+  _renderAvisosChat && _renderAvisosChat();
+  showToast('"' + frase + '" enviado!', 'success');
+  // Fecha o painel após enviar
+  toggleFrasesProntas();
+}
+
+function abrirEditarFrases() {
+  var modal = document.getElementById('modal-editar-frases');
+  if (modal) { modal.style.display = 'flex'; _frasesRenderEditLista(); }
+}
+
+function fecharEditarFrases() {
+  var modal = document.getElementById('modal-editar-frases');
+  if (modal) modal.style.display = 'none';
+  _frasesRenderGrid(); // atualiza grid com novas frases
+}
+
+function _frasesRenderEditLista() {
+  var lista = _frasesCarregar();
+  var el    = document.getElementById('frases-edit-lista');
+  if (!el) return;
+  el.innerHTML = lista.map(function(f, i) {
+    return '<div style="display:flex;align-items:center;gap:8px;padding:8px 10px;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.07);border-radius:10px;">' +
+      '<span style="flex:1;font-size:12px;font-weight:700;color:rgba(255,255,255,0.7);">' + _ve(f) + '</span>' +
+      '<button onclick="removerFrasePronta(' + i + ')" style="background:none;border:none;color:rgba(248,113,113,0.6);cursor:pointer;padding:4px;touch-action:manipulation;">' +
+        '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg>' +
+      '</button>' +
+      '</div>';
+  }).join('');
+}
+
+function adicionarFrasePronta() {
+  var input = document.getElementById('frases-nova-input');
+  var texto = (input ? input.value : '').trim();
+  if (!texto) return;
+  var lista = _frasesCarregar();
+  lista.push(texto);
+  _frasesSalvar(lista);
+  if (input) input.value = '';
+  _frasesRenderEditLista();
+}
+
+function removerFrasePronta(idx) {
+  var lista = _frasesCarregar();
+  lista.splice(idx, 1);
+  _frasesSalvar(lista);
+  _frasesRenderEditLista();
+}
+
+// Mostra/oculta botão de frases no modo show (só host)
+function _frasesAtualizarVisibilidade() {
+  var btn = document.getElementById('frases-prontas-btn');
+  if (!btn) return;
+  var isShow = document.getElementById('app-body').classList.contains('performance-mode');
+  btn.style.display = (isShow && isHost) ? 'block' : 'none';
+  // Fecha painel ao sair do show
+  if (!isShow && _frasesPainelAberto) {
+    _frasesPainelAberto = false;
+    var painel = document.getElementById('frases-prontas-painel');
+    if (painel) painel.style.display = 'none';
+  }
+}
+
+// ── Fim Frases Prontas ───────────────────────────────────────────────────────
 function dcPararTudo() {}
 function dcMudarOitava(v) {}
 const dcPadNodes = {};
