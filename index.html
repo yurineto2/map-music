@@ -4210,16 +4210,14 @@ body.performance-mode .scroll-controls { display: none; } /* movido para painel 
   display: flex; flex-direction: column; gap: 10px;
   align-items: flex-end;
 }
-/* Botao SAIR DO SHOW: posicao fixa independente, canto inferior direito */
+/* Botão MODO SHOW — fixo no canto inferior direito, sempre visível */
 .mode-show-container {
+  display: flex !important;
+  align-items: center; justify-content: center;
   position: fixed !important;
   bottom: 24px !important;
   right: 20px !important;
   z-index: 2100 !important;
-}
-
-/* Botão modo show — vidro verde piscando */
-.mode-show-container {
   background: rgba(10,158,110,0.08);
   border: 1px solid rgba(10,158,110,0.4);
   color: var(--accent-primary);
@@ -4228,7 +4226,7 @@ body.performance-mode .scroll-controls { display: none; } /* movido para painel 
   font-weight: 900; font-size: 11px; letter-spacing: 2px;
   text-transform: uppercase;
   backdrop-filter: blur(24px) saturate(1.6); -webkit-backdrop-filter: blur(24px) saturate(1.6);
-  transition: all 0.2s;
+  transition: background 0.2s, border-color 0.2s;
   box-shadow: 0 4px 20px rgba(0,0,0,0.4);
   animation: pulseGreen 1.8s ease-in-out infinite;
 }
@@ -19674,7 +19672,7 @@ body[data-ambiente="vocalista"] .swipe-hint { display: none !important; }
       <button class="voc-icon-btn" id="voc-fav-btn" onclick="vocToggleFav()">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
       </button>
-      <button onclick="vocAbrirPerformanceDaLetraAtual()" title="Cantar — modo show"
+      <button onclick="vocAbrirPerformanceComContexto({titulo:_voc.titulo||'?',artista:_voc.artista||'?',letra:_voc.letra||''}, null)" title="Cantar — modo show"
         style="background:rgba(138,92,246,0.18);border:1px solid rgba(138,92,246,0.45);border-radius:20px;padding:5px 12px;color:#a78bfa;font-size:11px;font-weight:800;cursor:pointer;font-family:inherit;display:flex;align-items:center;gap:5px;letter-spacing:0.3px;flex-shrink:0;">
         <svg width="9" height="9" viewBox="0 0 24 24" fill="#a78bfa"><polygon points="5 3 19 12 5 21 5 3"/></svg>
         CANTAR
