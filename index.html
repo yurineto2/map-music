@@ -1518,17 +1518,48 @@ document.addEventListener('DOMContentLoaded', function() {
   // Detectar mobile (iOS/Android) — file:// só bloqueia em mobile
   var _isMobileDevice = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
   var semRede  = isSrcdoc || ((proto === 'file:' || proto === 'blob:') && _isMobileDevice);
-  // PC via file:// — permitir uso local sem Firebase
+  // PC via file:// — iniciar app localmente sem Firebase
   if ((proto === 'file:' || proto === 'blob:') && !_isMobileDevice) {
-    document.body.classList.remove('auth-pending');
-    var _sp = document.getElementById('ob-splash');
-    if (_sp) _sp.style.display = 'none';
-    document.body.classList.add('pronto');
+    // Aguardar splash animado (1.8s) depois iniciar
+    var _pcPerfil = _lsGet('map_perfil_v1', {});
+    // Mostrar nome no splash se existir
+    if (_pcPerfil.nome) {
+      var _pcUserEl = document.getElementById('ob-splash-user');
+      if (_pcUserEl) { _pcUserEl.style.display = 'block'; _pcUserEl.textContent = _pcPerfil.nome; }
+    }
     setTimeout(function() {
-      if (typeof renderBibAtivo === 'function') renderBibAtivo('');
-      if (typeof _cifraFontSincLabel === 'function') _cifraFontSincLabel();
-      if (typeof _themeInit === 'function') _themeInit();
-    }, 300);
+      document.body.classList.remove('auth-pending');
+      document.body.classList.add('pronto');
+      var _pcSplash = document.getElementById('ob-splash');
+      if (_pcSplash) _pcSplash.classList.add('exit');
+
+      if (_pcPerfil.nome && _pcPerfil.nome.trim().length >= 2) {
+        // Usuário já registrado — mostrar app diretamente
+        if (typeof _mostrarApp === 'function') { _mostrarApp(); }
+        else {
+          document.body.classList.remove('auth-pending');
+          var _ov = document.getElementById('onboarding-overlay');
+          if (_ov) _ov.remove();
+        }
+        setTimeout(function() {
+          if (typeof _verificarPinNaEntrada === 'function') _verificarPinNaEntrada();
+          if (typeof renderBibAtivo === 'function') renderBibAtivo('');
+          if (typeof _cifraFontSincLabel === 'function') _cifraFontSincLabel();
+          if (typeof _themeInit === 'function') _themeInit();
+          if (typeof atualizarBadge === 'function') atualizarBadge();
+        }, 400);
+      } else {
+        // Primeiro acesso — mostrar onboarding
+        if (_pcSplash) setTimeout(function() { if(_pcSplash) _pcSplash.remove(); }, 700);
+        var _ov2 = document.getElementById('onboarding-overlay');
+        if (_ov2) {
+          _ov2.style.opacity = '';
+          _ov2.style.transform = '';
+          _ov2.style.pointerEvents = 'auto';
+          requestAnimationFrame(function() { _ov2.classList.add('visible'); });
+        }
+      }
+    }, 1800);
     return;
   }
   if (semRede) {
