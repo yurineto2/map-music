@@ -3764,8 +3764,8 @@ body { font-family: -apple-system, 'Inter', BlinkMacSystemFont, 'Segoe UI', sans
 
 /* ── 4x4 Pad Grid ── */
 .dc-pads-grid {
-  display: grid; grid-template-columns: repeat(4, 1fr);
-  grid-auto-rows: 1fr;
+  display: grid; grid-template-columns: repeat(3, 1fr);
+  grid-template-rows: repeat(2, 1fr);
   gap: 8px; flex: 1; min-height: 0; height: 100%;
   touch-action: none;
 }
@@ -4117,7 +4117,17 @@ body { font-family: -apple-system, 'Inter', BlinkMacSystemFont, 'Segoe UI', sans
   color: rgba(255,255,255,0.2); text-transform: uppercase;
 }
 
-/* Anel de feedback do long press */
+/* Botão trocar pad no slot — canto superior direito */
+.dc-slot-swap {
+  position: absolute; top: 5px; right: 5px;
+  width: 20px; height: 20px; border-radius: 6px;
+  background: rgba(0,0,0,0.45); border: 1px solid rgba(255,255,255,0.15);
+  display: flex; align-items: center; justify-content: center;
+  opacity: 0; transition: opacity 0.18s; z-index: 3; cursor: pointer;
+  touch-action: manipulation;
+}
+.dc-pad:hover .dc-slot-swap { opacity: 1; }
+.dc-pad.has-pad-fx .dc-slot-swap { opacity: 0.6; }
 .dc-pad-longpress-ring {
   position: absolute; inset: 0; border-radius: inherit;
   border: 2px solid rgba(138,92,246,0.8);
@@ -7203,6 +7213,10 @@ body.auth-pending #toast {
       <input type="range" class="dc-vol-slider" id="dc-vol-master" min="0" max="100" value="80"
         oninput="dcVolMaster(this.value)" style="-webkit-appearance:none;width:70px;height:3px;border-radius:2px;outline:none;cursor:pointer;background:rgba(255,255,255,0.12);">
     </div>
+    <!-- Botão adicionar pad no header -->
+    <button class="dc-header-fx-btn" id="dc-addpad-hdr-btn" onclick="dcAbrirAddPad()" title="Adicionar pad">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+    </button>
     <!-- Botão FX global -->
     <button class="dc-header-fx-btn" id="dc-fx-hdr-btn" onclick="dcAbrirFxModal()">
       <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14M4.93 4.93a10 10 0 0 0 0 14.14"/></svg>
@@ -7555,7 +7569,21 @@ body.auth-pending #toast {
     </div>
   </div>
 </div>
-<!-- BOTÃO PAD FLUTUANTE -->
+
+<!-- MODAL SELETOR DE PAD PARA SLOT -->
+<div class="dc-addpad-overlay" id="dc-slot-selector-overlay" onclick="if(event.target===this)dcFecharSeletorPad()">
+  <div class="dc-addpad-box" style="max-width:400px;">
+    <div class="dc-addpad-header">
+      <span class="dc-addpad-title">Escolher Pad</span>
+      <button class="dc-addpad-close" onclick="dcFecharSeletorPad()">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    </div>
+    <div style="padding:14px 16px 18px;">
+      <div id="dc-slot-selector-grid" style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;"></div>
+    </div>
+  </div>
+</div>
 <button class="btn-pad-flutuante" id="btn-pad-flutuante" onclick="togglePadFlutuante()">PAD TOCANDO — PARAR</button>
 
 <!-- FRASES PRONTAS — modo show (só host) -->
@@ -11996,38 +12024,70 @@ function dcTrocarBank(idx) {
   renderDcMix();
 }
 
+// ─── Slots visíveis — 6 pads por bank ────────────────────────────────────────
+var _DC_SLOTS_KEY = 'map_dc_slots_v1';
+var _DC_SLOTS_COUNT = 6;
+
+function _dcCarregarSlots() {
+  return _lsGet(_DC_SLOTS_KEY, {});
+}
+
+function _dcSalvarSlots(slots) {
+  _lsSet(_DC_SLOTS_KEY, slots);
+}
+
+function _dcGetSlots(bankIdx) {
+  var slots = _dcCarregarSlots();
+  if (!slots[bankIdx]) {
+    // Padrão: primeiros 6 pads do bank
+    slots[bankIdx] = [0,1,2,3,4,5];
+    _dcSalvarSlots(slots);
+  }
+  return slots[bankIdx];
+}
+
+function _dcSetSlot(bankIdx, slotIdx, padIdx) {
+  var slots = _dcCarregarSlots();
+  if (!slots[bankIdx]) slots[bankIdx] = [0,1,2,3,4,5];
+  slots[bankIdx][slotIdx] = padIdx;
+  _dcSalvarSlots(slots);
+}
+
 function renderDcPads() {
   var grid = document.getElementById('dc-pads-grid');
   if (!grid) return;
-  var bank = DC_BANKS[_dcBank];
-  var padsHtml = bank.map(function(pad, i) {
-    var key = _dcBank * 16 + i;
+  var bank  = DC_BANKS[_dcBank];
+  var slots = _dcGetSlots(_dcBank);
+
+  var padsHtml = slots.map(function(padIdx, slotIdx) {
+    var pad = bank[padIdx] || bank[0];
+    var key = _dcBank * 16 + padIdx;
     var hasSample = !!_dcSamples[key];
-    var hasPadFx  = !!(_dcPadFx[_dcBank] && _dcPadFx[_dcBank][i] && _dcPadFx[_dcBank][i].type);
+    var hasPadFx  = !!(_dcPadFx[_dcBank] && _dcPadFx[_dcBank][padIdx] && _dcPadFx[_dcBank][padIdx].type);
     return '<div class="dc-pad' + (hasSample ? ' has-sample' : '') + (hasPadFx ? ' has-pad-fx' : '') + '"' +
       ' data-color="' + pad.color + '"' +
-      ' data-idx="' + i + '"' +
-      ' onmousedown="dcPadPressStart(' + i + ',this,event)"' +
-      ' onmouseup="dcPadPressEnd(' + i + ',this,false)"' +
-      ' onmouseleave="dcPadPressEnd(' + i + ',this,true)"' +
-      ' ontouchstart="dcPadPressStart(' + i + ',this,event);event.preventDefault()"' +
-      ' ontouchend="dcPadPressEnd(' + i + ',this,false)"' +
-      ' ontouchcancel="dcPadPressEnd(' + i + ',this,true)">' +
+      ' data-idx="' + padIdx + '"' +
+      ' data-slot="' + slotIdx + '"' +
+      ' onmousedown="dcPadPressStart(' + padIdx + ',this,event)"' +
+      ' onmouseup="dcPadPressEnd(' + padIdx + ',this,false)"' +
+      ' onmouseleave="dcPadPressEnd(' + padIdx + ',this,true)"' +
+      ' ontouchstart="dcPadPressStart(' + padIdx + ',this,event);event.preventDefault()"' +
+      ' ontouchend="dcPadPressEnd(' + padIdx + ',this,false)"' +
+      ' ontouchcancel="dcPadPressEnd(' + padIdx + ',this,true)">' +
       '<div class="dc-pad-glow"></div>' +
       '<div class="dc-pad-fx-indicator"></div>' +
       '<div class="dc-pad-longpress-ring"></div>' +
-      '<div class="dc-pad-import" onclick="event.stopPropagation();dcImportarSample(' + i + ')" title="Importar sample">' +
+      '<div class="dc-pad-import" onclick="event.stopPropagation();dcImportarSample(' + padIdx + ')" title="Importar sample">' +
         '<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>' +
+      '</div>' +
+      '<div class="dc-slot-swap" onclick="event.stopPropagation();dcAbrirSeletorPad(' + slotIdx + ')" title="Trocar pad">' +
+        '<svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="16 3 21 3 21 8"/><line x1="4" y1="20" x2="21" y2="3"/><polyline points="21 16 21 21 16 21"/><line x1="15" y1="15" x2="21" y2="21"/></svg>' +
       '</div>' +
       '<div class="dc-pad-name">' + pad.name + '</div>' +
       '<div class="dc-pad-sub">' + (hasSample ? 'SAMPLE' : pad.sub) + '</div>' +
       '</div>';
   }).join('');
-  // Botão + para adicionar novo pad
-  padsHtml += '<div class="dc-pad-add" onclick="dcAbrirAddPad()" title="Adicionar pad">' +
-    '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.25)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>' +
-    '<span class="dc-pad-add-label">Novo</span>' +
-    '</div>';
+
   grid.innerHTML = padsHtml;
 }
 
@@ -12706,6 +12766,44 @@ function _dcRenderPresets() {
 
 // Legacy compat stubs
 function renderDrumCamPads() { renderDcPads(); }
+
+// ─── Seletor de pad para slot ────────────────────────────────────────────────
+var _dcSlotTarget = -1;
+
+function dcAbrirSeletorPad(slotIdx) {
+  _dcSlotTarget = slotIdx;
+  var bank  = DC_BANKS[_dcBank];
+  var slots = _dcGetSlots(_dcBank);
+  var grid  = document.getElementById('dc-slot-selector-grid');
+  if (!grid) return;
+
+  grid.innerHTML = bank.map(function(pad, padIdx) {
+    var isAtivo = slots.indexOf(padIdx) !== -1;
+    var isSlot  = slots[slotIdx] === padIdx;
+    return '<div onclick="dcSelecionarPadSlot(' + padIdx + ')" ' +
+      'style="background:' + (isSlot ? 'rgba(10,158,110,0.2)' : 'rgba(255,255,255,0.04)') + ';' +
+      'border:1px solid ' + (isSlot ? 'rgba(10,158,110,0.5)' : isAtivo ? 'rgba(255,255,255,0.15)' : 'rgba(255,255,255,0.08)') + ';' +
+      'border-radius:10px;padding:10px 6px;text-align:center;cursor:pointer;touch-action:manipulation;transition:0.15s;">' +
+      '<div style="font-size:10px;font-weight:900;color:' + (isSlot ? '#0A9E6E' : '#fff') + ';letter-spacing:0.5px;">' + _ve(pad.name) + '</div>' +
+      '<div style="font-size:8px;color:rgba(255,255,255,0.3);margin-top:2px;">' + _ve(pad.sub) + '</div>' +
+      '</div>';
+  }).join('');
+
+  document.getElementById('dc-slot-selector-overlay').classList.add('show');
+}
+
+function dcFecharSeletorPad() {
+  document.getElementById('dc-slot-selector-overlay').classList.remove('show');
+  _dcSlotTarget = -1;
+}
+
+function dcSelecionarPadSlot(padIdx) {
+  if (_dcSlotTarget < 0) return;
+  _dcSetSlot(_dcBank, _dcSlotTarget, padIdx);
+  dcFecharSeletorPad();
+  renderDcPads();
+  showToast && showToast('Slot atualizado!', 'success');
+}
 
 // ─── Estado de FX por pad ────────────────────────────────────────────────────
 // _dcPadFx[bankIdx][padIdx] = { type: 'reverb'|'delay'|..., enabled: true/false }
