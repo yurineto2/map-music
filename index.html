@@ -3485,8 +3485,8 @@ body { font-family: -apple-system, 'Inter', BlinkMacSystemFont, 'Segoe UI', sans
 /* ── Drum Machine Body ── */
 .dc-machine {
   flex: 1; display: flex; flex-direction: column;
-  overflow-y: auto; -webkit-overflow-scrolling: touch;
-  padding: 10px 10px 14px; gap: 8px; position: relative; z-index: 2;
+  overflow: hidden;
+  padding: 8px 10px 10px; gap: 6px; position: relative; z-index: 2;
 }
 .dc-topbar {
   display: flex; align-items: center; gap: 8px; flex-shrink: 0;
@@ -3518,11 +3518,11 @@ body { font-family: -apple-system, 'Inter', BlinkMacSystemFont, 'Segoe UI', sans
 /* ── 4x4 Pad Grid ── */
 .dc-pads-grid {
   display: grid; grid-template-columns: repeat(4, 1fr);
-  gap: 8px; flex-shrink: 0;
+  gap: 8px; flex: 1; min-height: 0;
   touch-action: none;
 }
 .dc-pad {
-  aspect-ratio: 1; border-radius: 12px;
+  border-radius: 12px;
   border: 1px solid rgba(255,255,255,0.08);
   background: rgba(255,255,255,0.04);
   display: flex; flex-direction: column;
@@ -3533,6 +3533,7 @@ body { font-family: -apple-system, 'Inter', BlinkMacSystemFont, 'Segoe UI', sans
   transition: transform 0.06s;
   -webkit-tap-highlight-color: transparent;
   will-change: transform;
+  min-height: 0;
 }
 .dc-pad::before {
   content: ''; position: absolute; inset: 0; border-radius: 11px;
@@ -3579,67 +3580,277 @@ body { font-family: -apple-system, 'Inter', BlinkMacSystemFont, 'Segoe UI', sans
 .dc-pad[data-color="orange"] { background: linear-gradient(145deg,#6a3010,#3d1a08); border-color:rgba(200,100,40,0.4); }
 .dc-pad[data-color="green"]  { background: linear-gradient(145deg,#0d5530,#06301a); border-color:rgba(20,160,80,0.4); }
 
-/* Volume mixer row */
-.dc-mixrow {
-  display: grid; grid-template-columns: repeat(8,1fr);
-  gap: 5px; padding: 8px 2px 2px;
-  border-top: 1px solid rgba(255,255,255,0.05); flex-shrink: 0;
-}
-.dc-mix-item { display: flex; flex-direction: column; align-items: center; gap: 3px; }
-.dc-mix-label {
-  font-size: 7px; font-weight: 900; letter-spacing: 0.4px;
-  color: rgba(255,255,255,0.3); text-transform: uppercase; text-align: center;
-}
-.dc-mix-pct { font-size: 7px; font-weight: 700; color: rgba(255,255,255,0.35); }
-.dc-mix-slider {
-  -webkit-appearance: none; width: 100%; height: 3px;
-  border-radius: 2px; outline: none; cursor: pointer;
-  background: rgba(255,255,255,0.12);
-}
-.dc-mix-slider::-webkit-slider-thumb {
-  -webkit-appearance: none; width: 11px; height: 11px;
-  border-radius: 50%; background: #fff; cursor: pointer;
-}
-.dc-mix-slider.s-red::-webkit-slider-thumb    { background: #d03030; }
-.dc-mix-slider.s-teal::-webkit-slider-thumb   { background: #14b48c; }
-.dc-mix-slider.s-blue::-webkit-slider-thumb   { background: #3c78dc; }
-.dc-mix-slider.s-purple::-webkit-slider-thumb { background: #8c3cdc; }
-.dc-mix-slider.s-gray::-webkit-slider-thumb   { background: #a0a0b4; }
-.dc-mix-slider.s-navy::-webkit-slider-thumb   { background: #3c5ab4; }
-.dc-mix-slider.s-orange::-webkit-slider-thumb { background: #c86428; }
-.dc-mix-slider.s-green::-webkit-slider-thumb  { background: #14a050; }
+/* Volume mixer row — oculto do layout principal, disponível no modal FX */
+.dc-mixrow { display: none; }
 
-/* Bottom bar */
-.dc-bottombar {
-  display: flex; align-items: center; gap: 8px;
-  padding: 6px 2px 0; flex-shrink: 0;
+/* Bottom bar — metro e vol master ficam no header */
+.dc-bottombar { display: none; }
+
+/* FX bar e panel — ocultos do layout principal, abertos via modal */
+.dc-fx-bar    { display: none; }
+.dc-fx-panel  { display: none !important; }
+
+/* ── Botão FX no header do Drum Cam ── */
+.dc-header-fx-btn {
+  background: rgba(138,92,246,0.08);
+  border: 1px solid rgba(138,92,246,0.3);
+  color: rgba(167,139,250,0.7);
+  padding: 6px 14px; border-radius: 20px;
+  font-size: 9px; font-weight: 900; letter-spacing: 1.5px;
+  cursor: pointer; transition: 0.18s; text-transform: uppercase;
+  touch-action: manipulation; display: flex; align-items: center; gap: 6px;
+  flex-shrink: 0;
 }
-.dc-metro-btn {
-  flex: 1; background: rgba(255,255,255,0.04);
-  border: 1px solid rgba(255,255,255,0.1); color: rgba(255,255,255,0.5);
-  padding: 9px; border-radius: 8px; font-size: 9px; font-weight: 900;
-  letter-spacing: 1.5px; cursor: pointer; transition: 0.2s; text-transform: uppercase;
-  touch-action: manipulation;
+.dc-header-fx-btn:hover, .dc-header-fx-btn.ativo {
+  background: rgba(138,92,246,0.2); border-color: rgba(138,92,246,0.6); color: #a78bfa;
 }
-.dc-metro-btn.ativo {
+.dc-header-vol-wrap {
+  display: flex; align-items: center; gap: 6px; flex-shrink: 0;
+}
+.dc-header-metro-btn {
+  background: none; border: 1px solid rgba(255,255,255,0.1);
+  color: rgba(255,255,255,0.4); padding: 6px 10px; border-radius: 20px;
+  font-size: 9px; font-weight: 900; letter-spacing: 1.5px;
+  cursor: pointer; transition: 0.18s; text-transform: uppercase;
+  touch-action: manipulation; flex-shrink: 0;
+}
+.dc-header-metro-btn.ativo {
   background: rgba(255,50,50,0.1); border-color: rgba(255,50,50,0.5); color: #ff5555;
   animation: pulseBorder 1.6s ease-in-out infinite;
 }
-.dc-vol-wrap { display: flex; align-items: center; gap: 6px; flex: 2; }
-.dc-vol-label {
+
+/* ── Modal Global de FX ── */
+.dc-fx-modal-overlay {
+  position: fixed; inset: 0; z-index: 7000;
+  background: rgba(0,0,0,0.72);
+  backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+  display: none; align-items: center; justify-content: center;
+  padding: 20px;
+}
+.dc-fx-modal-overlay.show { display: flex; }
+.dc-fx-modal-box {
+  background: #0d0d1a;
+  border: 1px solid rgba(138,92,246,0.25);
+  border-radius: 20px;
+  width: 100%; max-width: 480px;
+  max-height: 88vh;
+  display: flex; flex-direction: column;
+  overflow: hidden;
+  box-shadow: 0 24px 80px rgba(0,0,0,0.9);
+}
+.dc-fx-modal-header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 16px 20px 12px;
+  border-bottom: 1px solid rgba(255,255,255,0.06);
+  flex-shrink: 0;
+}
+.dc-fx-modal-title {
+  font-size: 9px; font-weight: 900; letter-spacing: 3px;
+  text-transform: uppercase; color: rgba(255,255,255,0.3);
+}
+.dc-fx-modal-close {
+  background: none; border: 1px solid rgba(255,255,255,0.1);
+  color: rgba(255,255,255,0.4); width: 28px; height: 28px;
+  border-radius: 50%; cursor: pointer; display: flex;
+  align-items: center; justify-content: center; transition: 0.18s;
+  touch-action: manipulation;
+}
+.dc-fx-modal-close:hover { color: #fff; border-color: rgba(255,255,255,0.3); }
+.dc-fx-modal-body {
+  overflow-y: auto; -webkit-overflow-scrolling: touch;
+  padding: 14px 16px 18px; display: flex; flex-direction: column; gap: 8px;
+}
+/* Preset chips dentro do modal */
+.dc-fx-modal-presets {
+  display: flex; gap: 5px; flex-wrap: wrap; padding-bottom: 10px;
+  border-bottom: 1px solid rgba(255,255,255,0.05);
+}
+.dc-fx-preset-chip {
+  padding: 5px 12px; border-radius: 20px;
+  background: rgba(255,255,255,0.04);
+  border: 1px solid rgba(255,255,255,0.09);
+  color: rgba(255,255,255,0.4); font-size: 8px; font-weight: 900;
+  letter-spacing: 0.8px; cursor: pointer; transition: 0.15s;
+  touch-action: manipulation; text-transform: uppercase;
+}
+.dc-fx-preset-chip:hover {
+  background: rgba(138,92,246,0.12); border-color: rgba(138,92,246,0.4); color: #c4b5fd;
+}
+
+/* ── Modal per-pad FX ── */
+.dc-pad-fx-overlay {
+  position: fixed; inset: 0; z-index: 7100;
+  background: rgba(0,0,0,0.72);
+  backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+  display: none; align-items: center; justify-content: center;
+  padding: 20px;
+}
+.dc-pad-fx-overlay.show { display: flex; }
+.dc-pad-fx-box {
+  background: #0d0d1a;
+  border: 1px solid rgba(138,92,246,0.25);
+  border-radius: 20px;
+  width: 100%; max-width: 360px;
+  max-height: 80vh;
+  display: flex; flex-direction: column;
+  overflow: hidden;
+  box-shadow: 0 24px 80px rgba(0,0,0,0.9);
+}
+.dc-pad-fx-header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 14px 18px 10px;
+  border-bottom: 1px solid rgba(255,255,255,0.06);
+  flex-shrink: 0;
+}
+.dc-pad-fx-title {
+  font-size: 9px; font-weight: 900; letter-spacing: 2px;
+  text-transform: uppercase; color: rgba(255,255,255,0.3);
+}
+.dc-pad-fx-padname {
+  font-size: 13px; font-weight: 900; color: #fff; letter-spacing: 0.5px;
+}
+.dc-pad-fx-close {
+  background: none; border: 1px solid rgba(255,255,255,0.1);
+  color: rgba(255,255,255,0.4); width: 28px; height: 28px;
+  border-radius: 50%; cursor: pointer; display: flex;
+  align-items: center; justify-content: center; transition: 0.18s;
+  touch-action: manipulation;
+}
+.dc-pad-fx-close:hover { color: #fff; border-color: rgba(255,255,255,0.3); }
+.dc-pad-fx-body {
+  overflow-y: auto; -webkit-overflow-scrolling: touch;
+  padding: 14px 16px 18px; display: flex; flex-direction: column; gap: 10px;
+}
+.dc-pad-fx-row {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 10px 14px; border-radius: 12px;
+  background: rgba(255,255,255,0.03);
+  border: 1px solid rgba(255,255,255,0.07);
+  gap: 12px;
+}
+.dc-pad-fx-row.ativo {
+  border-color: rgba(138,92,246,0.4); background: rgba(138,92,246,0.06);
+}
+.dc-pad-fx-row-name {
+  font-size: 10px; font-weight: 900; letter-spacing: 1px;
+  color: rgba(255,255,255,0.5); text-transform: uppercase; flex: 1;
+}
+.dc-pad-fx-row.ativo .dc-pad-fx-row-name { color: #a78bfa; }
+
+/* ── Modal adicionar pad ── */
+.dc-addpad-overlay {
+  position: fixed; inset: 0; z-index: 7200;
+  background: rgba(0,0,0,0.72);
+  backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+  display: none; align-items: center; justify-content: center;
+  padding: 20px;
+}
+.dc-addpad-overlay.show { display: flex; }
+.dc-addpad-box {
+  background: #0d0d1a;
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 20px;
+  width: 100%; max-width: 360px;
+  display: flex; flex-direction: column;
+  overflow: hidden;
+  box-shadow: 0 24px 80px rgba(0,0,0,0.9);
+}
+.dc-addpad-header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 14px 18px 10px;
+  border-bottom: 1px solid rgba(255,255,255,0.06);
+}
+.dc-addpad-title {
+  font-size: 9px; font-weight: 900; letter-spacing: 3px;
+  text-transform: uppercase; color: rgba(255,255,255,0.3);
+}
+.dc-addpad-close {
+  background: none; border: 1px solid rgba(255,255,255,0.1);
+  color: rgba(255,255,255,0.4); width: 28px; height: 28px;
+  border-radius: 50%; cursor: pointer; display: flex;
+  align-items: center; justify-content: center; transition: 0.18s;
+  touch-action: manipulation;
+}
+.dc-addpad-close:hover { color: #fff; border-color: rgba(255,255,255,0.3); }
+.dc-addpad-body { padding: 14px 18px 18px; display: flex; flex-direction: column; gap: 12px; }
+.dc-addpad-field { display: flex; flex-direction: column; gap: 5px; }
+.dc-addpad-label {
+  font-size: 8px; font-weight: 900; letter-spacing: 1.5px;
+  text-transform: uppercase; color: rgba(255,255,255,0.3);
+}
+.dc-addpad-input {
+  background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 10px; padding: 9px 12px; color: #fff;
+  font-size: 13px; font-weight: 700; outline: none;
+  font-family: inherit; transition: border-color 0.18s;
+}
+.dc-addpad-input:focus { border-color: rgba(138,92,246,0.5); }
+.dc-addpad-colors {
+  display: flex; gap: 7px; flex-wrap: wrap;
+}
+.dc-addpad-color {
+  width: 28px; height: 28px; border-radius: 8px; cursor: pointer;
+  border: 2px solid transparent; transition: 0.15s; touch-action: manipulation;
+}
+.dc-addpad-color.sel { border-color: #fff; transform: scale(1.15); }
+.dc-addpad-select {
+  background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 10px; padding: 9px 12px; color: rgba(255,255,255,0.7);
+  font-size: 12px; font-weight: 700; outline: none;
+  font-family: inherit; width: 100%; cursor: pointer;
+}
+.dc-addpad-confirm {
+  background: rgba(10,158,110,0.15); border: 1px solid rgba(10,158,110,0.4);
+  color: #0A9E6E; padding: 12px; border-radius: 12px;
+  font-size: 11px; font-weight: 900; letter-spacing: 1px;
+  cursor: pointer; text-transform: uppercase; transition: 0.18s;
+  touch-action: manipulation; font-family: inherit;
+}
+.dc-addpad-confirm:hover { background: rgba(10,158,110,0.25); }
+
+/* Pad "adicionar" — botão + na grade */
+.dc-pad-add {
+  border-radius: 12px;
+  border: 1px dashed rgba(255,255,255,0.12);
+  background: rgba(255,255,255,0.02);
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  cursor: pointer; touch-action: manipulation;
+  position: relative;
+  transition: background 0.18s, border-color 0.18s;
+  -webkit-tap-highlight-color: transparent;
+  min-height: 0;
+  gap: 5px;
+}
+.dc-pad-add:hover {
+  background: rgba(255,255,255,0.05); border-color: rgba(255,255,255,0.2);
+}
+.dc-pad-add:active { transform: scale(0.96); }
+.dc-pad-add-label {
   font-size: 8px; font-weight: 900; letter-spacing: 1px;
-  color: rgba(255,255,255,0.3); text-transform: uppercase; flex-shrink: 0;
+  color: rgba(255,255,255,0.2); text-transform: uppercase;
 }
-.dc-vol-slider {
-  -webkit-appearance: none; flex: 1; height: 3px;
-  border-radius: 2px; outline: none; cursor: pointer;
-  background: rgba(255,255,255,0.12);
+
+/* Ícone de efeito por pad — canto inferior direito */
+.dc-pad-fx-ico {
+  position: absolute; bottom: 5px; right: 5px;
+  width: 20px; height: 20px; border-radius: 6px;
+  background: rgba(0,0,0,0.45); border: 1px solid rgba(138,92,246,0.3);
+  display: flex; align-items: center; justify-content: center;
+  opacity: 0; transition: opacity 0.18s; z-index: 3; cursor: pointer;
+  touch-action: manipulation;
 }
-.dc-vol-slider::-webkit-slider-thumb {
-  -webkit-appearance: none; width: 14px; height: 14px;
-  border-radius: 50%; background: var(--accent-primary); cursor: pointer;
+.dc-pad:hover .dc-pad-fx-ico { opacity: 1; }
+.dc-pad.has-pad-fx .dc-pad-fx-ico { opacity: 0.85; border-color: rgba(138,92,246,0.6); background: rgba(138,92,246,0.2); }
+
+/* Indicador de efeito ativo no pad */
+.dc-pad-fx-indicator {
+  position: absolute; top: 5px; left: 5px;
+  width: 5px; height: 5px; border-radius: 50%;
+  background: #a78bfa; opacity: 0; transition: opacity 0.2s;
+  z-index: 2; pointer-events: none;
 }
-#dc-file-input { display: none; }
+.dc-pad.has-pad-fx .dc-pad-fx-indicator { opacity: 1; }
 /* Legacy elements hidden */
 
 /* ── FX Panel ── */
@@ -3802,17 +4013,9 @@ body { font-family: -apple-system, 'Inter', BlinkMacSystemFont, 'Segoe UI', sans
     margin: 0 auto;
     width: 100%;
   }
-  .dc-pads-grid {
-    gap: 10px;
-  }
-  .dc-pad {
-    border-radius: 14px;
-  }
-  .dc-fx-row {
-    grid-template-columns: 1fr 1fr 1fr;
-  }
-  .dc-fx-panel { padding: 12px 4px 6px; }
-  .dc-bottombar { padding: 8px 4px 2px; }
+  .dc-pads-grid { gap: 10px; }
+  .dc-pad { border-radius: 14px; }
+  .dc-fx-modal-box { max-width: 560px; }
   .drumcam-header { padding: 16px 24px 12px; }
   .drumcam-bpm { font-size: 28px; }
 }
@@ -3821,35 +4024,22 @@ body { font-family: -apple-system, 'Inter', BlinkMacSystemFont, 'Segoe UI', sans
 @media (min-width: 1025px) {
   .dc-machine { max-width: 780px; }
   .dc-pads-grid { gap: 12px; }
-  .dc-fx-row { grid-template-columns: 1fr 1fr 1fr 1fr; }
   .dc-topbar { margin-bottom: 4px; }
 }
 
-/* Mobile: safe area + compact */
+/* Mobile: compact */
 @media (max-width: 640px) {
-  .dc-machine { padding: 8px 8px 10px; gap: 7px; }
-  .dc-pads-grid { gap: 6px; }
+  .dc-machine { padding: 6px 6px 8px; gap: 5px; }
+  .dc-pads-grid { gap: 5px; }
   .dc-pad { border-radius: 10px; }
   .dc-pad-name { font-size: 9px; }
   .dc-pad-sub  { font-size: 6px; }
   .dc-bank-tab { font-size: 8px; padding: 6px 2px; }
   .dc-tap-btn  { padding: 6px 10px; font-size: 8px; }
-  .dc-mixrow   { gap: 4px; padding: 6px 0 0; }
-  .dc-mix-slider { height: 2px; }
-  .dc-bottombar { padding: 5px 0 0; gap: 6px; }
-  .dc-metro-btn { padding: 8px 6px; font-size: 8px; }
-  .dc-fx-bar    { padding: 5px 0 0; gap: 5px; }
-  .dc-fx-toggle { padding: 6px 10px; font-size: 8px; }
-  .dc-fx-chip   { padding: 4px 8px; font-size: 7px; }
-  .dc-fx-panel  { padding: 8px 2px 2px; gap: 6px; }
-  .dc-fx-row    { gap: 6px; }
-  .dc-fx-block  { padding: 7px 8px; }
-  .dc-fx-name   { font-size: 8px; letter-spacing: 1px; }
-  .dc-fx-knob-label { font-size: 5px; }
-  .dc-fx-knob-val   { font-size: 6px; }
-  .drumcam-bpm  { font-size: 18px; }
-  /* iOS safe area */
-  .dc-machine { padding-bottom: calc(10px + env(safe-area-inset-bottom)); }
+  .drumcam-bpm { font-size: 18px; }
+  .dc-header-fx-btn { padding: 5px 10px; font-size: 8px; }
+  .dc-header-metro-btn { padding: 5px 8px; }
+  .dc-machine { padding-bottom: calc(8px + env(safe-area-inset-bottom)); }
 }
 
 /* Very small (320px) */
@@ -4094,6 +4284,42 @@ body.performance-mode .main-layout { grid-template-columns: 1fr; padding: 100px 
   body.performance-mode .main-layout { padding: 80px 4% 120px; }
 }
 body.performance-mode .chord-area { pointer-events: none; height: auto !important; }
+
+/* ── LANDSCAPE MODE (celular/tablet virado) ─────────────────────────────────
+   Dispara apenas em telas com altura ≤ 500px em orientação paisagem.
+   Não afeta portrait, não altera JS, não remove botões.
+─────────────────────────────────────────────────────────────────────────── */
+@media (orientation: landscape) and (max-height: 500px) {
+
+  /* Header mais compacto */
+  .app-header { height: 44px !important; padding: 0 12px !important; }
+  .logo-tag { display: none !important; }
+  #btn-sala { padding: 5px 10px !important; font-size: 9px !important; }
+
+  /* Dropdown com scroll para não sair da tela */
+  .dropdown-menu {
+    top: 44px !important;
+    max-height: calc(100vh - 56px) !important;
+    overflow-y: auto !important;
+    -webkit-overflow-scrolling: touch !important;
+  }
+
+  /* Itens do menu um pouco mais compactos */
+  .menu-item { padding: 11px 16px !important; font-size: 12px !important; }
+
+  /* Modal cabe na tela */
+  .modal-box {
+    max-height: 88vh !important;
+    overflow-y: auto !important;
+    padding: 16px 16px !important;
+  }
+
+  /* Metrônomo sem padding inferior gigante */
+  .metronome-card { padding-bottom: 20px !important; }
+
+  /* Layout principal sem padding excessivo */
+  .main-layout { padding: 8px !important; }
+}
 
 /* TELEPROMPTER — canto inferior esquerdo (modo normal oculto) */
 .scroll-controls { display: none; }
@@ -6638,6 +6864,21 @@ body.auth-pending #toast {
       <div class="drumcam-bpm" id="dc-bpm">120</div>
       <div class="drumcam-bpm-label">BPM</div>
     </div>
+    <!-- Metro no header -->
+    <button class="dc-header-metro-btn" id="dc-metro-hdr" onclick="dcToggleMetro()">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 2 22 22 22"/><line x1="12" y1="10" x2="12" y2="16"/></svg>
+    </button>
+    <!-- Vol master no header -->
+    <div class="dc-header-vol-wrap">
+      <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.3)" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/></svg>
+      <input type="range" class="dc-vol-slider" id="dc-vol-master" min="0" max="100" value="80"
+        oninput="dcVolMaster(this.value)" style="-webkit-appearance:none;width:70px;height:3px;border-radius:2px;outline:none;cursor:pointer;background:rgba(255,255,255,0.12);">
+    </div>
+    <!-- Botão FX global -->
+    <button class="dc-header-fx-btn" id="dc-fx-hdr-btn" onclick="dcAbrirFxModal()">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14M4.93 4.93a10 10 0 0 0 0 14.14"/></svg>
+      FX
+    </button>
     <button class="drumcam-close" onclick="fecharDrumCam()">Fechar</button>
   </div>
   <!-- Legacy hidden elements for JS compat -->
@@ -6652,7 +6893,7 @@ body.auth-pending #toast {
     <button class="drumcam-tap-btn" id="dc-tap-btn" onmousedown="dcTap()" ontouchstart="dcTap();event.preventDefault()">TAP</button>
     <button class="drumcam-metro-btn" id="dc-metro-btn" onclick="dcToggleMetro()">METRO</button>
   </div>
-  <!-- New drum machine body -->
+  <!-- Drum machine body -->
   <div class="dc-machine" id="dc-machine">
     <div class="dc-topbar">
       <div class="dc-bank-tabs" id="dc-bank-tabs">
@@ -6664,32 +6905,31 @@ body.auth-pending #toast {
       <button class="dc-tap-btn" onmousedown="dcTap()" ontouchstart="dcTap();event.preventDefault()">TAP</button>
     </div>
     <div class="dc-pads-grid" id="dc-pads-grid"></div>
+    <!-- mixrow, bottombar e fx-bar mantidos no DOM para compatibilidade JS, mas ocultos via CSS -->
     <div class="dc-mixrow" id="dc-mixrow"></div>
     <div class="dc-bottombar">
       <button class="dc-metro-btn" id="dc-metro-btn2" onclick="dcToggleMetro()">METRO</button>
       <div class="dc-vol-wrap">
         <span class="dc-vol-label">VOL</span>
-        <input type="range" class="dc-vol-slider" id="dc-vol-master" min="0" max="100" value="80"
+        <input type="range" class="dc-vol-slider" id="dc-vol-master-hidden" min="0" max="100" value="80"
           oninput="dcVolMaster(this.value)">
       </div>
     </div>
-    <!-- FX Bar -->
     <div class="dc-fx-bar">
       <button class="dc-fx-toggle" id="dc-fx-toggle" onclick="dcFxTogglePanel()">FX</button>
       <div class="dc-fx-chips" id="dc-fx-chips">
-        <div class="dc-fx-chip" data-fx="reverb"   onclick="dcFxToggleChip('reverb')">Reverb</div>
-        <div class="dc-fx-chip" data-fx="delay"    onclick="dcFxToggleChip('delay')">Delay</div>
-        <div class="dc-fx-chip" data-fx="comp"     onclick="dcFxToggleChip('comp')">Comp</div>
-        <div class="dc-fx-chip" data-fx="dist"     onclick="dcFxToggleChip('dist')">Dist</div>
-        <div class="dc-fx-chip" data-fx="filter"   onclick="dcFxToggleChip('filter')">Filter</div>
-        <div class="dc-fx-chip" data-fx="pitch"    onclick="dcFxToggleChip('pitch')">Pitch</div>
+        <div class="dc-fx-chip" data-fx="reverb"    onclick="dcFxToggleChip('reverb')">Reverb</div>
+        <div class="dc-fx-chip" data-fx="delay"     onclick="dcFxToggleChip('delay')">Delay</div>
+        <div class="dc-fx-chip" data-fx="comp"      onclick="dcFxToggleChip('comp')">Comp</div>
+        <div class="dc-fx-chip" data-fx="dist"      onclick="dcFxToggleChip('dist')">Dist</div>
+        <div class="dc-fx-chip" data-fx="filter"    onclick="dcFxToggleChip('filter')">Filter</div>
+        <div class="dc-fx-chip" data-fx="pitch"     onclick="dcFxToggleChip('pitch')">Pitch</div>
         <div class="dc-fx-chip" data-fx="sidechain" onclick="dcFxToggleChip('sidechain')">Sidechain</div>
       </div>
     </div>
-    <!-- FX Panel -->
+    <!-- FX Panel original mantido no DOM para compatibilidade JS -->
     <div class="dc-fx-panel" id="dc-fx-panel">
       <div class="dc-fx-row">
-        <!-- Reverb -->
         <div class="dc-fx-block" id="dc-fxb-reverb">
           <div class="dc-fx-block-header">
             <span class="dc-fx-name">Reverb</span>
@@ -6710,7 +6950,6 @@ body.auth-pending #toast {
             </div>
           </div>
         </div>
-        <!-- Delay -->
         <div class="dc-fx-block" id="dc-fxb-delay">
           <div class="dc-fx-block-header">
             <span class="dc-fx-name">Delay</span>
@@ -6739,7 +6978,6 @@ body.auth-pending #toast {
         </div>
       </div>
       <div class="dc-fx-row">
-        <!-- Compressor -->
         <div class="dc-fx-block" id="dc-fxb-comp">
           <div class="dc-fx-block-header">
             <span class="dc-fx-name">Compressor</span>
@@ -6760,7 +6998,6 @@ body.auth-pending #toast {
             </div>
           </div>
         </div>
-        <!-- Distortion -->
         <div class="dc-fx-block" id="dc-fxb-dist">
           <div class="dc-fx-block-header">
             <span class="dc-fx-name">Distortion</span>
@@ -6789,7 +7026,6 @@ body.auth-pending #toast {
         </div>
       </div>
       <div class="dc-fx-row">
-        <!-- Filter -->
         <div class="dc-fx-block" id="dc-fxb-filter">
           <div class="dc-fx-block-header">
             <span class="dc-fx-name">Filter</span>
@@ -6820,7 +7056,6 @@ body.auth-pending #toast {
             </div>
           </div>
         </div>
-        <!-- Pitch Shift -->
         <div class="dc-fx-block" id="dc-fxb-pitch">
           <div class="dc-fx-block-header">
             <span class="dc-fx-name">Pitch</span>
@@ -6842,7 +7077,6 @@ body.auth-pending #toast {
           </div>
         </div>
       </div>
-      <!-- Sidechain (full row) -->
       <div class="dc-fx-block" id="dc-fxb-sidechain">
         <div class="dc-fx-block-header">
           <span class="dc-fx-name">Sidechain (ducker)</span>
@@ -6883,6 +7117,94 @@ body.auth-pending #toast {
   <input type="file" id="dc-file-input" accept="audio/*">
 </div>
 
+<!-- MODAL FX GLOBAL — Drum Cam -->
+<div class="dc-fx-modal-overlay" id="dc-fx-modal-overlay" onclick="if(event.target===this)dcFecharFxModal()">
+  <div class="dc-fx-modal-box">
+    <div class="dc-fx-modal-header">
+      <span class="dc-fx-modal-title">Efeitos Globais</span>
+      <button class="dc-fx-modal-close" onclick="dcFecharFxModal()">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    </div>
+    <div class="dc-fx-modal-body" id="dc-fx-modal-body">
+      <!-- Presets -->
+      <div class="dc-fx-modal-presets" id="dc-fx-modal-presets"></div>
+      <!-- Blocos de efeito renderizados por JS -->
+      <div id="dc-fx-modal-blocks"></div>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL FX POR PAD — Drum Cam -->
+<div class="dc-pad-fx-overlay" id="dc-pad-fx-overlay" onclick="if(event.target===this)dcFecharPadFxModal()">
+  <div class="dc-pad-fx-box">
+    <div class="dc-pad-fx-header">
+      <div>
+        <div class="dc-pad-fx-title">Efeito do Pad</div>
+        <div class="dc-pad-fx-padname" id="dc-pad-fx-padname">—</div>
+      </div>
+      <button class="dc-pad-fx-close" onclick="dcFecharPadFxModal()">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    </div>
+    <div class="dc-pad-fx-body" id="dc-pad-fx-body"></div>
+  </div>
+</div>
+
+<!-- MODAL ADICIONAR PAD — Drum Cam -->
+<div class="dc-addpad-overlay" id="dc-addpad-overlay" onclick="if(event.target===this)dcFecharAddPad()">
+  <div class="dc-addpad-box">
+    <div class="dc-addpad-header">
+      <span class="dc-addpad-title">Novo Pad</span>
+      <button class="dc-addpad-close" onclick="dcFecharAddPad()">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    </div>
+    <div class="dc-addpad-body">
+      <div class="dc-addpad-field">
+        <label class="dc-addpad-label">Nome</label>
+        <input class="dc-addpad-input" id="dc-addpad-name" type="text" maxlength="8" placeholder="Ex: PERC 3">
+      </div>
+      <div class="dc-addpad-field">
+        <label class="dc-addpad-label">Cor</label>
+        <div class="dc-addpad-colors" id="dc-addpad-colors">
+          <div class="dc-addpad-color sel" data-color="red"    style="background:linear-gradient(145deg,#7a1a1a,#3d0d0d);border-color:rgba(220,60,60,0.6)"></div>
+          <div class="dc-addpad-color"     data-color="teal"   style="background:linear-gradient(145deg,#0d6655,#063d33);border-color:rgba(20,180,140,0.6)"></div>
+          <div class="dc-addpad-color"     data-color="blue"   style="background:linear-gradient(145deg,#1a3a6a,#0d1f3d);border-color:rgba(60,120,220,0.6)"></div>
+          <div class="dc-addpad-color"     data-color="purple" style="background:linear-gradient(145deg,#4a1a7a,#280d4a);border-color:rgba(140,60,220,0.6)"></div>
+          <div class="dc-addpad-color"     data-color="gray"   style="background:linear-gradient(145deg,#2a2a38,#1a1a24);border-color:rgba(160,160,180,0.4)"></div>
+          <div class="dc-addpad-color"     data-color="navy"   style="background:linear-gradient(145deg,#1a2a5a,#0d1430);border-color:rgba(60,90,180,0.6)"></div>
+          <div class="dc-addpad-color"     data-color="orange" style="background:linear-gradient(145deg,#6a3010,#3d1a08);border-color:rgba(200,100,40,0.6)"></div>
+          <div class="dc-addpad-color"     data-color="green"  style="background:linear-gradient(145deg,#0d5530,#06301a);border-color:rgba(20,160,80,0.6)"></div>
+        </div>
+      </div>
+      <div class="dc-addpad-field">
+        <label class="dc-addpad-label">Som</label>
+        <select class="dc-addpad-select" id="dc-addpad-synth">
+          <option value="kick">Kick</option>
+          <option value="snare">Snare</option>
+          <option value="hihat">Hi-Hat Fechado</option>
+          <option value="openhat">Hi-Hat Aberto</option>
+          <option value="clap">Clap</option>
+          <option value="tomh">Tom Alto</option>
+          <option value="tomm">Tom Médio</option>
+          <option value="toml">Tom Baixo</option>
+          <option value="crash">Crash</option>
+          <option value="ride">Ride</option>
+          <option value="rimshot">Rimshot</option>
+          <option value="cowbell">Cowbell</option>
+          <option value="shaker">Shaker</option>
+          <option value="snap">Snap</option>
+          <option value="perc1">Perc 1</option>
+          <option value="perc2">Perc 2</option>
+          <option value="808">808</option>
+          <option value="sub">Sub</option>
+        </select>
+      </div>
+      <button class="dc-addpad-confirm" onclick="dcConfirmarAddPad()">Adicionar Pad</button>
+    </div>
+  </div>
+</div>
 <!-- BOTÃO PAD FLUTUANTE -->
 <button class="btn-pad-flutuante" id="btn-pad-flutuante" onclick="togglePadFlutuante()">PAD TOCANDO — PARAR</button>
 
@@ -7629,10 +7951,48 @@ function _setScroll(speed) {
 }
 let tapTimes = [];
 let audioCtx = null;
+// ── Master output chain: compressor → limiter → destination ─────────────────
+// Criado uma vez junto com o AudioContext e reutilizado por todos os pads.
+// Evita clipping digital quando múltiplos pads soam ao mesmo tempo.
+var _dcMasterNode = null;
+
+function _getDcMasterNode(ctx) {
+  if (_dcMasterNode) return _dcMasterNode;
+
+  // 1. Gain master — atenuação preventiva de ~3 dB
+  var masterGain = ctx.createGain();
+  masterGain.gain.value = 0.72;
+
+  // 2. Compressor master: suaviza picos sem alterar o caráter sonoro
+  var comp = ctx.createDynamicsCompressor();
+  comp.threshold.value = -14;   // começa a comprimir a partir de -14 dBFS
+  comp.knee.value      = 8;     // soft-knee — transparente
+  comp.ratio.value     = 4;     // 4:1 — não "aperta" o som
+  comp.attack.value    = 0.002; // 2 ms — rápido para pegar transientes
+  comp.release.value   = 0.18;  // 180 ms — solta natural
+
+  // 3. Limiter — teto rígido de -2 dBFS (brick-wall)
+  var limiter = ctx.createDynamicsCompressor();
+  limiter.threshold.value = -2;
+  limiter.knee.value      = 0;
+  limiter.ratio.value     = 20;
+  limiter.attack.value    = 0.001;
+  limiter.release.value   = 0.05;
+
+  // Encadeia: masterGain → comp → limiter → destination
+  masterGain.connect(comp);
+  comp.connect(limiter);
+  limiter.connect(ctx.destination);
+
+  _dcMasterNode = masterGain;
+  return _dcMasterNode;
+}
+
 function _getAudioCtx() {
   if (!audioCtx) {
     try {
       audioCtx = new (window.AudioContext || window.webkitAudioContext)({ latencyHint: 'interactive', sampleRate: 44100 });
+      _dcMasterNode = null; // reseta master ao criar novo contexto
     } catch(e) { return null; }
   }
   try {
@@ -11077,22 +11437,33 @@ function renderDcPads() {
   var grid = document.getElementById('dc-pads-grid');
   if (!grid) return;
   var bank = DC_BANKS[_dcBank];
-  grid.innerHTML = bank.map(function(pad, i) {
+  var padsHtml = bank.map(function(pad, i) {
     var key = _dcBank * 16 + i;
     var hasSample = !!_dcSamples[key];
-    return '<div class="dc-pad' + (hasSample ? ' has-sample' : '') + '"' +
+    var hasPadFx  = !!(_dcPadFx[_dcBank] && _dcPadFx[_dcBank][i] && _dcPadFx[_dcBank][i].type);
+    return '<div class="dc-pad' + (hasSample ? ' has-sample' : '') + (hasPadFx ? ' has-pad-fx' : '') + '"' +
       ' data-color="' + pad.color + '"' +
       ' data-idx="' + i + '"' +
       ' onmousedown="dcHitPad(' + i + ',this)"' +
       ' ontouchstart="dcHitPad(' + i + ',this);event.preventDefault()">' +
       '<div class="dc-pad-glow"></div>' +
+      '<div class="dc-pad-fx-indicator"></div>' +
       '<div class="dc-pad-import" onclick="event.stopPropagation();dcImportarSample(' + i + ')" title="Importar sample">' +
         '<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>' +
       '</div>' +
+      '<div class="dc-pad-fx-ico" onclick="event.stopPropagation();dcAbrirPadFxModal(' + i + ')" title="Efeito do pad">' +
+        '<svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14M4.93 4.93a10 10 0 0 0 0 14.14"/></svg>' +
+      '</div>' +
       '<div class="dc-pad-name">' + pad.name + '</div>' +
-      '<div class="dc-pad-sub">' + (hasSample ? '● SAMPLE' : pad.sub) + '</div>' +
+      '<div class="dc-pad-sub">' + (hasSample ? 'SAMPLE' : pad.sub) + '</div>' +
       '</div>';
   }).join('');
+  // Botão + para adicionar novo pad
+  padsHtml += '<div class="dc-pad-add" onclick="dcAbrirAddPad()" title="Adicionar pad">' +
+    '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.25)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>' +
+    '<span class="dc-pad-add-label">Novo</span>' +
+    '</div>';
+  grid.innerHTML = padsHtml;
 }
 
 function renderDcMix() {
@@ -11194,13 +11565,14 @@ function dcHitPad(padIdx, el) {
     var src = ctx.createBufferSource();
     src.buffer = _dcSamples[key];
     _dcApplyPitch(src);
-    var g = ctx.createGain(); g.gain.value = vol;
+    var g = ctx.createGain(); g.gain.value = vol * 0.9; // leve atenuação preventiva
+    var _mOut = _getDcMasterNode(ctx);
     if (_anyFx) {
       src.connect(g);
       var fxOut = _dcBuildFxChain(ctx, g);
-      fxOut.connect(ctx.destination);
+      fxOut.connect(_mOut);
     } else {
-      src.connect(g); g.connect(ctx.destination);
+      src.connect(g); g.connect(_mOut);
     }
     src.start(ctx.currentTime);
     return;
@@ -11216,13 +11588,15 @@ function _dcSynth(ctx, pad, vol, _anyFxActive) {
   var t = pad.synth;
 
   // Master gain — route through FX chain if any effect is active
+  // Saída final vai para o master node (compressor + limiter) em vez de ctx.destination
   var mg = ctx.createGain();
+  var _masterOut = _getDcMasterNode(ctx);
   if (_anyFxActive === undefined) _anyFxActive = typeof _dcFxEnabled !== 'undefined' && Object.values(_dcFxEnabled).some(Boolean);
   if (_anyFxActive) {
     var _fxOut = _dcBuildFxChain(ctx, mg);
-    _fxOut.connect(ctx.destination);
+    _fxOut.connect(_masterOut);
   } else {
-    mg.connect(ctx.destination);
+    mg.connect(_masterOut);
   }
 
   if (t === 'kick' || t === '808') {
@@ -11231,12 +11605,12 @@ function _dcSynth(ctx, pad, vol, _anyFxActive) {
     osc.frequency.setValueAtTime(t === '808' ? 55 : 150, now);
     osc.frequency.exponentialRampToValueAtTime(t === '808' ? 28 : 40, now + (t === '808' ? 1.2 : 0.5));
     var env = ctx.createGain();
-    env.gain.setValueAtTime(vol, now);
+    env.gain.setValueAtTime(vol * 0.85, now); // reduzido de vol para vol*0.85
     env.gain.exponentialRampToValueAtTime(0.001, now + (t === '808' ? 1.6 : 0.6));
     osc.connect(env); env.connect(mg);
-    // Click transient
+    // Click transient — atenuado para não estourar na saída via cabo
     var click = ctx.createOscillator(); click.frequency.value = 2400;
-    var cg = ctx.createGain(); cg.gain.setValueAtTime(vol * 0.4, now); cg.gain.exponentialRampToValueAtTime(0.001, now + 0.02);
+    var cg = ctx.createGain(); cg.gain.setValueAtTime(vol * 0.25, now); cg.gain.exponentialRampToValueAtTime(0.001, now + 0.02);
     click.connect(cg); cg.connect(mg);
     osc.start(now); osc.stop(now + (t === '808' ? 1.7 : 0.65));
     click.start(now); click.stop(now + 0.03);
@@ -11306,14 +11680,14 @@ function _dcSynth(ctx, pad, vol, _anyFxActive) {
     rs.start(now); rs.stop(now + 1.05);
 
   } else if (t === 'clap' || t === 'clap2') {
-    // Layered clap
+    // Layered clap — gain por camada reduzido de 0.6 para 0.38 (3 camadas: soma máx ~1.14 → ~0.72)
     [0, 0.01, 0.02].forEach(function(delay) {
       var cb = ctx.createBuffer(1, ctx.sampleRate * 0.12, ctx.sampleRate);
       var cd = cb.getChannelData(0);
       for (var ci2 = 0; ci2 < cd.length; ci2++) cd[ci2] = Math.random() * 2 - 1;
       var clapS = ctx.createBufferSource(); clapS.buffer = cb;
       var clapBpf = ctx.createBiquadFilter(); clapBpf.type = 'bandpass'; clapBpf.frequency.value = 1200; clapBpf.Q.value = 0.5;
-      var clapG = ctx.createGain(); clapG.gain.setValueAtTime(vol * 0.6, now + delay); clapG.gain.exponentialRampToValueAtTime(0.001, now + delay + 0.15);
+      var clapG = ctx.createGain(); clapG.gain.setValueAtTime(vol * 0.38, now + delay); clapG.gain.exponentialRampToValueAtTime(0.001, now + delay + 0.15);
       clapS.connect(clapBpf); clapBpf.connect(clapG); clapG.connect(mg);
       clapS.start(now + delay); clapS.stop(now + delay + 0.18);
     });
@@ -11376,14 +11750,14 @@ function _dcSynth(ctx, pad, vol, _anyFxActive) {
     to2.start(now); to2.stop(now + 1.3);
 
   } else if (t === 'chord') {
-    // Chord (bank 3)
+    // Chord (bank 3) — gain por nota reduzido de 0.55 para 0.32 (3 notas: soma máx ~0.96)
     (pad.chord || [pad.midi]).forEach(function(m) {
       var cf = midiToFreq(m);
       var co2 = ctx.createOscillator(); co2.type = 'sine';
       co2.frequency.value = cf;
       var clpf = ctx.createBiquadFilter(); clpf.type = 'lowpass'; clpf.frequency.value = 2800;
-      var cg2 = ctx.createGain(); cg2.gain.setValueAtTime(0, now); cg2.gain.linearRampToValueAtTime(vol * 0.55, now + 0.015);
-      cg2.gain.setValueAtTime(vol * 0.55, now + 0.6); cg2.gain.exponentialRampToValueAtTime(0.001, now + 1.5);
+      var cg2 = ctx.createGain(); cg2.gain.setValueAtTime(0, now); cg2.gain.linearRampToValueAtTime(vol * 0.32, now + 0.015);
+      cg2.gain.setValueAtTime(vol * 0.32, now + 0.6); cg2.gain.exponentialRampToValueAtTime(0.001, now + 1.5);
       co2.connect(clpf); clpf.connect(cg2); cg2.connect(mg);
       co2.start(now); co2.stop(now + 1.6);
     });
@@ -11684,6 +12058,207 @@ function _dcRenderPresets() {
 
 // Legacy compat stubs
 function renderDrumCamPads() { renderDcPads(); }
+
+// ─── Estado de FX por pad ────────────────────────────────────────────────────
+// _dcPadFx[bankIdx][padIdx] = { type: 'reverb'|'delay'|..., enabled: true/false }
+var _dcPadFx = {};
+
+// ─── Modal FX Global ─────────────────────────────────────────────────────────
+var _DC_FX_LABELS = {
+  reverb:'Reverb', delay:'Delay', comp:'Compressor',
+  dist:'Distortion', filter:'Filter', pitch:'Pitch', sidechain:'Sidechain'
+};
+
+function dcAbrirFxModal() {
+  var overlay = document.getElementById('dc-fx-modal-overlay');
+  if (!overlay) return;
+  // Render presets
+  var presetsEl = document.getElementById('dc-fx-modal-presets');
+  if (presetsEl) {
+    presetsEl.innerHTML = Object.keys(DC_FX_PRESETS).map(function(nome) {
+      return '<div class="dc-fx-preset-chip" onclick="dcFxAplicarPreset(\'' + nome + '\');dcRenderFxModalBlocks()">' + nome + '</div>';
+    }).join('');
+  }
+  dcRenderFxModalBlocks();
+  overlay.classList.add('show');
+  // Atualiza badge do botão header
+  var btn = document.getElementById('dc-fx-hdr-btn');
+  if (btn) btn.classList.add('ativo');
+}
+
+function dcFecharFxModal() {
+  var overlay = document.getElementById('dc-fx-modal-overlay');
+  if (overlay) overlay.classList.remove('show');
+  var btn = document.getElementById('dc-fx-hdr-btn');
+  if (btn) btn.classList.toggle('ativo', Object.values(_dcFxEnabled).some(Boolean));
+}
+
+function dcRenderFxModalBlocks() {
+  var container = document.getElementById('dc-fx-modal-blocks');
+  if (!container) return;
+  container.innerHTML = Object.keys(_DC_FX_LABELS).map(function(fx) {
+    var label = _DC_FX_LABELS[fx];
+    var isOn  = !!_dcFxEnabled[fx];
+    // Renderiza os sliders do bloco de FX correspondente
+    var knobsHtml = _dcFxKnobsHtml(fx);
+    return '<div class="dc-fx-block' + (isOn ? ' ativo' : '') + '" id="dc-fxm-blk-' + fx + '">' +
+      '<div class="dc-fx-block-header">' +
+        '<span class="dc-fx-name">' + label + '</span>' +
+        '<button class="dc-fx-onoff' + (isOn ? ' on' : '') + '" id="dc-fxm-on-' + fx + '" onclick="dcFxModalToggle(\'' + fx + '\')" style="flex-shrink:0"></button>' +
+      '</div>' +
+      (isOn ? '<div class="dc-fx-knobs" style="margin-top:4px">' + knobsHtml + '</div>' : '') +
+      '</div>';
+  }).join('');
+}
+
+function _dcFxKnobsHtml(fx) {
+  var p = _dcFxParams[fx] || {};
+  if (fx === 'reverb') return (
+    _dcSliderHtml('Tamanho', 'reverb','size', 0,100, p.size||40, '%') +
+    _dcSliderHtml('Mix',     'reverb','mix',  0,100, p.mix||30,  '%')
+  );
+  if (fx === 'delay') return (
+    _dcSliderHtml('Tempo',    'delay','time',     1,100, p.time||25,     'ms', function(v){return Math.round(v*6)+'ms';}) +
+    _dcSliderHtml('Feedback', 'delay','feedback', 0,85,  p.feedback||35, '%') +
+    _dcSliderHtml('Mix',      'delay','mix',      0,100, p.mix||25,      '%')
+  );
+  if (fx === 'comp') return (
+    _dcSliderHtml('Threshold','comp','threshold',-60,0,  p.threshold||-18,'dB') +
+    _dcSliderHtml('Ratio',    'comp','ratio',     1, 20, p.ratio||4,      ':1')
+  );
+  if (fx === 'dist') return (
+    _dcSliderHtml('Drive','dist','drive', 0,100,  p.drive||40, '%') +
+    _dcSliderHtml('Mix',  'dist','mix',   0,100,  p.mix||50,   '%')
+  );
+  if (fx === 'filter') return (
+    _dcSliderHtml('Freq','filter','freq', 80,18000, p.freq||8000, 'Hz')
+  );
+  if (fx === 'pitch') return (
+    _dcSliderHtml('Semitoms','pitch','semi',  -12,12,   p.semi||0,  '') +
+    _dcSliderHtml('Cents',   'pitch','cents', -100,100, p.cents||0, '')
+  );
+  if (fx === 'sidechain') return (
+    _dcSliderHtml('Reducao', 'sidechain','depth',   0,100,  p.depth||70,   '%') +
+    _dcSliderHtml('Attack',  'sidechain','attack',  1,100,  p.attack||5,   'ms') +
+    _dcSliderHtml('Release', 'sidechain','release', 10,500, p.release||120,'ms')
+  );
+  return '';
+}
+
+function _dcSliderHtml(lbl, fx, key, min, max, val, unit, fmtFn) {
+  var display = fmtFn ? fmtFn(val) : val + unit;
+  var id = 'dc-fxm-' + fx + '-' + key;
+  return '<div class="dc-fx-knob-wrap">' +
+    '<div class="dc-fx-knob-label">' + lbl + '</div>' +
+    '<input type="range" class="dc-fx-slider" id="' + id + '" min="' + min + '" max="' + max + '" value="' + val + '"' +
+    ' oninput="dcFxParam(\'' + fx + '\',\'' + key + '\',this.value);this.nextElementSibling.textContent=this.value+\'' + unit + '\'">' +
+    '<div class="dc-fx-knob-val">' + display + '</div>' +
+    '</div>';
+}
+
+function dcFxModalToggle(fx) {
+  dcFxToggleChip(fx);
+  dcRenderFxModalBlocks(); // re-renderiza para mostrar/esconder knobs
+}
+
+// ─── Modal FX por pad ────────────────────────────────────────────────────────
+var _dcPadFxTarget = -1;
+var _DC_FX_TYPES = ['reverb','delay','comp','dist','filter','pitch'];
+
+function dcAbrirPadFxModal(padIdx) {
+  _dcPadFxTarget = padIdx;
+  var bank = DC_BANKS[_dcBank];
+  var pad  = bank[padIdx];
+  if (!pad) return;
+  document.getElementById('dc-pad-fx-padname').textContent = pad.name;
+  // Garantir estrutura
+  if (!_dcPadFx[_dcBank]) _dcPadFx[_dcBank] = {};
+  var cfg = _dcPadFx[_dcBank][padIdx] || { type: null, enabled: false };
+  _dcPadFx[_dcBank][padIdx] = cfg;
+  // Renderizar lista de efeitos
+  var body = document.getElementById('dc-pad-fx-body');
+  body.innerHTML = _DC_FX_TYPES.map(function(fx) {
+    var isSelected = (cfg.type === fx);
+    var isOn = isSelected && cfg.enabled;
+    return '<div class="dc-pad-fx-row' + (isOn ? ' ativo' : '') + '" id="dc-pf-row-' + fx + '">' +
+      '<span class="dc-pad-fx-row-name">' + _DC_FX_LABELS[fx] + '</span>' +
+      '<div style="display:flex;align-items:center;gap:10px;flex-shrink:0;">' +
+        '<button onclick="dcPadFxSelecionar(\'' + fx + '\')" style="background:' + (isSelected ? 'rgba(138,92,246,0.2)' : 'rgba(255,255,255,0.04)') + ';border:1px solid ' + (isSelected ? 'rgba(138,92,246,0.5)' : 'rgba(255,255,255,0.1)') + ';color:' + (isSelected ? '#a78bfa' : 'rgba(255,255,255,0.3)') + ';padding:5px 12px;border-radius:20px;font-size:8px;font-weight:900;letter-spacing:1px;cursor:pointer;text-transform:uppercase;touch-action:manipulation;font-family:inherit;">' + (isSelected ? 'Selecionado' : 'Selecionar') + '</button>' +
+        (isSelected ? '<button class="dc-fx-onoff' + (isOn ? ' on' : '') + '" id="dc-pf-onoff-' + fx + '" onclick="dcPadFxToggleOn()" style="flex-shrink:0"></button>' : '') +
+      '</div>' +
+      '</div>';
+  }).join('') +
+  '<button onclick="dcPadFxRemover()" style="margin-top:4px;background:rgba(220,38,38,0.08);border:1px solid rgba(220,38,38,0.2);color:rgba(248,113,113,0.7);padding:10px;border-radius:12px;font-size:10px;font-weight:900;letter-spacing:1px;cursor:pointer;text-transform:uppercase;touch-action:manipulation;font-family:inherit;width:100%;">Remover efeito</button>';
+  document.getElementById('dc-pad-fx-overlay').classList.add('show');
+}
+
+function dcFecharPadFxModal() {
+  document.getElementById('dc-pad-fx-overlay').classList.remove('show');
+  _dcPadFxTarget = -1;
+}
+
+function dcPadFxSelecionar(fx) {
+  if (_dcPadFxTarget < 0) return;
+  if (!_dcPadFx[_dcBank]) _dcPadFx[_dcBank] = {};
+  var cfg = _dcPadFx[_dcBank][_dcPadFxTarget] || { type: null, enabled: false };
+  cfg.type    = (cfg.type === fx) ? null : fx; // toggle de seleção
+  cfg.enabled = !!cfg.type;
+  _dcPadFx[_dcBank][_dcPadFxTarget] = cfg;
+  dcAbrirPadFxModal(_dcPadFxTarget); // re-renderiza
+  renderDcPads();
+}
+
+function dcPadFxToggleOn() {
+  if (_dcPadFxTarget < 0) return;
+  var cfg = _dcPadFx[_dcBank] && _dcPadFx[_dcBank][_dcPadFxTarget];
+  if (!cfg) return;
+  cfg.enabled = !cfg.enabled;
+  dcAbrirPadFxModal(_dcPadFxTarget);
+  renderDcPads();
+}
+
+function dcPadFxRemover() {
+  if (_dcPadFxTarget < 0) return;
+  if (_dcPadFx[_dcBank]) _dcPadFx[_dcBank][_dcPadFxTarget] = { type: null, enabled: false };
+  dcFecharPadFxModal();
+  renderDcPads();
+}
+
+// ─── Modal Adicionar Pad ──────────────────────────────────────────────────────
+var _dcAddPadColor = 'red';
+
+function dcAbrirAddPad() {
+  _dcAddPadColor = 'red';
+  document.getElementById('dc-addpad-name').value = '';
+  document.getElementById('dc-addpad-overlay').classList.add('show');
+  // Listener de seleção de cor
+  document.querySelectorAll('.dc-addpad-color').forEach(function(el) {
+    el.classList.toggle('sel', el.dataset.color === _dcAddPadColor);
+    el.onclick = function() {
+      _dcAddPadColor = this.dataset.color;
+      document.querySelectorAll('.dc-addpad-color').forEach(function(e) { e.classList.remove('sel'); });
+      this.classList.add('sel');
+    };
+  });
+}
+
+function dcFecharAddPad() {
+  document.getElementById('dc-addpad-overlay').classList.remove('show');
+}
+
+function dcConfirmarAddPad() {
+  var nome  = (document.getElementById('dc-addpad-name').value || '').trim().toUpperCase().slice(0,8) || 'PAD';
+  var synth = document.getElementById('dc-addpad-synth').value;
+  var color = _dcAddPadColor;
+  var sub   = synth.charAt(0).toUpperCase() + synth.slice(1);
+  DC_BANKS[_dcBank].push({ name: nome, sub: sub, color: color, synth: synth });
+  dcFecharAddPad();
+  renderDcPads();
+  renderDcMix();
+  showToast && showToast('Pad "' + nome + '" adicionado!', 'success');
+}
+
+// ── Fim das funções do Drum Cam ──
 function dcPararTudo() {}
 function dcMudarOitava(v) {}
 const dcPadNodes = {};
@@ -11701,13 +12276,16 @@ function dcToggleMetro() {
 }
 
 function atualizarBtnMetroDC() {
-  // Update both legacy and new metro buttons
+  // Update legacy, hidden and header metro buttons
   ['dc-metro-btn', 'dc-metro-btn2'].forEach(function(id) {
     var btn = document.getElementById(id);
     if (!btn) return;
     btn.classList.toggle('ativo', isPlaying);
     btn.textContent = isPlaying ? 'PARAR' : 'METRO';
   });
+  // Novo botão do header (só ícone, sem texto)
+  var hdrBtn = document.getElementById('dc-metro-hdr');
+  if (hdrBtn) hdrBtn.classList.toggle('ativo', isPlaying);
 }
 
 function dcTap() {
