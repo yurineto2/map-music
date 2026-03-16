@@ -3920,8 +3920,8 @@ body { font-family: -apple-system, 'Inter', BlinkMacSystemFont, 'Segoe UI', sans
 
 /* Perf bottom panel: ajuste fino desktop */
 @media (min-width: 641px) {
-  .perf-bottom-panel { bottom: 28px; right: 28px; }
-  .mode-show-container { padding: 13px 26px; font-size: 12px; }
+  .perf-bottom-panel { bottom: 94px; right: 28px; }
+  .mode-show-container { padding: 13px 26px; font-size: 12px; bottom: 28px !important; right: 28px !important; }
 }
 
 /* Header: expande bem no desktop */
@@ -4043,7 +4043,8 @@ body { font-family: -apple-system, 'Inter', BlinkMacSystemFont, 'Segoe UI', sans
 
   /* Botões do fundo */
   .btn-save-vitro { font-size: 9px; padding: 10px 16px; }
-  .perf-bottom-panel { bottom: 12px; right: 12px; }
+  .perf-bottom-panel { bottom: 80px; right: 12px; }
+  .mode-show-container { bottom: 16px !important; right: 12px !important; }
 
   /* Preview cifra */
   .preview-section { padding: 8px 10px; }
@@ -4100,9 +4101,16 @@ body.performance-mode .scroll-controls { display: none; } /* movido para painel 
 
 /* PAINEL INFERIOR DIREITO — modo show */
 .perf-bottom-panel {
-  position: fixed; bottom: 24px; right: 20px; z-index: 2000;
+  position: fixed; bottom: 90px; right: 20px; z-index: 2000;
   display: flex; flex-direction: column; gap: 10px;
   align-items: flex-end;
+}
+/* Botao SAIR DO SHOW: posicao fixa independente, canto inferior direito */
+.mode-show-container {
+  position: fixed !important;
+  bottom: 24px !important;
+  right: 20px !important;
+  z-index: 2100 !important;
 }
 
 /* Botão modo show — vidro verde piscando */
@@ -6918,9 +6926,10 @@ body.auth-pending #toast {
       <span class="scroll-speed-val" id="scroll-speed-val">0</span>
     </div>
   </div>
-  <div class="mode-show-container" ontouchstart="togglePerf();event.preventDefault();" onclick="togglePerf()" style="touch-action:manipulation;">
-    <span id="mode-text">MODO SHOW</span>
-  </div>
+</div>
+<!-- Botao SAIR DO SHOW separado — posicao fixa independente do teleprompter -->
+<div class="mode-show-container" id="mode-show-btn" ontouchstart="togglePerf();event.preventDefault();" onclick="togglePerf()" style="touch-action:manipulation;">
+  <span id="mode-text">MODO SHOW</span>
 </div>
 
 <!-- CAMPO HARMONICO POPUP -->
