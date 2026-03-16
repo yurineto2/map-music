@@ -6928,9 +6928,12 @@ body.auth-pending #toast {
   </div>
 </div>
 <!-- Botao SAIR DO SHOW separado — posicao fixa independente do teleprompter -->
-<div class="mode-show-container" id="mode-show-btn" ontouchstart="togglePerf();event.preventDefault();" onclick="togglePerf()" style="touch-action:manipulation;">
+<button class="mode-show-container" id="mode-show-btn" 
+  ontouchstart="togglePerf();event.preventDefault();" 
+  onclick="if(!event.isTrusted||event.pointerType==='mouse')togglePerf();" 
+  style="touch-action:manipulation;background:none;border:none;font-family:inherit;cursor:pointer;">
   <span id="mode-text">MODO SHOW</span>
-</div>
+</button>
 
 <!-- CAMPO HARMONICO POPUP -->
 <div class="harmonic-popup" id="harmonic-popup">
