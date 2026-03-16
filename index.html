@@ -1185,6 +1185,12 @@ function _pinVerificar() {
     document.body.classList.remove('auth-pending');
     if (typeof admInicializar === 'function') admInicializar();
     if (!document.body.style.background) document.body.style.background = '';
+    // Garantir que o botão MODO SHOW está visível
+    var _msBtn = document.getElementById('mode-show-btn');
+    if (_msBtn) {
+      _msBtn.removeAttribute('data-dc-hidden');
+      _msBtn.style.visibility = '';
+    }
     // Rotear para o ambiente correto baseado no instrumento
     _rotearAmbiente();
   }
@@ -4269,6 +4275,7 @@ body.performance-mode .scroll-controls { display: none; } /* movido para painel 
 /* Botão MODO SHOW — fixo no canto inferior direito, sempre visível */
 .mode-show-container {
   display: flex;
+  visibility: visible !important;
   align-items: center; justify-content: center;
   position: fixed !important;
   bottom: max(24px, calc(16px + env(safe-area-inset-bottom))) !important;
@@ -5202,7 +5209,7 @@ body.viewer-mode input[type="text"] { pointer-events: none; }
 
 /* Painel */
 .notif-panel {
-  position: fixed; top: 58px; right: 12px; z-index: 9500;
+  position: fixed; top: 58px; right: 12px; z-index: 10500;
   width: 300px; max-width: calc(100vw - 24px);
   background: #111118;
   border: 1px solid rgba(255,255,255,0.08);
