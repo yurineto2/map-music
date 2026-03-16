@@ -1515,7 +1515,22 @@ document.addEventListener('DOMContentLoaded', function() {
   var proto = window.location.protocol;
   var href  = window.location.href;
   var isSrcdoc = (href === 'about:srcdoc' || href.indexOf('about:srcdoc') === 0);
-  var semRede  = isSrcdoc || proto === 'file:' || proto === 'blob:';
+  // Detectar mobile (iOS/Android) — file:// só bloqueia em mobile
+  var _isMobileDevice = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+  var semRede  = isSrcdoc || ((proto === 'file:' || proto === 'blob:') && _isMobileDevice);
+  // PC via file:// — permitir uso local sem Firebase
+  if ((proto === 'file:' || proto === 'blob:') && !_isMobileDevice) {
+    document.body.classList.remove('auth-pending');
+    var _sp = document.getElementById('ob-splash');
+    if (_sp) _sp.style.display = 'none';
+    document.body.classList.add('pronto');
+    setTimeout(function() {
+      if (typeof renderBibAtivo === 'function') renderBibAtivo('');
+      if (typeof _cifraFontSincLabel === 'function') _cifraFontSincLabel();
+      if (typeof _themeInit === 'function') _themeInit();
+    }, 300);
+    return;
+  }
   if (semRede) {
     document.body.classList.remove('auth-pending');
     var _splashEl = document.getElementById('ob-splash');
@@ -4234,11 +4249,6 @@ body.performance-mode .scroll-controls { display: none; } /* movido para painel 
   align-items: flex-end;
 }
 /* Esconde modo show quando Drum Cam está aberto */
-.drumcam-overlay.show ~ .mode-show-container,
-.drumcam-overlay.show ~ * .mode-show-container {
-  display: none !important;
-}
-
 /* Botão MODO SHOW — fixo no canto inferior direito, sempre visível */
 .mode-show-container {
   display: flex !important;
@@ -4290,6 +4300,11 @@ body.performance-mode .mode-show-container:hover {
   background: rgba(255,62,62,0.15);
   border-color: #ff3e3e;
 }
+/* Esconde MODO SHOW dentro do Drum Cam — deve vir DEPOIS do CSS do botão */
+.drumcam-overlay.show ~ .mode-show-container {
+  display: none !important;
+}
+
 
 /* Teleprompter integrado no painel */
 .teleprompter-panel {
@@ -5568,7 +5583,7 @@ body.viewer-mode input[type="text"] { pointer-events: none; }
 .ob-pin-input:focus { border-color: rgba(10,158,110,0.5); }
 
 /* ── Auth pending: esconde app até login confirmado ── */
-body.auth-pending > *:not(#ob-splash):not(#onboarding-overlay):not(#toast):not(#modal-esqueci-senha):not(#modal-formalizar-conta):not(#modal-alterar-senha):not(#pin-lock-screen):not(#modal-admin):not(#admin-escolha):not(#proto-warn-overlay):not(script):not(style) {
+body.auth-pending > *:not(#ob-splash):not(#onboarding-overlay):not(#toast):not(#modal-esqueci-senha):not(#modal-config-audio):not(#modal-formalizar-conta):not(#modal-alterar-senha):not(#pin-lock-screen):not(#modal-admin):not(#admin-escolha):not(#proto-warn-overlay):not(script):not(style) {
   visibility: hidden !important;
   pointer-events: none !important;
 }
