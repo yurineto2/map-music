@@ -3808,7 +3808,45 @@ body { font-family: -apple-system, 'Inter', BlinkMacSystemFont, 'Segoe UI', sans
 }
 .dc-addpad-confirm:hover { background: rgba(10,158,110,0.25); }
 
-/* Pad "adicionar" — botão + na grade */
+/* ── Presets salvos do Drum Cam ── */
+.dc-preset-salvo {
+  display: flex; align-items: center; gap: 8px;
+  padding: 9px 12px; border-radius: 10px;
+  background: rgba(255,255,255,0.03);
+  border: 1px solid rgba(255,255,255,0.07);
+  transition: border-color 0.15s, background 0.15s;
+}
+.dc-preset-salvo:hover { background: rgba(255,255,255,0.05); }
+.dc-preset-salvo.ativo {
+  border-color: rgba(10,158,110,0.45);
+  background: rgba(10,158,110,0.06);
+}
+.dc-preset-salvo-nome {
+  flex: 1; font-size: 11px; font-weight: 800;
+  color: rgba(255,255,255,0.7); letter-spacing: 0.3px;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.dc-preset-salvo.ativo .dc-preset-salvo-nome { color: #0A9E6E; }
+.dc-preset-salvo-btns { display: flex; align-items: center; gap: 6px; flex-shrink: 0; }
+.dc-preset-salvo-load {
+  background: rgba(138,92,246,0.1); border: 1px solid rgba(138,92,246,0.3);
+  color: rgba(167,139,250,0.8); padding: 4px 10px; border-radius: 8px;
+  font-size: 8px; font-weight: 900; letter-spacing: 0.8px;
+  cursor: pointer; text-transform: uppercase; touch-action: manipulation;
+  font-family: inherit; transition: 0.15s;
+}
+.dc-preset-salvo-load:hover { background: rgba(138,92,246,0.2); color: #a78bfa; }
+.dc-preset-salvo.ativo .dc-preset-salvo-load {
+  background: rgba(10,158,110,0.15); border-color: rgba(10,158,110,0.4); color: #0A9E6E;
+}
+.dc-preset-salvo-del {
+  background: none; border: 1px solid rgba(255,255,255,0.08);
+  color: rgba(255,255,255,0.25); width: 24px; height: 24px;
+  border-radius: 6px; cursor: pointer; display: flex;
+  align-items: center; justify-content: center; transition: 0.15s;
+  touch-action: manipulation;
+}
+.dc-preset-salvo-del:hover { border-color: rgba(220,38,38,0.4); color: rgba(248,113,113,0.7); }
 .dc-pad-add {
   border-radius: 12px;
   border: 1px dashed rgba(255,255,255,0.12);
@@ -4379,6 +4417,7 @@ body.performance-mode .mode-show-container {
   border-color: rgba(255,62,62,0.4);
   color: #ff3e3e;
   animation: pulseBorder 1.6s ease-in-out infinite;
+  z-index: 200010 !important; /* acima de qualquer overlay incluindo biblioteca (5500) e modais (100020) */
 }
 body.performance-mode .mode-show-container:hover {
   background: rgba(255,62,62,0.15);
@@ -7127,8 +7166,24 @@ body.auth-pending #toast {
       </button>
     </div>
     <div class="dc-fx-modal-body" id="dc-fx-modal-body">
-      <!-- Presets -->
+
+      <!-- Salvar preset personalizado -->
+      <div style="display:flex;gap:8px;align-items:center;padding-bottom:12px;border-bottom:1px solid rgba(255,255,255,0.05);">
+        <input id="dc-preset-nome-input" type="text" maxlength="24" placeholder="Nome do preset…"
+          style="flex:1;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);border-radius:10px;padding:8px 12px;color:#fff;font-size:12px;font-weight:700;outline:none;font-family:inherit;transition:border-color 0.18s;"
+          onfocus="this.style.borderColor='rgba(138,92,246,0.5)'" onblur="this.style.borderColor='rgba(255,255,255,0.1)'">
+        <button onclick="dcSalvarPreset()" style="background:rgba(10,158,110,0.15);border:1px solid rgba(10,158,110,0.4);color:#0A9E6E;padding:8px 16px;border-radius:10px;font-size:9px;font-weight:900;letter-spacing:1px;cursor:pointer;text-transform:uppercase;touch-action:manipulation;font-family:inherit;white-space:nowrap;display:flex;align-items:center;gap:6px;">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+          Salvar
+        </button>
+      </div>
+
+      <!-- Presets salvos pelo usuário -->
+      <div id="dc-presets-salvos-wrap" style="display:flex;flex-direction:column;gap:4px;padding-bottom:10px;border-bottom:1px solid rgba(255,255,255,0.05);"></div>
+
+      <!-- Presets de fábrica -->
       <div class="dc-fx-modal-presets" id="dc-fx-modal-presets"></div>
+
       <!-- Blocos de efeito renderizados por JS -->
       <div id="dc-fx-modal-blocks"></div>
     </div>
@@ -8460,6 +8515,12 @@ function togglePerf() {
 }
 
 function _ativarModoShow() {
+  // Garante que a biblioteca e outros overlays estejam fechados antes de entrar no show
+  var bib = document.getElementById('biblioteca-overlay');
+  if (bib && bib.classList.contains('show')) bib.classList.remove('show');
+  var padsOverlay = document.getElementById('pads-overlay');
+  if (padsOverlay && padsOverlay.classList.contains('show')) padsOverlay.classList.remove('show');
+
   setTimeout(atualizarLetreiroDrumCam, 50);
   document.getElementById('app-body').classList.add('performance-mode');
   _perfFontCarregar(); // aplica fonte da música atual no show
@@ -12258,7 +12319,212 @@ function dcConfirmarAddPad() {
   showToast && showToast('Pad "' + nome + '" adicionado!', 'success');
 }
 
-// ── Fim das funções do Drum Cam ──
+// ─── Presets personalizados do Drum Cam ──────────────────────────────────────
+var _DC_PRESETS_KEY = 'map_dc_presets_v1';
+var _dcPresetAtivo  = null; // nome do preset carregado atualmente
+
+// Captura o estado completo do Drum Cam para salvar
+function _dcCapturarEstadoCompleto() {
+  return {
+    fxEnabled:  JSON.parse(JSON.stringify(_dcFxEnabled)),
+    fxParams:   JSON.parse(JSON.stringify(_dcFxParams)),
+    padFx:      JSON.parse(JSON.stringify(_dcPadFx)),
+    volumes:    JSON.parse(JSON.stringify(_dcVolumes)),
+    masterVol:  _dcMasterVol,
+    banks:      JSON.parse(JSON.stringify(DC_BANKS)),
+    ts:         Date.now()
+  };
+}
+
+// Aplica um estado completo ao Drum Cam
+function _dcAplicarEstadoCompleto(dados) {
+  if (!dados) return;
+
+  // FX globais
+  if (dados.fxEnabled) {
+    Object.keys(_dcFxEnabled).forEach(function(k) {
+      _dcFxEnabled[k] = !!dados.fxEnabled[k];
+    });
+  }
+  if (dados.fxParams) {
+    Object.keys(_dcFxParams).forEach(function(k) {
+      if (dados.fxParams[k]) _dcFxParams[k] = Object.assign({}, dados.fxParams[k]);
+    });
+  }
+
+  // FX por pad
+  if (dados.padFx) {
+    Object.keys(dados.padFx).forEach(function(b) {
+      _dcPadFx[b] = Object.assign({}, dados.padFx[b]);
+    });
+  }
+
+  // Volumes
+  if (dados.volumes) {
+    Object.keys(dados.volumes).forEach(function(k) {
+      _dcVolumes[k] = dados.volumes[k];
+    });
+  }
+  if (dados.masterVol !== undefined) {
+    _dcMasterVol = dados.masterVol;
+    var volSlider = document.getElementById('dc-vol-master');
+    if (volSlider) volSlider.value = Math.round(dados.masterVol * 100);
+  }
+
+  // Banks customizados — restaura apenas se foi salvo com dados de banks
+  if (dados.banks && Array.isArray(dados.banks) && dados.banks.length === 4) {
+    dados.banks.forEach(function(bank, i) {
+      if (Array.isArray(bank) && bank.length >= 16) DC_BANKS[i] = bank;
+    });
+  }
+
+  // Re-renderiza tudo
+  renderDcPads();
+  renderDcMix();
+
+  // Sincroniza toggles do painel oculto
+  Object.keys(_dcFxEnabled).forEach(function(k) {
+    var onoff = document.getElementById('dc-fx-on-' + k);
+    var block  = document.getElementById('dc-fxb-' + k);
+    var chip   = document.querySelector('[data-fx="' + k + '"]');
+    if (onoff) onoff.classList.toggle('on', !!_dcFxEnabled[k]);
+    if (block) block.classList.toggle('ativo', !!_dcFxEnabled[k]);
+    if (chip)  chip.classList.toggle('ativo', !!_dcFxEnabled[k]);
+  });
+
+  // Atualiza badge do botão FX no header
+  var hdrBtn = document.getElementById('dc-fx-hdr-btn');
+  if (hdrBtn) hdrBtn.classList.toggle('ativo', Object.values(_dcFxEnabled).some(Boolean));
+}
+
+// Carrega lista do localStorage
+function _dcCarregarListaPresets() {
+  return _lsGet(_DC_PRESETS_KEY, []);
+}
+
+// Salva lista no localStorage
+function _dcSalvarListaPresets(lista) {
+  _lsSet(_DC_PRESETS_KEY, lista);
+}
+
+// Salva preset atual
+function dcSalvarPreset() {
+  var input = document.getElementById('dc-preset-nome-input');
+  var nome  = (input ? input.value : '').trim();
+  if (!nome) {
+    showToast('Digite um nome para o preset.', 'error');
+    if (input) input.focus();
+    return;
+  }
+
+  var lista = _dcCarregarListaPresets();
+  // Se já existe com o mesmo nome, substitui
+  var idx = lista.findIndex(function(p) { return p.nome === nome; });
+  var novoPreset = { nome: nome, dados: _dcCapturarEstadoCompleto() };
+
+  if (idx >= 0) {
+    lista[idx] = novoPreset;
+  } else {
+    lista.unshift(novoPreset); // mais recente primeiro
+  }
+
+  _dcSalvarListaPresets(lista);
+  _dcPresetAtivo = nome;
+
+  // Limpa o input
+  if (input) input.value = '';
+
+  // Sincroniza com a sala se for host
+  _dcSincPresetSala(nome, novoPreset.dados);
+
+  // Re-renderiza a lista
+  dcRenderPresetsSalvos();
+  showToast('Preset "' + nome + '" salvo!', 'success');
+}
+
+// Carrega um preset salvo
+function dcCarregarPreset(nome) {
+  var lista = _dcCarregarListaPresets();
+  var preset = lista.find(function(p) { return p.nome === nome; });
+  if (!preset) { showToast('Preset não encontrado.', 'error'); return; }
+
+  _dcAplicarEstadoCompleto(preset.dados);
+  _dcPresetAtivo = nome;
+
+  // Re-renderiza modal se estiver aberto
+  dcRenderFxModalBlocks();
+  dcRenderPresetsSalvos();
+
+  // Sincroniza com a sala se for host
+  _dcSincPresetSala(nome, preset.dados);
+
+  showToast('Preset "' + nome + '" carregado!', 'success');
+}
+
+// Exclui um preset salvo
+function dcExcluirPreset(nome) {
+  var lista = _dcCarregarListaPresets().filter(function(p) { return p.nome !== nome; });
+  _dcSalvarListaPresets(lista);
+  if (_dcPresetAtivo === nome) _dcPresetAtivo = null;
+  dcRenderPresetsSalvos();
+  showToast('Preset "' + nome + '" removido.');
+}
+
+// Renderiza a lista de presets salvos no modal
+function dcRenderPresetsSalvos() {
+  var wrap = document.getElementById('dc-presets-salvos-wrap');
+  if (!wrap) return;
+  var lista = _dcCarregarListaPresets();
+  if (!lista.length) {
+    wrap.innerHTML = '<div style="font-size:10px;color:rgba(255,255,255,0.2);padding:4px 0 8px;font-weight:700;letter-spacing:0.5px;">Nenhum preset salvo ainda</div>';
+    return;
+  }
+  wrap.innerHTML = lista.map(function(p) {
+    var isAtivo = (_dcPresetAtivo === p.nome);
+    return '<div class="dc-preset-salvo' + (isAtivo ? ' ativo' : '') + '">' +
+      '<span class="dc-preset-salvo-nome">' +
+        (isAtivo ? '<svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" style="margin-right:5px;vertical-align:middle"><polyline points="20 6 9 17 4 12"/></svg>' : '') +
+        _ve(p.nome) +
+      '</span>' +
+      '<div class="dc-preset-salvo-btns">' +
+        '<button class="dc-preset-salvo-load" onclick="dcCarregarPreset(\'' + _ve(p.nome) + '\')">' + (isAtivo ? 'Ativo' : 'Carregar') + '</button>' +
+        '<button class="dc-preset-salvo-del" onclick="dcExcluirPreset(\'' + _ve(p.nome) + '\')" title="Excluir">' +
+          '<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg>' +
+        '</button>' +
+      '</div>' +
+      '</div>';
+  }).join('');
+}
+
+// Sincroniza preset com a sala via Firebase (apenas host)
+function _dcSincPresetSala(nome, dados) {
+  try {
+    if (!isHost || !myRoomCode || !window._fb || !window._fb._set) return;
+    window._fb._set('salas/' + myRoomCode, {
+      dcPreset: { nome: nome, dados: JSON.stringify(dados), ts: Date.now() }
+    }, true).catch(function() {});
+  } catch(e) {}
+}
+
+// Aplica preset recebido da sala (chamado quando viewer recebe estado)
+function _dcReceberPresetSala(dcPreset) {
+  if (!dcPreset || !dcPreset.dados) return;
+  try {
+    var dados = typeof dcPreset.dados === 'string' ? JSON.parse(dcPreset.dados) : dcPreset.dados;
+    _dcAplicarEstadoCompleto(dados);
+    _dcPresetAtivo = dcPreset.nome || null;
+    showToast('Preset "' + (dcPreset.nome || 'da sala') + '" aplicado.', 'success');
+  } catch(e) {}
+}
+
+// Garante que dcRenderPresetsSalvos é chamado ao abrir o modal
+var _origDcAbrirFxModal = dcAbrirFxModal;
+dcAbrirFxModal = function() {
+  _origDcAbrirFxModal();
+  dcRenderPresetsSalvos();
+};
+
+// ── Fim das funções de preset do Drum Cam ────────────────────────────────────
 function dcPararTudo() {}
 function dcMudarOitava(v) {}
 const dcPadNodes = {};
@@ -14186,7 +14452,13 @@ function capturarEstado() {
     eventoNome: showSetlistEventoNome || null,
     scrollSpeed: parseInt((document.getElementById('scroll-speed') || {value:'0'}).value),
     onlineCount: 1 + Object.keys(_viewersOnline || {}).length,
-    roomCode: myRoomCode
+    roomCode: myRoomCode,
+    dcPreset: (function() {
+      if (!_dcPresetAtivo) return null;
+      var lista = _dcCarregarListaPresets();
+      var p = lista.find(function(x) { return x.nome === _dcPresetAtivo; });
+      return p ? { nome: p.nome, dados: JSON.stringify(p.dados) } : null;
+    })()
   };
 }
 
@@ -14304,6 +14576,15 @@ function aplicarEstado(estado) {
       const codeEl = document.getElementById('sync-code-display');
       if (codeEl && !codeEl.innerText) codeEl.innerText = estado.roomCode;
     }
+  }
+
+  // Preset do Drum Cam — aplica no viewer se vier da sala e for diferente do atual
+  if (estado.dcPreset && isViewer) {
+    try {
+      if (!_dcPresetAtivo || _dcPresetAtivo !== estado.dcPreset.nome) {
+        _dcReceberPresetSala(estado.dcPreset);
+      }
+    } catch(e) {}
   }
 
   syncPaused = false;
