@@ -6960,6 +6960,89 @@ body.auth-pending #toast {
   </div>
 </div>
 
+<!-- AFINADOR DE BATERIA -->
+<div class="dc-addpad-overlay" id="dc-drum-tuner-overlay" onclick="if(event.target===this)dcFecharAfinadorBateria()">
+  <div class="dc-addpad-box" style="max-width:420px;">
+    <div class="dc-addpad-header">
+      <span class="dc-addpad-title">Afinador de Bateria</span>
+      <div style="display:flex;align-items:center;gap:8px;">
+        <button onclick="dcAfinadorBateriaGuia()" style="background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.12);color:rgba(255,255,255,0.5);width:26px;height:26px;border-radius:50%;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:900;touch-action:manipulation;" title="Guia de afinação">?</button>
+        <button class="dc-addpad-close" onclick="dcFecharAfinadorBateria()">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        </button>
+      </div>
+    </div>
+    <div style="padding:14px 16px 18px;display:flex;flex-direction:column;gap:14px;">
+      <div>
+        <div style="font-size:9px;font-weight:800;letter-spacing:2px;color:rgba(255,255,255,0.3);text-transform:uppercase;margin-bottom:8px;">Tambor</div>
+        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px;" id="dc-drum-chips"></div>
+      </div>
+      <div style="background:#000;border:1px solid rgba(0,255,100,0.15);border-radius:10px;padding:16px;text-align:center;">
+        <div id="dc-drum-freq" style="font-family:'Courier New',monospace;font-size:36px;font-weight:900;color:#00ff64;text-shadow:0 0 10px rgba(0,255,100,0.5);line-height:1;">-- Hz</div>
+        <div id="dc-drum-note" style="font-size:11px;color:rgba(0,255,100,0.4);margin-top:4px;font-weight:700;letter-spacing:1px;">—</div>
+      </div>
+      <div>
+        <div style="font-size:9px;font-weight:800;letter-spacing:2px;color:rgba(255,255,255,0.3);text-transform:uppercase;margin-bottom:6px;">Range ideal</div>
+        <div id="dc-drum-range-bar" style="position:relative;height:28px;background:rgba(255,255,255,0.05);border-radius:8px;overflow:hidden;">
+          <div id="dc-drum-range-zone" style="position:absolute;top:0;bottom:0;background:rgba(0,255,100,0.15);border-left:2px solid rgba(0,255,100,0.4);border-right:2px solid rgba(0,255,100,0.4);"></div>
+          <div id="dc-drum-indicator" style="position:absolute;top:4px;bottom:4px;width:4px;background:#00ff64;border-radius:2px;box-shadow:0 0 8px rgba(0,255,100,0.8);transition:left 0.1s;left:50%;margin-left:-2px;"></div>
+          <div id="dc-drum-status" style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:800;letter-spacing:1px;color:rgba(255,255,255,0.4);">—</div>
+        </div>
+        <div id="dc-drum-range-label" style="font-size:10px;color:rgba(255,255,255,0.2);margin-top:4px;text-align:center;"></div>
+      </div>
+      <button id="dc-drum-tuner-btn" onclick="dcToggleAfinadorBateria()"
+        style="background:rgba(0,255,100,0.08);border:1px solid rgba(0,255,100,0.25);color:rgba(0,255,100,0.7);padding:11px;border-radius:10px;font-size:10px;font-weight:900;letter-spacing:2px;text-transform:uppercase;cursor:pointer;font-family:inherit;touch-action:manipulation;transition:0.18s;">
+        ▶ Iniciar Microfone
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- GUIA AFINADOR DE BATERIA -->
+<div class="dc-addpad-overlay" id="dc-drum-guia-overlay" onclick="if(event.target===this)dcFecharAfinadorBateriaGuia()">
+  <div class="dc-addpad-box" style="max-width:420px;max-height:85vh;overflow-y:auto;">
+    <div class="dc-addpad-header">
+      <span class="dc-addpad-title">Guia de Afinação</span>
+      <button class="dc-addpad-close" onclick="dcFecharAfinadorBateriaGuia()">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    </div>
+    <div style="padding:14px 16px 20px;display:flex;flex-direction:column;gap:16px;font-size:12px;color:rgba(255,255,255,0.7);line-height:1.6;">
+      <div>
+        <div style="font-size:9px;font-weight:900;letter-spacing:2px;color:var(--accent-primary);text-transform:uppercase;margin-bottom:8px;">Como usar</div>
+        <div style="display:flex;flex-direction:column;gap:6px;">
+          <div style="display:flex;gap:10px;"><span style="color:var(--accent-primary);font-weight:900;flex-shrink:0;">1.</span>Selecione o tambor que deseja afinar</div>
+          <div style="display:flex;gap:10px;"><span style="color:var(--accent-primary);font-weight:900;flex-shrink:0;">2.</span>Toque em "Iniciar Microfone" e permita o acesso</div>
+          <div style="display:flex;gap:10px;"><span style="color:var(--accent-primary);font-weight:900;flex-shrink:0;">3.</span>Bata no centro da pele com a baqueta</div>
+          <div style="display:flex;gap:10px;"><span style="color:var(--accent-primary);font-weight:900;flex-shrink:0;">4.</span>O indicador mostra se está abaixo, no ponto ou acima</div>
+          <div style="display:flex;gap:10px;"><span style="color:var(--accent-primary);font-weight:900;flex-shrink:0;">5.</span>Ajuste as abraçadeiras e repita até acertar</div>
+        </div>
+      </div>
+      <div>
+        <div style="font-size:9px;font-weight:900;letter-spacing:2px;color:var(--accent-primary);text-transform:uppercase;margin-bottom:8px;">Frequências de referência</div>
+        <div style="display:flex;flex-direction:column;gap:4px;">
+          <div style="display:grid;grid-template-columns:90px 90px 1fr;gap:8px;padding:7px 10px;background:rgba(255,255,255,0.03);border-radius:8px;font-size:11px;"><span style="font-weight:800;color:#fff;">Bumbo</span><span style="color:var(--accent-primary);font-weight:700;">50–80 Hz</span><span style="color:rgba(255,255,255,0.3);">Grave e pontual</span></div>
+          <div style="display:grid;grid-template-columns:90px 90px 1fr;gap:8px;padding:7px 10px;background:rgba(255,255,255,0.03);border-radius:8px;font-size:11px;"><span style="font-weight:800;color:#fff;">Caixa</span><span style="color:var(--accent-primary);font-weight:700;">150–250 Hz</span><span style="color:rgba(255,255,255,0.3);">Estalo definido</span></div>
+          <div style="display:grid;grid-template-columns:90px 90px 1fr;gap:8px;padding:7px 10px;background:rgba(255,255,255,0.03);border-radius:8px;font-size:11px;"><span style="font-weight:800;color:#fff;">Tom Alto</span><span style="color:var(--accent-primary);font-weight:700;">200–300 Hz</span><span style="color:rgba(255,255,255,0.3);">Agudo e articulado</span></div>
+          <div style="display:grid;grid-template-columns:90px 90px 1fr;gap:8px;padding:7px 10px;background:rgba(255,255,255,0.03);border-radius:8px;font-size:11px;"><span style="font-weight:800;color:#fff;">Tom Médio</span><span style="color:var(--accent-primary);font-weight:700;">150–200 Hz</span><span style="color:rgba(255,255,255,0.3);">Médio equilibrado</span></div>
+          <div style="display:grid;grid-template-columns:90px 90px 1fr;gap:8px;padding:7px 10px;background:rgba(255,255,255,0.03);border-radius:8px;font-size:11px;"><span style="font-weight:800;color:#fff;">Tom Baixo</span><span style="color:var(--accent-primary);font-weight:700;">100–150 Hz</span><span style="color:rgba(255,255,255,0.3);">Grave e cheio</span></div>
+          <div style="display:grid;grid-template-columns:90px 90px 1fr;gap:8px;padding:7px 10px;background:rgba(255,255,255,0.03);border-radius:8px;font-size:11px;"><span style="font-weight:800;color:#fff;">Chimbal</span><span style="color:var(--accent-primary);font-weight:700;">300–500 Hz</span><span style="color:rgba(255,255,255,0.3);">Crocante e aberto</span></div>
+        </div>
+      </div>
+      <div>
+        <div style="font-size:9px;font-weight:900;letter-spacing:2px;color:var(--accent-primary);text-transform:uppercase;margin-bottom:8px;">Referências de grandes bateristas</div>
+        <div style="display:flex;flex-direction:column;gap:8px;">
+          <div style="padding:10px 12px;background:rgba(255,255,255,0.03);border-radius:10px;border-left:3px solid rgba(138,92,246,0.5);"><div style="font-weight:900;color:#fff;margin-bottom:3px;">John Bonham — Led Zeppelin</div><div style="color:rgba(255,255,255,0.4);font-size:11px;">Bumbo muito grave (~55 Hz), caixa potente (~200 Hz). Som encorpado e profundo.</div></div>
+          <div style="padding:10px 12px;background:rgba(255,255,255,0.03);border-radius:10px;border-left:3px solid rgba(10,158,110,0.5);"><div style="font-weight:900;color:#fff;margin-bottom:3px;">Phil Collins — Genesis</div><div style="color:rgba(255,255,255,0.4);font-size:11px;">Caixa muito alta e seca (~250 Hz). Bumbo articulado (~70 Hz). Som dos anos 80.</div></div>
+          <div style="padding:10px 12px;background:rgba(255,255,255,0.03);border-radius:10px;border-left:3px solid rgba(56,189,248,0.5);"><div style="font-weight:900;color:#fff;margin-bottom:3px;">Dave Grohl — Foo Fighters</div><div style="color:rgba(255,255,255,0.4);font-size:11px;">Agressivo e focado. Caixa ~230 Hz, bumbo ~65 Hz com muita projeção.</div></div>
+          <div style="padding:10px 12px;background:rgba(255,255,255,0.03);border-radius:10px;border-left:3px solid rgba(244,114,182,0.5);"><div style="font-weight:900;color:#fff;margin-bottom:3px;">Vinnie Colaiuta — Jazz/Fusion</div><div style="color:rgba(255,255,255,0.4);font-size:11px;">Afinação alta e aberta em todos os tambores. Toms harmônicos entre si.</div></div>
+          <div style="padding:10px 12px;background:rgba(255,255,255,0.03);border-radius:10px;border-left:3px solid rgba(251,191,36,0.5);"><div style="font-weight:900;color:#fff;margin-bottom:3px;">Carter Beauford — Dave Matthews Band</div><div style="color:rgba(255,255,255,0.4);font-size:11px;">Toms afinados em intervalos de terça. Som aberto e cheio, muita ressonância.</div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
 <!-- CHAT GLOBAL -->
 <div id="modal-chat-global" ontouchend="if(event.target===this){event.preventDefault();fecharChatGlobal();}" onclick="if(event.target===this)fecharChatGlobal()">
   <div class="chat-global-sheet">
@@ -7643,6 +7726,12 @@ body.auth-pending #toast {
           onmouseenter="this.style.background='rgba(255,255,255,0.06)'" onmouseleave="this.style.background='none'">
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 18v-6a9 9 0 0 1 18 0v6"/><path d="M21 19a2 2 0 0 1-2 2h-1a2 2 0 0 1-2-2v-3a2 2 0 0 1 2-2h3zM3 19a2 2 0 0 0 2 2h1a2 2 0 0 0 2-2v-3a2 2 0 0 0-2-2H3z"/></svg>
           Stereo Split
+        </button>
+        <button onclick="dcAbrirAfinadorBateria();dcFecharMoreMenu()"
+          style="display:flex;align-items:center;gap:10px;width:100%;background:none;border:none;color:rgba(255,255,255,0.6);font-size:11px;font-weight:700;padding:9px 12px;border-radius:8px;cursor:pointer;font-family:inherit;touch-action:manipulation;transition:0.15s;"
+          onmouseenter="this.style.background='rgba(255,255,255,0.06)'" onmouseleave="this.style.background='none'">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 8v4"/><path d="M12 16h.01"/></svg>
+          Afinador de Bateria
         </button>
       </div>
     </div>
@@ -14214,6 +14303,137 @@ function _tunerSetLeds(cents) {
 })();
 
 // ── Fim Afinador ──────────────────────────────────────────────────────────────
+
+// ─── Afinador de Bateria ─────────────────────────────────────────────────────
+var _dcDrumTuner = {
+  ativo: false, stream: null, ctx: null, analyser: null, raf: null, tambor: 'caixa'
+};
+
+var _DC_DRUM_RANGES = {
+  bumbo:    { label: 'Bumbo',     min: 50,  max: 80  },
+  caixa:    { label: 'Caixa',     min: 150, max: 250 },
+  tomAlto:  { label: 'Tom Alto',  min: 200, max: 300 },
+  tomMedio: { label: 'Tom Médio', min: 150, max: 200 },
+  tomBaixo: { label: 'Tom Baixo', min: 100, max: 150 },
+  chimbal:  { label: 'Chimbal',   min: 300, max: 500 }
+};
+
+function dcAbrirAfinadorBateria() {
+  var overlay = document.getElementById('dc-drum-tuner-overlay');
+  if (overlay) overlay.classList.add('show');
+  _dcDrumRenderChips();
+  _dcDrumAtualizarRange();
+}
+
+function dcFecharAfinadorBateria() {
+  var overlay = document.getElementById('dc-drum-tuner-overlay');
+  if (overlay) overlay.classList.remove('show');
+  _dcDrumPararMic();
+}
+
+function dcAbrirAfinadorBateriaGuia() {
+  var overlay = document.getElementById('dc-drum-guia-overlay');
+  if (overlay) overlay.classList.add('show');
+}
+
+function dcFecharAfinadorBateriaGuia() {
+  var overlay = document.getElementById('dc-drum-guia-overlay');
+  if (overlay) overlay.classList.remove('show');
+}
+
+function _dcDrumRenderChips() {
+  var grid = document.getElementById('dc-drum-chips');
+  if (!grid) return;
+  grid.innerHTML = Object.keys(_DC_DRUM_RANGES).map(function(k) {
+    var r = _DC_DRUM_RANGES[k];
+    var sel = k === _dcDrumTuner.tambor;
+    return '<button onclick="dcDrumSelecionarTambor(\'' + k + '\')" style="padding:8px 6px;border-radius:8px;font-size:10px;font-weight:800;cursor:pointer;font-family:inherit;touch-action:manipulation;transition:0.15s;' +
+      'background:' + (sel ? 'rgba(10,158,110,0.15)' : 'rgba(255,255,255,0.04)') + ';' +
+      'border:1px solid ' + (sel ? 'rgba(10,158,110,0.5)' : 'rgba(255,255,255,0.08)') + ';' +
+      'color:' + (sel ? '#0A9E6E' : 'rgba(255,255,255,0.5)') + ';">' + r.label + '</button>';
+  }).join('');
+}
+
+function dcDrumSelecionarTambor(k) {
+  _dcDrumTuner.tambor = k;
+  _dcDrumRenderChips();
+  _dcDrumAtualizarRange();
+}
+
+function _dcDrumAtualizarRange() {
+  var r = _DC_DRUM_RANGES[_dcDrumTuner.tambor];
+  if (!r) return;
+  var FREQ_MIN = 40, FREQ_MAX = 600;
+  var pctMin = ((r.min - FREQ_MIN) / (FREQ_MAX - FREQ_MIN)) * 100;
+  var pctMax = ((r.max - FREQ_MIN) / (FREQ_MAX - FREQ_MIN)) * 100;
+  var zone = document.getElementById('dc-drum-range-zone');
+  var lbl  = document.getElementById('dc-drum-range-label');
+  if (zone) { zone.style.left = pctMin + '%'; zone.style.width = (pctMax - pctMin) + '%'; }
+  if (lbl)  lbl.textContent = 'Range: ' + r.min + ' – ' + r.max + ' Hz';
+}
+
+async function dcToggleAfinadorBateria() {
+  if (_dcDrumTuner.ativo) { _dcDrumPararMic(); return; }
+  try {
+    _dcDrumTuner.stream   = await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
+    _dcDrumTuner.ctx      = new (window.AudioContext || window.webkitAudioContext)();
+    _dcDrumTuner.analyser = _dcDrumTuner.ctx.createAnalyser();
+    _dcDrumTuner.analyser.fftSize = 8192;
+    var src = _dcDrumTuner.ctx.createMediaStreamSource(_dcDrumTuner.stream);
+    src.connect(_dcDrumTuner.analyser);
+    _dcDrumTuner.ativo = true;
+    var btn = document.getElementById('dc-drum-tuner-btn');
+    if (btn) { btn.textContent = '■ Parar'; btn.style.background = 'rgba(0,255,100,0.18)'; btn.style.borderColor = 'rgba(0,255,100,0.5)'; }
+    _dcDrumLoop();
+  } catch(e) {
+    showToast && showToast('Microfone não disponível', 'error');
+  }
+}
+
+function _dcDrumPararMic() {
+  _dcDrumTuner.ativo = false;
+  if (_dcDrumTuner.raf)    { cancelAnimationFrame(_dcDrumTuner.raf); _dcDrumTuner.raf = null; }
+  if (_dcDrumTuner.stream) { _dcDrumTuner.stream.getTracks().forEach(function(t){ t.stop(); }); _dcDrumTuner.stream = null; }
+  if (_dcDrumTuner.ctx)    { _dcDrumTuner.ctx.close(); _dcDrumTuner.ctx = null; }
+  var btn = document.getElementById('dc-drum-tuner-btn');
+  if (btn) { btn.textContent = '▶ Iniciar Microfone'; btn.style.background = 'rgba(0,255,100,0.08)'; btn.style.borderColor = 'rgba(0,255,100,0.25)'; }
+  var freqEl = document.getElementById('dc-drum-freq');
+  var statusEl = document.getElementById('dc-drum-status');
+  if (freqEl)   { freqEl.textContent = '-- Hz'; freqEl.style.color = '#00ff64'; }
+  if (statusEl) { statusEl.textContent = '—'; statusEl.style.color = 'rgba(255,255,255,0.4)'; }
+  var ind = document.getElementById('dc-drum-indicator');
+  if (ind) { ind.style.left = '50%'; ind.style.background = '#00ff64'; }
+}
+
+function _dcDrumLoop() {
+  if (!_dcDrumTuner.ativo) return;
+  var buf = new Float32Array(_dcDrumTuner.analyser.fftSize);
+  _dcDrumTuner.analyser.getFloatTimeDomainData(buf);
+  var freq = _tunerACF(buf, _dcDrumTuner.ctx.sampleRate);
+  if (freq > 20) _dcDrumAtualizar(freq);
+  _dcDrumTuner.raf = requestAnimationFrame(_dcDrumLoop);
+}
+
+function _dcDrumAtualizar(freq) {
+  var freqEl   = document.getElementById('dc-drum-freq');
+  var statusEl = document.getElementById('dc-drum-status');
+  var ind      = document.getElementById('dc-drum-indicator');
+  var r        = _DC_DRUM_RANGES[_dcDrumTuner.tambor];
+  if (freqEl) freqEl.textContent = Math.round(freq) + ' Hz';
+  if (!r) return;
+  var FREQ_MIN = 40, FREQ_MAX = 600;
+  var pct = Math.max(2, Math.min(98, ((freq - FREQ_MIN) / (FREQ_MAX - FREQ_MIN)) * 100));
+  if (ind) ind.style.left = pct + '%';
+  var status, cor;
+  if (freq < r.min)      { status = '▼ ABAIXO';   cor = '#f59e0b'; }
+  else if (freq > r.max) { status = '▲ ACIMA';    cor = '#f472b6'; }
+  else                   { status = '✓ NO PONTO'; cor = '#00ff64'; }
+  if (statusEl) { statusEl.textContent = status; statusEl.style.color = cor; }
+  if (freqEl)   freqEl.style.color = cor;
+  if (ind)      ind.style.background = cor;
+}
+
+// ── Fim Afinador de Bateria ───────────────────────────────────────────────────
 var _chatGlobalAberto   = false;
 var _chatGlobalStop     = null;
 var _CHAT_GLOBAL_COL    = 'chat_global';
