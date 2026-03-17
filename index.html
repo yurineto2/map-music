@@ -4585,21 +4585,7 @@ body { font-family: -apple-system, 'Inter', BlinkMacSystemFont, 'Segoe UI', sans
   box-shadow: 0 -6px 20px rgba(10,158,110,0.4) !important;
   transition: margin-top 0.15s ease, border 0.08s ease !important;
 }
-/* Handle de drag das seções — canto direito, sempre visível e sutil */
-.part-drag-handle {
-  position: absolute; top: 50%; right: 8px;
-  transform: translateY(-50%);
-  width: 32px; height: 44px;
-  display: flex; align-items: center; justify-content: center;
-  cursor: grab; z-index: 5;
-  color: rgba(255,255,255,0.35);
-  border-radius: 8px;
-  transition: color 0.2s, background 0.2s;
-  touch-action: none;
-  -webkit-user-select: none; user-select: none;
-}
-.part-drag-handle:hover { color: rgba(255,255,255,0.6); background: rgba(255,255,255,0.07); }
-.part-drag-handle.drag-active { color: var(--accent-primary); background: rgba(10,158,110,0.12); cursor: grabbing; }
+/* Handle de drag das seções — removido, substituído por setas ▲▼ */
 .chord-area { font-family: 'Monaco', monospace; font-size: 19px; font-weight: 700; color: var(--note-color); background: none; border: none; width: 100%; resize: none; outline: none; margin-top: 10px; line-height: 1.4; }
 
 /* METRÔNOMO */
@@ -10229,222 +10215,36 @@ function addPart(title = "PARTE", content = "") {
   div.className = 'song-part';
   var _esc = function(s){ return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); };
   div.innerHTML =
-    '<input type="text" value="' + _esc(title) + '" class="part-title-input" style="background:none;border:none;color:var(--accent-primary);font-weight:900;font-size:11px;width:calc(100% - 80px);outline:none;text-transform:uppercase;" oninput="broadcastEstado()">'
+    '<input type="text" value="' + _esc(title) + '" class="part-title-input" style="background:none;border:none;color:var(--accent-primary);font-weight:900;font-size:11px;width:calc(100% - 90px);outline:none;text-transform:uppercase;" oninput="broadcastEstado()">'
     + '<textarea class="chord-area" oninput="onChordInput(this)" placeholder="C G Am F">' + _esc(content) + '</textarea>'
-    + '<button onclick="this.parentElement.remove(); broadcastEstado();" style="position:absolute;top:8px;right:44px;width:22px;height:22px;border-radius:50%;background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.15);color:rgba(255,255,255,0.6);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:13px;line-height:1;transition:background 0.15s,border-color 0.15s;touch-action:manipulation;" onmouseenter="this.style.background=\'rgba(255,60,60,0.18)\';this.style.borderColor=\'rgba(255,60,60,0.4)\'" onmouseleave="this.style.background=\'rgba(255,255,255,0.08)\';this.style.borderColor=\'rgba(255,255,255,0.15)\'">&times;</button>'
-    + '<div class="part-drag-handle" title="Segurar 1s para arrastar">'
-      + '<svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><circle cx="9" cy="5" r="1.5"/><circle cx="15" cy="5" r="1.5"/><circle cx="9" cy="12" r="1.5"/><circle cx="15" cy="12" r="1.5"/><circle cx="9" cy="19" r="1.5"/><circle cx="15" cy="19" r="1.5"/></svg>'
+    + '<div style="position:absolute;top:8px;right:8px;display:flex;align-items:center;gap:4px;">'
+      + '<button onclick="_partMover(this,\'up\')" title="Mover para cima" style="width:22px;height:22px;border-radius:6px;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.12);color:rgba(255,255,255,0.45);cursor:pointer;display:flex;align-items:center;justify-content:center;touch-action:manipulation;transition:0.15s;flex-shrink:0;font-size:10px;line-height:1;" onmouseenter="this.style.background=\'rgba(10,158,110,0.15)\';this.style.borderColor=\'rgba(10,158,110,0.4)\';this.style.color=\'#0A9E6E\'" onmouseleave="this.style.background=\'rgba(255,255,255,0.06)\';this.style.borderColor=\'rgba(255,255,255,0.12)\';this.style.color=\'rgba(255,255,255,0.45)\'">'
+        + '<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg>'
+      + '</button>'
+      + '<button onclick="_partMover(this,\'down\')" title="Mover para baixo" style="width:22px;height:22px;border-radius:6px;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.12);color:rgba(255,255,255,0.45);cursor:pointer;display:flex;align-items:center;justify-content:center;touch-action:manipulation;transition:0.15s;flex-shrink:0;font-size:10px;line-height:1;" onmouseenter="this.style.background=\'rgba(10,158,110,0.15)\';this.style.borderColor=\'rgba(10,158,110,0.4)\';this.style.color=\'#0A9E6E\'" onmouseleave="this.style.background=\'rgba(255,255,255,0.06)\';this.style.borderColor=\'rgba(255,255,255,0.12)\';this.style.color=\'rgba(255,255,255,0.45)\'">'
+        + '<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>'
+      + '</button>'
+      + '<button onclick="this.closest(\'.song-part\').remove(); broadcastEstado();" title="Remover seção" style="width:22px;height:22px;border-radius:50%;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.12);color:rgba(255,255,255,0.5);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:13px;line-height:1;touch-action:manipulation;transition:0.15s;flex-shrink:0;" onmouseenter="this.style.background=\'rgba(255,60,60,0.18)\';this.style.borderColor=\'rgba(255,60,60,0.4)\'" onmouseleave="this.style.background=\'rgba(255,255,255,0.06)\';this.style.borderColor=\'rgba(255,255,255,0.12)\'">&times;</button>'
     + '</div>';
   document.getElementById('notes-grid').appendChild(div);
   const ta = div.querySelector('textarea');
   ta.style.height = ta.scrollHeight + 'px';
-  // Ativa drag & drop via long press no handle
-  _partHandleInit(div);
 }
 
-// ─── Drag & Drop das seções — long press 1s no handle ────────────────────────
-var _partDragEl        = null;
-var _partDragTimer     = null;
-var _partDragActive    = false;
-var _partDragClone     = null;
-var _partDragOffY      = 0;
-var _partDragHandle    = null;
-var _partDragLastTarget = null;
-var _PART_LONGPRESS_MS  = 1000;
-
-function _partHandleInit(el) {
-  var handle = el.querySelector('.part-drag-handle');
-  if (!handle) return;
-
-  var _startX = 0, _startY = 0;
-
-  function onPressStart(x, y) {
-    _startX = x; _startY = y;
-    clearTimeout(_partDragTimer);
-    _partDragTimer = setTimeout(function() {
-      if (navigator.vibrate) navigator.vibrate(40);
-      handle.classList.add('drag-active');
-      _partDragStart(el, handle, y);
-    }, _PART_LONGPRESS_MS);
+function _partMover(btn, dir) {
+  var part  = btn.closest('.song-part');
+  var grid  = document.getElementById('notes-grid');
+  var parts = Array.from(grid.querySelectorAll('.song-part'));
+  var idx   = parts.indexOf(part);
+  if (dir === 'up' && idx > 0) {
+    grid.insertBefore(part, parts[idx - 1]);
+  } else if (dir === 'down' && idx < parts.length - 1) {
+    grid.insertBefore(parts[idx + 1], part);
   }
-
-  function onPressCancel() {
-    clearTimeout(_partDragTimer);
-    _partDragTimer = null;
-    if (!_partDragActive) handle.classList.remove('drag-active');
-  }
-
-  handle.addEventListener('touchstart', function(e) {
-    e.preventDefault();
-    var t = e.touches[0];
-    onPressStart(t.clientX, t.clientY);
-  }, { passive: false });
-
-  handle.addEventListener('touchmove', function(e) {
-    if (!_partDragActive) {
-      var t = e.touches[0];
-      if (Math.abs(t.clientX - _startX) > 10 || Math.abs(t.clientY - _startY) > 10) onPressCancel();
-    }
-  }, { passive: true });
-
-  handle.addEventListener('touchend', function() {
-    onPressCancel();
-    if (_partDragActive) _partDragEnd();
-  });
-
-  handle.addEventListener('touchcancel', function() {
-    onPressCancel();
-    _partDragCancel();
-  });
-
-  handle.addEventListener('mousedown', function(e) {
-    e.preventDefault();
-    onPressStart(e.clientX, e.clientY);
-  });
-
-  handle.addEventListener('mouseup', function() {
-    onPressCancel();
-    if (_partDragActive) _partDragEnd();
-  });
+  broadcastEstado();
 }
 
-// Listeners globais
-document.addEventListener('touchmove', function(e) {
-  if (!_partDragActive) return;
-  e.preventDefault();
-  _partDragMove(e.touches[0].clientY);
-}, { passive: false });
-
-document.addEventListener('mousemove', function(e) {
-  if (!_partDragActive) return;
-  _partDragMove(e.clientY);
-});
-
-document.addEventListener('mouseup', function() {
-  if (_partDragActive) _partDragEnd();
-});
-
-document.addEventListener('touchend', function() {
-  if (_partDragActive) _partDragEnd();
-});
-
-function _partDragStart(el, handle, y) {
-  _partDragEl     = el;
-  _partDragHandle = handle;
-  _partDragActive = true;
-
-  var rect = el.getBoundingClientRect();
-  _partDragOffY = y - rect.top;
-
-  // Clone visual
-  _partDragClone = el.cloneNode(true);
-  _partDragClone.style.cssText =
-    'position:fixed;top:' + rect.top + 'px;left:' + rect.left + 'px;' +
-    'width:' + rect.width + 'px;z-index:9999;pointer-events:none;opacity:0.85;' +
-    'transform:scale(1.02);' +
-    'box-shadow:0 20px 60px rgba(0,0,0,0.6),0 0 0 2px var(--accent-primary);' +
-    'border-left:5px solid var(--accent-primary);border-radius:12px;' +
-    'background:var(--bg-secondary);padding:15px;transition:none;box-sizing:border-box;';
-  document.body.appendChild(_partDragClone);
-  el.style.opacity = '0.25';
-}
-
-function _partDragMove(y) {
-  if (!_partDragActive || !_partDragClone) return;
-
-  // Move clone verticalmente
-  _partDragClone.style.top = (y - _partDragOffY) + 'px';
-
-  // Limpa indicadores
-  document.querySelectorAll('.song-part').forEach(function(p) {
-    p.classList.remove('drag-over', 'drag-over-up');
-  });
-
-  // Detecta alvo apenas por Y — funciona em qualquer layout
-  var parts = Array.from(document.querySelectorAll('.song-part'));
-  var target = null;
-  var before = true;
-
-  parts.forEach(function(p) {
-    if (p === _partDragEl) return;
-    var r = p.getBoundingClientRect();
-    if (y >= r.top && y <= r.bottom) {
-      target = p;
-      before = (y < r.top + r.height / 2);
-    }
-  });
-
-  // Se não achou alvo, usa o mais próximo por distância
-  if (!target) {
-    var minDist = Infinity;
-    parts.forEach(function(p) {
-      if (p === _partDragEl) return;
-      var r = p.getBoundingClientRect();
-      var mid = r.top + r.height / 2;
-      var dist = Math.abs(y - mid);
-      if (dist < minDist) {
-        minDist = dist;
-        target = p;
-        before = (y < mid);
-      }
-    });
-  }
-
-  if (target) {
-    target.classList.add(before ? 'drag-over-up' : 'drag-over');
-    _partDragLastTarget = { el: target, before: before };
-  } else {
-    _partDragLastTarget = null;
-  }
-}
-
-function _partDragEnd() {
-  if (!_partDragActive) return;
-  _partDragActive = false;
-
-  if (_partDragClone) { _partDragClone.remove(); _partDragClone = null; }
-  if (_partDragEl)    { _partDragEl.style.opacity = ''; }
-  if (_partDragHandle) { _partDragHandle.classList.remove('drag-active'); }
-
-  if (_partDragLastTarget) {
-    var grid = document.getElementById('notes-grid');
-    if (_partDragLastTarget.before) {
-      grid.insertBefore(_partDragEl, _partDragLastTarget.el);
-    } else {
-      grid.insertBefore(_partDragEl, _partDragLastTarget.el.nextSibling);
-    }
-    broadcastEstado();
-  }
-
-  document.querySelectorAll('.song-part').forEach(function(p) {
-    p.classList.remove('drag-over', 'drag-over-up');
-    p.style.transform = '';
-    p.style.marginTop = '';
-    p.style.marginBottom = '';
-  });
-
-  _partDragEl = null;
-  _partDragHandle = null;
-  _partDragLastTarget = null;
-}
-
-function _partDragCancel() {
-  _partDragActive = false;
-  if (_partDragClone) { _partDragClone.remove(); _partDragClone = null; }
-  if (_partDragEl)    { _partDragEl.style.opacity = ''; }
-  if (_partDragHandle) { _partDragHandle.classList.remove('drag-active'); }
-  document.querySelectorAll('.song-part').forEach(function(p) {
-    p.classList.remove('drag-over', 'drag-over-up');
-    p.style.transform = '';
-    p.style.marginTop = '';
-    p.style.marginBottom = '';
-  });
-  _partDragEl = null;
-  _partDragHandle = null;
-  _partDragLastTarget = null;
-}
-
-// ── Fim Drag & Drop seções ────────────────────────────────────────────────────
+// ── Fim organização das seções ────────────────────────────────────────────────
 
 function onChordInput(ta) {
   ta.style.height = ''; ta.style.height = ta.scrollHeight + 'px';
@@ -14794,8 +14594,8 @@ document.addEventListener('DOMContentLoaded', function() {
 
 // ── Fim Banner PWA ────────────────────────────────────────────────────────────
 
-// ─── Modal de Novidades ───────────────────────────────────────────────────────
-var _MAP_NOVIDADES_VER = '16'; // incrementar a cada versão
+// ─── Splash da Atualização 16 ─────────────────────────────────────────────────
+var _MAP_NOVIDADES_VER = '16';
 var _MAP_NOVIDADES_KEY = 'map_novidades_visto_v';
 
 function _mapNovidadesCheck() {
@@ -14805,97 +14605,147 @@ function _mapNovidadesCheck() {
 }
 
 function _mapNovidadesMostrar() {
-  var prev = document.getElementById('_novidades-modal');
+  var prev = document.getElementById('_novidades-splash');
   if (prev) prev.remove();
 
-  var overlay = document.createElement('div');
-  overlay.id = '_novidades-modal';
-  overlay.style.cssText =
-    'position:fixed;inset:0;z-index:200050;background:rgba(0,0,0,0.85);' +
-    'display:flex;align-items:center;justify-content:center;padding:20px;' +
-    'backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);' +
-    'opacity:0;transition:opacity 0.25s;';
+  var DURACAO = 15000;
+  var novidades = [
+    { icon: '🎹', txt: 'Drum Pad — 6 pads configuráveis com FX simultâneos' },
+    { icon: '↕',  txt: 'Reordenar Seções — arraste para reorganizar' },
+    { icon: '💬', txt: 'Chat Global — converse com todos os músicos' },
+    { icon: '🎸', txt: 'Afinador Rack — estilo equipamento profissional' },
+    { icon: '🌍', txt: 'Múltiplos Idiomas — PT, EN e ES' },
+    { icon: '📱', txt: 'Instalar como App — acesso direto na tela inicial' },
+  ];
 
-  overlay.innerHTML =
-    '<div style="background:#0d0d1a;border:1px solid rgba(138,92,246,0.3);border-radius:20px;' +
-    'width:100%;max-width:360px;overflow:hidden;box-shadow:0 24px 80px rgba(0,0,0,0.8);' +
-    'transform:translateY(20px);transition:transform 0.3s cubic-bezier(0.34,1.2,0.64,1);" id="_nov-box">' +
+  var splash = document.createElement('div');
+  splash.id = '_novidades-splash';
+  splash.style.cssText =
+    'position:fixed;inset:0;z-index:999999;overflow:hidden;' +
+    'background:#06060c;display:flex;flex-direction:column;align-items:center;justify-content:center;' +
+    'font-family:-apple-system,BlinkMacSystemFont,sans-serif;';
 
-      // Header
-      '<div style="background:linear-gradient(135deg,rgba(138,92,246,0.15),rgba(10,158,110,0.1));' +
-      'padding:20px 20px 16px;border-bottom:1px solid rgba(255,255,255,0.06);">' +
-        '<div style="display:flex;align-items:center;gap:10px;margin-bottom:6px;">' +
-          '<div style="width:32px;height:32px;border-radius:9px;background:rgba(138,92,246,0.2);' +
-          'border:1px solid rgba(138,92,246,0.4);display:flex;align-items:center;justify-content:center;">' +
-            '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#a78bfa" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>' +
-          '</div>' +
-          '<div>' +
-            '<div style="font-size:10px;font-weight:800;letter-spacing:2px;color:rgba(138,92,246,0.7);text-transform:uppercase;">Novidades</div>' +
-            '<div style="font-size:16px;font-weight:900;color:#fff;line-height:1.1;">Atualização 16</div>' +
-          '</div>' +
-        '</div>' +
-        '<div style="font-size:11px;color:rgba(255,255,255,0.35);">Map Music PRO · Elite Edition</div>' +
-      '</div>' +
+  splash.innerHTML =
+    // Fundo animado
+    '<div style="position:absolute;inset:0;background:radial-gradient(ellipse at 30% 20%,rgba(138,92,246,0.18) 0%,transparent 60%),' +
+      'radial-gradient(ellipse at 70% 80%,rgba(10,158,110,0.15) 0%,transparent 60%);pointer-events:none;"></div>' +
+    '<div id="_nov-particles" style="position:absolute;inset:0;pointer-events:none;overflow:hidden;"></div>' +
+
+    // Conteúdo central
+    '<div style="position:relative;z-index:2;display:flex;flex-direction:column;align-items:center;width:100%;max-width:420px;padding:0 28px;">' +
+
+      // Badge versão
+      '<div style="background:rgba(138,92,246,0.15);border:1px solid rgba(138,92,246,0.4);' +
+      'border-radius:999px;padding:6px 18px;font-size:11px;font-weight:800;letter-spacing:3px;' +
+      'color:#a78bfa;text-transform:uppercase;margin-bottom:20px;' +
+      'animation:_novFadeUp 0.6s ease both;">ATUALIZAÇÃO 16</div>' +
+
+      // Logo
+      '<div style="font-size:38px;font-weight:900;color:#fff;letter-spacing:-1px;margin-bottom:6px;' +
+      'animation:_novFadeUp 0.6s 0.1s ease both;">Map Music</div>' +
+      '<div style="font-size:13px;font-weight:700;letter-spacing:4px;color:rgba(10,158,110,0.8);' +
+      'text-transform:uppercase;margin-bottom:36px;animation:_novFadeUp 0.6s 0.2s ease both;">PRO · ELITE EDITION</div>' +
 
       // Lista de novidades
-      '<div style="padding:16px 20px;display:flex;flex-direction:column;gap:10px;">' +
-        _novItem('🎹', 'Drum Pad', 'Novo layout com 6 pads configuráveis, FX simultâneos e menu organizado') +
-        _novItem('↕', 'Reordenar Seções', 'Segure o ícone de 6 pontos para arrastar e reordenar as seções da música') +
-        _novItem('💬', 'Chat Global', 'Converse com todos os músicos do app em tempo real') +
-        _novItem('🎸', 'Afinador Rack', 'Afinador cromático estilo equipamento profissional com auto-avanço de cordas') +
-        _novItem('🌍', 'Múltiplos Idiomas', 'Suporte para Português, Inglês e Espanhol') +
-        _novItem('📱', 'Instalar como App', 'Adicione à tela inicial para acesso rápido sem o navegador') +
+      '<div id="_nov-lista" style="width:100%;display:flex;flex-direction:column;gap:10px;margin-bottom:40px;">' +
+        novidades.map(function(n, i) {
+          return '<div class="_nov-item" style="display:flex;align-items:center;gap:12px;' +
+            'background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.07);' +
+            'border-radius:12px;padding:11px 14px;opacity:0;transform:translateX(-20px);' +
+            'transition:opacity 0.4s ease,transform 0.4s ease;" data-idx="' + i + '">' +
+            '<span style="font-size:18px;flex-shrink:0;">' + n.icon + '</span>' +
+            '<span style="font-size:12px;font-weight:600;color:rgba(255,255,255,0.75);line-height:1.4;">' + n.txt + '</span>' +
+            '</div>';
+        }).join('') +
       '</div>' +
 
-      // Botão
-      '<div style="padding:0 20px 20px;">' +
-        '<button onclick="_mapNovidadesFechar()" ' +
-        'style="width:100%;padding:13px;border-radius:12px;' +
-        'background:rgba(138,92,246,0.18);border:1px solid rgba(138,92,246,0.4);' +
-        'color:#a78bfa;font-size:13px;font-weight:900;letter-spacing:0.5px;' +
-        'cursor:pointer;font-family:inherit;touch-action:manipulation;transition:0.18s;"' +
-        'onmouseenter="this.style.background=\'rgba(138,92,246,0.28)\'"' +
-        'onmouseleave="this.style.background=\'rgba(138,92,246,0.18)\'">' +
-          'Entendi! ✓' +
-        '</button>' +
+      // Barra de progresso
+      '<div style="width:100%;height:3px;background:rgba(255,255,255,0.08);border-radius:2px;margin-bottom:16px;overflow:hidden;">' +
+        '<div id="_nov-bar" style="height:100%;width:0%;background:linear-gradient(90deg,#8a5cf6,#0A9E6E);border-radius:2px;transition:width linear;"></div>' +
       '</div>' +
+
+      // Contador + botão pular
+      '<div style="display:flex;align-items:center;justify-content:space-between;width:100%;">' +
+        '<span id="_nov-timer" style="font-size:12px;color:rgba(255,255,255,0.25);font-weight:700;">15s</span>' +
+        '<button onclick="_mapNovidadesFechar()" ' +
+        'style="background:none;border:1px solid rgba(255,255,255,0.15);color:rgba(255,255,255,0.4);' +
+        'padding:7px 18px;border-radius:999px;font-size:11px;font-weight:700;letter-spacing:1px;' +
+        'cursor:pointer;font-family:inherit;touch-action:manipulation;transition:0.18s;" ' +
+        'onmouseenter="this.style.borderColor=\'rgba(255,255,255,0.35)\';this.style.color=\'rgba(255,255,255,0.7)\'" ' +
+        'onmouseleave="this.style.borderColor=\'rgba(255,255,255,0.15)\';this.style.color=\'rgba(255,255,255,0.4)\'">PULAR</button>' +
+      '</div>' +
+
     '</div>';
 
-  document.body.appendChild(overlay);
+  // CSS das animações
+  var style = document.createElement('style');
+  style.textContent =
+    '@keyframes _novFadeUp{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:translateY(0)}}' +
+    '@keyframes _novFloat{0%,100%{transform:translateY(0)}50%{transform:translateY(-8px)}}' +
+    '@keyframes _novParticle{0%{opacity:0;transform:translateY(0) scale(0)}20%{opacity:0.6}80%{opacity:0.2}100%{opacity:0;transform:translateY(-120px) scale(0.5)}}';
+  splash.appendChild(style);
 
-  // Anima entrada
-  requestAnimationFrame(function() {
-    requestAnimationFrame(function() {
-      overlay.style.opacity = '1';
-      var box = document.getElementById('_nov-box');
-      if (box) box.style.transform = 'translateY(0)';
+  document.body.appendChild(splash);
+
+  // Partículas de fundo
+  var particles = document.getElementById('_nov-particles');
+  for (var p = 0; p < 18; p++) {
+    (function() {
+      var dot = document.createElement('div');
+      var size = 2 + Math.random() * 4;
+      var colors = ['#8a5cf6','#0A9E6E','#38bdf8','#f472b6'];
+      dot.style.cssText =
+        'position:absolute;border-radius:50%;' +
+        'width:' + size + 'px;height:' + size + 'px;' +
+        'background:' + colors[Math.floor(Math.random() * colors.length)] + ';' +
+        'left:' + (5 + Math.random() * 90) + '%;' +
+        'top:' + (20 + Math.random() * 60) + '%;' +
+        'animation:_novParticle ' + (3 + Math.random() * 4) + 's ' + (Math.random() * 3) + 's ease-in-out infinite;';
+      particles.appendChild(dot);
+    })();
+  }
+
+  // Anima itens da lista com delay
+  setTimeout(function() {
+    var items = splash.querySelectorAll('._nov-item');
+    items.forEach(function(item, i) {
+      setTimeout(function() {
+        item.style.opacity = '1';
+        item.style.transform = 'translateX(0)';
+      }, i * 220);
     });
-  });
-}
+  }, 600);
 
-function _novItem(icon, titulo, desc) {
-  return '<div style="display:flex;gap:10px;align-items:flex-start;">' +
-    '<div style="width:28px;height:28px;border-radius:8px;background:rgba(255,255,255,0.04);' +
-    'border:1px solid rgba(255,255,255,0.07);display:flex;align-items:center;justify-content:center;' +
-    'flex-shrink:0;font-size:13px;">' + icon + '</div>' +
-    '<div>' +
-      '<div style="font-size:12px;font-weight:800;color:#fff;margin-bottom:2px;">' + titulo + '</div>' +
-      '<div style="font-size:10px;color:rgba(255,255,255,0.35);line-height:1.4;">' + desc + '</div>' +
-    '</div>' +
-  '</div>';
+  // Barra de progresso e contador
+  var bar     = document.getElementById('_nov-bar');
+  var timer   = document.getElementById('_nov-timer');
+  var elapsed = 0;
+  var interval = setInterval(function() {
+    elapsed += 100;
+    var pct = Math.min(100, (elapsed / DURACAO) * 100);
+    if (bar) bar.style.width = pct + '%';
+    var restante = Math.ceil((DURACAO - elapsed) / 1000);
+    if (timer) timer.textContent = restante + 's';
+    if (elapsed >= DURACAO) {
+      clearInterval(interval);
+      _mapNovidadesFechar();
+    }
+  }, 100);
+
+  splash._novInterval = interval;
 }
 
 function _mapNovidadesFechar() {
   localStorage.setItem(_MAP_NOVIDADES_KEY + _MAP_NOVIDADES_VER, '1');
-  var overlay = document.getElementById('_novidades-modal');
-  if (!overlay) return;
-  overlay.style.opacity = '0';
-  var box = document.getElementById('_nov-box');
-  if (box) box.style.transform = 'translateY(20px)';
-  setTimeout(function() { if (overlay.parentNode) overlay.remove(); }, 280);
+  var splash = document.getElementById('_novidades-splash');
+  if (!splash) return;
+  if (splash._novInterval) clearInterval(splash._novInterval);
+  splash.style.transition = 'opacity 0.5s';
+  splash.style.opacity = '0';
+  setTimeout(function() { if (splash.parentNode) splash.remove(); }, 520);
 }
 
-// ── Fim Modal de Novidades ────────────────────────────────────────────────────
+// ── Fim Splash Atualização ────────────────────────────────────────────────────
 function dcPararTudo() {}
 function dcMudarOitava(v) {}
 const dcPadNodes = {};
