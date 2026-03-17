@@ -6606,11 +6606,11 @@ body.auth-pending #toast {
       </div>
       <div id="login-msg" style="font-size:12px;color:#ff5555;min-height:18px;margin-top:-8px;text-align:center;"></div>
       <button class="ob-cta" id="btn-login" onclick="obFazerLogin()" disabled style="margin-top:8px;">Entrar</button>
-      <button onclick="obMostrarAba('cadastro')"
+      <button id="ob-link-criar" onclick="obMostrarAba('cadastro')"
         style="width:100%;background:none;border:none;color:rgba(255,255,255,0.35);font-size:12px;font-family:inherit;cursor:pointer;padding:12px;margin-top:4px;">
         Não tem conta? <span style="color:#0A9E6E;font-weight:700;">Criar conta</span>
       </button>
-      <button onclick="obAbrirEsqueciSenha()"
+      <button id="ob-link-esqueci" onclick="obAbrirEsqueciSenha()"
         style="width:100%;background:none;border:none;color:rgba(255,255,255,0.35);font-size:12px;font-family:inherit;cursor:pointer;padding:10px;touch-action:manipulation;">
         Esqueci a senha
       </button>
@@ -24959,6 +24959,10 @@ var _i18n = {
     'ob.btn.login':      'Entrar',
     'ob.btn.register':   'Criar conta',
     'ob.forgot':         'Esqueceu a senha?',
+    'ob.link.create':    'Não tem conta? Criar conta',
+    'ob.placeholder.email': 'seu@email.com',
+    'ob.label.password2': 'Confirmar senha',
+    'ob.btn.continue':   'Continuar',
     // Header/Menu
     'menu.profile':      'Meu Perfil',
     'menu.library':      'Biblioteca',
@@ -25010,6 +25014,10 @@ var _i18n = {
     'ob.btn.login':      'Sign in',
     'ob.btn.register':   'Create account',
     'ob.forgot':         'Forgot password?',
+    'ob.link.create':    "Don't have an account? Sign up",
+    'ob.placeholder.email': 'your@email.com',
+    'ob.label.password2': 'Confirm password',
+    'ob.btn.continue':   'Continue',
     'menu.profile':      'My Profile',
     'menu.library':      'Library',
     'menu.drumpad':      'Drum Pad',
@@ -25055,6 +25063,10 @@ var _i18n = {
     'ob.btn.login':      'Iniciar sesión',
     'ob.btn.register':   'Crear cuenta',
     'ob.forgot':         '¿Olvidaste tu contraseña?',
+    'ob.link.create':    '¿No tienes cuenta? Crear cuenta',
+    'ob.placeholder.email': 'tu@correo.com',
+    'ob.label.password2': 'Confirmar contraseña',
+    'ob.btn.continue':   'Continuar',
     'menu.profile':      'Mi Perfil',
     'menu.library':      'Biblioteca',
     'menu.drumpad':      'Drum Pad',
@@ -25171,19 +25183,329 @@ function obSelecionarIdioma(lang) {
 }
 
 function _i18nAplicarOnboarding() {
-  // Aplica traduções nos elementos do onboarding
-  var el;
-  el = document.getElementById('ob-tagline');
+  // Tagline
+  var el = document.getElementById('ob-tagline');
   if (el) el.innerHTML = t('ob.tagline') + '<br><span style="font-size:9px;color:rgba(255,255,255,0.15);letter-spacing:0.8px;font-weight:300;">por Jurandir Neto</span>';
-  el = document.getElementById('tab-login');
-  if (el) el.textContent = t('ob.tab.login');
-  el = document.getElementById('tab-cadastro');
-  if (el) el.textContent = t('ob.tab.register');
+
+  // Abas
+  el = document.getElementById('tab-login');    if (el) el.textContent = t('ob.tab.login');
+  el = document.getElementById('tab-cadastro'); if (el) el.textContent = t('ob.tab.register');
+
+  // Login
+  var lblEmail = document.querySelector('#ob-painel-login .ob-label');
+  if (lblEmail) lblEmail.textContent = t('ob.label.email');
+  var lblSenha = document.querySelectorAll('#ob-painel-login .ob-label')[1];
+  if (lblSenha) lblSenha.textContent = t('ob.label.password');
+  el = document.getElementById('login-email');
+  if (el) el.placeholder = t('ob.placeholder.email') || 'seu@email.com';
   el = document.getElementById('btn-login');
   if (el) el.textContent = t('ob.btn.login');
+
+  // Links do login
+  var links = document.querySelectorAll('#ob-painel-login button:not(.ob-cta):not(#btn-login)');
+  // "Não tem conta? Criar conta" e "Esqueci a senha"
+  _i18nSetText('ob-link-criar', t('ob.link.create') || (t('ob.tab.register')));
+  _i18nSetText('ob-link-esqueci', t('ob.forgot'));
+
+  // Cadastro — labels
+  var lblsCad = document.querySelectorAll('#ob-painel-cadastro .ob-label');
+  var cadLabels = [
+    t('ob.label.name'),
+    t('ob.label.email'),
+    t('ob.label.password'),
+    t('ob.label.password2') || t('ob.label.password')
+  ];
+  lblsCad.forEach(function(lbl, i) { if (cadLabels[i]) lbl.textContent = cadLabels[i]; });
+  el = document.getElementById('ob-btn-verificar');
+  if (el && el.textContent.trim()) el.textContent = t('ob.btn.continue') || t('ob.btn.register');
+
+  // Botão criar conta
+  var btnCriar = document.getElementById('ob-btn-criar');
+  if (btnCriar) btnCriar.textContent = t('ob.btn.register');
 }
 
-// ── Fim i18n onboarding ───────────────────────────────────────────────────────
+function _i18nSetText(id, txt) {
+  var el = document.getElementById(id);
+  if (el && txt) el.textContent = txt;
+}
+
+// ── Tradução automática — varredura do DOM ────────────────────────────────────
+var _i18nDict = {
+  en: {
+    'A ferramenta profissional para músicos ao vivo': 'The professional tool for live musicians',
+    'Adicionar Pad': 'Add Pad',
+    'Adicionar ao Evento': 'Add to Event',
+    'Adicionar à tela inicial': 'Add to home screen',
+    'Adicione à tela inicial para acesso rápido': 'Add to home screen for quick access',
+    'Administração': 'Administration',
+    'Afinador de Bateria': 'Drum Tuner',
+    'Afinação': 'Tuning',
+    'Agora não': 'Not now',
+    'Ajuste as abraçadeiras e repita até acertar': 'Adjust the lugs and repeat until in tune',
+    'Afinador de Bateria': 'Drum Tuner',
+    'BPM médio': 'Average BPM',
+    'Balanço Estéreo': 'Stereo Balance',
+    'Biblioteca': 'Library',
+    'Busca músicos pelo nome acima': 'Search musicians by name above',
+    'Buscando sugestões...': 'Searching suggestions...',
+    'Buscando usuários...': 'Searching users...',
+    'Buscar': 'Search',
+    'Buscar arquivo .txt': 'Browse .txt file',
+    'Buscar letra': 'Search lyrics',
+    'Buscar no Google': 'Search on Google',
+    'Buscar no YouTube →': 'Search on YouTube →',
+    'Busque e leia letras de músicas gospel': 'Browse and read gospel song lyrics',
+    'Busque músicas e salve as que gostar': 'Browse songs and save your favorites',
+    'Cancelar': 'Cancel',
+    'Cante uma música por ~5 segundos.': 'Sing a song for ~5 seconds.',
+    'Carregar nas Seções': 'Load into Sections',
+    'Configurar API para busca avançada': 'Configure API for advanced search',
+    'Copiar Código': 'Copy Code',
+    'Cria eventos no app principal para vê-los aqui': 'Create events in the main app to see them here',
+    'Criar Sala': 'Create Room',
+    'Criar conta': 'Create account',
+    'Criar senha (mín. 6 caracteres)': 'Create password (min. 6 characters)',
+    'Crie eventos no app principal e eles aparecerão aqui': 'Create events in the main app and they will appear here',
+    'Crie eventos para organizar repertórios': 'Create events to organize setlists',
+    'Código de acesso': 'Access code',
+    'Código incorreto. Tente novamente.': 'Incorrect code. Try again.',
+    'Digite o código de acesso fornecido pelo administrador.': 'Enter the access code provided by the administrator.',
+    'Editar': 'Edit',
+    'Editar Frases': 'Edit Phrases',
+    'Editar Música': 'Edit Song',
+    'Encerrar Sala': 'Close Room',
+    'Entrar': 'Sign in',
+    'Entrar na Sala': 'Join Room',
+    'Enviar': 'Send',
+    'Enviar email': 'Send email',
+    'Enviar mensagem': 'Send message',
+    'Enviar para todos': 'Send to all',
+    'Equalizer Paramétrico · 5 Bandas': 'Parametric Equalizer · 5 Bands',
+    'Espaço': 'Space',
+    'Espaço Vocalista': 'Vocalist Space',
+    'Eventos': 'Events',
+    'Excluir Conta': 'Delete Account',
+    'Exercício 4-4-4': 'Exercise 4-4-4',
+    'Exercícios para vocalistas gospel': 'Exercises for gospel vocalists',
+    'Exercícios vocais diários': 'Daily vocal exercises',
+    'Fechar': 'Close',
+    'Firebase indisponível': 'Server unavailable',
+    'Frequências de referência': 'Reference frequencies',
+    'Gera um código e convida músicos': 'Generates a code and invites musicians',
+    'Gestão de usuários': 'User management',
+    'Gestão de usuários e plataforma': 'User and platform management',
+    'Grave e ouça': 'Record and listen',
+    'Guia de Afinação': 'Tuning Guide',
+    'Histórico de Shows': 'Show History',
+    'Impede acesso até ser restaurado': 'Blocks access until restored',
+    'Importar Cifra': 'Import Chart',
+    'Insere o código de 4 dígitos': 'Enter the 4-digit code',
+    'Insere o código de 4 dígitos:': 'Enter the 4-digit code:',
+    'Já adicionada': 'Already added',
+    'Karaokê': 'Karaoke',
+    'Letra não encontrada': 'Lyrics not found',
+    'Letras e tonalidades que você guardou': 'Lyrics and keys you saved',
+    'Limpar': 'Clear',
+    'Limpar tudo': 'Clear all',
+    'Log de ações': 'Action log',
+    'Modo offline': 'Offline mode',
+    'Música': 'Song',
+    'Música atual': 'Current song',
+    'Músicas': 'Songs',
+    'Nenhum usuário cadastrado': 'No users registered',
+    'Nenhuma ação registrada ainda.': 'No actions recorded yet.',
+    'Nenhuma música neste evento': 'No songs in this event',
+    'Nenhuma música salva': 'No songs saved',
+    'Nenhuma solicitação pendente': 'No pending requests',
+    'Nome de usuário': 'Username',
+    'Notificações': 'Notifications',
+    'Notificações bloqueadas': 'Notifications blocked',
+    'O indicador mostra se está abaixo, no ponto ou acima': 'The indicator shows if below, on point or above',
+    'O que você vai usar': 'What will you use',
+    'O scroll automático será parado.': 'Auto scroll will be stopped.',
+    'O teu código de sala:': 'Your room code:',
+    'Ouça antes de cantar': 'Listen before singing',
+    'PIN de acesso rápido (4 dígitos)': 'Quick access PIN (4 digits)',
+    'Para músicos ao vivo': 'For live musicians',
+    'Parar': 'Stop',
+    'Perfil': 'Profile',
+    'Português': 'Portuguese',
+    'Próxima música': 'Next song',
+    'Referências de grandes bateristas': 'References from great drummers',
+    'Respiração': 'Breathing',
+    'Respiração diafragmática': 'Diaphragmatic breathing',
+    'Rolagem': 'Scroll',
+    'Sair do Perfil': 'Sign out',
+    'Sala Ativa': 'Active Room',
+    'Sala ao vivo': 'Live Room',
+    'Sala de Sincronia': 'Sync Room',
+    'Salvar': 'Save',
+    'Salve músicas para vê-las aqui': 'Save songs to see them here',
+    'Salve sua primeira música': 'Save your first song',
+    'Selecione o tom ideal para suas músicas': 'Select the ideal key for your songs',
+    'Sem conexão com a internet': 'No internet connection',
+    'Sem conexão — usando dados locais': 'Offline — using local data',
+    'Sem músicas': 'No songs',
+    'Sem notificações de momento': 'No notifications at the moment',
+    'Sem vídeos cadastrados': 'No videos registered',
+    'Sugestões por Voz': 'Voice Suggestions',
+    'Tente buscar pelo nome da música ou artista': 'Try searching by song name or artist',
+    'Tente o nome em português ou inglês': 'Try the name in Portuguese or English',
+    'Tocar no Show': 'Play at Show',
+    'Tom Médio': 'Mid Tom',
+    'Tom detectado da música': 'Detected song key',
+    'Tom do Clique · Metrônomo': 'Click Tone · Metronome',
+    'Toque em "Iniciar Microfone" e permita o acesso': 'Tap "Start Microphone" and allow access',
+    'Toque em + para adicionar músicas': 'Tap + to add songs',
+    'Técnicas Vocais': 'Vocal Techniques',
+    'Técnicas e exercícios vocais': 'Vocal techniques and exercises',
+    'Título (opcional)': 'Title (optional)',
+    'Usuários': 'Users',
+    'Verifique sua conexão': 'Check your connection',
+    'Violão': 'Guitar',
+    'Voltar': 'Back',
+    'Vídeos': 'Videos',
+    // Onboarding
+    'Não tem conta?': "Don't have an account?",
+    'Criar conta': 'Create account',
+    'Esqueci a senha': 'Forgot password',
+    'Testar conexão com servidor': 'Test server connection',
+    'Email': 'Email',
+    'Senha': 'Password',
+    'Instrumento': 'Instrument',
+    // Metrônomo
+    'INICIAR': 'START',
+    'PARAR': 'STOP',
+    'Rolagem': 'Scroll',
+    // Modo show
+    'MODO SHOW': 'SHOW MODE',
+    'SAIR DO SHOW': 'EXIT SHOW',
+    // Sala
+    'Sincronize cifras e andamento com outros músicos em tempo real.': 'Sync chords and tempo with other musicians in real time.',
+    'Insere o código de 4 dígitos': 'Enter the 4-digit code',
+    'Os espectadores visualizam em tempo real, sem editar': 'Viewers see in real time, without editing',
+    // Menu
+    'Meu Perfil': 'My Profile',
+    'Drum Pad': 'Drum Pad',
+    'Pads': 'Pads',
+    'Estatísticas': 'Statistics',
+    'Áudio': 'Audio',
+    'Chat Global': 'Global Chat',
+    'Limpar Seção': 'Clear Section',
+    '+ PARTE': '+ SECTION',
+  },
+  es: {
+    'A ferramenta profissional para músicos ao vivo': 'La herramienta profesional para músicos en vivo',
+    'Adicionar Pad': 'Agregar Pad',
+    'Adicionar ao Evento': 'Agregar al Evento',
+    'Adicionar à tela inicial': 'Agregar a la pantalla de inicio',
+    'Adicione à tela inicial para acesso rápido': 'Agrega a la pantalla de inicio para acceso rápido',
+    'Administração': 'Administración',
+    'Afinador de Bateria': 'Afinador de Batería',
+    'Afinação': 'Afinación',
+    'Agora não': 'Ahora no',
+    'Ajuste as abraçadeiras e repita até acertar': 'Ajusta los aros y repite hasta afinar',
+    'BPM médio': 'BPM promedio',
+    'Balanço Estéreo': 'Balance Estéreo',
+    'Biblioteca': 'Biblioteca',
+    'Buscar': 'Buscar',
+    'Buscar letra': 'Buscar letra',
+    'Cancelar': 'Cancelar',
+    'Copiar Código': 'Copiar Código',
+    'Criar Sala': 'Crear Sala',
+    'Criar conta': 'Crear cuenta',
+    'Código de acesso': 'Código de acceso',
+    'Editar': 'Editar',
+    'Editar Frases': 'Editar Frases',
+    'Editar Música': 'Editar Canción',
+    'Encerrar Sala': 'Cerrar Sala',
+    'Entrar': 'Iniciar sesión',
+    'Entrar na Sala': 'Unirse a la Sala',
+    'Enviar': 'Enviar',
+    'Eventos': 'Eventos',
+    'Excluir Conta': 'Eliminar Cuenta',
+    'Fechar': 'Cerrar',
+    'Guia de Afinação': 'Guía de Afinación',
+    'Histórico de Shows': 'Historial de Shows',
+    'Importar Cifra': 'Importar Cifra',
+    'Limpar': 'Limpiar',
+    'Limpar tudo': 'Limpiar todo',
+    'Música': 'Canción',
+    'Músicas': 'Canciones',
+    'Nome de usuário': 'Nombre de usuario',
+    'Notificações': 'Notificaciones',
+    'Parar': 'Parar',
+    'Perfil': 'Perfil',
+    'Próxima música': 'Siguiente canción',
+    'Rolagem': 'Desplazar',
+    'Sair do Perfil': 'Cerrar sesión',
+    'Sala de Sincronia': 'Sala de Sincronía',
+    'Salvar': 'Guardar',
+    'Voltar': 'Volver',
+    'Vídeos': 'Videos',
+    'Eventos': 'Eventos',
+    'Biblioteca': 'Biblioteca',
+    'Estatísticas': 'Estadísticas',
+    'Chat Global': 'Chat Global',
+    'Meu Perfil': 'Mi Perfil',
+    'Áudio': 'Audio',
+    'Limpar Seção': 'Limpiar Sección',
+    'MODO SHOW': 'MODO SHOW',
+    'SAIR DO SHOW': 'SALIR DEL SHOW',
+    'INICIAR': 'INICIAR',
+    'PARAR': 'PARAR',
+    '+ PARTE': '+ SECCIÓN',
+    'Não tem conta?': '¿No tienes cuenta?',
+    'Criar conta': 'Crear cuenta',
+    'Esqueci a senha': 'Olvidé mi contraseña',
+    'Email': 'Correo',
+    'Senha': 'Contraseña',
+    'Instrumento': 'Instrumento',
+    'Sincronize cifras e andamento com outros músicos em tempo real.': 'Sincroniza acordes y tempo con otros músicos en tiempo real.',
+  }
+};
+
+// Aplica tradução varrendo o DOM
+function _i18nAplicarDOM() {
+  if (_i18nLang === 'pt') return; // PT é o padrão, não precisa varrer
+  var dict = _i18nDict[_i18nLang];
+  if (!dict) return;
+
+  // Traduz nós de texto
+  function traduzirNo(node) {
+    if (node.nodeType === 3) { // TEXT_NODE
+      var txt = node.textContent.trim();
+      if (txt && dict[txt]) {
+        node.textContent = node.textContent.replace(txt, dict[txt]);
+      }
+    } else if (node.nodeType === 1 && !['SCRIPT','STYLE','INPUT','TEXTAREA'].includes(node.tagName)) {
+      // Traduz placeholder de inputs
+      if (node.tagName === 'INPUT' || node.tagName === 'TEXTAREA') {
+        if (node.placeholder && dict[node.placeholder]) {
+          node.placeholder = dict[node.placeholder];
+        }
+      }
+      node.childNodes.forEach(traduzirNo);
+    }
+  }
+
+  // Traduz placeholders
+  document.querySelectorAll('input[placeholder], textarea[placeholder]').forEach(function(el) {
+    if (dict[el.placeholder]) el.placeholder = dict[el.placeholder];
+  });
+
+  // Varre o body
+  traduzirNo(document.body);
+}
+
+// Chama após app carregar
+document.addEventListener('DOMContentLoaded', function() {
+  setTimeout(function() {
+    if (_i18nLang !== 'pt') _i18nAplicarDOM();
+  }, 500);
+});
+
+// ── Fim tradução automática ───────────────────────────────────────────────────
 function _antiGhostClick() {
   var targets = [
     document.getElementById('biblioteca-overlay'),
