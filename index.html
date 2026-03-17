@@ -4555,7 +4555,6 @@ body { font-family: -apple-system, 'Inter', BlinkMacSystemFont, 'Segoe UI', sans
   transition: transform 0.14s cubic-bezier(0.34,1.4,0.64,1),
               box-shadow 0.14s ease, border-color 0.2s, opacity 0.18s;
   will-change: transform;
-  touch-action: pan-y;
 }
 .song-part:focus-within {
   transform: translateY(-2px);
@@ -4571,22 +4570,21 @@ body { font-family: -apple-system, 'Inter', BlinkMacSystemFont, 'Segoe UI', sans
 }
 .song-part.drag-over { transform: translateY(6px) !important; transition: transform 0.15s ease !important; }
 .song-part.drag-over-up { transform: translateY(-6px) !important; transition: transform 0.15s ease !important; }
-/* Handle de drag — canto direito, sempre visível e sutil */
-.drag-handle {
-  position: absolute; top: 50%; right: 10px;
+/* Handle de drag das seções — canto direito, sempre visível e sutil */
+.part-drag-handle {
+  position: absolute; top: 50%; right: 8px;
   transform: translateY(-50%);
-  width: 28px; height: 28px;
+  width: 32px; height: 44px;
   display: flex; align-items: center; justify-content: center;
   cursor: grab; z-index: 5;
-  color: rgba(255,255,255,0.18);
-  border-radius: 6px;
+  color: rgba(255,255,255,0.35);
+  border-radius: 8px;
   transition: color 0.2s, background 0.2s;
   touch-action: none;
   -webkit-user-select: none; user-select: none;
 }
-.drag-handle:hover { color: rgba(255,255,255,0.45); background: rgba(255,255,255,0.06); }
-.drag-handle.drag-active { color: var(--accent-primary); background: rgba(10,158,110,0.12); cursor: grabbing; }
-.song-part.drag-ready { border-left-color: rgba(10,158,110,0.8); }
+.part-drag-handle:hover { color: rgba(255,255,255,0.6); background: rgba(255,255,255,0.07); }
+.part-drag-handle.drag-active { color: var(--accent-primary); background: rgba(10,158,110,0.12); cursor: grabbing; }
 .chord-area { font-family: 'Monaco', monospace; font-size: 19px; font-weight: 700; color: var(--note-color); background: none; border: none; width: 100%; resize: none; outline: none; margin-top: 10px; line-height: 1.4; }
 
 /* METRÔNOMO */
@@ -10023,33 +10021,45 @@ function mostrarHarmonic(textarea, acordes) {
       <span class="hp-chord-degree">${c.grau}</span>
     </div>`).join('');
 
-  // Posiciona o popup usando apenas getBoundingClientRect — funciona corretamente
-  // no iOS com teclado aberto pois usa coordenadas da viewport sem scrollY
+  popup.classList.add('visible');
+  activeTextarea = textarea;
+
   const posicionarPopup = function() {
-    const rect = textarea.getBoundingClientRect();
-    const popupH = popup.offsetHeight || 170;
-    const margin = 8;
+    // Usa a seção pai (.song-part) como referência — mais estável que o textarea
+    var refEl = textarea.closest('.song-part') || textarea;
+    const rect    = refEl.getBoundingClientRect();
+    const popupH  = popup.offsetHeight || 170;
+    const popupW  = popup.offsetWidth  || 280;
+    const margin  = 8;
+    const visH    = window.innerHeight; // já considera teclado no iOS
 
-    // Tenta posicionar acima da seção
+    // Sempre tenta acima da seção
     var top = rect.top - popupH - margin;
-    // Se não couber acima, coloca abaixo
-    if (top < 60) top = rect.bottom + margin;
-    // Garante que não saia da tela verticalmente
-    top = Math.max(60, Math.min(top, window.innerHeight - popupH - margin));
 
+    // Se não couber acima (muito perto do topo), coloca abaixo mas só se houver espaço
+    if (top < 60) {
+      var topAbaixo = rect.bottom + margin;
+      // Só vai abaixo se houver espaço suficiente antes do teclado
+      if (topAbaixo + popupH < visH * 0.6) {
+        top = topAbaixo;
+      } else {
+        // Não cabe nem acima nem abaixo — ancora no topo seguro
+        top = Math.max(60, rect.top - popupH - margin);
+      }
+    }
+
+    // Garante limites verticais
+    top = Math.max(60, Math.min(top, visH - popupH - margin));
+
+    // Posição horizontal — alinha com a seção
     var left = rect.left;
-    // Garante que não saia da tela horizontalmente
-    if (left + 280 > window.innerWidth - 10) left = window.innerWidth - 290;
+    if (left + popupW > window.innerWidth - 10) left = window.innerWidth - popupW - 10;
     left = Math.max(10, left);
 
     popup.style.top  = top + 'px';
     popup.style.left = left + 'px';
   };
 
-  popup.classList.add('visible');
-  activeTextarea = textarea;
-
-  // Posiciona imediatamente e depois de um frame (garante offsetHeight correto)
   posicionarPopup();
   requestAnimationFrame(posicionarPopup);
 }
@@ -10158,10 +10168,10 @@ function addPart(title = "PARTE", content = "") {
   div.className = 'song-part';
   var _esc = function(s){ return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); };
   div.innerHTML =
-    '<input type="text" value="' + _esc(title) + '" class="part-title-input" style="background:none;border:none;color:var(--accent-primary);font-weight:900;font-size:11px;width:calc(100% - 70px);outline:none;text-transform:uppercase;" oninput="broadcastEstado()">'
+    '<input type="text" value="' + _esc(title) + '" class="part-title-input" style="background:none;border:none;color:var(--accent-primary);font-weight:900;font-size:11px;width:calc(100% - 80px);outline:none;text-transform:uppercase;" oninput="broadcastEstado()">'
     + '<textarea class="chord-area" oninput="onChordInput(this)" placeholder="C G Am F">' + _esc(content) + '</textarea>'
-    + '<button onclick="this.parentElement.remove(); broadcastEstado();" style="position:absolute;top:10px;right:42px;background:none;border:none;color:rgba(255,100,100,0.5);cursor:pointer;font-size:16px;line-height:1;padding:2px 4px;">&times;</button>'
-    + '<div class="drag-handle" title="Segurar para arrastar">'
+    + '<button onclick="this.parentElement.remove(); broadcastEstado();" style="position:absolute;top:10px;right:44px;background:none;border:none;color:rgba(255,100,100,0.5);cursor:pointer;font-size:16px;line-height:1;padding:2px 4px;">&times;</button>'
+    + '<div class="part-drag-handle" title="Segurar 1s para arrastar">'
       + '<svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><circle cx="9" cy="5" r="1.5"/><circle cx="15" cy="5" r="1.5"/><circle cx="9" cy="12" r="1.5"/><circle cx="15" cy="12" r="1.5"/><circle cx="9" cy="19" r="1.5"/><circle cx="15" cy="19" r="1.5"/></svg>'
     + '</div>';
   document.getElementById('notes-grid').appendChild(div);
@@ -10183,37 +10193,51 @@ var _partDragLastTarget = null;
 var _PART_LONGPRESS_MS  = 1000;
 
 function _partHandleInit(el) {
-  var handle = el.querySelector('.drag-handle');
+  var handle = el.querySelector('.part-drag-handle');
   if (!handle) return;
 
+  var _startX = 0, _startY = 0;
+
   function onPressStart(x, y) {
+    _startX = x; _startY = y;
     clearTimeout(_partDragTimer);
     _partDragTimer = setTimeout(function() {
       if (navigator.vibrate) navigator.vibrate(40);
       handle.classList.add('drag-active');
-      _partDragStart(el, handle, x, y);
+      _partDragStart(el, handle, _startX, _startY);
     }, _PART_LONGPRESS_MS);
   }
 
-  function onPressEnd() {
+  function onPressCancel() {
     clearTimeout(_partDragTimer);
     _partDragTimer = null;
     if (!_partDragActive) handle.classList.remove('drag-active');
   }
 
-  // Touch
+  // Touch — previne scroll durante o long press no handle
   handle.addEventListener('touchstart', function(e) {
     e.preventDefault();
-    onPressStart(e.touches[0].clientX, e.touches[0].clientY);
+    var t = e.touches[0];
+    onPressStart(t.clientX, t.clientY);
   }, { passive: false });
 
-  handle.addEventListener('touchend', function(e) {
-    onPressEnd();
+  handle.addEventListener('touchmove', function(e) {
+    // Cancela long press se mover muito antes do tempo
+    if (!_partDragActive) {
+      var t = e.touches[0];
+      var dx = Math.abs(t.clientX - _startX);
+      var dy = Math.abs(t.clientY - _startY);
+      if (dx > 10 || dy > 10) onPressCancel();
+    }
+  }, { passive: true });
+
+  handle.addEventListener('touchend', function() {
+    onPressCancel();
     if (_partDragActive) _partDragEnd();
   });
 
   handle.addEventListener('touchcancel', function() {
-    onPressEnd();
+    onPressCancel();
     _partDragCancel();
   });
 
@@ -10224,7 +10248,7 @@ function _partHandleInit(el) {
   });
 
   handle.addEventListener('mouseup', function() {
-    onPressEnd();
+    onPressCancel();
     if (_partDragActive) _partDragEnd();
   });
 }
