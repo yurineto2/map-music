@@ -4569,18 +4569,16 @@ body { font-family: -apple-system, 'Inter', BlinkMacSystemFont, 'Segoe UI', sans
   touch-action: none;
 }
 .song-part.drag-over { 
-  border-bottom: 4px solid var(--accent-primary) !important;
-  box-shadow: 0 6px 20px rgba(10,158,110,0.5), 0 0 0 1px rgba(10,158,110,0.2) !important;
-  transform: translateY(-3px) !important; 
-  transition: transform 0.12s ease, border 0.08s ease, box-shadow 0.12s ease !important; 
-  padding-bottom: 18px !important;
+  border-bottom: 3px solid var(--accent-primary) !important;
+  margin-bottom: 80px !important;
+  box-shadow: 0 6px 20px rgba(10,158,110,0.4) !important;
+  transition: margin-bottom 0.15s ease, border 0.08s ease !important; 
 }
 .song-part.drag-over-up { 
-  border-top: 4px solid var(--accent-primary) !important;
-  box-shadow: 0 -6px 20px rgba(10,158,110,0.5), 0 0 0 1px rgba(10,158,110,0.2) !important;
-  transform: translateY(3px) !important; 
-  transition: transform 0.12s ease, border 0.08s ease, box-shadow 0.12s ease !important;
-  padding-top: 18px !important;
+  border-top: 3px solid var(--accent-primary) !important;
+  margin-top: 80px !important;
+  box-shadow: 0 -6px 20px rgba(10,158,110,0.4) !important;
+  transition: margin-top 0.15s ease, border 0.08s ease !important;
 }
 /* Handle de drag das seções — canto direito, sempre visível e sutil */
 .part-drag-handle {
@@ -10182,7 +10180,7 @@ function addPart(title = "PARTE", content = "") {
   div.innerHTML =
     '<input type="text" value="' + _esc(title) + '" class="part-title-input" style="background:none;border:none;color:var(--accent-primary);font-weight:900;font-size:11px;width:calc(100% - 80px);outline:none;text-transform:uppercase;" oninput="broadcastEstado()">'
     + '<textarea class="chord-area" oninput="onChordInput(this)" placeholder="C G Am F">' + _esc(content) + '</textarea>'
-    + '<button onclick="this.parentElement.remove(); broadcastEstado();" style="position:absolute;top:10px;right:44px;background:none;border:none;color:rgba(255,100,100,0.5);cursor:pointer;font-size:16px;line-height:1;padding:2px 4px;">&times;</button>'
+    + '<button onclick="this.parentElement.remove(); broadcastEstado();" style="position:absolute;top:8px;right:44px;width:22px;height:22px;border-radius:50%;background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.15);color:rgba(255,255,255,0.6);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:13px;line-height:1;transition:background 0.15s,border-color 0.15s;touch-action:manipulation;" onmouseenter="this.style.background=\'rgba(255,60,60,0.18)\';this.style.borderColor=\'rgba(255,60,60,0.4)\'" onmouseleave="this.style.background=\'rgba(255,255,255,0.08)\';this.style.borderColor=\'rgba(255,255,255,0.15)\'">&times;</button>'
     + '<div class="part-drag-handle" title="Segurar 1s para arrastar">'
       + '<svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><circle cx="9" cy="5" r="1.5"/><circle cx="15" cy="5" r="1.5"/><circle cx="9" cy="12" r="1.5"/><circle cx="15" cy="12" r="1.5"/><circle cx="9" cy="19" r="1.5"/><circle cx="15" cy="19" r="1.5"/></svg>'
     + '</div>';
