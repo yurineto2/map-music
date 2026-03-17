@@ -387,6 +387,24 @@ window._DEBUG = (window.location.hostname === 'localhost' || window.location.hos
 
     _set, _get, _query, _add, _delete, _pollQuery,
 
+    async admCriarLinkSeguro(codigo, expTs) {
+      var chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+      var token = '';
+      for (var i = 0; i < 20; i++) token += chars[Math.floor(Math.random() * chars.length)];
+      var codigoHash = btoa(codigo + ':' + token.slice(0,6));
+      var dados = {
+        token: token,
+        codigoHash: codigoHash,
+        expiraEm: expTs,
+        usado: false,
+        criadoEm: Date.now(),
+        criadoPor: 'admin'
+      };
+      await _set('links_seguros/' + token, dados, false);
+      var baseUrl = window.location.href.split('?')[0].split('#')[0];
+      return baseUrl + '?lseg=' + token;
+    },
+
     async carregarPerfilPorUid(uid) {
       if (uid === 'admin_local' || uid === 'admin') return null;
       try {
@@ -3451,6 +3469,7 @@ body { font-family: -apple-system, 'Inter', BlinkMacSystemFont, 'Segoe UI', sans
 /* Card de evento — layout compacto */
 .biblioteca-grid.eventos-mode {
   grid-template-columns: 1fr;
+  align-content: start;
 }
 .evento-card {
   grid-column: 1 / -1;
@@ -3806,19 +3825,6 @@ body { font-family: -apple-system, 'Inter', BlinkMacSystemFont, 'Segoe UI', sans
   color: rgba(255,255,255,0.4); text-align: center;
   position: relative; z-index: 1; pointer-events: none; margin-top: 1px;
 }
-.dc-pad-import {
-  position: absolute; top: 4px; right: 4px;
-  width: 22px; height: 22px; border-radius: 6px;
-  background: rgba(0,0,0,0.4); border: 1px solid rgba(255,255,255,0.15);
-  display: flex; align-items: center; justify-content: center;
-  opacity: 0; transition: opacity 0.2s; z-index: 3; cursor: pointer;
-  /* Larger tap area via padding */
-  padding: 4px; box-sizing: content-box;
-}
-.dc-pad:hover .dc-pad-import { opacity: 1; }
-.dc-pad.has-sample .dc-pad-import {
-  opacity: 0.8; background: rgba(10,158,110,0.35); border-color: rgba(10,158,110,0.6);
-}
 .dc-pad[data-color="red"]    { background: linear-gradient(145deg,#7a1a1a,#3d0d0d); border-color:rgba(220,60,60,0.4); }
 .dc-pad[data-color="teal"]   { background: linear-gradient(145deg,#0d6655,#063d33); border-color:rgba(20,180,140,0.4); }
 .dc-pad[data-color="blue"]   { background: linear-gradient(145deg,#1a3a6a,#0d1f3d); border-color:rgba(60,120,220,0.4); }
@@ -4118,16 +4124,6 @@ body { font-family: -apple-system, 'Inter', BlinkMacSystemFont, 'Segoe UI', sans
 }
 
 /* Botão trocar pad no slot — canto superior direito */
-.dc-slot-swap {
-  position: absolute; top: 5px; right: 5px;
-  width: 20px; height: 20px; border-radius: 6px;
-  background: rgba(0,0,0,0.45); border: 1px solid rgba(255,255,255,0.15);
-  display: flex; align-items: center; justify-content: center;
-  opacity: 0; transition: opacity 0.18s; z-index: 3; cursor: pointer;
-  touch-action: manipulation;
-}
-.dc-pad:hover .dc-slot-swap { opacity: 1; }
-.dc-pad.has-pad-fx .dc-slot-swap { opacity: 0.6; }
 .dc-pad-longpress-ring {
   position: absolute; inset: 0; border-radius: inherit;
   border: 2px solid rgba(138,92,246,0.8);
@@ -4557,12 +4553,36 @@ body { font-family: -apple-system, 'Inter', BlinkMacSystemFont, 'Segoe UI', sans
   padding: 15px; border-left: 5px solid var(--accent-primary);
   position: relative;
   transition: transform 0.14s cubic-bezier(0.34,1.4,0.64,1),
-              box-shadow 0.14s ease, border-color 0.2s;
+              box-shadow 0.14s ease, border-color 0.2s, opacity 0.18s;
   will-change: transform;
+  touch-action: pan-y;
 }
 .song-part:focus-within {
   transform: translateY(-2px);
   box-shadow: 0 8px 32px rgba(0,0,0,0.35), 0 2px 8px rgba(0,0,0,0.2);
+}
+/* Estado de arrasto */
+.song-part.dragging {
+  opacity: 0.45;
+  transform: scale(1.02) rotate(1deg) !important;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.5), 0 0 0 2px var(--accent-primary) !important;
+  z-index: 1000; pointer-events: none;
+  touch-action: none;
+}
+.song-part.drag-over-top { border-top: 2.5px solid var(--accent-primary); padding-top: 13px; }
+.song-part.drag-over-bottom { border-bottom: 2.5px solid var(--accent-primary); padding-bottom: 13px; }
+/* Handle de drag — aparece no canto superior esquerdo no long press */
+.drag-handle {
+  position: absolute; top: 10px; left: -2px;
+  width: 20px; height: 20px;
+  display: flex; align-items: center; justify-content: center;
+  opacity: 0; transition: opacity 0.2s; cursor: grab; z-index: 2;
+  color: rgba(255,255,255,0.3);
+}
+.song-part.drag-ready .drag-handle { opacity: 1; }
+.song-part.drag-ready {
+  border-left-color: rgba(10,158,110,0.8);
+  box-shadow: 0 0 0 1px rgba(10,158,110,0.3);
 }
 .chord-area { font-family: 'Monaco', monospace; font-size: 19px; font-weight: 700; color: var(--note-color); background: none; border: none; width: 100%; resize: none; outline: none; margin-top: 10px; line-height: 1.4; }
 
@@ -5410,6 +5430,140 @@ body.theme-light .toast-info .toast-icon { background: rgba(0,0,0,0.05) !importa
   text-transform: uppercase; position: relative; z-index: 1;
 }
 .pad.playing .pad-type { color: rgba(10,158,110,0.6); }
+
+/* ── Afinador Rack ── */
+@keyframes tunerShock {
+  0%   { transform: translateY(-50%) translateX(0) rotate(0deg); }
+  10%  { transform: translateY(-50%) translateX(-3px) rotate(-2deg); }
+  20%  { transform: translateY(-50%) translateX(3px) rotate(2deg); }
+  30%  { transform: translateY(-50%) translateX(-4px) rotate(-1deg); }
+  40%  { transform: translateY(-50%) translateX(4px) rotate(1deg); }
+  50%  { transform: translateY(-50%) translateX(-2px) rotate(-1deg); }
+  60%  { transform: translateY(-50%) translateX(2px) rotate(0deg); }
+  70%  { transform: translateY(-50%) translateX(-1px) rotate(0deg); }
+  100% { transform: translateY(-50%) translateX(0) rotate(0deg); }
+}
+@keyframes tunerGlow {
+  0%,100% { box-shadow: 0 0 6px rgba(0,255,100,0.3); }
+  50%      { box-shadow: 0 0 14px rgba(0,255,100,0.7); }
+}
+#tuner-btn {
+  position: fixed; right: 0; top: 50%;
+  transform: translateY(-50%);
+  z-index: 3000;
+  width: 36px; height: 80px;
+  background: linear-gradient(180deg, #1a1a1a 0%, #111 50%, #1a1a1a 100%);
+  border: 1px solid rgba(255,255,255,0.12);
+  border-right: none;
+  border-radius: 10px 0 0 10px;
+  cursor: pointer;
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center; gap: 6px;
+  touch-action: manipulation;
+  box-shadow: -3px 0 12px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.08);
+}
+#tuner-btn::before, #tuner-btn::after {
+  content: '';
+  position: absolute; left: 50%; transform: translateX(-50%);
+  width: 6px; height: 6px; border-radius: 50%;
+  background: radial-gradient(circle, #333 30%, #1a1a1a 100%);
+  border: 1px solid rgba(255,255,255,0.1);
+}
+#tuner-btn::before { top: 6px; }
+#tuner-btn::after  { bottom: 6px; }
+#tuner-btn.shock { animation: tunerShock 0.5s ease-in-out; }
+.tuner-btn-label {
+  font-size: 6px; font-weight: 900; letter-spacing: 1.5px;
+  color: rgba(0,255,100,0.7); text-transform: uppercase;
+  writing-mode: vertical-rl; line-height: 1;
+}
+.tuner-btn-led {
+  width: 7px; height: 7px; border-radius: 50%;
+  background: #00ff64;
+  animation: tunerGlow 2s ease-in-out infinite;
+}
+#tuner-panel {
+  position: fixed; right: 36px; top: 50%;
+  transform: translateY(-50%) scaleX(0);
+  transform-origin: right center;
+  z-index: 2999;
+  width: min(300px, calc(100vw - 52px));
+  background: #0a0a0a;
+  border: 1px solid rgba(255,255,255,0.1);
+  border-right: none;
+  border-radius: 12px 0 0 12px;
+  box-shadow: -8px 0 32px rgba(0,0,0,0.8), inset 0 1px 0 rgba(255,255,255,0.06);
+  overflow: hidden;
+  transition: transform 0.25s cubic-bezier(0.34,1.2,0.64,1);
+  background-image: repeating-linear-gradient(0deg,transparent,transparent 3px,rgba(255,255,255,0.01) 3px,rgba(255,255,255,0.01) 4px);
+}
+#tuner-panel.open { transform: translateY(-50%) scaleX(1); }
+.tuner-rack-top {
+  background: linear-gradient(180deg,#1c1c1c,#141414);
+  border-bottom: 1px solid rgba(255,255,255,0.08);
+  padding: 10px 14px 8px;
+  display: flex; align-items: center; justify-content: space-between;
+}
+.tuner-rack-brand { font-size: 8px; font-weight: 900; letter-spacing: 3px; color: rgba(255,255,255,0.25); text-transform: uppercase; }
+.tuner-rack-model { font-size: 7px; font-weight: 700; letter-spacing: 2px; color: rgba(0,255,100,0.4); text-transform: uppercase; }
+.tuner-display {
+  background: #000; border: 1px solid rgba(0,255,100,0.15);
+  border-radius: 6px; margin: 10px 14px 8px; padding: 10px 14px;
+  display: flex; align-items: center; justify-content: space-between;
+  box-shadow: inset 0 2px 8px rgba(0,0,0,0.8);
+}
+.tuner-note-display {
+  font-family: 'Courier New', monospace;
+  font-size: 38px; font-weight: 900; color: #00ff64;
+  text-shadow: 0 0 10px rgba(0,255,100,0.6); letter-spacing: -1px; line-height: 1;
+  min-width: 70px;
+}
+.tuner-cents-val {
+  font-family: 'Courier New', monospace; font-size: 18px; font-weight: 700;
+  color: #00ff64; text-shadow: 0 0 8px rgba(0,255,100,0.5); display: block; line-height: 1;
+}
+.tuner-cents-label { font-size: 8px; font-weight: 700; letter-spacing: 2px; color: rgba(0,255,100,0.3); text-transform: uppercase; }
+.tuner-leds { display: flex; align-items: center; justify-content: center; gap: 3px; padding: 0 14px 10px; }
+.tuner-led {
+  width: 10px; height: 16px; border-radius: 2px;
+  background: #111; border: 1px solid rgba(255,255,255,0.06); transition: background 0.08s, box-shadow 0.08s;
+}
+.tuner-led.center { width: 14px; height: 22px; border-radius: 3px; }
+.tuner-led.on-red    { background: #ff2020; box-shadow: 0 0 6px rgba(255,32,32,0.8); }
+.tuner-led.on-yellow { background: #ffcc00; box-shadow: 0 0 6px rgba(255,204,0,0.8); }
+.tuner-led.on-green  { background: #00ff64; box-shadow: 0 0 8px rgba(0,255,100,0.9); }
+.tuner-section { padding: 0 14px 10px; }
+.tuner-section-label { font-size: 7px; font-weight: 900; letter-spacing: 2px; color: rgba(255,255,255,0.2); text-transform: uppercase; margin-bottom: 6px; }
+.tuner-chips { display: flex; gap: 4px; flex-wrap: wrap; }
+.tuner-chip {
+  background: #161616; border: 1px solid rgba(255,255,255,0.1);
+  color: rgba(255,255,255,0.35); font-size: 9px; font-weight: 800;
+  padding: 5px 9px; border-radius: 4px; cursor: pointer;
+  font-family: inherit; touch-action: manipulation; transition: 0.15s;
+}
+.tuner-chip.sel { background: rgba(0,255,100,0.12); border-color: rgba(0,255,100,0.4); color: #00ff64; box-shadow: 0 0 8px rgba(0,255,100,0.2); }
+.tuner-strings { display: flex; gap: 6px; padding: 0 14px 12px; justify-content: center; flex-wrap: wrap; }
+.tuner-string { display: flex; flex-direction: column; align-items: center; gap: 4px; cursor: pointer; touch-action: manipulation; }
+.tuner-string-led {
+  width: 30px; height: 30px; border-radius: 50%;
+  background: #161616; border: 1px solid rgba(255,255,255,0.1);
+  display: flex; align-items: center; justify-content: center;
+  font-family: 'Courier New', monospace; font-size: 11px; font-weight: 900;
+  color: rgba(255,255,255,0.3); transition: 0.2s;
+}
+.tuner-string.active .tuner-string-led { background: rgba(0,255,100,0.15); border-color: rgba(0,255,100,0.5); color: #00ff64; box-shadow: 0 0 10px rgba(0,255,100,0.4); }
+.tuner-string.tuned .tuner-string-led  { background: rgba(0,255,100,0.3); border-color: #00ff64; color: #00ff64; box-shadow: 0 0 14px rgba(0,255,100,0.7); }
+.tuner-string-name { font-size: 7px; font-weight: 700; color: rgba(255,255,255,0.2); letter-spacing: 0.5px; }
+.tuner-start-btn {
+  display: block; width: calc(100% - 28px); margin: 0 14px 14px;
+  background: rgba(0,255,100,0.08); border: 1px solid rgba(0,255,100,0.25);
+  color: rgba(0,255,100,0.7); font-size: 9px; font-weight: 900;
+  letter-spacing: 2px; text-transform: uppercase; padding: 9px;
+  border-radius: 6px; cursor: pointer; font-family: inherit; touch-action: manipulation; transition: 0.18s;
+}
+.tuner-start-btn.ativo { background: rgba(0,255,100,0.18); border-color: rgba(0,255,100,0.5); color: #00ff64; box-shadow: 0 0 12px rgba(0,255,100,0.2); }
+.tuner-vents { display: flex; gap: 2px; padding: 0 14px 10px; justify-content: flex-end; }
+.tuner-vent  { width: 20px; height: 3px; border-radius: 1px; background: rgba(255,255,255,0.04); }
 
 /* ── Chat Global ── */
 #modal-chat-global {
@@ -6712,6 +6866,52 @@ body.auth-pending #toast {
   </div>
 </div>
 
+<!-- AFINADOR RACK -->
+<button id="tuner-btn" onclick="toggleTuner()" title="Afinador">
+  <div class="tuner-btn-led"></div>
+  <span class="tuner-btn-label">TUNE</span>
+</button>
+
+<div id="tuner-panel">
+  <div class="tuner-rack-top">
+    <span class="tuner-rack-brand">Map Music</span>
+    <span class="tuner-rack-model">Chromatic Tuner</span>
+  </div>
+  <!-- Display digital -->
+  <div class="tuner-display">
+    <div class="tuner-note-display" id="tuner-note">--</div>
+    <div style="text-align:right;">
+      <span class="tuner-cents-val" id="tuner-cents">+00</span>
+      <span class="tuner-cents-label">cents</span>
+    </div>
+  </div>
+  <!-- Barra de LEDs -->
+  <div class="tuner-leds" id="tuner-leds"></div>
+  <!-- Instrumento -->
+  <div class="tuner-section">
+    <div class="tuner-section-label">Instrumento</div>
+    <div class="tuner-chips" id="tuner-inst-chips"></div>
+  </div>
+  <!-- Afinação -->
+  <div class="tuner-section">
+    <div class="tuner-section-label">Afinação</div>
+    <div class="tuner-chips" id="tuner-tune-chips"></div>
+  </div>
+  <!-- Cordas -->
+  <div class="tuner-section">
+    <div class="tuner-section-label">Cordas</div>
+    <div class="tuner-strings" id="tuner-strings"></div>
+  </div>
+  <!-- Botão iniciar -->
+  <button class="tuner-start-btn" id="tuner-start-btn" onclick="toggleTunerMic()">▶ Iniciar Afinação</button>
+  <!-- Ventilação decorativa -->
+  <div class="tuner-vents">
+    <div class="tuner-vent"></div><div class="tuner-vent"></div>
+    <div class="tuner-vent"></div><div class="tuner-vent"></div>
+    <div class="tuner-vent"></div>
+  </div>
+</div>
+
 <!-- CHAT GLOBAL -->
 <div id="modal-chat-global" ontouchend="if(event.target===this){event.preventDefault();fecharChatGlobal();}" onclick="if(event.target===this)fecharChatGlobal()">
   <div class="chat-global-sheet">
@@ -7374,20 +7574,30 @@ body.auth-pending #toast {
       <input type="range" class="dc-vol-slider" id="dc-vol-master" min="0" max="100" value="80"
         oninput="dcVolMaster(this.value)" style="-webkit-appearance:none;width:70px;height:3px;border-radius:2px;outline:none;cursor:pointer;background:rgba(255,255,255,0.12);">
     </div>
-    <!-- Botão adicionar pad no header -->
-    <button class="dc-header-fx-btn" id="dc-addpad-hdr-btn" onclick="dcAbrirAddPad()" title="Adicionar pad">
-      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-    </button>
-    <!-- Botão FX global -->
-    <button class="dc-header-fx-btn" id="dc-fx-hdr-btn" onclick="dcAbrirFxModal()">
-      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14M4.93 4.93a10 10 0 0 0 0 14.14"/></svg>
-      FX
-    </button>
-    <!-- Botão Stereo Split -->
-    <button class="dc-header-fx-btn" id="dc-stereo-btn" onclick="dcToggleStereo()" title="Separar canais: Pads R / Click L">
-      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 18v-6a9 9 0 0 1 18 0v6"/><path d="M21 19a2 2 0 0 1-2 2h-1a2 2 0 0 1-2-2v-3a2 2 0 0 1 2-2h3zM3 19a2 2 0 0 0 2 2h1a2 2 0 0 0 2-2v-3a2 2 0 0 0-2-2H3z"/></svg>
-      ST
-    </button>
+    <!-- Menu 3 pontinhos -->
+    <div style="position:relative;">
+      <button id="dc-more-btn" onclick="dcToggleMoreMenu()" class="dc-header-fx-btn" style="font-size:16px;letter-spacing:1px;padding:5px 8px;" title="Mais opções">···</button>
+      <div id="dc-more-menu" style="display:none;position:absolute;top:calc(100% + 6px);right:0;background:#111119;border:1px solid rgba(255,255,255,0.1);border-radius:12px;padding:6px;min-width:160px;z-index:100;box-shadow:0 8px 24px rgba(0,0,0,0.6);">
+        <button onclick="dcAbrirAddPad();dcFecharMoreMenu()" id="dc-addpad-hdr-btn"
+          style="display:flex;align-items:center;gap:10px;width:100%;background:none;border:none;color:rgba(255,255,255,0.6);font-size:11px;font-weight:700;padding:9px 12px;border-radius:8px;cursor:pointer;font-family:inherit;touch-action:manipulation;transition:0.15s;"
+          onmouseenter="this.style.background='rgba(255,255,255,0.06)'" onmouseleave="this.style.background='none'">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          Adicionar Pad
+        </button>
+        <button onclick="dcAbrirFxModal();dcFecharMoreMenu()" id="dc-fx-hdr-btn"
+          style="display:flex;align-items:center;gap:10px;width:100%;background:none;border:none;color:rgba(255,255,255,0.6);font-size:11px;font-weight:700;padding:9px 12px;border-radius:8px;cursor:pointer;font-family:inherit;touch-action:manipulation;transition:0.15s;"
+          onmouseenter="this.style.background='rgba(255,255,255,0.06)'" onmouseleave="this.style.background='none'">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14M4.93 4.93a10 10 0 0 0 0 14.14"/></svg>
+          FX Global
+        </button>
+        <button onclick="dcToggleStereo();dcFecharMoreMenu()" id="dc-stereo-btn"
+          style="display:flex;align-items:center;gap:10px;width:100%;background:none;border:none;color:rgba(255,255,255,0.6);font-size:11px;font-weight:700;padding:9px 12px;border-radius:8px;cursor:pointer;font-family:inherit;touch-action:manipulation;transition:0.15s;"
+          onmouseenter="this.style.background='rgba(255,255,255,0.06)'" onmouseleave="this.style.background='none'">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 18v-6a9 9 0 0 1 18 0v6"/><path d="M21 19a2 2 0 0 1-2 2h-1a2 2 0 0 1-2-2v-3a2 2 0 0 1 2-2h3zM3 19a2 2 0 0 0 2 2h1a2 2 0 0 0 2-2v-3a2 2 0 0 0-2-2H3z"/></svg>
+          Stereo Split
+        </button>
+      </div>
+    </div>
     <button class="drumcam-close" onclick="fecharDrumCam()">Fechar</button>
   </div>
   <!-- Legacy hidden elements for JS compat -->
@@ -7665,11 +7875,22 @@ body.auth-pending #toast {
   <div class="dc-pad-fx-box">
     <div class="dc-pad-fx-header">
       <div>
-        <div class="dc-pad-fx-title">Efeito do Pad</div>
+        <div class="dc-pad-fx-title">Pad</div>
         <div class="dc-pad-fx-padname" id="dc-pad-fx-padname">—</div>
       </div>
       <button class="dc-pad-fx-close" onclick="dcFecharPadFxModal()">
         <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    </div>
+    <!-- Botões de ação rápida -->
+    <div style="display:flex;gap:8px;padding:0 16px 12px;border-bottom:1px solid rgba(255,255,255,0.06);">
+      <button onclick="dcImportarSampleFromModal()" style="flex:1;display:flex;align-items:center;justify-content:center;gap:7px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.1);color:rgba(255,255,255,0.5);padding:9px 12px;border-radius:10px;font-size:10px;font-weight:800;cursor:pointer;letter-spacing:0.5px;font-family:inherit;touch-action:manipulation;transition:0.15s;" onmouseenter="this.style.background='rgba(255,255,255,0.08)'" onmouseleave="this.style.background='rgba(255,255,255,0.04)'">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+        Importar Sample
+      </button>
+      <button onclick="dcTrocarPadDoModal()" style="flex:1;display:flex;align-items:center;justify-content:center;gap:7px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.1);color:rgba(255,255,255,0.5);padding:9px 12px;border-radius:10px;font-size:10px;font-weight:800;cursor:pointer;letter-spacing:0.5px;font-family:inherit;touch-action:manipulation;transition:0.15s;" onmouseenter="this.style.background='rgba(255,255,255,0.08)'" onmouseleave="this.style.background='rgba(255,255,255,0.04)'">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="16 3 21 3 21 8"/><line x1="4" y1="20" x2="21" y2="3"/><polyline points="21 16 21 21 16 21"/><line x1="15" y1="15" x2="21" y2="21"/></svg>
+        Trocar Pad
       </button>
     </div>
     <div class="dc-pad-fx-body" id="dc-pad-fx-body"></div>
@@ -9932,17 +10153,169 @@ function _perfFontCarregar() {
 function addPart(title = "PARTE", content = "") {
   const div = document.createElement('div');
   div.className = 'song-part';
-  // Escapa title e content para evitar quebra de HTML e XSS
   var _esc = function(s){ return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); };
-  div.innerHTML = '<input type="text" value="' + _esc(title) + '" style="background:none;border:none;color:var(--accent-primary);font-weight:900;font-size:11px;width:calc(100% - 30px);outline:none;text-transform:uppercase;" oninput="broadcastEstado()">'
+  div.innerHTML =
+    '<div class="drag-handle" title="Arrastar seção">' +
+      '<svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><circle cx="9" cy="6" r="1.5"/><circle cx="15" cy="6" r="1.5"/><circle cx="9" cy="12" r="1.5"/><circle cx="15" cy="12" r="1.5"/><circle cx="9" cy="18" r="1.5"/><circle cx="15" cy="18" r="1.5"/></svg>' +
+    '</div>' +
+    '<input type="text" value="' + _esc(title) + '" class="part-title-input" style="background:none;border:none;color:var(--accent-primary);font-weight:900;font-size:11px;width:calc(100% - 50px);outline:none;text-transform:uppercase;" oninput="broadcastEstado()">'
     + '<textarea class="chord-area" oninput="onChordInput(this)" placeholder="C G Am F">' + _esc(content) + '</textarea>'
     + '<button onclick="this.parentElement.remove(); broadcastEstado();" style="position:absolute;top:12px;right:12px;background:none;border:none;color:#ff4d4d;cursor:pointer;">&times;</button>';
   document.getElementById('notes-grid').appendChild(div);
   const ta = div.querySelector('textarea');
   ta.style.height = ta.scrollHeight + 'px';
+  // Ativa drag & drop via long press
+  _partLongPressInit(div);
 }
 
-function onChordInput(ta) {
+// ─── Drag & Drop das seções — long press 1s ──────────────────────────────────
+var _partDragEl     = null;  // seção sendo arrastada
+var _partDragTimer  = null;  // timer do long press
+var _partDragActive = false; // arrasto ativo
+var _partDragClone  = null;  // clone visual seguindo o dedo
+var _partDragOffX   = 0;
+var _partDragOffY   = 0;
+var _PART_LONGPRESS_MS = 1000;
+
+function _partLongPressInit(el) {
+  // Touch
+  el.addEventListener('touchstart', function(e) {
+    if (e.target.closest('textarea, input, button')) return;
+    var touch = e.touches[0];
+    _partDragTimer = setTimeout(function() {
+      _partDragStart(el, touch.clientX, touch.clientY);
+    }, _PART_LONGPRESS_MS);
+  }, { passive: true });
+
+  el.addEventListener('touchmove', function(e) {
+    if (!_partDragActive) {
+      clearTimeout(_partDragTimer); _partDragTimer = null;
+      return;
+    }
+    e.preventDefault();
+    var touch = e.touches[0];
+    _partDragMove(touch.clientX, touch.clientY);
+  }, { passive: false });
+
+  el.addEventListener('touchend', function(e) {
+    clearTimeout(_partDragTimer); _partDragTimer = null;
+    if (_partDragActive) _partDragEnd(e.changedTouches[0].clientX, e.changedTouches[0].clientY);
+    else el.classList.remove('drag-ready');
+  });
+
+  el.addEventListener('touchcancel', function() {
+    clearTimeout(_partDragTimer); _partDragTimer = null;
+    _partDragCancel();
+  });
+
+  // Mouse (desktop)
+  el.addEventListener('mousedown', function(e) {
+    if (e.target.closest('textarea, input, button')) return;
+    _partDragTimer = setTimeout(function() {
+      _partDragStart(el, e.clientX, e.clientY);
+    }, _PART_LONGPRESS_MS);
+  });
+
+  window.addEventListener('mousemove', function(e) {
+    if (!_partDragActive) return;
+    _partDragMove(e.clientX, e.clientY);
+  });
+
+  window.addEventListener('mouseup', function(e) {
+    clearTimeout(_partDragTimer); _partDragTimer = null;
+    if (_partDragActive) _partDragEnd(e.clientX, e.clientY);
+  });
+}
+
+function _partDragStart(el, x, y) {
+  if (navigator.vibrate) navigator.vibrate(40);
+  _partDragEl = el;
+  _partDragActive = true;
+  el.classList.add('drag-ready');
+
+  // Cria clone visual
+  var rect = el.getBoundingClientRect();
+  _partDragOffX = x - rect.left;
+  _partDragOffY = y - rect.top;
+
+  _partDragClone = el.cloneNode(true);
+  _partDragClone.style.cssText =
+    'position:fixed;top:' + (y - _partDragOffY) + 'px;left:' + (x - _partDragOffX) + 'px;' +
+    'width:' + rect.width + 'px;z-index:9999;pointer-events:none;opacity:0.85;' +
+    'transform:scale(1.03) rotate(1deg);box-shadow:0 20px 60px rgba(0,0,0,0.5);' +
+    'border-left:5px solid var(--accent-primary);border-radius:12px;' +
+    'background:var(--bg-secondary);padding:15px;transition:none;';
+  document.body.appendChild(_partDragClone);
+
+  el.classList.add('dragging');
+}
+
+function _partDragMove(x, y) {
+  if (!_partDragActive || !_partDragClone) return;
+  _partDragClone.style.top  = (y - _partDragOffY) + 'px';
+  _partDragClone.style.left = (x - _partDragOffX) + 'px';
+
+  // Limpa indicadores anteriores
+  document.querySelectorAll('.song-part').forEach(function(p) {
+    p.classList.remove('drag-over-top', 'drag-over-bottom');
+  });
+
+  // Encontra seção alvo
+  var target = _partGetTarget(x, y);
+  if (target && target !== _partDragEl) {
+    var rect = target.getBoundingClientRect();
+    var mid  = rect.top + rect.height / 2;
+    target.classList.add(y < mid ? 'drag-over-top' : 'drag-over-bottom');
+  }
+}
+
+function _partDragEnd(x, y) {
+  if (!_partDragActive) return;
+  _partDragActive = false;
+
+  // Limpa clone
+  if (_partDragClone) { _partDragClone.remove(); _partDragClone = null; }
+
+  var grid = document.getElementById('notes-grid');
+  var target = _partGetTarget(x, y);
+
+  if (target && target !== _partDragEl) {
+    var rect = target.getBoundingClientRect();
+    var mid  = rect.top + rect.height / 2;
+    if (y < mid) {
+      grid.insertBefore(_partDragEl, target);
+    } else {
+      grid.insertBefore(_partDragEl, target.nextSibling);
+    }
+    broadcastEstado();
+  }
+
+  // Limpa estados
+  document.querySelectorAll('.song-part').forEach(function(p) {
+    p.classList.remove('dragging', 'drag-ready', 'drag-over-top', 'drag-over-bottom');
+  });
+  _partDragEl = null;
+}
+
+function _partDragCancel() {
+  _partDragActive = false;
+  if (_partDragClone) { _partDragClone.remove(); _partDragClone = null; }
+  document.querySelectorAll('.song-part').forEach(function(p) {
+    p.classList.remove('dragging', 'drag-ready', 'drag-over-top', 'drag-over-bottom');
+  });
+  _partDragEl = null;
+}
+
+function _partGetTarget(x, y) {
+  var parts = Array.from(document.querySelectorAll('.song-part'));
+  return parts.find(function(p) {
+    if (p === _partDragEl) return false;
+    var r = p.getBoundingClientRect();
+    return x >= r.left && x <= r.right && y >= r.top && y <= r.bottom;
+  }) || null;
+}
+
+// ── Fim Drag & Drop seções ────────────────────────────────────────────────────
   ta.style.height = ''; ta.style.height = ta.scrollHeight + 'px';
   broadcastEstado();
 
@@ -12240,12 +12613,6 @@ function renderDcPads() {
       '<div class="dc-pad-glow"></div>' +
       '<div class="dc-pad-fx-indicator"></div>' +
       '<div class="dc-pad-longpress-ring"></div>' +
-      '<div class="dc-pad-import" onclick="event.stopPropagation();dcImportarSample(' + padIdx + ')" title="Importar sample">' +
-        '<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>' +
-      '</div>' +
-      '<div class="dc-slot-swap" onclick="event.stopPropagation();dcAbrirSeletorPad(' + slotIdx + ')" title="Trocar pad">' +
-        '<svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="16 3 21 3 21 8"/><line x1="4" y1="20" x2="21" y2="3"/><polyline points="21 16 21 21 16 21"/><line x1="15" y1="15" x2="21" y2="21"/></svg>' +
-      '</div>' +
       '<div class="dc-pad-name">' + pad.name + '</div>' +
       '<div class="dc-pad-sub">' + (hasSample ? 'SAMPLE' : pad.sub) + '</div>' +
       '</div>';
@@ -13169,7 +13536,21 @@ function dcFecharPadFxModal() {
   _dcPadFxTarget = -1;
 }
 
-function dcPadFxToggleFx(fx) {
+function dcImportarSampleFromModal() {
+  if (_dcPadFxTarget < 0) return;
+  dcFecharPadFxModal();
+  setTimeout(function() { dcImportarSample(_dcPadFxTarget); }, 100);
+}
+
+function dcTrocarPadDoModal() {
+  if (_dcPadFxTarget < 0) return;
+  // Encontra o slot que contém este pad
+  var slots = _dcGetSlots(_dcBank);
+  var slotIdx = slots.indexOf(_dcPadFxTarget);
+  if (slotIdx < 0) slotIdx = 0;
+  dcFecharPadFxModal();
+  setTimeout(function() { dcAbrirSeletorPad(slotIdx); }, 100);
+}
   if (_dcPadFxTarget < 0) return;
   if (!_dcPadFx[_dcBank]) _dcPadFx[_dcBank] = {};
   var cfg = _dcPadFx[_dcBank][_dcPadFxTarget];
@@ -13435,7 +13816,28 @@ var _dcStereoAtivo = false;
 var _dcPadPanner   = null; // StereoPannerNode para os pads
 var _dcClickPanner = null; // StereoPannerNode para o click
 
-function dcToggleStereo() {
+function dcToggleMoreMenu() {
+  var menu = document.getElementById('dc-more-menu');
+  if (!menu) return;
+  var isOpen = menu.style.display !== 'none';
+  menu.style.display = isOpen ? 'none' : 'block';
+  if (!isOpen) {
+    // Fecha ao clicar fora
+    setTimeout(function() {
+      document.addEventListener('click', function _close(e) {
+        if (!e.target.closest('#dc-more-btn') && !e.target.closest('#dc-more-menu')) {
+          dcFecharMoreMenu();
+          document.removeEventListener('click', _close);
+        }
+      });
+    }, 10);
+  }
+}
+
+function dcFecharMoreMenu() {
+  var menu = document.getElementById('dc-more-menu');
+  if (menu) menu.style.display = 'none';
+}
   _dcStereoAtivo = !_dcStereoAtivo;
   var btn = document.getElementById('dc-stereo-btn');
   if (btn) btn.classList.toggle('ativo', _dcStereoAtivo);
@@ -13587,12 +13989,302 @@ function _frasesAtualizarVisibilidade() {
 
 // ── Fim Frases Prontas ───────────────────────────────────────────────────────
 
-// ─── Chat Global ─────────────────────────────────────────────────────────────
+// ─── Afinador Cromático — Rack Style ────────────────────────────────────────
+var _tunerAberto     = false;
+var _tunerAtivo      = false;
+var _tunerStream     = null;
+var _tunerCtx        = null;
+var _tunerAnalyser   = null;
+var _tunerRaf        = null;
+var _tunerShockTimer = null;
+var _tunerStringIdx  = 0;
+var _tunerInst       = 'guitar';
+var _tunerTuning     = 'standard';
+
+// Definições de instrumentos e afinações
+var _TUNER_INSTS = {
+  guitar:  { label: 'Guitarra', tunings: ['standard','dropD','openG','DADGAD'] },
+  bass:    { label: 'Baixo',    tunings: ['standard','dropD'] },
+  violao:  { label: 'Violão',   tunings: ['standard','dropD','openG','DADGAD'] },
+  ukulele: { label: 'Ukulele',  tunings: ['standard'] },
+  cavaco:  { label: 'Cavaco',   tunings: ['standard'] }
+};
+
+var _TUNER_STRINGS = {
+  guitar:  {
+    standard: [{n:'E2',f:82.4},{n:'A2',f:110},{n:'D3',f:146.8},{n:'G3',f:196},{n:'B3',f:246.9},{n:'E4',f:329.6}],
+    dropD:    [{n:'D2',f:73.4},{n:'A2',f:110},{n:'D3',f:146.8},{n:'G3',f:196},{n:'B3',f:246.9},{n:'E4',f:329.6}],
+    openG:    [{n:'D2',f:73.4},{n:'G2',f:98},{n:'D3',f:146.8},{n:'G3',f:196},{n:'B3',f:246.9},{n:'D4',f:293.7}],
+    DADGAD:   [{n:'D2',f:73.4},{n:'A2',f:110},{n:'D3',f:146.8},{n:'G3',f:196},{n:'A3',f:220},{n:'D4',f:293.7}]
+  },
+  bass: {
+    standard: [{n:'E1',f:41.2},{n:'A1',f:55},{n:'D2',f:73.4},{n:'G2',f:98}],
+    dropD:    [{n:'D1',f:36.7},{n:'A1',f:55},{n:'D2',f:73.4},{n:'G2',f:98}]
+  },
+  violao: {
+    standard: [{n:'E2',f:82.4},{n:'A2',f:110},{n:'D3',f:146.8},{n:'G3',f:196},{n:'B3',f:246.9},{n:'E4',f:329.6}],
+    dropD:    [{n:'D2',f:73.4},{n:'A2',f:110},{n:'D3',f:146.8},{n:'G3',f:196},{n:'B3',f:246.9},{n:'E4',f:329.6}],
+    openG:    [{n:'D2',f:73.4},{n:'G2',f:98},{n:'D3',f:146.8},{n:'G3',f:196},{n:'B3',f:246.9},{n:'D4',f:293.7}],
+    DADGAD:   [{n:'D2',f:73.4},{n:'A2',f:110},{n:'D3',f:146.8},{n:'G3',f:196},{n:'A3',f:220},{n:'D4',f:293.7}]
+  },
+  ukulele: {
+    standard: [{n:'G4',f:392},{n:'C4',f:261.6},{n:'E4',f:329.6},{n:'A4',f:440}]
+  },
+  cavaco: {
+    standard: [{n:'D4',f:293.7},{n:'G4',f:392},{n:'B4',f:493.9},{n:'D5',f:587.3}]
+  }
+};
+
+var _TUNER_TUNING_LABELS = { standard:'Padrão', dropD:'Drop D', openG:'Open G', DADGAD:'DADGAD' };
+
+function toggleTuner() {
+  _tunerAberto = !_tunerAberto;
+  var panel = document.getElementById('tuner-panel');
+  if (_tunerAberto) {
+    panel.classList.add('open');
+    _tunerRenderUI();
+  } else {
+    panel.classList.remove('open');
+    _tunerPararMic();
+  }
+}
+
+function _tunerRenderUI() {
+  // LEDs
+  var ledsEl = document.getElementById('tuner-leds');
+  if (ledsEl) {
+    var html = '';
+    for (var i = 0; i < 11; i++) {
+      html += '<div class="tuner-led' + (i === 5 ? ' center' : '') + '" id="tled-' + i + '"></div>';
+    }
+    ledsEl.innerHTML = html;
+  }
+
+  // Chips de instrumento
+  var instEl = document.getElementById('tuner-inst-chips');
+  if (instEl) {
+    instEl.innerHTML = Object.keys(_TUNER_INSTS).map(function(k) {
+      return '<button class="tuner-chip' + (k === _tunerInst ? ' sel' : '') + '" onclick="tunerSetInst(\'' + k + '\')">' +
+        _TUNER_INSTS[k].label + '</button>';
+    }).join('');
+  }
+
+  // Chips de afinação
+  _tunerRenderTuningChips();
+
+  // Cordas
+  _tunerRenderStrings();
+}
+
+function _tunerRenderTuningChips() {
+  var el = document.getElementById('tuner-tune-chips');
+  if (!el) return;
+  var tunings = _TUNER_INSTS[_tunerInst].tunings;
+  if (tunings.indexOf(_tunerTuning) === -1) _tunerTuning = tunings[0];
+  el.innerHTML = tunings.map(function(t) {
+    return '<button class="tuner-chip' + (t === _tunerTuning ? ' sel' : '') + '" onclick="tunerSetTuning(\'' + t + '\')">' +
+      _TUNER_TUNING_LABELS[t] + '</button>';
+  }).join('');
+}
+
+function _tunerRenderStrings() {
+  var el = document.getElementById('tuner-strings');
+  if (!el) return;
+  var strings = _TUNER_STRINGS[_tunerInst][_tunerTuning] || [];
+  el.innerHTML = strings.map(function(s, i) {
+    var cls = 'tuner-string' + (i === _tunerStringIdx ? ' active' : '');
+    return '<div class="' + cls + '" id="tstr-' + i + '" onclick="tunerSetString(' + i + ')">' +
+      '<div class="tuner-string-led">' + s.n.replace(/[0-9]/g,'') + '</div>' +
+      '<div class="tuner-string-name">' + s.n + '</div>' +
+      '</div>';
+  }).join('');
+}
+
+function tunerSetInst(inst) {
+  _tunerInst = inst;
+  _tunerStringIdx = 0;
+  _tunerTuning = _TUNER_INSTS[inst].tunings[0];
+  document.querySelectorAll('#tuner-inst-chips .tuner-chip').forEach(function(c, i) {
+    c.classList.toggle('sel', Object.keys(_TUNER_INSTS)[i] === inst);
+  });
+  _tunerRenderTuningChips();
+  _tunerRenderStrings();
+}
+
+function tunerSetTuning(t) {
+  _tunerTuning = t;
+  _tunerStringIdx = 0;
+  document.querySelectorAll('#tuner-tune-chips .tuner-chip').forEach(function(c) {
+    c.classList.toggle('sel', c.textContent === _TUNER_TUNING_LABELS[t]);
+  });
+  _tunerRenderStrings();
+}
+
+function tunerSetString(idx) {
+  _tunerStringIdx = idx;
+  _tunerRenderStrings();
+}
+
+async function toggleTunerMic() {
+  if (_tunerAtivo) { _tunerPararMic(); return; }
+  try {
+    _tunerStream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
+    _tunerCtx    = new (window.AudioContext || window.webkitAudioContext)();
+    _tunerAnalyser = _tunerCtx.createAnalyser();
+    _tunerAnalyser.fftSize = 4096;
+    var src = _tunerCtx.createMediaStreamSource(_tunerStream);
+    src.connect(_tunerAnalyser);
+    _tunerAtivo = true;
+    var btn = document.getElementById('tuner-start-btn');
+    if (btn) { btn.textContent = '■ Parar'; btn.classList.add('ativo'); }
+    _tunerLoop();
+  } catch(e) {
+    showToast && showToast('Microfone não disponível', 'error');
+  }
+}
+
+function _tunerPararMic() {
+  _tunerAtivo = false;
+  if (_tunerRaf) { cancelAnimationFrame(_tunerRaf); _tunerRaf = null; }
+  if (_tunerStream) { _tunerStream.getTracks().forEach(function(t){ t.stop(); }); _tunerStream = null; }
+  if (_tunerCtx) { _tunerCtx.close(); _tunerCtx = null; }
+  var btn = document.getElementById('tuner-start-btn');
+  if (btn) { btn.textContent = '▶ Iniciar Afinação'; btn.classList.remove('ativo'); }
+  // Reset display
+  var noteEl = document.getElementById('tuner-note');
+  var centsEl = document.getElementById('tuner-cents');
+  if (noteEl) noteEl.textContent = '--';
+  if (centsEl) centsEl.textContent = '+00';
+  _tunerSetLeds(null);
+}
+
+function _tunerLoop() {
+  if (!_tunerAtivo) return;
+  var buf = new Float32Array(_tunerAnalyser.fftSize);
+  _tunerAnalyser.getFloatTimeDomainData(buf);
+  var freq = _tunerACF(buf, _tunerCtx.sampleRate);
+  if (freq > 0) _tunerUpdateDisplay(freq);
+  _tunerRaf = requestAnimationFrame(_tunerLoop);
+}
+
+// Autocorrelation pitch detection
+function _tunerACF(buf, sampleRate) {
+  var SIZE = buf.length;
+  var rms = 0;
+  for (var i = 0; i < SIZE; i++) rms += buf[i] * buf[i];
+  rms = Math.sqrt(rms / SIZE);
+  if (rms < 0.008) return -1;
+
+  var r1 = 0, r2 = SIZE - 1;
+  for (var i = 0; i < SIZE / 2; i++) { if (Math.abs(buf[i]) < 0.2) { r1 = i; break; } }
+  for (var i = 1; i < SIZE / 2; i++) { if (Math.abs(buf[SIZE - i]) < 0.2) { r2 = SIZE - i; break; } }
+  buf = buf.slice(r1, r2);
+  SIZE = buf.length;
+
+  var c = new Float32Array(SIZE).fill(0);
+  for (var i = 0; i < SIZE; i++)
+    for (var j = 0; j < SIZE - i; j++)
+      c[i] += buf[j] * buf[j + i];
+
+  var d = 0;
+  while (d < SIZE && c[d] > c[d + 1]) d++;
+  var maxVal = -1, maxPos = -1;
+  for (var i = d; i < SIZE; i++) { if (c[i] > maxVal) { maxVal = c[i]; maxPos = i; } }
+  if (maxPos < 0) return -1;
+
+  var T0 = maxPos;
+  var x1 = c[T0-1], x2 = c[T0], x3 = c[T0+1];
+  var a = (x1 + x3 - 2*x2) / 2, b = (x3 - x1) / 2;
+  if (a) T0 = T0 - b / (2*a);
+  return sampleRate / T0;
+}
+
+function _tunerUpdateDisplay(freq) {
+  // Frequências MIDI
+  var noteNames = ['C','C#','D','D#','E','F','F#','G','G#','A','A#','B'];
+  var midi = Math.round(12 * Math.log2(freq / 440) + 69);
+  var noteFreq = 440 * Math.pow(2, (midi - 69) / 12);
+  var cents = Math.round(1200 * Math.log2(freq / noteFreq));
+  var noteName = noteNames[midi % 12] + Math.floor(midi / 12 - 1);
+
+  var noteEl  = document.getElementById('tuner-note');
+  var centsEl = document.getElementById('tuner-cents');
+  if (noteEl) noteEl.textContent = noteName;
+  if (centsEl) centsEl.textContent = (cents >= 0 ? '+' : '') + cents;
+
+  // Verifica se está na corda alvo
+  var strings = _TUNER_STRINGS[_tunerInst][_tunerTuning] || [];
+  var target  = strings[_tunerStringIdx];
+  if (target) {
+    var targetMidi = Math.round(12 * Math.log2(target.f / 440) + 69);
+    var diff = midi - targetMidi;
+    var centsDiff = cents + diff * 100;
+    _tunerSetLeds(centsDiff);
+
+    // Auto-avança para próxima corda quando afinada
+    if (Math.abs(centsDiff) <= 5) {
+      var strEl = document.getElementById('tstr-' + _tunerStringIdx);
+      if (strEl) strEl.classList.add('tuned');
+      clearTimeout(_tunerAutoNext);
+      _tunerAutoNext = setTimeout(function() {
+        if (_tunerStringIdx < strings.length - 1) {
+          _tunerStringIdx++;
+          _tunerRenderStrings();
+          if (navigator.vibrate) navigator.vibrate([30,50,30]);
+        }
+      }, 1200);
+    }
+  } else {
+    _tunerSetLeds(cents);
+  }
+}
+var _tunerAutoNext = null;
+
+function _tunerSetLeds(cents) {
+  // 11 LEDs: 0-1 vermelho, 2-3 amarelo, 4 amarelo, 5 verde (centro), 6 amarelo, 7-8 amarelo, 9-10 vermelho
+  var configs = [
+    {min:-Infinity,max:-40,cls:'on-red'},
+    {min:-40,max:-30,cls:'on-red'},
+    {min:-30,max:-20,cls:'on-yellow'},
+    {min:-20,max:-10,cls:'on-yellow'},
+    {min:-10,max:-3, cls:'on-yellow'},
+    {min:-3, max:3,  cls:'on-green'},
+    {min:3,  max:10, cls:'on-yellow'},
+    {min:10, max:20, cls:'on-yellow'},
+    {min:20, max:30, cls:'on-yellow'},
+    {min:30, max:40, cls:'on-red'},
+    {min:40, max:Infinity, cls:'on-red'}
+  ];
+  for (var i = 0; i < 11; i++) {
+    var led = document.getElementById('tled-' + i);
+    if (!led) continue;
+    led.className = 'tuner-led' + (i === 5 ? ' center' : '');
+    if (cents !== null && cents >= configs[i].min && cents < configs[i].max) {
+      led.classList.add(configs[i].cls);
+    }
+  }
+}
+
+// Animação de choque a cada 5s
+(function _tunerShockLoop() {
+  _tunerShockTimer = setTimeout(function() {
+    var btn = document.getElementById('tuner-btn');
+    if (btn && !_tunerAberto) {
+      btn.classList.add('shock');
+      setTimeout(function() { btn.classList.remove('shock'); }, 600);
+    }
+    _tunerShockLoop();
+  }, 5000);
+})();
+
+// ── Fim Afinador ──────────────────────────────────────────────────────────────
 var _chatGlobalAberto   = false;
 var _chatGlobalStop     = null;
-var _chatGlobalUltimoT  = 0;
-var _chatGlobalNaoLidas = 0;
 var _CHAT_GLOBAL_COL    = 'chat_global';
+var _CHAT_GLOBAL_T_KEY  = 'map_chat_global_ultimo_t_v1';
+// Carrega o timestamp da última mensagem lida do localStorage
+var _chatGlobalUltimoT  = parseInt(localStorage.getItem(_CHAT_GLOBAL_T_KEY) || '0', 10);
+var _chatGlobalNaoLidas = 0;
 
 function abrirChatGlobal() {
   var modal = document.getElementById('modal-chat-global');
@@ -13612,23 +14304,57 @@ function fecharChatGlobal() {
   var modal = document.getElementById('modal-chat-global');
   if (modal) modal.classList.remove('show');
   _chatGlobalAberto = false;
+  // Salva o timestamp atual como "lido até aqui"
+  localStorage.setItem(_CHAT_GLOBAL_T_KEY, String(_chatGlobalUltimoT));
 }
 
 function _chatGlobalIniciarPolling() {
   if (_chatGlobalStop) { _chatGlobalStop(); _chatGlobalStop = null; }
   if (!window._fb || !window._fb._pollQuery) return;
+
+  // Na primeira execução, define _chatGlobalUltimoT como o maior _t das mensagens existentes
+  // para não contar mensagens antigas como novas
+  var _primeiroCarregamento = true;
+
   _chatGlobalStop = window._fb._pollQuery(
     _CHAT_GLOBAL_COL, [], function(msgs) {
       _chatGlobalRenderMsgs(msgs);
-      if (!_chatGlobalAberto && msgs.length > 0) {
-        var ultimoT = msgs[msgs.length - 1]._t || 0;
-        if (ultimoT > _chatGlobalUltimoT) {
-          _chatGlobalNaoLidas++;
-          _atualizarBadgeChatGlobal();
+
+      if (msgs.length === 0) return;
+      var ultimoT = msgs.reduce(function(max, m) { return Math.max(max, m._t || 0); }, 0);
+
+      if (_primeiroCarregamento) {
+        // Primeiro carregamento — marca todas como lidas se chat está aberto
+        // ou atualiza o baseline sem contar como novas
+        if (_chatGlobalAberto) {
+          _chatGlobalUltimoT = ultimoT;
+          localStorage.setItem(_CHAT_GLOBAL_T_KEY, String(ultimoT));
+        } else {
+          // Só conta como novas as que chegaram após o último acesso
+          var novas = msgs.filter(function(m) { return (m._t || 0) > _chatGlobalUltimoT; });
+          if (novas.length > 0) {
+            _chatGlobalNaoLidas = novas.length;
+            _atualizarBadgeChatGlobal();
+          }
+          _chatGlobalUltimoT = ultimoT;
         }
-      } else {
-        _chatGlobalUltimoT = msgs.length > 0 ? (msgs[msgs.length-1]._t || 0) : 0;
+        _primeiroCarregamento = false;
+        return;
       }
+
+      // Polling subsequente — conta só mensagens realmente novas
+      if (!_chatGlobalAberto && ultimoT > _chatGlobalUltimoT) {
+        var novasMsgs = msgs.filter(function(m) { return (m._t || 0) > _chatGlobalUltimoT; });
+        _chatGlobalNaoLidas += novasMsgs.length;
+        _atualizarBadgeChatGlobal();
+      }
+      if (_chatGlobalAberto) {
+        // Chat aberto — zera não lidas e salva timestamp
+        _chatGlobalNaoLidas = 0;
+        _atualizarBadgeChatGlobal();
+        localStorage.setItem(_CHAT_GLOBAL_T_KEY, String(ultimoT));
+      }
+      _chatGlobalUltimoT = ultimoT;
     }, 5000
   );
 }
@@ -13640,46 +14366,59 @@ function _chatGlobalRenderMsgs(msgs) {
   var sorted = (msgs || []).slice().sort(function(a,b){ return (a._t||0)-(b._t||0); }).slice(-100);
 
   if (!sorted.length) {
-    container.innerHTML = '<div class="chat-global-empty">' +
-      '<svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>' +
-      '<span style="font-size:12px;font-weight:600;">Nenhuma mensagem ainda</span>' +
-      '<span style="font-size:10px;">Seja o primeiro a falar!</span>' +
-      '</div>';
+    // Só mostra empty se não há mensagens temporárias pendentes
+    var hasTemp = container.querySelector('.chat-msg-sending');
+    if (!hasTemp) {
+      container.innerHTML = '<div class="chat-global-empty">' +
+        '<svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>' +
+        '<span style="font-size:12px;font-weight:600;">Nenhuma mensagem ainda</span>' +
+        '<span style="font-size:10px;">Seja o primeiro a falar!</span>' +
+        '</div>';
+    }
     return;
   }
 
   var atBottom = container.scrollTop + container.clientHeight >= container.scrollHeight - 40;
 
-  container.innerHTML = sorted.map(function(msg) {
-    var isMine = msg.uid === uid;
-    var hora   = msg.hora || '';
-    var nome   = _ve(msg.nome || 'Músico');
-    var inst   = msg.instrumento ? _ve(msg.instrumento) : '';
-    var texto  = _ve(msg.texto || '');
-    var foto   = msg.foto || '';
-    var iniciais = (msg.nome || 'M').charAt(0).toUpperCase();
+  // Guarda IDs já renderizados (excluindo temporários)
+  var existingIds = {};
+  container.querySelectorAll('.chat-global-msg:not(.chat-msg-sending)').forEach(function(el) {
+    existingIds[el.getAttribute('data-id')] = true;
+  });
 
-    var avatarHtml = foto
-      ? '<img src="' + foto + '" style="width:100%;height:100%;object-fit:cover;border-radius:10px;">'
-      : '<span>' + iniciais + '</span>';
+  // Remove mensagens temporárias que já foram confirmadas pelo Firebase
+  var tempEls = container.querySelectorAll('.chat-msg-sending');
+  var tempTs = {};
+  tempEls.forEach(function(el) {
+    var id = el.getAttribute('data-id') || '';
+    if (id.startsWith('temp-')) {
+      tempTs[id.replace('temp-','')] = el;
+    }
+  });
 
-    return '<div class="chat-global-msg' + (isMine ? ' mine' : '') + '" data-id="' + _ve(msg.id||'') + '">' +
-      '<div class="chat-msg-avatar">' + avatarHtml + '</div>' +
-      '<div class="chat-msg-bubble">' +
-        '<div class="chat-msg-meta">' +
-          '<span class="chat-msg-nome">' + nome + '</span>' +
-          (inst ? '<span class="chat-msg-inst">' + inst + '</span>' : '') +
-          '<span class="chat-msg-hora">' + hora + '</span>' +
-        '</div>' +
-        '<div class="chat-msg-texto">' +
-          texto +
-          (isMine ? '<button class="chat-msg-del" onclick="excluirChatGlobalMsg(\'' + _ve(msg.id||'') + '\',this)" title="Apagar">✕</button>' : '') +
-        '</div>' +
-      '</div>' +
-    '</div>';
-  }).join('');
+  // Adiciona só mensagens novas
+  var addedAny = false;
+  sorted.forEach(function(msg) {
+    var id = msg.id || '';
+    if (existingIds[id]) return; // já existe
 
-  if (atBottom) container.scrollTop = container.scrollHeight;
+    // Remove temp correspondente se existir (mesmo _t)
+    var tempEl = tempTs[String(msg._t)];
+    if (tempEl) tempEl.remove();
+
+    _chatGlobalAppendMsg(msg, false);
+    addedAny = true;
+  });
+
+  // Remove mensagens que sumiram do Firebase (deletadas)
+  container.querySelectorAll('.chat-global-msg:not(.chat-msg-sending)').forEach(function(el) {
+    var id = el.getAttribute('data-id');
+    if (id && !sorted.find(function(m){ return m.id === id; })) {
+      el.remove();
+    }
+  });
+
+  if (addedAny && atBottom) container.scrollTop = container.scrollHeight;
 }
 
 function enviarChatGlobal() {
@@ -13689,6 +14428,9 @@ function enviarChatGlobal() {
   var perfil = _getPerfilLocal();
   var uid    = _getUid();
   var hora   = new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+  var _t     = Date.now();
+  var tempId = 'temp-' + _t;
+
   var msg = {
     uid:         uid,
     nome:        perfil.nome || 'Músico',
@@ -13696,12 +14438,74 @@ function enviarChatGlobal() {
     foto:        perfil.foto || '',
     texto:       texto,
     hora:        hora,
-    _t:          Date.now()
+    _t:          _t
   };
-  if (window._fb && window._fb._add) {
-    window._fb._add(_CHAT_GLOBAL_COL, msg).catch(function(){});
-  }
+
+  // Limpa input imediatamente
   if (input) { input.value = ''; input.focus(); }
+
+  // Renderiza a mensagem imediatamente (optimistic update)
+  _chatGlobalAppendMsg(Object.assign({}, msg, { id: tempId }), true);
+
+  // Envia para o Firebase
+  if (window._fb && window._fb._add) {
+    window._fb._add(_CHAT_GLOBAL_COL, msg).then(function(ok) {
+      if (!ok) {
+        // Falhou — remove a mensagem temporária
+        var el = document.querySelector('[data-id="' + tempId + '"]');
+        if (el) el.remove();
+        showToast && showToast('Erro ao enviar mensagem', 'error');
+      }
+      // Se ok, o polling vai substituir a temp pelo id real naturalmente
+    }).catch(function() {
+      var el = document.querySelector('[data-id="' + tempId + '"]');
+      if (el) el.remove();
+    });
+  }
+}
+
+// Adiciona uma única mensagem ao final do chat sem re-renderizar tudo
+function _chatGlobalAppendMsg(msg, isTemp) {
+  var container = document.getElementById('chat-global-msgs');
+  if (!container) return;
+
+  // Remove empty state se existir
+  var empty = container.querySelector('.chat-global-empty');
+  if (empty) empty.remove();
+
+  var uid      = _getUid();
+  var isMine   = msg.uid === uid;
+  var nome     = _ve(msg.nome || 'Músico');
+  var inst     = msg.instrumento ? _ve(msg.instrumento) : '';
+  var texto    = _ve(msg.texto || '');
+  var hora     = msg.hora || '';
+  var foto     = msg.foto || '';
+  var iniciais = (msg.nome || 'M').charAt(0).toUpperCase();
+  var id       = msg.id || '';
+
+  var avatarHtml = foto
+    ? '<img src="' + foto + '" style="width:100%;height:100%;object-fit:cover;border-radius:10px;">'
+    : '<span>' + iniciais + '</span>';
+
+  var div = document.createElement('div');
+  div.className = 'chat-global-msg' + (isMine ? ' mine' : '') + (isTemp ? ' chat-msg-sending' : '');
+  div.setAttribute('data-id', id);
+  div.innerHTML =
+    '<div class="chat-msg-avatar">' + avatarHtml + '</div>' +
+    '<div class="chat-msg-bubble">' +
+      '<div class="chat-msg-meta">' +
+        '<span class="chat-msg-nome">' + nome + '</span>' +
+        (inst ? '<span class="chat-msg-inst">' + inst + '</span>' : '') +
+        '<span class="chat-msg-hora">' + hora + (isTemp ? ' <span style="opacity:0.4;font-size:8px;">●</span>' : '') + '</span>' +
+      '</div>' +
+      '<div class="chat-msg-texto">' +
+        texto +
+        (isMine && !isTemp ? '<button class="chat-msg-del" onclick="excluirChatGlobalMsg(\'' + id + '\',this)" title="Apagar">✕</button>' : '') +
+      '</div>' +
+    '</div>';
+
+  container.appendChild(div);
+  container.scrollTop = container.scrollHeight;
 }
 
 function excluirChatGlobalMsg(id, btnEl) {
