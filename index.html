@@ -4563,27 +4563,30 @@ body { font-family: -apple-system, 'Inter', BlinkMacSystemFont, 'Segoe UI', sans
 }
 /* Estado de arrasto */
 .song-part.dragging {
-  opacity: 0.45;
-  transform: scale(1.02) rotate(1deg) !important;
+  opacity: 0.5;
+  transform: scale(1.02) rotate(0.5deg) !important;
   box-shadow: 0 20px 60px rgba(0,0,0,0.5), 0 0 0 2px var(--accent-primary) !important;
   z-index: 1000; pointer-events: none;
   touch-action: none;
 }
-.song-part.drag-over-top { border-top: 2.5px solid var(--accent-primary); padding-top: 13px; }
-.song-part.drag-over-bottom { border-bottom: 2.5px solid var(--accent-primary); padding-bottom: 13px; }
-/* Handle de drag — aparece no canto superior esquerdo no long press */
+.song-part.drag-over { transform: translateY(6px) !important; transition: transform 0.15s ease !important; }
+.song-part.drag-over-up { transform: translateY(-6px) !important; transition: transform 0.15s ease !important; }
+/* Handle de drag — canto direito, sempre visível e sutil */
 .drag-handle {
-  position: absolute; top: 10px; left: -2px;
-  width: 20px; height: 20px;
+  position: absolute; top: 50%; right: 10px;
+  transform: translateY(-50%);
+  width: 28px; height: 28px;
   display: flex; align-items: center; justify-content: center;
-  opacity: 0; transition: opacity 0.2s; cursor: grab; z-index: 2;
-  color: rgba(255,255,255,0.3);
+  cursor: grab; z-index: 5;
+  color: rgba(255,255,255,0.18);
+  border-radius: 6px;
+  transition: color 0.2s, background 0.2s;
+  touch-action: none;
+  -webkit-user-select: none; user-select: none;
 }
-.song-part.drag-ready .drag-handle { opacity: 1; }
-.song-part.drag-ready {
-  border-left-color: rgba(10,158,110,0.8);
-  box-shadow: 0 0 0 1px rgba(10,158,110,0.3);
-}
+.drag-handle:hover { color: rgba(255,255,255,0.45); background: rgba(255,255,255,0.06); }
+.drag-handle.drag-active { color: var(--accent-primary); background: rgba(10,158,110,0.12); cursor: grabbing; }
+.song-part.drag-ready { border-left-color: rgba(10,158,110,0.8); }
 .chord-area { font-family: 'Monaco', monospace; font-size: 19px; font-weight: 700; color: var(--note-color); background: none; border: none; width: 100%; resize: none; outline: none; margin-top: 10px; line-height: 1.4; }
 
 /* METRÔNOMO */
@@ -10155,164 +10158,191 @@ function addPart(title = "PARTE", content = "") {
   div.className = 'song-part';
   var _esc = function(s){ return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); };
   div.innerHTML =
-    '<div class="drag-handle" title="Arrastar seção">' +
-      '<svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><circle cx="9" cy="6" r="1.5"/><circle cx="15" cy="6" r="1.5"/><circle cx="9" cy="12" r="1.5"/><circle cx="15" cy="12" r="1.5"/><circle cx="9" cy="18" r="1.5"/><circle cx="15" cy="18" r="1.5"/></svg>' +
-    '</div>' +
-    '<input type="text" value="' + _esc(title) + '" class="part-title-input" style="background:none;border:none;color:var(--accent-primary);font-weight:900;font-size:11px;width:calc(100% - 50px);outline:none;text-transform:uppercase;" oninput="broadcastEstado()">'
+    '<input type="text" value="' + _esc(title) + '" class="part-title-input" style="background:none;border:none;color:var(--accent-primary);font-weight:900;font-size:11px;width:calc(100% - 70px);outline:none;text-transform:uppercase;" oninput="broadcastEstado()">'
     + '<textarea class="chord-area" oninput="onChordInput(this)" placeholder="C G Am F">' + _esc(content) + '</textarea>'
-    + '<button onclick="this.parentElement.remove(); broadcastEstado();" style="position:absolute;top:12px;right:12px;background:none;border:none;color:#ff4d4d;cursor:pointer;">&times;</button>';
+    + '<button onclick="this.parentElement.remove(); broadcastEstado();" style="position:absolute;top:10px;right:42px;background:none;border:none;color:rgba(255,100,100,0.5);cursor:pointer;font-size:16px;line-height:1;padding:2px 4px;">&times;</button>'
+    + '<div class="drag-handle" title="Segurar para arrastar">'
+      + '<svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><circle cx="9" cy="5" r="1.5"/><circle cx="15" cy="5" r="1.5"/><circle cx="9" cy="12" r="1.5"/><circle cx="15" cy="12" r="1.5"/><circle cx="9" cy="19" r="1.5"/><circle cx="15" cy="19" r="1.5"/></svg>'
+    + '</div>';
   document.getElementById('notes-grid').appendChild(div);
   const ta = div.querySelector('textarea');
   ta.style.height = ta.scrollHeight + 'px';
-  // Ativa drag & drop via long press
-  _partLongPressInit(div);
+  // Ativa drag & drop via long press no handle
+  _partHandleInit(div);
 }
 
-// ─── Drag & Drop das seções — long press 1s ──────────────────────────────────
-var _partDragEl     = null;  // seção sendo arrastada
-var _partDragTimer  = null;  // timer do long press
-var _partDragActive = false; // arrasto ativo
-var _partDragClone  = null;  // clone visual seguindo o dedo
+// ─── Drag & Drop das seções — long press 1s no handle ────────────────────────
+var _partDragEl     = null;
+var _partDragTimer  = null;
+var _partDragActive = false;
+var _partDragClone  = null;
 var _partDragOffX   = 0;
 var _partDragOffY   = 0;
-var _PART_LONGPRESS_MS = 1000;
+var _partDragHandle = null;
+var _partDragLastTarget = null;
+var _PART_LONGPRESS_MS  = 1000;
 
-function _partLongPressInit(el) {
-  // Touch
-  el.addEventListener('touchstart', function(e) {
-    if (e.target.closest('textarea, input, button')) return;
-    var touch = e.touches[0];
+function _partHandleInit(el) {
+  var handle = el.querySelector('.drag-handle');
+  if (!handle) return;
+
+  function onPressStart(x, y) {
+    clearTimeout(_partDragTimer);
     _partDragTimer = setTimeout(function() {
-      _partDragStart(el, touch.clientX, touch.clientY);
+      if (navigator.vibrate) navigator.vibrate(40);
+      handle.classList.add('drag-active');
+      _partDragStart(el, handle, x, y);
     }, _PART_LONGPRESS_MS);
-  }, { passive: true });
+  }
 
-  el.addEventListener('touchmove', function(e) {
-    if (!_partDragActive) {
-      clearTimeout(_partDragTimer); _partDragTimer = null;
-      return;
-    }
+  function onPressEnd() {
+    clearTimeout(_partDragTimer);
+    _partDragTimer = null;
+    if (!_partDragActive) handle.classList.remove('drag-active');
+  }
+
+  // Touch
+  handle.addEventListener('touchstart', function(e) {
     e.preventDefault();
-    var touch = e.touches[0];
-    _partDragMove(touch.clientX, touch.clientY);
+    onPressStart(e.touches[0].clientX, e.touches[0].clientY);
   }, { passive: false });
 
-  el.addEventListener('touchend', function(e) {
-    clearTimeout(_partDragTimer); _partDragTimer = null;
-    if (_partDragActive) _partDragEnd(e.changedTouches[0].clientX, e.changedTouches[0].clientY);
-    else el.classList.remove('drag-ready');
+  handle.addEventListener('touchend', function(e) {
+    onPressEnd();
+    if (_partDragActive) _partDragEnd();
   });
 
-  el.addEventListener('touchcancel', function() {
-    clearTimeout(_partDragTimer); _partDragTimer = null;
+  handle.addEventListener('touchcancel', function() {
+    onPressEnd();
     _partDragCancel();
   });
 
-  // Mouse (desktop)
-  el.addEventListener('mousedown', function(e) {
-    if (e.target.closest('textarea, input, button')) return;
-    _partDragTimer = setTimeout(function() {
-      _partDragStart(el, e.clientX, e.clientY);
-    }, _PART_LONGPRESS_MS);
+  // Mouse
+  handle.addEventListener('mousedown', function(e) {
+    e.preventDefault();
+    onPressStart(e.clientX, e.clientY);
   });
 
-  window.addEventListener('mousemove', function(e) {
-    if (!_partDragActive) return;
-    _partDragMove(e.clientX, e.clientY);
-  });
-
-  window.addEventListener('mouseup', function(e) {
-    clearTimeout(_partDragTimer); _partDragTimer = null;
-    if (_partDragActive) _partDragEnd(e.clientX, e.clientY);
+  handle.addEventListener('mouseup', function() {
+    onPressEnd();
+    if (_partDragActive) _partDragEnd();
   });
 }
 
-function _partDragStart(el, x, y) {
-  if (navigator.vibrate) navigator.vibrate(40);
-  _partDragEl = el;
-  _partDragActive = true;
-  el.classList.add('drag-ready');
+// Listeners globais de movimento
+document.addEventListener('touchmove', function(e) {
+  if (!_partDragActive) return;
+  e.preventDefault();
+  _partDragMove(e.touches[0].clientX, e.touches[0].clientY);
+}, { passive: false });
 
-  // Cria clone visual
+document.addEventListener('mousemove', function(e) {
+  if (!_partDragActive) return;
+  _partDragMove(e.clientX, e.clientY);
+});
+
+document.addEventListener('mouseup', function() {
+  if (_partDragActive) _partDragEnd();
+});
+
+document.addEventListener('touchend', function() {
+  if (_partDragActive) _partDragEnd();
+});
+
+function _partDragStart(el, handle, x, y) {
+  _partDragEl     = el;
+  _partDragHandle = handle;
+  _partDragActive = true;
+
   var rect = el.getBoundingClientRect();
   _partDragOffX = x - rect.left;
   _partDragOffY = y - rect.top;
 
+  // Clone visual
   _partDragClone = el.cloneNode(true);
   _partDragClone.style.cssText =
-    'position:fixed;top:' + (y - _partDragOffY) + 'px;left:' + (x - _partDragOffX) + 'px;' +
-    'width:' + rect.width + 'px;z-index:9999;pointer-events:none;opacity:0.85;' +
-    'transform:scale(1.03) rotate(1deg);box-shadow:0 20px 60px rgba(0,0,0,0.5);' +
+    'position:fixed;top:' + rect.top + 'px;left:' + rect.left + 'px;' +
+    'width:' + rect.width + 'px;z-index:9999;pointer-events:none;opacity:0.9;' +
+    'transform:scale(1.02) rotate(0.5deg);' +
+    'box-shadow:0 20px 60px rgba(0,0,0,0.5),0 0 0 2px var(--accent-primary);' +
     'border-left:5px solid var(--accent-primary);border-radius:12px;' +
     'background:var(--bg-secondary);padding:15px;transition:none;';
   document.body.appendChild(_partDragClone);
 
-  el.classList.add('dragging');
+  el.style.opacity = '0.3';
+  el.style.transition = 'opacity 0.15s';
 }
 
 function _partDragMove(x, y) {
   if (!_partDragActive || !_partDragClone) return;
+
+  // Move clone
   _partDragClone.style.top  = (y - _partDragOffY) + 'px';
   _partDragClone.style.left = (x - _partDragOffX) + 'px';
 
-  // Limpa indicadores anteriores
-  document.querySelectorAll('.song-part').forEach(function(p) {
-    p.classList.remove('drag-over-top', 'drag-over-bottom');
+  // Encontra alvo e faz reorder fluido
+  var parts  = Array.from(document.querySelectorAll('.song-part'));
+  var target = null;
+  var insertBefore = true;
+
+  parts.forEach(function(p) {
+    if (p === _partDragEl) return;
+    p.classList.remove('drag-over', 'drag-over-up');
+    var r = p.getBoundingClientRect();
+    if (x >= r.left && x <= r.right && y >= r.top && y <= r.bottom) {
+      target = p;
+      insertBefore = (y < r.top + r.height / 2);
+    }
   });
 
-  // Encontra seção alvo
-  var target = _partGetTarget(x, y);
-  if (target && target !== _partDragEl) {
-    var rect = target.getBoundingClientRect();
-    var mid  = rect.top + rect.height / 2;
-    target.classList.add(y < mid ? 'drag-over-top' : 'drag-over-bottom');
+  if (target) {
+    target.classList.add(insertBefore ? 'drag-over-up' : 'drag-over');
+    _partDragLastTarget = { el: target, before: insertBefore };
+  } else {
+    _partDragLastTarget = null;
   }
 }
 
-function _partDragEnd(x, y) {
+function _partDragEnd() {
   if (!_partDragActive) return;
   _partDragActive = false;
 
-  // Limpa clone
   if (_partDragClone) { _partDragClone.remove(); _partDragClone = null; }
+  if (_partDragEl)    { _partDragEl.style.opacity = ''; _partDragEl.style.transition = ''; }
+  if (_partDragHandle) { _partDragHandle.classList.remove('drag-active'); }
 
-  var grid = document.getElementById('notes-grid');
-  var target = _partGetTarget(x, y);
-
-  if (target && target !== _partDragEl) {
-    var rect = target.getBoundingClientRect();
-    var mid  = rect.top + rect.height / 2;
-    if (y < mid) {
-      grid.insertBefore(_partDragEl, target);
+  if (_partDragLastTarget) {
+    var grid = document.getElementById('notes-grid');
+    if (_partDragLastTarget.before) {
+      grid.insertBefore(_partDragEl, _partDragLastTarget.el);
     } else {
-      grid.insertBefore(_partDragEl, target.nextSibling);
+      grid.insertBefore(_partDragEl, _partDragLastTarget.el.nextSibling);
     }
     broadcastEstado();
   }
 
-  // Limpa estados
   document.querySelectorAll('.song-part').forEach(function(p) {
-    p.classList.remove('dragging', 'drag-ready', 'drag-over-top', 'drag-over-bottom');
+    p.classList.remove('dragging', 'drag-ready', 'drag-over', 'drag-over-up');
+    p.style.transform = '';
   });
+
   _partDragEl = null;
+  _partDragHandle = null;
+  _partDragLastTarget = null;
 }
 
 function _partDragCancel() {
   _partDragActive = false;
   if (_partDragClone) { _partDragClone.remove(); _partDragClone = null; }
+  if (_partDragEl)    { _partDragEl.style.opacity = ''; }
+  if (_partDragHandle) { _partDragHandle.classList.remove('drag-active'); }
   document.querySelectorAll('.song-part').forEach(function(p) {
-    p.classList.remove('dragging', 'drag-ready', 'drag-over-top', 'drag-over-bottom');
+    p.classList.remove('dragging', 'drag-ready', 'drag-over', 'drag-over-up');
+    p.style.transform = '';
   });
   _partDragEl = null;
-}
-
-function _partGetTarget(x, y) {
-  var parts = Array.from(document.querySelectorAll('.song-part'));
-  return parts.find(function(p) {
-    if (p === _partDragEl) return false;
-    var r = p.getBoundingClientRect();
-    return x >= r.left && x <= r.right && y >= r.top && y <= r.bottom;
-  }) || null;
+  _partDragHandle = null;
+  _partDragLastTarget = null;
 }
 
 // ── Fim Drag & Drop seções ────────────────────────────────────────────────────
