@@ -4568,8 +4568,20 @@ body { font-family: -apple-system, 'Inter', BlinkMacSystemFont, 'Segoe UI', sans
   z-index: 1000; pointer-events: none;
   touch-action: none;
 }
-.song-part.drag-over { transform: translateY(6px) !important; transition: transform 0.15s ease !important; }
-.song-part.drag-over-up { transform: translateY(-6px) !important; transition: transform 0.15s ease !important; }
+.song-part.drag-over { 
+  border-bottom: 4px solid var(--accent-primary) !important;
+  box-shadow: 0 6px 20px rgba(10,158,110,0.5), 0 0 0 1px rgba(10,158,110,0.2) !important;
+  transform: translateY(-3px) !important; 
+  transition: transform 0.12s ease, border 0.08s ease, box-shadow 0.12s ease !important; 
+  padding-bottom: 18px !important;
+}
+.song-part.drag-over-up { 
+  border-top: 4px solid var(--accent-primary) !important;
+  box-shadow: 0 -6px 20px rgba(10,158,110,0.5), 0 0 0 1px rgba(10,158,110,0.2) !important;
+  transform: translateY(3px) !important; 
+  transition: transform 0.12s ease, border 0.08s ease, box-shadow 0.12s ease !important;
+  padding-top: 18px !important;
+}
 /* Handle de drag das seções — canto direito, sempre visível e sutil */
 .part-drag-handle {
   position: absolute; top: 50%; right: 8px;
