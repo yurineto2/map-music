@@ -385,7 +385,7 @@ window._DEBUG = (window.location.hostname === 'localhost' || window.location.hos
       } catch(e) { return true; }
     },
 
-    _set, _get, _query,
+    _set, _get, _query, _add, _delete, _pollQuery,
 
     async carregarPerfilPorUid(uid) {
       if (uid === 'admin_local' || uid === 'admin') return null;
@@ -3838,7 +3838,7 @@ body { font-family: -apple-system, 'Inter', BlinkMacSystemFont, 'Segoe UI', sans
 .dc-fx-bar    { display: none !important; }
 .dc-fx-panel  { display: none !important; }
 
-/* ── Botão FX no header do Drum Cam ── */
+/* ── Botão FX no header do Drum Pad ── */
 .dc-header-fx-btn {
   background: rgba(138,92,246,0.08);
   border: 1px solid rgba(138,92,246,0.3);
@@ -4056,7 +4056,7 @@ body { font-family: -apple-system, 'Inter', BlinkMacSystemFont, 'Segoe UI', sans
 }
 .dc-addpad-confirm:hover { background: rgba(10,158,110,0.25); }
 
-/* ── Presets salvos do Drum Cam ── */
+/* ── Presets salvos do Drum Pad ── */
 .dc-preset-salvo {
   display: flex; align-items: center; gap: 8px;
   padding: 9px 12px; border-radius: 10px;
@@ -5411,8 +5411,140 @@ body.theme-light .toast-info .toast-icon { background: rgba(0,0,0,0.05) !importa
 }
 .pad.playing .pad-type { color: rgba(10,158,110,0.6); }
 
-/* ── Footer oitava ── */
-.pads-footer {
+/* ── Chat Global ── */
+#modal-chat-global {
+  position: fixed; inset: 0; z-index: 98000;
+  background: rgba(0,0,0,0.92);
+  display: flex; align-items: flex-end; justify-content: center;
+  opacity: 0; pointer-events: none;
+  transition: opacity 0.22s ease;
+}
+#modal-chat-global.show { opacity: 1; pointer-events: auto; }
+.chat-global-sheet {
+  background: #0d0d1a;
+  border-radius: 20px 20px 0 0;
+  border: 1px solid rgba(138,92,246,0.2);
+  border-bottom: none;
+  width: 100%; max-width: 600px;
+  height: 85vh;
+  display: flex; flex-direction: column;
+  overflow: hidden;
+  transform: translateY(100%);
+  transition: transform 0.3s cubic-bezier(0.34,1.2,0.64,1);
+  box-shadow: 0 -8px 40px rgba(0,0,0,0.6);
+}
+#modal-chat-global.show .chat-global-sheet { transform: translateY(0); }
+.chat-global-header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 16px 20px 12px;
+  border-bottom: 1px solid rgba(255,255,255,0.06);
+  flex-shrink: 0;
+}
+.chat-global-title {
+  font-size: 15px; font-weight: 900; color: #fff; letter-spacing: -0.3px;
+  display: flex; align-items: center; gap: 8px;
+}
+.chat-global-online {
+  font-size: 9px; font-weight: 700; letter-spacing: 1px;
+  color: rgba(138,92,246,0.7); text-transform: uppercase;
+}
+.chat-global-close {
+  background: none; border: 1px solid rgba(255,255,255,0.1);
+  color: rgba(255,255,255,0.4); width: 30px; height: 30px;
+  border-radius: 50%; cursor: pointer; display: flex;
+  align-items: center; justify-content: center; transition: 0.18s;
+  touch-action: manipulation;
+}
+.chat-global-close:hover { color: #fff; border-color: rgba(255,255,255,0.3); }
+.chat-global-msgs {
+  flex: 1; overflow-y: auto; -webkit-overflow-scrolling: touch;
+  padding: 12px 16px; display: flex; flex-direction: column; gap: 12px;
+}
+.chat-global-msg {
+  display: flex; gap: 10px; align-items: flex-start;
+}
+.chat-global-msg.mine { flex-direction: row-reverse; }
+.chat-msg-avatar {
+  width: 36px; height: 36px; border-radius: 10px; flex-shrink: 0;
+  background: linear-gradient(135deg, #0A9E6E, #17a349);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 14px; font-weight: 900; color: #000; overflow: hidden;
+}
+.chat-msg-bubble {
+  max-width: 72%; display: flex; flex-direction: column; gap: 3px;
+}
+.chat-global-msg.mine .chat-msg-bubble { align-items: flex-end; }
+.chat-msg-meta {
+  display: flex; align-items: center; gap: 6px; flex-wrap: wrap;
+}
+.chat-global-msg.mine .chat-msg-meta { flex-direction: row-reverse; }
+.chat-msg-nome {
+  font-size: 11px; font-weight: 800; color: rgba(255,255,255,0.7);
+}
+.chat-msg-inst {
+  font-size: 9px; font-weight: 700; color: rgba(138,92,246,0.6);
+  text-transform: uppercase; letter-spacing: 0.5px;
+}
+.chat-msg-hora {
+  font-size: 9px; color: rgba(255,255,255,0.25); font-weight: 600;
+}
+.chat-msg-texto {
+  background: rgba(255,255,255,0.06);
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 12px 12px 12px 4px;
+  padding: 9px 12px; font-size: 13px; font-weight: 500;
+  color: rgba(255,255,255,0.88); line-height: 1.5; position: relative;
+}
+.chat-global-msg.mine .chat-msg-texto {
+  background: rgba(138,92,246,0.18);
+  border-color: rgba(138,92,246,0.3);
+  border-radius: 12px 12px 4px 12px;
+}
+.chat-msg-del {
+  position: absolute; top: 4px; right: 6px;
+  background: none; border: none; color: rgba(255,255,255,0.15);
+  cursor: pointer; font-size: 10px; padding: 2px; line-height: 1;
+  transition: 0.15s; display: none;
+}
+.chat-global-msg.mine .chat-msg-texto:hover .chat-msg-del { display: block; }
+.chat-msg-del:hover { color: rgba(248,113,113,0.8); }
+.chat-global-input-row {
+  display: flex; gap: 8px; padding: 12px 16px 20px;
+  border-top: 1px solid rgba(255,255,255,0.06);
+  flex-shrink: 0;
+  padding-bottom: max(20px, env(safe-area-inset-bottom, 20px));
+}
+.chat-global-input {
+  flex: 1; background: rgba(255,255,255,0.05);
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 12px; padding: 11px 14px;
+  color: #fff; font-size: 13px; font-weight: 500;
+  outline: none; font-family: inherit; transition: border-color 0.18s;
+}
+.chat-global-input:focus { border-color: rgba(138,92,246,0.5); }
+.chat-global-input::placeholder { color: rgba(255,255,255,0.25); }
+.chat-global-send {
+  background: rgba(138,92,246,0.2); border: 1px solid rgba(138,92,246,0.4);
+  color: #a78bfa; width: 44px; height: 44px; border-radius: 12px;
+  cursor: pointer; display: flex; align-items: center; justify-content: center;
+  touch-action: manipulation; transition: 0.18s; flex-shrink: 0;
+}
+.chat-global-send:hover { background: rgba(138,92,246,0.35); }
+.chat-global-empty {
+  flex: 1; display: flex; flex-direction: column;
+  align-items: center; justify-content: center; gap: 10px;
+  color: rgba(255,255,255,0.15);
+}
+/* Tema claro */
+body.theme-light #modal-chat-global { background: rgba(0,0,0,0.4); }
+body.theme-light .chat-global-sheet { background: var(--bg-primary); border-color: rgba(0,0,0,0.09); }
+body.theme-light .chat-global-header { border-bottom-color: rgba(0,0,0,0.07); }
+body.theme-light .chat-global-title { color: #1A1A1E; }
+body.theme-light .chat-msg-nome { color: rgba(26,26,30,0.7); }
+body.theme-light .chat-msg-texto { background: rgba(0,0,0,0.04); border-color: rgba(0,0,0,0.08); color: #1A1A1E; }
+body.theme-light .chat-global-msg.mine .chat-msg-texto { background: rgba(138,92,246,0.1); border-color: rgba(138,92,246,0.2); }
+body.theme-light .chat-global-input { background: var(--bg-secondary); border-color: rgba(0,0,0,0.1); color: #1A1A1E; }
+body.theme-light .chat-global-input-row { border-top-color: rgba(0,0,0,0.07); }
   display: flex; align-items: center; gap: 12px;
   padding: 10px 20px 14px;
   border-top: 1px solid rgba(255,255,255,0.05);
@@ -6580,6 +6712,30 @@ body.auth-pending #toast {
   </div>
 </div>
 
+<!-- CHAT GLOBAL -->
+<div id="modal-chat-global" ontouchend="if(event.target===this){event.preventDefault();fecharChatGlobal();}" onclick="if(event.target===this)fecharChatGlobal()">
+  <div class="chat-global-sheet">
+    <div class="chat-global-header">
+      <div class="chat-global-title">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="rgba(138,92,246,0.8)" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+        Chat Global
+        <span class="chat-global-online" id="chat-global-online"></span>
+      </div>
+      <button class="chat-global-close" onclick="fecharChatGlobal()">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    </div>
+    <div class="chat-global-msgs" id="chat-global-msgs"></div>
+    <div class="chat-global-input-row">
+      <input class="chat-global-input" id="chat-global-input" placeholder="Mensagem para todos os músicos..." maxlength="200"
+        onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();enviarChatGlobal();}">
+      <button class="chat-global-send" onclick="enviarChatGlobal()">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+      </button>
+    </div>
+  </div>
+</div>
+
 <!-- MODAL AMIGOS -->
 <div id="modal-amigos" ontouchend="if(event.target===this){event.preventDefault();_bloquearFantasma();fecharModalAmigos();}" onclick="if(event.target===this)fecharModalAmigos()">
   <div class="amigos-sheet">
@@ -6749,13 +6905,18 @@ body.auth-pending #toast {
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
             Meu Perfil
           </div>
+          <div class="menu-item" onclick="event.stopPropagation();fecharMenu({target:document.body});abrirChatGlobal()">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+            Chat Global
+            <span id="chat-global-badge" style="display:none;margin-left:auto;background:rgba(138,92,246,0.85);color:#fff;font-size:9px;font-weight:900;border-radius:10px;min-width:16px;height:16px;padding:0 4px;align-items:center;justify-content:center;line-height:1;box-sizing:border-box;"></span>
+          </div>
           <div class="menu-item" onclick="event.stopPropagation();fecharMenu({target:document.body});abrirBiblioteca()">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>
             Biblioteca
           </div>
           <div class="menu-item" onclick="event.stopPropagation();fecharMenu({target:document.body});abrirDrumCam()">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="3"/></svg>
-            Drum Cam
+            Drum Pad
           </div>
           <div class="menu-item" onclick="event.stopPropagation();fecharMenu({target:document.body});abrirPads()">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="9" height="9" rx="2"/><rect x="13" y="3" width="9" height="9" rx="2"/><rect x="2" y="13" width="9" height="9" rx="2"/><rect x="13" y="13" width="9" height="9" rx="2"/></svg>
@@ -7197,7 +7358,7 @@ body.auth-pending #toast {
 <div class="drumcam-overlay" id="drumcam-overlay">
   <div class="drumcam-beat" id="drumcam-beat"></div>
   <div class="drumcam-header">
-    <span class="drumcam-title">Drum Cam</span>
+    <span class="drumcam-title">Drum Pad</span>
     <div class="drumcam-song-info">
       <div class="drumcam-song-name" id="dc-song-name">—</div>
       <div class="drumcam-bpm" id="dc-bpm">120</div>
@@ -7465,7 +7626,7 @@ body.auth-pending #toast {
   <input type="file" id="dc-file-input" accept="audio/*">
 </div>
 
-<!-- MODAL FX GLOBAL — Drum Cam -->
+<!-- MODAL FX GLOBAL — Drum Pad -->
 <div class="dc-fx-modal-overlay" id="dc-fx-modal-overlay" onclick="if(event.target===this)dcFecharFxModal()">
   <div class="dc-fx-modal-box">
     <div class="dc-fx-modal-header">
@@ -7499,7 +7660,7 @@ body.auth-pending #toast {
   </div>
 </div>
 
-<!-- MODAL FX POR PAD — Drum Cam -->
+<!-- MODAL FX POR PAD — Drum Pad -->
 <div class="dc-pad-fx-overlay" id="dc-pad-fx-overlay" onclick="if(event.target===this)dcFecharPadFxModal()">
   <div class="dc-pad-fx-box">
     <div class="dc-pad-fx-header">
@@ -7515,7 +7676,7 @@ body.auth-pending #toast {
   </div>
 </div>
 
-<!-- MODAL ADICIONAR PAD — Drum Cam -->
+<!-- MODAL ADICIONAR PAD — Drum Pad -->
 <div class="dc-addpad-overlay" id="dc-addpad-overlay" onclick="if(event.target===this)dcFecharAddPad()">
   <div class="dc-addpad-box">
     <div class="dc-addpad-header">
@@ -12063,7 +12224,9 @@ function renderDcPads() {
     var pad = bank[padIdx] || bank[0];
     var key = _dcBank * 16 + padIdx;
     var hasSample = !!_dcSamples[key];
-    var hasPadFx  = !!(_dcPadFx[_dcBank] && _dcPadFx[_dcBank][padIdx] && _dcPadFx[_dcBank][padIdx].type);
+    var hasPadFx  = !!((_dcPadFx[_dcBank] && _dcPadFx[_dcBank][padIdx]) &&
+      ((_dcPadFx[_dcBank][padIdx].types && _dcPadFx[_dcBank][padIdx].types.length > 0) ||
+       (_dcPadFx[_dcBank][padIdx].type)));
     return '<div class="dc-pad' + (hasSample ? ' has-sample' : '') + (hasPadFx ? ' has-pad-fx' : '') + '"' +
       ' data-color="' + pad.color + '"' +
       ' data-idx="' + padIdx + '"' +
@@ -12243,22 +12406,29 @@ function dcHitPad(padIdx, el) {
     _dcSidechainTrigger(ctx);
   }
 
-  // Verifica FX individual do pad
+  // Verifica FX individual do pad — suporta múltiplos efeitos
   var padCfg = _dcPadFx[_dcBank] && _dcPadFx[_dcBank][padIdx];
-  var hasPadFx = !!(padCfg && padCfg.type && padCfg.enabled);
+  // Migra estrutura antiga se necessário
+  if (padCfg && padCfg.type && !padCfg.types) {
+    padCfg.types = padCfg.enabled ? [padCfg.type] : [];
+  }
+  var padTypes = (padCfg && padCfg.types && padCfg.types.length > 0) ? padCfg.types : null;
+  var hasPadFx = !!padTypes;
 
-  // Se tem FX individual, aplica temporariamente sobrescrevendo os globais
+  // Se tem FX individuais, aplica temporariamente sobrescrevendo os globais
   var _savedEnabled = null, _savedParams = null;
   if (hasPadFx) {
     _savedEnabled = JSON.parse(JSON.stringify(_dcFxEnabled));
     _savedParams  = JSON.parse(JSON.stringify(_dcFxParams));
-    // Desativa todos os globais e ativa só o do pad
+    // Desativa todos os globais e ativa só os do pad
     Object.keys(_dcFxEnabled).forEach(function(k) { _dcFxEnabled[k] = false; });
-    _dcFxEnabled[padCfg.type] = true;
-    // Aplica parâmetros do pad (com fallback para os globais)
-    if (padCfg.params && padCfg.params[padCfg.type]) {
-      _dcFxParams[padCfg.type] = Object.assign({}, _dcFxParams[padCfg.type], padCfg.params[padCfg.type]);
-    }
+    padTypes.forEach(function(fx) {
+      _dcFxEnabled[fx] = true;
+      // Aplica parâmetros do pad com fallback para os globais
+      if (padCfg.params && padCfg.params[fx]) {
+        _dcFxParams[fx] = Object.assign({}, _dcFxParams[fx], padCfg.params[fx]);
+      }
+    });
   }
 
   var _anyFx = hasPadFx || Object.values(_dcFxEnabled).some(Boolean);
@@ -12917,38 +13087,39 @@ function dcAbrirPadFxModal(padIdx) {
   var pad  = bank[padIdx];
   if (!pad) return;
   document.getElementById('dc-pad-fx-padname').textContent = pad.name;
-  // Garantir estrutura
+
+  // Garante estrutura com suporte a múltiplos efeitos
   if (!_dcPadFx[_dcBank]) _dcPadFx[_dcBank] = {};
-  var cfg = _dcPadFx[_dcBank][padIdx] || { type: null, enabled: false, params: {} };
+  var cfg = _dcPadFx[_dcBank][padIdx];
+  // Migra estrutura antiga (type/enabled) para nova (types/params)
+  if (!cfg || !cfg.types) {
+    cfg = {
+      types:  cfg && cfg.type ? [cfg.type] : [],
+      enabled: cfg && cfg.enabled !== false,
+      params: (cfg && cfg.params) || {}
+    };
+  }
   if (!cfg.params) cfg.params = {};
   _dcPadFx[_dcBank][padIdx] = cfg;
 
   var body = document.getElementById('dc-pad-fx-body');
 
-  // Monta HTML
   var html = _DC_FX_TYPES.map(function(fx) {
-    var isSelected = (cfg.type === fx);
-    var isOn = isSelected && cfg.enabled;
-    var paramsHtml = '';
-    if (isSelected) {
-      // Parâmetros do efeito — usa cfg.params com fallback para _dcFxParams global
-      var p = Object.assign({}, _dcFxParams[fx] || {}, cfg.params[fx] || {});
-      paramsHtml = '<div style="margin-top:10px;padding:12px;background:rgba(138,92,246,0.06);border-radius:10px;border:1px solid rgba(138,92,246,0.15);display:flex;flex-direction:column;gap:10px;">' +
-        _dcPadFxParamsHtml(fx, p) +
-        '</div>';
-    }
+    var isOn = cfg.types.indexOf(fx) !== -1;
+    var p = Object.assign({}, _dcFxParams[fx] || {}, cfg.params[fx] || {});
+    var paramsHtml = isOn
+      ? '<div style="margin-top:10px;padding:12px;background:rgba(138,92,246,0.06);border-radius:10px;border:1px solid rgba(138,92,246,0.15);display:flex;flex-direction:column;gap:10px;">' +
+        _dcPadFxParamsHtml(fx, p) + '</div>'
+      : '';
     return '<div class="dc-pad-fx-row' + (isOn ? ' ativo' : '') + '" id="dc-pf-row-' + fx + '" style="flex-direction:column;align-items:stretch;gap:0;">' +
       '<div style="display:flex;align-items:center;justify-content:space-between;">' +
         '<span class="dc-pad-fx-row-name">' + _DC_FX_LABELS[fx] + '</span>' +
-        '<div style="display:flex;align-items:center;gap:10px;flex-shrink:0;">' +
-          '<button onclick="dcPadFxSelecionar(\'' + fx + '\')" style="background:' + (isSelected ? 'rgba(138,92,246,0.2)' : 'rgba(255,255,255,0.04)') + ';border:1px solid ' + (isSelected ? 'rgba(138,92,246,0.5)' : 'rgba(255,255,255,0.1)') + ';color:' + (isSelected ? '#a78bfa' : 'rgba(255,255,255,0.3)') + ';padding:5px 12px;border-radius:20px;font-size:8px;font-weight:900;letter-spacing:1px;cursor:pointer;text-transform:uppercase;touch-action:manipulation;font-family:inherit;">' + (isSelected ? 'Ativo' : 'Selecionar') + '</button>' +
-          (isSelected ? '<button class="dc-fx-onoff' + (isOn ? ' on' : '') + '" id="dc-pf-onoff-' + fx + '" onclick="dcPadFxToggleOn()" style="flex-shrink:0"></button>' : '') +
-        '</div>' +
+        '<button class="dc-fx-onoff' + (isOn ? ' on' : '') + '" onclick="dcPadFxToggleFx(\'' + fx + '\')" style="flex-shrink:0"></button>' +
       '</div>' +
       paramsHtml +
       '</div>';
   }).join('') +
-  '<button onclick="dcPadFxRemover()" style="margin-top:4px;background:rgba(220,38,38,0.08);border:1px solid rgba(220,38,38,0.2);color:rgba(248,113,113,0.7);padding:10px;border-radius:12px;font-size:10px;font-weight:900;letter-spacing:1px;cursor:pointer;text-transform:uppercase;touch-action:manipulation;font-family:inherit;width:100%;">Remover efeito</button>';
+  '<button onclick="dcPadFxRemover()" style="margin-top:4px;background:rgba(220,38,38,0.08);border:1px solid rgba(220,38,38,0.2);color:rgba(248,113,113,0.7);padding:10px;border-radius:12px;font-size:10px;font-weight:900;letter-spacing:1px;cursor:pointer;text-transform:uppercase;touch-action:manipulation;font-family:inherit;width:100%;">Remover todos</button>';
 
   body.innerHTML = html;
   document.getElementById('dc-pad-fx-overlay').classList.add('show');
@@ -12998,29 +13169,24 @@ function dcFecharPadFxModal() {
   _dcPadFxTarget = -1;
 }
 
-function dcPadFxSelecionar(fx) {
+function dcPadFxToggleFx(fx) {
   if (_dcPadFxTarget < 0) return;
   if (!_dcPadFx[_dcBank]) _dcPadFx[_dcBank] = {};
-  var cfg = _dcPadFx[_dcBank][_dcPadFxTarget] || { type: null, enabled: false };
-  cfg.type    = (cfg.type === fx) ? null : fx; // toggle de seleção
-  cfg.enabled = !!cfg.type;
-  _dcPadFx[_dcBank][_dcPadFxTarget] = cfg;
-  dcAbrirPadFxModal(_dcPadFxTarget); // re-renderiza
-  renderDcPads();
-}
-
-function dcPadFxToggleOn() {
-  if (_dcPadFxTarget < 0) return;
-  var cfg = _dcPadFx[_dcBank] && _dcPadFx[_dcBank][_dcPadFxTarget];
-  if (!cfg) return;
-  cfg.enabled = !cfg.enabled;
+  var cfg = _dcPadFx[_dcBank][_dcPadFxTarget];
+  if (!cfg || !cfg.types) return;
+  var idx = cfg.types.indexOf(fx);
+  if (idx === -1) {
+    cfg.types.push(fx); // ativa
+  } else {
+    cfg.types.splice(idx, 1); // desativa
+  }
   dcAbrirPadFxModal(_dcPadFxTarget);
   renderDcPads();
 }
 
 function dcPadFxRemover() {
   if (_dcPadFxTarget < 0) return;
-  if (_dcPadFx[_dcBank]) _dcPadFx[_dcBank][_dcPadFxTarget] = { type: null, enabled: false };
+  if (_dcPadFx[_dcBank]) _dcPadFx[_dcBank][_dcPadFxTarget] = { types: [], params: {} };
   dcFecharPadFxModal();
   renderDcPads();
 }
@@ -13059,11 +13225,11 @@ function dcConfirmarAddPad() {
   showToast && showToast('Pad "' + nome + '" adicionado!', 'success');
 }
 
-// ─── Presets personalizados do Drum Cam ──────────────────────────────────────
+// ─── Presets personalizados do Drum Pad ──────────────────────────────────────
 var _DC_PRESETS_KEY = 'map_dc_presets_v1';
 var _dcPresetAtivo  = null; // nome do preset carregado atualmente
 
-// Captura o estado completo do Drum Cam para salvar
+// Captura o estado completo do Drum Pad para salvar
 function _dcCapturarEstadoCompleto() {
   return {
     fxEnabled:  JSON.parse(JSON.stringify(_dcFxEnabled)),
@@ -13076,7 +13242,7 @@ function _dcCapturarEstadoCompleto() {
   };
 }
 
-// Aplica um estado completo ao Drum Cam
+// Aplica um estado completo ao Drum Pad
 function _dcAplicarEstadoCompleto(dados) {
   if (!dados) return;
 
@@ -13420,6 +13586,151 @@ function _frasesAtualizarVisibilidade() {
 }
 
 // ── Fim Frases Prontas ───────────────────────────────────────────────────────
+
+// ─── Chat Global ─────────────────────────────────────────────────────────────
+var _chatGlobalAberto   = false;
+var _chatGlobalStop     = null;
+var _chatGlobalUltimoT  = 0;
+var _chatGlobalNaoLidas = 0;
+var _CHAT_GLOBAL_COL    = 'chat_global';
+
+function abrirChatGlobal() {
+  var modal = document.getElementById('modal-chat-global');
+  if (!modal) return;
+  modal.classList.add('show');
+  _chatGlobalAberto = true;
+  _chatGlobalNaoLidas = 0;
+  _atualizarBadgeChatGlobal();
+  _chatGlobalIniciarPolling();
+  setTimeout(function() {
+    var input = document.getElementById('chat-global-input');
+    if (input) input.focus();
+  }, 350);
+}
+
+function fecharChatGlobal() {
+  var modal = document.getElementById('modal-chat-global');
+  if (modal) modal.classList.remove('show');
+  _chatGlobalAberto = false;
+}
+
+function _chatGlobalIniciarPolling() {
+  if (_chatGlobalStop) { _chatGlobalStop(); _chatGlobalStop = null; }
+  if (!window._fb || !window._fb._pollQuery) return;
+  _chatGlobalStop = window._fb._pollQuery(
+    _CHAT_GLOBAL_COL, [], function(msgs) {
+      _chatGlobalRenderMsgs(msgs);
+      if (!_chatGlobalAberto && msgs.length > 0) {
+        var ultimoT = msgs[msgs.length - 1]._t || 0;
+        if (ultimoT > _chatGlobalUltimoT) {
+          _chatGlobalNaoLidas++;
+          _atualizarBadgeChatGlobal();
+        }
+      } else {
+        _chatGlobalUltimoT = msgs.length > 0 ? (msgs[msgs.length-1]._t || 0) : 0;
+      }
+    }, 5000
+  );
+}
+
+function _chatGlobalRenderMsgs(msgs) {
+  var container = document.getElementById('chat-global-msgs');
+  if (!container) return;
+  var uid = _getUid();
+  var sorted = (msgs || []).slice().sort(function(a,b){ return (a._t||0)-(b._t||0); }).slice(-100);
+
+  if (!sorted.length) {
+    container.innerHTML = '<div class="chat-global-empty">' +
+      '<svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>' +
+      '<span style="font-size:12px;font-weight:600;">Nenhuma mensagem ainda</span>' +
+      '<span style="font-size:10px;">Seja o primeiro a falar!</span>' +
+      '</div>';
+    return;
+  }
+
+  var atBottom = container.scrollTop + container.clientHeight >= container.scrollHeight - 40;
+
+  container.innerHTML = sorted.map(function(msg) {
+    var isMine = msg.uid === uid;
+    var hora   = msg.hora || '';
+    var nome   = _ve(msg.nome || 'Músico');
+    var inst   = msg.instrumento ? _ve(msg.instrumento) : '';
+    var texto  = _ve(msg.texto || '');
+    var foto   = msg.foto || '';
+    var iniciais = (msg.nome || 'M').charAt(0).toUpperCase();
+
+    var avatarHtml = foto
+      ? '<img src="' + foto + '" style="width:100%;height:100%;object-fit:cover;border-radius:10px;">'
+      : '<span>' + iniciais + '</span>';
+
+    return '<div class="chat-global-msg' + (isMine ? ' mine' : '') + '" data-id="' + _ve(msg.id||'') + '">' +
+      '<div class="chat-msg-avatar">' + avatarHtml + '</div>' +
+      '<div class="chat-msg-bubble">' +
+        '<div class="chat-msg-meta">' +
+          '<span class="chat-msg-nome">' + nome + '</span>' +
+          (inst ? '<span class="chat-msg-inst">' + inst + '</span>' : '') +
+          '<span class="chat-msg-hora">' + hora + '</span>' +
+        '</div>' +
+        '<div class="chat-msg-texto">' +
+          texto +
+          (isMine ? '<button class="chat-msg-del" onclick="excluirChatGlobalMsg(\'' + _ve(msg.id||'') + '\',this)" title="Apagar">✕</button>' : '') +
+        '</div>' +
+      '</div>' +
+    '</div>';
+  }).join('');
+
+  if (atBottom) container.scrollTop = container.scrollHeight;
+}
+
+function enviarChatGlobal() {
+  var input = document.getElementById('chat-global-input');
+  var texto = (input ? input.value : '').trim();
+  if (!texto) return;
+  var perfil = _getPerfilLocal();
+  var uid    = _getUid();
+  var hora   = new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+  var msg = {
+    uid:         uid,
+    nome:        perfil.nome || 'Músico',
+    instrumento: perfil.instrumento || '',
+    foto:        perfil.foto || '',
+    texto:       texto,
+    hora:        hora,
+    _t:          Date.now()
+  };
+  if (window._fb && window._fb._add) {
+    window._fb._add(_CHAT_GLOBAL_COL, msg).catch(function(){});
+  }
+  if (input) { input.value = ''; input.focus(); }
+}
+
+function excluirChatGlobalMsg(id, btnEl) {
+  if (!id || !window._fb || !window._fb._delete) return;
+  window._fb._delete(_CHAT_GLOBAL_COL + '/' + id).then(function(ok) {
+    if (ok && btnEl) {
+      var msgEl = btnEl.closest('.chat-global-msg');
+      if (msgEl) msgEl.remove();
+    }
+  }).catch(function(){});
+}
+
+function _atualizarBadgeChatGlobal() {
+  var badge = document.getElementById('chat-global-badge');
+  if (!badge) return;
+  if (_chatGlobalNaoLidas > 0) {
+    badge.style.display = 'flex';
+    badge.textContent = _chatGlobalNaoLidas > 99 ? '99+' : _chatGlobalNaoLidas;
+  } else {
+    badge.style.display = 'none';
+  }
+}
+
+// Inicia polling do chat ao carregar
+document.addEventListener('DOMContentLoaded', function() {
+  setTimeout(_chatGlobalIniciarPolling, 3000);
+});
+
+// ── Fim Chat Global ───────────────────────────────────────────────────────────
 function dcPararTudo() {}
 function dcMudarOitava(v) {}
 const dcPadNodes = {};
@@ -15391,7 +15702,7 @@ function aplicarEstado(estado) {
         setTimeout(function() {
           if (!document.getElementById('drumcam-overlay').classList.contains('show')) {
             abrirDrumCam();
-            showToast('Drum Cam ativado automaticamente');
+            showToast('Drum Pad ativado automaticamente');
           }
         }, 400);
       }
@@ -15473,7 +15784,7 @@ function aplicarEstado(estado) {
     }
   }
 
-  // Preset do Drum Cam — aplica no viewer se vier da sala e for diferente do atual
+  // Preset do Drum Pad — aplica no viewer se vier da sala e for diferente do atual
   if (estado.dcPreset && isViewer) {
     try {
       if (!_dcPresetAtivo || _dcPresetAtivo !== estado.dcPreset.nome) {
