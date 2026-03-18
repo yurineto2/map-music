@@ -1109,7 +1109,16 @@ async function terminarOnboarding() {
     });
   } catch(e) {}
 
-  // 5. Animação de saída
+  // 5. Verifica status antes de entrar no app
+  if (perfil.instrumento !== 'admin_local') {
+    const ov = document.getElementById('onboarding-overlay');
+    if (ov) ov.classList.add('done');
+    setTimeout(function() { if (ov) ov.remove(); }, 500);
+    _mostrarTelaPendente(nomeUsuario);
+    return;
+  }
+
+  // 5. Animação de saída (admin local pula a tela pendente)
   _mostrarApp();
   const ov = document.getElementById('onboarding-overlay');
   if (ov) ov.classList.add('done');
@@ -1175,6 +1184,16 @@ function _pinVerificar() {
         if (uid && window._fb) {
           var perfilAtual = await window._fb.carregarPerfilPorUid(uid);
           var st = perfilAtual && perfilAtual.status ? perfilAtual.status : 'ativo';
+          // Verifica expiração
+          if (st === 'ativo' && perfilAtual && perfilAtual.acessoExpiraEm && perfilAtual.acessoExpiraEm < Date.now()) {
+            await window._fb.admSetStatus(uid, 'pendente');
+            st = 'pendente';
+          }
+          if (st === 'pendente') {
+            if (screen) screen.style.display = 'none';
+            _mostrarTelaPendente(perfilAtual.nome || '');
+            return;
+          }
           if (st === 'banido' || st === 'bloqueado') {
             // Limpar sessão local e voltar ao onboarding
             localStorage.removeItem('map_perfil_v1');
@@ -26828,15 +26847,15 @@ function admLimparLog() {
 
   window.terminarOnboarding = async function() {
     // Executa o onboarding normal
-    var result = await _origTerminar.apply(this, arguments);
+    await _origTerminar.apply(this, arguments);
 
-    // Tenta notificar o admin via Firestore
+    // Só notifica o admin se o usuário chegou a ter um perfil salvo
     try {
-      if (!window._fb || !window._fb.admNotificarNovoUsuario) return result;
+      if (!window._fb || !window._fb._set) return;
       var perfil = _lsGet('map_perfil_v1', {});
+      if (!perfil.uid) return; // cadastro não completou
       var nomeNovo = perfil.nome || perfil.nomeUsuario || 'Novo usuário';
       var emailNovo = perfil.email || '';
-      // Grava um documento em /admin_notifs/ que o admin verá ao carregar o painel
       await window._fb._set('admin_notifs/' + Date.now(), {
         tipo:    'novo_usuario',
         nome:    nomeNovo,
@@ -26845,7 +26864,6 @@ function admLimparLog() {
         criadoEm: Date.now()
       });
     } catch(e) {}
-    return result;
   };
 })();
 
