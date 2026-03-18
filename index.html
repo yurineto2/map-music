@@ -6973,14 +6973,26 @@ body.auth-pending #toast {
       </div>
     </div>
     <div style="padding:14px 16px 18px;display:flex;flex-direction:column;gap:14px;">
+
+      <!-- Seletor de estilo musical -->
+      <div>
+        <div style="font-size:9px;font-weight:800;letter-spacing:2px;color:rgba(255,255,255,0.3);text-transform:uppercase;margin-bottom:8px;">Estilo Musical</div>
+        <div id="dc-drum-estilos" style="display:flex;flex-wrap:wrap;gap:6px;"></div>
+      </div>
+
+      <!-- Seletor de tambor — 7 tambores -->
       <div>
         <div style="font-size:9px;font-weight:800;letter-spacing:2px;color:rgba(255,255,255,0.3);text-transform:uppercase;margin-bottom:8px;">Tambor</div>
-        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px;" id="dc-drum-chips"></div>
+        <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:6px;" id="dc-drum-chips"></div>
       </div>
+
+      <!-- Display de frequência -->
       <div style="background:#000;border:1px solid rgba(0,255,100,0.15);border-radius:10px;padding:16px;text-align:center;">
         <div id="dc-drum-freq" style="font-family:'Courier New',monospace;font-size:36px;font-weight:900;color:#00ff64;text-shadow:0 0 10px rgba(0,255,100,0.5);line-height:1;">-- Hz</div>
         <div id="dc-drum-note" style="font-size:11px;color:rgba(0,255,100,0.4);margin-top:4px;font-weight:700;letter-spacing:1px;">—</div>
       </div>
+
+      <!-- Barra de range -->
       <div>
         <div style="font-size:9px;font-weight:800;letter-spacing:2px;color:rgba(255,255,255,0.3);text-transform:uppercase;margin-bottom:6px;">Range ideal</div>
         <div id="dc-drum-range-bar" style="position:relative;height:28px;background:rgba(255,255,255,0.05);border-radius:8px;overflow:hidden;">
@@ -6990,6 +7002,7 @@ body.auth-pending #toast {
         </div>
         <div id="dc-drum-range-label" style="font-size:10px;color:rgba(255,255,255,0.2);margin-top:4px;text-align:center;"></div>
       </div>
+
       <button id="dc-drum-tuner-btn" onclick="dcToggleAfinadorBateria()"
         style="background:rgba(0,255,100,0.08);border:1px solid rgba(0,255,100,0.25);color:rgba(0,255,100,0.7);padding:11px;border-radius:10px;font-size:10px;font-weight:900;letter-spacing:2px;text-transform:uppercase;cursor:pointer;font-family:inherit;touch-action:manipulation;transition:0.18s;">
         ▶ Iniciar Microfone
@@ -7970,7 +7983,7 @@ body.auth-pending #toast {
       </div>
     </div>
   </div>
-  <input type="file" id="dc-file-input" accept="audio/*">
+  <input type="file" id="dc-file-input" accept="audio/*" style="display:none;position:absolute;">
 </div>
 
 <!-- MODAL FX GLOBAL — Drum Pad -->
@@ -10312,8 +10325,8 @@ function addPart(title = "PARTE", content = "") {
     + '</button>'
     // × — canto superior direito
     + '<button onclick="this.closest(\'.song-part\').remove(); broadcastEstado();" title="Remover" style="position:absolute;top:6px;right:8px;background:none;border:none;color:rgba(255,255,255,0.25);cursor:pointer;padding:5px;touch-action:manipulation;transition:color 0.15s;font-size:15px;line-height:1;" onmouseenter="this.style.color=\'rgba(255,80,80,0.8)\'" onmouseleave="this.style.color=\'rgba(255,255,255,0.25)\'">&times;</button>'
-    // Seta ▼ — canto inferior esquerdo
-    + '<button onclick="_partMover(this,\'down\')" title="Mover para baixo" style="position:absolute;bottom:6px;left:8px;background:none;border:none;color:rgba(255,255,255,0.25);cursor:pointer;padding:5px;touch-action:manipulation;transition:color 0.15s;line-height:1;" onmouseenter="this.style.color=\'#0A9E6E\'" onmouseleave="this.style.color=\'rgba(255,255,255,0.25)\'">'
+    // Seta ▼ — canto inferior direito
+    + '<button onclick="_partMover(this,\'down\')" title="Mover para baixo" style="position:absolute;bottom:6px;right:8px;background:none;border:none;color:rgba(255,255,255,0.25);cursor:pointer;padding:5px;touch-action:manipulation;transition:color 0.15s;line-height:1;" onmouseenter="this.style.color=\'#0A9E6E\'" onmouseleave="this.style.color=\'rgba(255,255,255,0.25)\'">'
       + '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>'
     + '</button>';
   document.getElementById('notes-grid').appendChild(div);
@@ -12753,7 +12766,7 @@ function dcImportarSample(padIdx) {
   if (inp) { inp.value = ''; inp.click(); }
 }
 
-(function() {
+document.addEventListener('DOMContentLoaded', function() {
   var inp = document.getElementById('dc-file-input');
   if (!inp) return;
   inp.addEventListener('change', function(e) {
@@ -12776,7 +12789,7 @@ function dcImportarSample(padIdx) {
     };
     reader.readAsArrayBuffer(file);
   });
-})();
+});
 
 // ── Hit pad: play sample OR synthesize ──
 function dcHitPad(padIdx, el) {
@@ -14306,21 +14319,43 @@ function _tunerSetLeds(cents) {
 
 // ─── Afinador de Bateria ─────────────────────────────────────────────────────
 var _dcDrumTuner = {
-  ativo: false, stream: null, ctx: null, analyser: null, raf: null, tambor: 'caixa'
+  ativo: false, stream: null, ctx: null, analyser: null, raf: null,
+  tambor: 'bumbo', estilo: 'rock'
 };
 
-var _DC_DRUM_RANGES = {
-  bumbo:    { label: 'Bumbo',     min: 50,  max: 80  },
-  caixa:    { label: 'Caixa',     min: 150, max: 250 },
-  tomAlto:  { label: 'Tom Alto',  min: 200, max: 300 },
-  tomMedio: { label: 'Tom Médio', min: 150, max: 200 },
-  tomBaixo: { label: 'Tom Baixo', min: 100, max: 150 },
-  chimbal:  { label: 'Chimbal',   min: 300, max: 500 }
+var _DC_DRUM_ESTILOS = {
+  rock:   { label: 'Rock',   bumbo:[60,80],  caixa:[180,240], tom1:[220,300], tom2:[160,220], tom3:[120,170], surdo1:[80,120],  surdo2:[60,90]  },
+  pop:    { label: 'Pop',    bumbo:[55,75],  caixa:[200,260], tom1:[230,310], tom2:[170,230], tom3:[130,180], surdo1:[75,110],  surdo2:[55,85]  },
+  metal:  { label: 'Metal',  bumbo:[70,90],  caixa:[220,280], tom1:[250,330], tom2:[180,250], tom3:[140,190], surdo1:[90,130],  surdo2:[65,100] },
+  punk:   { label: 'Punk',   bumbo:[65,85],  caixa:[210,270], tom1:[240,320], tom2:[175,240], tom3:[135,185], surdo1:[85,125],  surdo2:[62,95]  },
+  jazz:   { label: 'Jazz',   bumbo:[50,70],  caixa:[160,220], tom1:[200,280], tom2:[150,210], tom3:[110,160], surdo1:[70,105],  surdo2:[50,80]  },
+  gospel: { label: 'Gospel', bumbo:[55,78],  caixa:[175,235], tom1:[215,295], tom2:[160,225], tom3:[120,170], surdo1:[75,115],  surdo2:[55,85]  },
+  samba:  { label: 'Samba',  bumbo:[50,70],  caixa:[190,250], tom1:[210,280], tom2:[155,215], tom3:[115,165], surdo1:[65,100],  surdo2:[50,78]  },
+  forro:  { label: 'Forró',  bumbo:[52,72],  caixa:[185,245], tom1:[205,275], tom2:[152,212], tom3:[112,162], surdo1:[68,102],  surdo2:[52,80]  },
+  funk:   { label: 'Funk',   bumbo:[58,78],  caixa:[195,255], tom1:[225,305], tom2:[165,225], tom3:[125,175], surdo1:[78,118],  surdo2:[58,88]  },
+  blues:  { label: 'Blues',  bumbo:[52,72],  caixa:[165,225], tom1:[205,280], tom2:[150,210], tom3:[110,160], surdo1:[70,108],  surdo2:[52,82]  },
 };
+
+var _DC_DRUM_TAMBORES = {
+  bumbo:  { label: 'Bumbo'   },
+  caixa:  { label: 'Caixa'   },
+  tom1:   { label: 'Tom 1'   },
+  tom2:   { label: 'Tom 2'   },
+  tom3:   { label: 'Tom 3'   },
+  surdo1: { label: 'Surdo 1' },
+  surdo2: { label: 'Surdo 2' },
+};
+
+function _dcDrumGetRange() {
+  var estilo = _DC_DRUM_ESTILOS[_dcDrumTuner.estilo] || _DC_DRUM_ESTILOS.rock;
+  var faixas = estilo[_dcDrumTuner.tambor] || [60, 100];
+  return { min: faixas[0], max: faixas[1] };
+}
 
 function dcAbrirAfinadorBateria() {
   var overlay = document.getElementById('dc-drum-tuner-overlay');
   if (overlay) overlay.classList.add('show');
+  _dcDrumRenderEstilos();
   _dcDrumRenderChips();
   _dcDrumAtualizarRange();
 }
@@ -14331,27 +14366,48 @@ function dcFecharAfinadorBateria() {
   _dcDrumPararMic();
 }
 
-function dcAbrirAfinadorBateriaGuia() {
+function dcAfinadorBateriaGuia() {
   var overlay = document.getElementById('dc-drum-guia-overlay');
   if (overlay) overlay.classList.add('show');
 }
+
+function dcAbrirAfinadorBateriaGuia() { dcAfinadorBateriaGuia(); }
 
 function dcFecharAfinadorBateriaGuia() {
   var overlay = document.getElementById('dc-drum-guia-overlay');
   if (overlay) overlay.classList.remove('show');
 }
 
+function _dcDrumRenderEstilos() {
+  var cont = document.getElementById('dc-drum-estilos');
+  if (!cont) return;
+  cont.innerHTML = Object.keys(_DC_DRUM_ESTILOS).map(function(k) {
+    var e = _DC_DRUM_ESTILOS[k];
+    var sel = k === _dcDrumTuner.estilo;
+    return '<button onclick="dcDrumSelecionarEstilo(\'' + k + '\')" style="padding:6px 10px;border-radius:20px;font-size:10px;font-weight:800;cursor:pointer;font-family:inherit;touch-action:manipulation;transition:0.15s;white-space:nowrap;' +
+      'background:' + (sel ? 'rgba(138,92,246,0.2)' : 'rgba(255,255,255,0.04)') + ';' +
+      'border:1px solid ' + (sel ? 'rgba(138,92,246,0.6)' : 'rgba(255,255,255,0.08)') + ';' +
+      'color:' + (sel ? '#a78bfa' : 'rgba(255,255,255,0.45)') + ';">' + e.label + '</button>';
+  }).join('');
+}
+
 function _dcDrumRenderChips() {
   var grid = document.getElementById('dc-drum-chips');
   if (!grid) return;
-  grid.innerHTML = Object.keys(_DC_DRUM_RANGES).map(function(k) {
-    var r = _DC_DRUM_RANGES[k];
+  grid.innerHTML = Object.keys(_DC_DRUM_TAMBORES).map(function(k) {
+    var t = _DC_DRUM_TAMBORES[k];
     var sel = k === _dcDrumTuner.tambor;
     return '<button onclick="dcDrumSelecionarTambor(\'' + k + '\')" style="padding:8px 6px;border-radius:8px;font-size:10px;font-weight:800;cursor:pointer;font-family:inherit;touch-action:manipulation;transition:0.15s;' +
       'background:' + (sel ? 'rgba(10,158,110,0.15)' : 'rgba(255,255,255,0.04)') + ';' +
       'border:1px solid ' + (sel ? 'rgba(10,158,110,0.5)' : 'rgba(255,255,255,0.08)') + ';' +
-      'color:' + (sel ? '#0A9E6E' : 'rgba(255,255,255,0.5)') + ';">' + r.label + '</button>';
+      'color:' + (sel ? '#0A9E6E' : 'rgba(255,255,255,0.5)') + ';">' + t.label + '</button>';
   }).join('');
+}
+
+function dcDrumSelecionarEstilo(k) {
+  _dcDrumTuner.estilo = k;
+  _dcDrumRenderEstilos();
+  _dcDrumAtualizarRange();
 }
 
 function dcDrumSelecionarTambor(k) {
@@ -14361,15 +14417,15 @@ function dcDrumSelecionarTambor(k) {
 }
 
 function _dcDrumAtualizarRange() {
-  var r = _DC_DRUM_RANGES[_dcDrumTuner.tambor];
-  if (!r) return;
+  var r = _dcDrumGetRange();
   var FREQ_MIN = 40, FREQ_MAX = 600;
   var pctMin = ((r.min - FREQ_MIN) / (FREQ_MAX - FREQ_MIN)) * 100;
   var pctMax = ((r.max - FREQ_MIN) / (FREQ_MAX - FREQ_MIN)) * 100;
   var zone = document.getElementById('dc-drum-range-zone');
   var lbl  = document.getElementById('dc-drum-range-label');
   if (zone) { zone.style.left = pctMin + '%'; zone.style.width = (pctMax - pctMin) + '%'; }
-  if (lbl)  lbl.textContent = 'Range: ' + r.min + ' – ' + r.max + ' Hz';
+  var estNome = (_DC_DRUM_ESTILOS[_dcDrumTuner.estilo] || {}).label || '';
+  if (lbl) lbl.textContent = estNome + ' · ' + r.min + ' – ' + r.max + ' Hz';
 }
 
 async function dcToggleAfinadorBateria() {
