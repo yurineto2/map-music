@@ -814,6 +814,16 @@ window._DEBUG = (window.location.hostname === 'localhost' || window.location.hos
     async admRemoverConta(uid) {
       try { await _delete('usuarios/' + uid); return true; }
       catch(e) { return false; }
+    },
+    async admBuscarPorEmail(email) {
+      try {
+        var todos = await this.listarTodosUsuarios(500);
+        if (!todos || !todos.length) return null;
+        var emailLower = (email || '').toLowerCase().trim();
+        return todos.find(function(u) {
+          return (u.email || '').toLowerCase().trim() === emailLower;
+        }) || null;
+      } catch(e) { return null; }
     }
   };
 
