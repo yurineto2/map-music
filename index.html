@@ -6348,6 +6348,7 @@ body.auth-pending #toast {
   background: rgba(10,158,110,0.12);
   border-color: rgba(10,158,110,0.5);
 }
+.ob-tabs {
   display: flex;
   gap: 0;
   background: rgba(255,255,255,0.04);
@@ -6588,6 +6589,22 @@ body.auth-pending #toast {
     <div class="ob-tabs">
       <button class="ob-tab active" id="tab-login" onclick="obMostrarAba('login')">Entrar</button>
       <button class="ob-tab" id="tab-cadastro" onclick="obMostrarAba('cadastro')">Criar conta</button>
+    </div>
+
+    <!-- ── SELETOR DE IDIOMA PERMANENTE ──────────────────── -->
+    <div style="display:flex;justify-content:center;gap:8px;margin-top:-12px;margin-bottom:20px;" id="ob-lang-bar">
+      <button onclick="obSelecionarIdioma('pt')" id="ob-lang-pt"
+        style="background:none;border:none;cursor:pointer;opacity:0.4;font-size:18px;padding:2px 4px;transition:opacity 0.2s,transform 0.15s;touch-action:manipulation;"
+        onmouseenter="this.style.opacity='1'" onmouseleave="this.style.opacity=_i18nLang==='pt'?'1':'0.4'"
+        title="Português">🇧🇷</button>
+      <button onclick="obSelecionarIdioma('en')" id="ob-lang-en"
+        style="background:none;border:none;cursor:pointer;opacity:0.4;font-size:18px;padding:2px 4px;transition:opacity 0.2s,transform 0.15s;touch-action:manipulation;"
+        onmouseenter="this.style.opacity='1'" onmouseleave="this.style.opacity=_i18nLang==='en'?'1':'0.4'"
+        title="English">🇺🇸</button>
+      <button onclick="obSelecionarIdioma('es')" id="ob-lang-es"
+        style="background:none;border:none;cursor:pointer;opacity:0.4;font-size:18px;padding:2px 4px;transition:opacity 0.2s,transform 0.15s;touch-action:manipulation;"
+        onmouseenter="this.style.opacity='1'" onmouseleave="this.style.opacity=_i18nLang==='es'?'1':'0.4'"
+        title="Español">🇪🇸</button>
     </div>
 
     <!-- ══ ABA LOGIN ══════════════════════════════════════ -->
@@ -25236,20 +25253,29 @@ function _i18nIniciarOnboarding() {
 
 function obSelecionarIdioma(lang) {
   setLang(lang);
-  // Anima saída da tela de idioma
+
+  // Destaca bandeira ativa
+  ['pt','en','es'].forEach(function(l) {
+    var btn = document.getElementById('ob-lang-' + l);
+    if (btn) btn.style.opacity = l === lang ? '1' : '0.4';
+  });
+
+  // Anima saída da tela de seleção inicial (só na primeira vez)
   var langSel = document.getElementById('ob-lang-select');
-  if (langSel) {
+  if (langSel && langSel.style.display !== 'none') {
     langSel.style.transition = 'opacity 0.25s, transform 0.25s';
     langSel.style.opacity = '0';
     langSel.style.transform = 'translateY(-10px)';
     setTimeout(function() {
       langSel.style.display = 'none';
-      // Restaura o form
       document.querySelectorAll('#onboarding-overlay .ob-tabs, #ob-painel-login, #admin-trigger').forEach(function(el) {
         el.style.display = '';
       });
       _i18nAplicarOnboarding();
     }, 260);
+  } else {
+    // Já está no form normal — só reaplica tradução
+    _i18nAplicarOnboarding();
   }
 }
 
@@ -25260,11 +25286,11 @@ function _i18nAplicarOnboarding() {
   var el = document.getElementById('ob-tagline');
   if (el) el.innerHTML = t('ob.tagline') + '<br><span style="font-size:9px;color:rgba(255,255,255,0.15);letter-spacing:0.8px;font-weight:300;">por Jurandir Neto</span>';
 
-  // Abas — usa firstChild para não apagar classes/estilos do botão
+  // Abas
   el = document.getElementById('tab-login');
-  if (el) { el.childNodes.forEach(function(n){ if(n.nodeType===3) n.textContent = t('ob.tab.login'); }); }
+  if (el) el.textContent = t('ob.tab.login');
   el = document.getElementById('tab-cadastro');
-  if (el) { el.childNodes.forEach(function(n){ if(n.nodeType===3) n.textContent = t('ob.tab.register'); }); }
+  if (el) el.textContent = t('ob.tab.register');
 
   // Labels do login
   var lblEmail = document.querySelector('#ob-painel-login .ob-label');
