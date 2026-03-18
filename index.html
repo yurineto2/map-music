@@ -14563,61 +14563,60 @@ function _dcDrumLoop() {
 
   var sampleRate = _dcDrumTuner.ctx.sampleRate;
   var fftSize    = _dcDrumTuner.analyser.fftSize;
+  var freqEl     = document.getElementById('dc-drum-freq');
+  var statusEl   = document.getElementById('dc-drum-status');
 
   // Lê sinal no domínio do tempo
   var timeBuf = new Float32Array(fftSize);
   _dcDrumTuner.analyser.getFloatTimeDomainData(timeBuf);
 
-  // Calcula RMS para verificar se há sinal
+  // Calcula RMS
   var rms = 0;
   for (var i = 0; i < fftSize; i++) rms += timeBuf[i] * timeBuf[i];
   rms = Math.sqrt(rms / fftSize);
 
-  // Mostra RMS no display para diagnóstico
-  var freqEl = document.getElementById('dc-drum-freq');
-  var statusEl = document.getElementById('dc-drum-status');
-
   if (rms < 0.0005) {
-    // Sem sinal — microfone não está captando nada
-    if (freqEl) { freqEl.textContent = 'SEM SINAL'; freqEl.style.fontSize = '18px'; freqEl.style.color = 'rgba(255,100,100,0.7)'; }
-    if (statusEl) { statusEl.textContent = 'RMS: ' + rms.toFixed(5); }
+    if (freqEl) { freqEl.textContent = '-- Hz'; freqEl.style.fontSize = '36px'; freqEl.style.color = '#00ff64'; }
+    if (statusEl) { statusEl.textContent = 'Ouvindo...'; statusEl.style.color = 'rgba(255,255,255,0.4)'; }
     _dcDrumTuner.raf = requestAnimationFrame(_dcDrumLoop);
     return;
   }
 
-  // Há sinal — mostra RMS e tenta detectar frequência
   if (freqEl) freqEl.style.fontSize = '36px';
 
-  // Tenta FFT
-  var bufLen  = _dcDrumTuner.analyser.frequencyBinCount;
-  var binSize = sampleRate / fftSize;
-  var freqData = new Float32Array(bufLen);
-  _dcDrumTuner.analyser.getFloatFrequencyData(freqData);
+  // Normaliza o sinal para evitar clipping (RMS > 1.0 satura a detecção)
+  var norm = new Float32Array(fftSize);
+  var peak = 0;
+  for (var i = 0; i < fftSize; i++) { var a = Math.abs(timeBuf[i]); if (a > peak) peak = a; }
+  var scale = peak > 0.001 ? 1.0 / peak : 1.0;
+  for (var i = 0; i < fftSize; i++) norm[i] = timeBuf[i] * scale;
 
-  var minBin = Math.max(1, Math.floor(20  / binSize));
-  var maxBin = Math.min(bufLen - 2, Math.floor(800 / binSize));
-  var maxVal = -Infinity, maxBinIdx = -1;
-  for (var i = minBin; i <= maxBin; i++) {
-    if (freqData[i] > maxVal) { maxVal = freqData[i]; maxBinIdx = i; }
+  // ACF no sinal normalizado
+  var freq = _tunerACF(norm, sampleRate);
+
+  // Se ACF falhar, tenta FFT
+  if (freq < 20 || freq > 800) {
+    var bufLen   = _dcDrumTuner.analyser.frequencyBinCount;
+    var binSize  = sampleRate / fftSize;
+    var freqData = new Float32Array(bufLen);
+    _dcDrumTuner.analyser.getFloatFrequencyData(freqData);
+    var minBin = Math.max(1, Math.floor(20  / binSize));
+    var maxBin = Math.min(bufLen - 2, Math.floor(800 / binSize));
+    var maxVal = -Infinity, maxBinIdx = -1;
+    for (var i = minBin; i <= maxBin; i++) {
+      if (freqData[i] > maxVal) { maxVal = freqData[i]; maxBinIdx = i; }
+    }
+    if (maxBinIdx > 0) {
+      var y1 = freqData[maxBinIdx - 1], y2 = freqData[maxBinIdx], y3 = freqData[maxBinIdx + 1];
+      var dn = (y1 - 2*y2 + y3);
+      var off = dn !== 0 ? 0.5*(y1 - y3)/dn : 0;
+      freq = (maxBinIdx + off) * binSize;
+    }
   }
-
-  var freq = -1;
-  if (maxVal > -100 && maxBinIdx > 0) {
-    var y1 = freqData[maxBinIdx - 1];
-    var y2 = freqData[maxBinIdx];
-    var y3 = freqData[maxBinIdx + 1];
-    var denom = (y1 - 2 * y2 + y3);
-    var offset = denom !== 0 ? 0.5 * (y1 - y3) / denom : 0;
-    freq = (maxBinIdx + offset) * binSize;
-  }
-
-  // Fallback ACF
-  if (freq < 20) freq = _tunerACF(timeBuf, sampleRate);
 
   if (freq > 20 && freq < 800) {
     _dcDrumAtualizar(freq);
   } else {
-    if (freqEl) { freqEl.textContent = Math.round(rms * 10000) / 10 + ' rms'; freqEl.style.color = '#fbbf24'; }
     if (statusEl) { statusEl.textContent = 'Detectando...'; statusEl.style.color = 'rgba(255,255,255,0.4)'; }
   }
 
