@@ -25535,20 +25535,28 @@ function _i18nAplicarDOM() {
   var dict = _i18nDict[_i18nLang];
   if (!dict) return;
 
-  // Traduz apenas elementos que têm SOMENTE texto direto — sem filhos HTML
-  // Isso evita quebrar estilos de botões, labels e elementos complexos
+  // IDs já tratados por _i18nAplicarOnboarding — não varrer novamente
+  var excluirIds = new Set(['tab-login','tab-cadastro','btn-login','ob-tagline','ob-link-criar','ob-link-esqueci','ob-btn-verificar','ob-btn-criar']);
+
   function traduzirNo(node) {
     if (node.nodeType !== 1) return;
-    // Pula scripts, estilos e inputs
     if (['SCRIPT','STYLE'].includes(node.tagName)) return;
-    // Traduz placeholder
+
+    // Pula elementos já tratados pelo onboarding
+    if (node.id && excluirIds.has(node.id)) return;
+
+    // Pula .ob-tab para não perder estilo do browser
+    if (node.classList && node.classList.contains('ob-tab')) return;
+
+    // Traduz placeholder de inputs
     if (node.tagName === 'INPUT' || node.tagName === 'TEXTAREA') {
       if (node.placeholder && dict[node.placeholder]) {
         node.placeholder = dict[node.placeholder];
       }
       return;
     }
-    // Só traduz se o elemento tem apenas um filho de texto (sem HTML interno)
+
+    // Só traduz se tem apenas um filho de texto puro
     if (node.childNodes.length === 1 && node.childNodes[0].nodeType === 3) {
       var txt = node.textContent.trim();
       if (txt && dict[txt]) {
@@ -25556,7 +25564,8 @@ function _i18nAplicarDOM() {
         return;
       }
     }
-    // Senão, desce nos filhos
+
+    // Desce nos filhos
     node.childNodes.forEach(traduzirNo);
   }
 
@@ -25565,7 +25574,7 @@ function _i18nAplicarDOM() {
     if (dict[el.placeholder]) el.placeholder = dict[el.placeholder];
   });
 
-  // Varre apenas elementos do app — exclui header/overlays complexos
+  // Varre zonas específicas do app
   var zonas = ['#ob-painel-login', '#ob-painel-cadastro', 'header.app-header', '.menu-list', '#biblioteca-overlay', '#modal-sala'];
   zonas.forEach(function(sel) {
     var el = document.querySelector(sel);
