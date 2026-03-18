@@ -21604,7 +21604,11 @@ body[data-ambiente="vocalista"] #cifra-font-ctrl,
 body[data-ambiente="vocalista"] #show-proxima-alerta,
 body[data-ambiente="vocalista"] .btn-pad-flutuante,
 body[data-ambiente="vocalista"] .perf-song-indicator,
-body[data-ambiente="vocalista"] .swipe-hint { display: none !important; }
+body[data-ambiente="vocalista"] .swipe-hint,
+body[data-ambiente="vocalista"] #tuner-btn,
+body[data-ambiente="vocalista"] #mode-show-btn,
+body[data-ambiente="vocalista"] #perf-font-ctrl,
+body[data-ambiente="vocalista"] #play-btn { display: none !important; }
 
 /* ─── SPLASH ─────────────────────────────────────────────────────────────── */
 #voc-splash {
@@ -22587,8 +22591,8 @@ body[data-ambiente="vocalista"] .swipe-hint { display: none !important; }
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#a78bfa" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
           </div>
           <div class="voc-alb-info">
-            <div class="voc-alb-name">Letras</div>
-            <div class="voc-alb-desc">Busque e leia letras de músicas gospel</div>
+            <div class="voc-alb-name">Editar Letra</div>
+            <div class="voc-alb-desc">Crie letras com seções para suas músicas</div>
           </div>
         </div>
       </div>
@@ -22649,22 +22653,6 @@ body[data-ambiente="vocalista"] .swipe-hint { display: none !important; }
       <!-- Eventos removido -->
 
       <!-- Biblioteca de Músicas — card largo -->
-      <!-- Calendário -->
-      <div class="voc-alb voc-alb-calendario" onclick="vocAbrirPainel('calendario', this)">
-        <div class="voc-alb-deco">
-          <svg width="90" height="90" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="1.5"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/><circle cx="8" cy="14" r="1" fill="white"/><circle cx="12" cy="14" r="1" fill="white"/><circle cx="16" cy="14" r="1" fill="white"/></svg>
-        </div>
-        <div class="voc-alb-inner">
-          <div class="voc-alb-icon" style="background:rgba(251,191,36,0.12);border:1px solid rgba(251,191,36,0.2);">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fbbf24" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
-          </div>
-          <div class="voc-alb-info">
-            <div class="voc-alb-name">Calendário</div>
-            <div class="voc-alb-desc">Cultos, ensaios e eventos</div>
-          </div>
-          <div id="voc-cal-badge" style="display:none;position:absolute;top:10px;right:10px;background:#fbbf24;color:#000;font-size:9px;font-weight:900;padding:2px 7px;border-radius:8px;"></div>
-        </div>
-      </div>
       <div class="voc-alb voc-alb-biblioteca" onclick="vocAbrirPainel('biblioteca', this)" style="grid-column:span 2;aspect-ratio:auto;min-height:90px;">
         <div class="voc-alb-deco" style="bottom:-10px;right:-10px;">
           <svg width="110" height="110" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="1.2"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
@@ -22691,7 +22679,7 @@ body[data-ambiente="vocalista"] .swipe-hint { display: none !important; }
           </div>
           <div style="flex:1;">
             <div class="voc-alb-name">Calendário</div>
-            <div class="voc-alb-desc">Cultos, ensaios e eventos</div>
+            <div class="voc-alb-desc">Anotações de cultos, ensaios e shows</div>
           </div>
           <div id="voc-cal-badge" style="display:none;background:rgba(251,191,36,0.2);border:1px solid rgba(251,191,36,0.4);color:#fbbf24;font-size:9px;font-weight:900;padding:3px 8px;border-radius:8px;letter-spacing:0.5px;flex-shrink:0;"></div>
         </div>
@@ -22708,7 +22696,7 @@ body[data-ambiente="vocalista"] .swipe-hint { display: none !important; }
       <button class="voc-back-btn" onclick="vocFecharPainel()">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
       </button>
-      <span class="voc-panel-title">Criar Letra</span>
+      <span class="voc-panel-title">Editar Letra</span>
       <button id="voc-letra-save-btn" onclick="vocSalvarLetraSecoes()" style="background:rgba(10,158,110,0.12);border:1px solid rgba(10,158,110,0.3);color:#0A9E6E;padding:6px 14px;border-radius:10px;font-size:11px;font-weight:900;cursor:pointer;font-family:inherit;touch-action:manipulation;transition:0.15s;margin-left:auto;">Salvar</button>
     </div>
     <!-- Info da música atual -->
