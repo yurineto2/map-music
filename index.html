@@ -25280,8 +25280,6 @@ function obSelecionarIdioma(lang) {
 }
 
 function _i18nAplicarOnboarding() {
-  if (_i18nLang === 'pt') return;
-
   // Tagline
   var el = document.getElementById('ob-tagline');
   if (el) el.innerHTML = t('ob.tagline') + '<br><span style="font-size:9px;color:rgba(255,255,255,0.15);letter-spacing:0.8px;font-weight:300;">por Jurandir Neto</span>';
@@ -25300,7 +25298,7 @@ function _i18nAplicarOnboarding() {
 
   // Placeholder email
   el = document.getElementById('login-email');
-  if (el) el.placeholder = t('ob.placeholder.email') || 'your@email.com';
+  if (el) el.placeholder = t('ob.placeholder.email') || 'seu@email.com';
 
   // Botão login
   el = document.getElementById('btn-login');
