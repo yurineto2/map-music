@@ -24828,34 +24828,28 @@ function vocSalvarTom(){ if(!_voc.tomSel||!_voc.titulo)return; var tons=(vocTons
 var _vocInfoTimer = null;
 var _vocInfoData = {
   letras: {
-    title: 'Letras Gospel',
+    title: 'Editar Letra',
     cor: '#a78bfa',
     ico: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#a78bfa" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>',
-    steps: ['Digite o nome da música ou artista gospel', 'Escolha na lista de resultados', 'Leia a letra com scroll automático', 'Toque o ícone de estrela para salvar nos favoritos']
+    steps: ['Crie letras organizadas em seções', 'Adicione Verso, Refrão, Ponte, Coro e mais', 'Edite o título de cada seção livremente', 'Salva automaticamente no Firebase']
   },
   tom: {
     title: 'Tonalidade',
     cor: '#4ade80',
     ico: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#4ade80" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>',
-    steps: ['Abra uma letra e toque "Tom"', 'Selecione as notas que sua voz alcança', 'O app sugere a tonalidade ideal', 'Salve o tom para acessar depois']
+    steps: ['Detecta automaticamente o tom da música', 'Sugere tonalidades para voz masculina e feminina', 'Selecione e salve o tom ideal para você', 'Acesse o tom salvo a qualquer momento']
   },
   aulas: {
     title: 'Aulas Vocais',
     cor: '#fb7185',
     ico: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fb7185" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>',
-    steps: ['Escolha uma categoria de técnica', 'Leia a explicação de cada exercício', 'Pratique no seu ritmo', 'Repita diariamente para evoluir']
+    steps: ['Aquecimento vocal com passo a passo', 'Exercícios de respiração com timer 4-4-4', 'Técnicas de afinação e postura', 'Rotina diária de 15 minutos']
   },
   videos: {
     title: 'Vídeos',
     cor: '#60a5fa',
     ico: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#60a5fa" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2" ry="2"/></svg>',
-    steps: ['Busque uma música ou tema gospel', 'Veja sugestões de vídeos do YouTube', 'Toque para abrir direto no YouTube', 'Estude covers e playbacks']
-  },
-  salvos: {
-    title: 'Salvos',
-    cor: '#fbbf24',
-    ico: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fbbf24" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>',
-    steps: ['Letras favoritadas ficam aqui', 'Tons salvos por música aparecem aqui', 'Acesse sem precisar buscar novamente', 'Toque para reabrir qualquer letra']
+    steps: ['Busque músicas ou temas gospel', 'Veja sugestões de vídeos do YouTube', 'Toque para abrir direto no YouTube', 'Estude covers, playbacks e tutoriais']
   }
 };
 
