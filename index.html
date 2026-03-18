@@ -14042,7 +14042,7 @@ var _tunerTuning     = 'standard';
 // Definições de instrumentos e afinações
 var _TUNER_INSTS = {
   guitar:  { label: 'Guitarra', tunings: ['standard','dropD','openG','DADGAD'] },
-  bass:    { label: 'Baixo',    tunings: ['standard','dropD'] },
+  bass:    { label: 'Baixo',    tunings: ['standard','dropD','6cordas','6cordasDropB'] },
   violao:  { label: 'Violão',   tunings: ['standard','dropD','openG','DADGAD'] },
   ukulele: { label: 'Ukulele',  tunings: ['standard'] },
   cavaco:  { label: 'Cavaco',   tunings: ['standard'] }
@@ -14056,8 +14056,10 @@ var _TUNER_STRINGS = {
     DADGAD:   [{n:'D2',f:73.4},{n:'A2',f:110},{n:'D3',f:146.8},{n:'G3',f:196},{n:'A3',f:220},{n:'D4',f:293.7}]
   },
   bass: {
-    standard: [{n:'E1',f:41.2},{n:'A1',f:55},{n:'D2',f:73.4},{n:'G2',f:98}],
-    dropD:    [{n:'D1',f:36.7},{n:'A1',f:55},{n:'D2',f:73.4},{n:'G2',f:98}]
+    standard:     [{n:'E1',f:41.2},{n:'A1',f:55},{n:'D2',f:73.4},{n:'G2',f:98}],
+    dropD:        [{n:'D1',f:36.7},{n:'A1',f:55},{n:'D2',f:73.4},{n:'G2',f:98}],
+    '6cordas':    [{n:'B0',f:30.9},{n:'E1',f:41.2},{n:'A1',f:55},{n:'D2',f:73.4},{n:'G2',f:98},{n:'C3',f:130.8}],
+    '6cordasDropB':[{n:'F#0',f:23.1},{n:'B0',f:30.9},{n:'E1',f:41.2},{n:'A1',f:55},{n:'D2',f:73.4},{n:'G2',f:98}]
   },
   violao: {
     standard: [{n:'E2',f:82.4},{n:'A2',f:110},{n:'D3',f:146.8},{n:'G3',f:196},{n:'B3',f:246.9},{n:'E4',f:329.6}],
@@ -14073,7 +14075,7 @@ var _TUNER_STRINGS = {
   }
 };
 
-var _TUNER_TUNING_LABELS = { standard:'Padrão', dropD:'Drop D', openG:'Open G', DADGAD:'DADGAD' };
+var _TUNER_TUNING_LABELS = { standard:'Padrão', dropD:'Drop D', openG:'Open G', DADGAD:'DADGAD', '6cordas':'6 Cordas', '6cordasDropB':'6C Drop B' };
 
 function toggleTuner() {
   _tunerAberto = !_tunerAberto;
@@ -24327,6 +24329,17 @@ function vocAbrirPerformanceComContexto(fav, proxNome) {
   document.getElementById('voc-perf-overlay').classList.add('ativo');
 }
 
+// Abre performance com a letra atualmente exibida na tela do vocalista
+function vocAbrirPerformanceDaLetraAtual() {
+  var titulo  = (document.getElementById('voc-letra-titulo')  || {}).textContent || '';
+  var artista = (document.getElementById('voc-letra-artista') || {}).textContent || '';
+  var letraEl = document.getElementById('voc-letra-body');
+  var letra   = letraEl ? (letraEl._letraOriginal || letraEl.innerText) : '';
+  if (!titulo && !letra) return;
+  var fav = { titulo: titulo, artista: artista, letra: letra };
+  vocAbrirPerformanceComContexto(fav, null);
+}
+
 // ─── MODO PERFORMANCE VOCALISTA ───────────────────────────────────────────────
 var _vocPerfTimer    = null;
 var _vocSalaSetlist  = null; // setlist recebido da sala: { nomeEvento, codigo, musicas:[], posAtual }
@@ -25239,45 +25252,40 @@ function obSelecionarIdioma(lang) {
 }
 
 function _i18nAplicarOnboarding() {
+  if (_i18nLang === 'pt') return;
+
   // Tagline
   var el = document.getElementById('ob-tagline');
   if (el) el.innerHTML = t('ob.tagline') + '<br><span style="font-size:9px;color:rgba(255,255,255,0.15);letter-spacing:0.8px;font-weight:300;">por Jurandir Neto</span>';
 
-  // Abas
-  el = document.getElementById('tab-login');    if (el) el.textContent = t('ob.tab.login');
-  el = document.getElementById('tab-cadastro'); if (el) el.textContent = t('ob.tab.register');
+  // Abas — usa firstChild para não apagar classes/estilos do botão
+  el = document.getElementById('tab-login');
+  if (el) { el.childNodes.forEach(function(n){ if(n.nodeType===3) n.textContent = t('ob.tab.login'); }); }
+  el = document.getElementById('tab-cadastro');
+  if (el) { el.childNodes.forEach(function(n){ if(n.nodeType===3) n.textContent = t('ob.tab.register'); }); }
 
-  // Login
+  // Labels do login
   var lblEmail = document.querySelector('#ob-painel-login .ob-label');
   if (lblEmail) lblEmail.textContent = t('ob.label.email');
   var lblSenha = document.querySelectorAll('#ob-painel-login .ob-label')[1];
   if (lblSenha) lblSenha.textContent = t('ob.label.password');
+
+  // Placeholder email
   el = document.getElementById('login-email');
-  if (el) el.placeholder = t('ob.placeholder.email') || 'seu@email.com';
+  if (el) el.placeholder = t('ob.placeholder.email') || 'your@email.com';
+
+  // Botão login
   el = document.getElementById('btn-login');
   if (el) el.textContent = t('ob.btn.login');
 
-  // Links do login
-  var links = document.querySelectorAll('#ob-painel-login button:not(.ob-cta):not(#btn-login)');
-  // "Não tem conta? Criar conta" e "Esqueci a senha"
-  _i18nSetText('ob-link-criar', t('ob.link.create') || (t('ob.tab.register')));
+  // Links
+  _i18nSetText('ob-link-criar', t('ob.link.create'));
   _i18nSetText('ob-link-esqueci', t('ob.forgot'));
 
-  // Cadastro — labels
+  // Labels do cadastro
   var lblsCad = document.querySelectorAll('#ob-painel-cadastro .ob-label');
-  var cadLabels = [
-    t('ob.label.name'),
-    t('ob.label.email'),
-    t('ob.label.password'),
-    t('ob.label.password2') || t('ob.label.password')
-  ];
+  var cadLabels = [t('ob.label.name'), t('ob.label.email'), t('ob.label.password'), t('ob.label.password2')];
   lblsCad.forEach(function(lbl, i) { if (cadLabels[i]) lbl.textContent = cadLabels[i]; });
-  el = document.getElementById('ob-btn-verificar');
-  if (el && el.textContent.trim()) el.textContent = t('ob.btn.continue') || t('ob.btn.register');
-
-  // Botão criar conta
-  var btnCriar = document.getElementById('ob-btn-criar');
-  if (btnCriar) btnCriar.textContent = t('ob.btn.register');
 }
 
 function _i18nSetText(id, txt) {
@@ -25523,35 +25531,46 @@ var _i18nDict = {
 
 // Aplica tradução varrendo o DOM
 function _i18nAplicarDOM() {
-  if (_i18nLang === 'pt') return; // PT é o padrão, não precisa varrer
+  if (_i18nLang === 'pt') return;
   var dict = _i18nDict[_i18nLang];
   if (!dict) return;
 
-  // Traduz nós de texto
+  // Traduz apenas elementos que têm SOMENTE texto direto — sem filhos HTML
+  // Isso evita quebrar estilos de botões, labels e elementos complexos
   function traduzirNo(node) {
-    if (node.nodeType === 3) { // TEXT_NODE
+    if (node.nodeType !== 1) return;
+    // Pula scripts, estilos e inputs
+    if (['SCRIPT','STYLE'].includes(node.tagName)) return;
+    // Traduz placeholder
+    if (node.tagName === 'INPUT' || node.tagName === 'TEXTAREA') {
+      if (node.placeholder && dict[node.placeholder]) {
+        node.placeholder = dict[node.placeholder];
+      }
+      return;
+    }
+    // Só traduz se o elemento tem apenas um filho de texto (sem HTML interno)
+    if (node.childNodes.length === 1 && node.childNodes[0].nodeType === 3) {
       var txt = node.textContent.trim();
       if (txt && dict[txt]) {
-        node.textContent = node.textContent.replace(txt, dict[txt]);
+        node.textContent = dict[txt];
+        return;
       }
-    } else if (node.nodeType === 1 && !['SCRIPT','STYLE','INPUT','TEXTAREA'].includes(node.tagName)) {
-      // Traduz placeholder de inputs
-      if (node.tagName === 'INPUT' || node.tagName === 'TEXTAREA') {
-        if (node.placeholder && dict[node.placeholder]) {
-          node.placeholder = dict[node.placeholder];
-        }
-      }
-      node.childNodes.forEach(traduzirNo);
     }
+    // Senão, desce nos filhos
+    node.childNodes.forEach(traduzirNo);
   }
 
-  // Traduz placeholders
+  // Traduz placeholders explicitamente
   document.querySelectorAll('input[placeholder], textarea[placeholder]').forEach(function(el) {
     if (dict[el.placeholder]) el.placeholder = dict[el.placeholder];
   });
 
-  // Varre o body
-  traduzirNo(document.body);
+  // Varre apenas elementos do app — exclui header/overlays complexos
+  var zonas = ['#ob-painel-login', '#ob-painel-cadastro', 'header.app-header', '.menu-list', '#biblioteca-overlay', '#modal-sala'];
+  zonas.forEach(function(sel) {
+    var el = document.querySelector(sel);
+    if (el) traduzirNo(el);
+  });
 }
 
 // Chama após app carregar
