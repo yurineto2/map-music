@@ -14511,7 +14511,7 @@ async function dcToggleAfinadorBateria() {
     if (_dcDrumTuner.ctx.state === 'suspended') await _dcDrumTuner.ctx.resume();
     _dcDrumTuner.analyser = _dcDrumTuner.ctx.createAnalyser();
     _dcDrumTuner.analyser.fftSize = 8192;
-    _dcDrumTuner.analyser.smoothingTimeConstant = 0.85;
+    _dcDrumTuner.analyser.smoothingTimeConstant = 0.7;
     var src = _dcDrumTuner.ctx.createMediaStreamSource(_dcDrumTuner.stream);
     src.connect(_dcDrumTuner.analyser);
     _dcDrumTuner.ativo = true;
@@ -14542,18 +14542,28 @@ function _dcDrumPararMic() {
 
 function _dcDrumLoop() {
   if (!_dcDrumTuner.ativo) return;
-  var buf = new Float32Array(_dcDrumTuner.analyser.fftSize);
-  _dcDrumTuner.analyser.getFloatTimeDomainData(buf);
 
-  // Normaliza o sinal (bateria pode saturar com RMS > 1.0)
-  var peak = 0;
-  for (var i = 0; i < buf.length; i++) { var a = Math.abs(buf[i]); if (a > peak) peak = a; }
-  if (peak > 0.01) {
-    for (var i = 0; i < buf.length; i++) buf[i] = buf[i] / peak * 0.9;
+  var an = _dcDrumTuner.analyser;
+  var sampleRate = _dcDrumTuner.ctx.sampleRate;
+  var bufLen = an.frequencyBinCount;
+  var data = new Uint8Array(bufLen);
+  an.getByteFrequencyData(data);
+
+  var binHz = sampleRate / (an.fftSize);
+  var minBin = Math.floor(30  / binHz);
+  var maxBin = Math.floor(800 / binHz);
+  if (maxBin >= bufLen) maxBin = bufLen - 1;
+
+  var maxVal = 0, maxIdx = -1;
+  for (var i = minBin; i <= maxBin; i++) {
+    if (data[i] > maxVal) { maxVal = data[i]; maxIdx = i; }
   }
 
-  var freq = _tunerACF(buf, _dcDrumTuner.ctx.sampleRate);
-  if (freq > 20) _dcDrumAtualizar(freq);
+  if (maxVal > 20 && maxIdx > 0) {
+    var freq = maxIdx * binHz;
+    _dcDrumAtualizar(freq);
+  }
+
   _dcDrumTuner.raf = requestAnimationFrame(_dcDrumLoop);
 }
 
