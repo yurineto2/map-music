@@ -14544,6 +14544,14 @@ function _dcDrumLoop() {
   if (!_dcDrumTuner.ativo) return;
   var buf = new Float32Array(_dcDrumTuner.analyser.fftSize);
   _dcDrumTuner.analyser.getFloatTimeDomainData(buf);
+
+  // Normaliza o sinal (bateria pode saturar com RMS > 1.0)
+  var peak = 0;
+  for (var i = 0; i < buf.length; i++) { var a = Math.abs(buf[i]); if (a > peak) peak = a; }
+  if (peak > 0.01) {
+    for (var i = 0; i < buf.length; i++) buf[i] = buf[i] / peak * 0.9;
+  }
+
   var freq = _tunerACF(buf, _dcDrumTuner.ctx.sampleRate);
   if (freq > 20) _dcDrumAtualizar(freq);
   _dcDrumTuner.raf = requestAnimationFrame(_dcDrumLoop);
