@@ -766,21 +766,22 @@ window._DEBUG = (window.location.hostname === 'localhost' || window.location.hos
 
     async marcarOnline(uid, nome, instrumento, profileId) {
       try { 
-        await _set('presenca/' + uid, { uid, nome, instrumento: instrumento || '', online: true }, true);
-        // Garante profileId no doc usuario
+        await _set('presenca/' + uid, { uid, nome, instrumento: instrumento || '', online: true, onlineEm: Date.now() }, true);
         if (profileId) {
           await _set('usuarios/' + uid, { uid, nome, nomeLower: nome.toLowerCase(), instrumento: instrumento || null, profileId, atualizadoEm: Date.now() }, true);
         }
       } catch(e) {}
     },
     async marcarOffline(uid) {
-      try { await _set('presenca/' + uid, { online: false }, true); } catch(e) {}
+      try { await _set('presenca/' + uid, { online: false, onlineEm: 0 }, true); } catch(e) {}
     },
     async amigosOnline(uids) {
       if (!uids || !uids.length) return [];
       try {
+        const TIMEOUT = 6 * 60 * 1000; // 6 minutos — heartbeat a cada 4min
+        const agora = Date.now();
         const results = await Promise.all(uids.map(uid => _get('presenca/' + uid)));
-        return results.filter(d => d && d.online).map(d => d);
+        return results.filter(d => d && d.online && (agora - (d.onlineEm || 0)) < TIMEOUT).map(d => d);
       } catch(e) { return []; }
     }
   ,
@@ -1277,6 +1278,8 @@ function _pinVerificar() {
         if (songList) songList.style.display = 'none';
         if (syncBar)  syncBar.style.display  = 'none';
         document.body.dataset.ambiente = 'vocalista';
+        // Garante tela acesa no vocalista
+        if (typeof ativarWakeLock === 'function') ativarWakeLock();
       } else {
         // Ambiente instrumentistas (padrão)
         if (vocalApp) vocalApp.classList.remove('ativo');
@@ -10652,6 +10655,7 @@ function abrirCtxMenu(e, songId, modo) {
 
   // Mostra/esconde opções conforme contexto
   document.getElementById('ctx-fav').style.display      = modo === 'biblioteca' ? 'flex' : 'none';
+  document.getElementById('ctx-editar').style.display   = modo === 'biblioteca' ? 'flex' : 'none';
   document.getElementById('ctx-duplicar').style.display = modo === 'biblioteca' ? 'flex' : 'none';
   document.getElementById('ctx-deletar').style.display  = modo === 'biblioteca' ? 'flex' : 'none';
   document.getElementById('ctx-show').style.display     = modo === 'evento'     ? 'flex' : 'none';
@@ -10673,8 +10677,9 @@ function abrirCtxMenu(e, songId, modo) {
 
 function fecharCtxMenu() {
   var _cm = document.getElementById('album-ctx-menu');
+  if (!_cm) return;
   _cm.classList.remove('show');
-  _cm.style.pointerEvents = 'none';
+  _cm.style.pointerEvents = '';
   ctxSongId = null;
   ctxModo = null;
 }
@@ -10685,6 +10690,7 @@ function ctxAcao(acao) {
   fecharCtxMenu();
   if (id === null || id === undefined) return;
   if (acao === 'abrir')     { loadSongBiblioteca(id); }
+  if (acao === 'editar')    { fecharBiblioteca(); loadSong(id); abrirEditarMusica(id); }
   if (acao === 'fav')       { favoritarBiblioteca(id, null); }
   if (acao === 'duplicar')  { duplicarMusica(id); }
   if (acao === 'deletar')   { deleteSongBiblioteca(id, null); }
@@ -12070,9 +12076,14 @@ function deleteSongBiblioteca(id, e) {
     overlay.remove();
     songs = songs.filter(function(s) { return s.id !== id; });
     updateStorage();
+    // Sincroniza com Firebase
+    var uid = localStorage.getItem('map_uid_v1');
+    if (uid && window._fb && typeof window._fb.backupMusicas === 'function') {
+      window._fb.backupMusicas(uid, songs).catch(function(){});
+    }
     var searchEl = document.getElementById('biblioteca-search');
     renderBiblioteca(searchEl ? searchEl.value : '');
-    showToast('Removida.', 'warning');
+    showToast('Música excluída.', 'warning');
   };
   btns.appendChild(btnCancel); btns.appendChild(btnConfirm);
   box.appendChild(title); box.appendChild(msg); box.appendChild(btns);
@@ -15816,6 +15827,12 @@ function _fbMarcarOffline() {
 // Marca online ao abrir, offline ao fechar
 window.addEventListener('firebase-ready', function() {
   _fbMarcarOnline();
+  // Heartbeat a cada 4 minutos para manter presença viva no mobile
+  setInterval(function() {
+    if (document.visibilityState !== 'hidden') {
+      _fbMarcarOnline();
+    }
+  }, 4 * 60 * 1000);
   // Backup inicial silencioso + verificação de nuvem mais recente
   setTimeout(async function() {
     try {
@@ -17016,8 +17033,16 @@ function liberarWakeLock() {
 // Re-ativa ao voltar ao tab ou desbloquear ecrã
 document.addEventListener('visibilitychange', function() {
   if (document.visibilityState === 'visible') {
-    // Re-adquire se foi perdido
+    // Re-adquire Wake Lock API se foi perdido
     if (!_wakeLock && 'wakeLock' in navigator && navigator.wakeLock) {
+      ativarWakeLock();
+    }
+    // Re-ativa vídeo fallback iOS se parou
+    if (_noSleepVideo && _noSleepVideo.paused) {
+      _noSleepVideo.play().catch(function() {});
+    }
+    // Se nenhum método ativo, tenta de novo
+    if (!_wakeLock && !_noSleepVideo && !_wakeLockTimer) {
       ativarWakeLock();
     }
   }
@@ -20693,6 +20718,10 @@ async function _fbFazerBackupAgora(btn) {
   <div class="ctx-item" id="ctx-abrir" onclick="ctxAcao('abrir')">
     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
     Abrir
+  </div>
+  <div class="ctx-item" id="ctx-editar" onclick="ctxAcao('editar')">
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+    Editar
   </div>
   <div class="ctx-item ctx-fav" id="ctx-fav" onclick="ctxAcao('fav')">
     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
