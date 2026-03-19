@@ -1827,7 +1827,7 @@ if (!localStorage.getItem('map_autofocus_done_v1')) {
     try {
       var isVocalista = document.body.dataset.ambiente === 'vocalista';
       if (isVocalista) {
-        var vocInput = document.getElementById('voc-input-busca');
+        var vocInput = null; // voc-input-busca removido
         if (vocInput && vocInput.offsetParent !== null) { vocInput.focus(); return; }
       }
       var bibInput = document.getElementById('biblioteca-search');
@@ -22161,95 +22161,6 @@ body[data-ambiente="vocalista"] #play-btn { display: none !important; }
 .voc-panel-body::-webkit-scrollbar { display: none; }
 
 /* ─── LETRAS ─────────────────────────────────────────────────────────────── */
-.voc-search-wrap {
-  padding: 14px 16px 12px;
-  background: rgba(9,9,26,0.85);
-  backdrop-filter: blur(32px) saturate(1.6);
-  -webkit-backdrop-filter: blur(32px) saturate(1.6);
-  border-bottom: 1px solid rgba(138,92,246,0.14); flex-shrink: 0;
-}
-.voc-search-row { display: flex; gap: 10px; align-items: center; }
-.voc-search-field { flex: 1; position: relative; }
-.voc-search-field svg { position: absolute; left: 13px; top: 50%; transform: translateY(-50%); pointer-events: none; }
-.voc-search-input {
-  width: 100%; box-sizing: border-box;
-  background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.08);
-  border-radius: 14px; color: #fff; font-size: 14px; font-family: inherit;
-  padding: 12px 14px 12px 40px; outline: none;
-  transition: border-color 0.2s, background 0.2s;
-}
-.voc-search-input:focus { border-color: rgba(138,92,246,0.4); background: rgba(138,92,246,0.05); }
-.voc-search-input::placeholder { color: rgba(255,255,255,0.2); }
-.voc-search-btn {
-  height: 46px; padding: 0 20px;
-  background: #7c3aed; border: none; border-radius: 14px;
-  color: #fff; font-size: 13px; font-weight: 800; font-family: inherit;
-  cursor: pointer; touch-action: manipulation; flex-shrink: 0;
-  transition: opacity 0.2s;
-}
-.voc-search-btn:active { opacity: 0.75; }
-
-/* Result items */
-.voc-result-item {
-  display: flex; align-items: center; gap: 13px;
-  padding: 13px 16px; border-bottom: 1px solid rgba(255,255,255,0.04);
-  cursor: pointer; touch-action: manipulation; transition: background 0.15s;
-}
-.voc-result-item:active { background: rgba(138,92,246,0.06); }
-.voc-result-art {
-  width: 44px; height: 44px; border-radius: 12px; flex-shrink: 0;
-  background: linear-gradient(135deg, rgba(138,92,246,0.18), rgba(80,40,180,0.28));
-  border: 1px solid rgba(138,92,246,0.12);
-  display: flex; align-items: center; justify-content: center;
-}
-.voc-result-name { font-size: 14px; font-weight: 800; color: #fff; line-height: 1.3; }
-.voc-result-artist { font-size: 12px; color: rgba(255,255,255,0.35); margin-top: 2px; }
-
-/* Historico */
-.voc-hist-label {
-  font-size: 10px; font-weight: 800; letter-spacing: 1.5px;
-  color: rgba(255,255,255,0.18); padding: 14px 16px 8px; text-transform: uppercase;
-}
-.voc-hist-item {
-  display: flex; align-items: center; gap: 12px;
-  padding: 11px 16px; border-bottom: 1px solid rgba(255,255,255,0.04);
-  cursor: pointer; touch-action: manipulation;
-}
-.voc-hist-item:active { background: rgba(138,92,246,0.06); }
-.voc-hist-ico {
-  width: 32px; height: 32px; border-radius: 9px; flex-shrink: 0;
-  background: rgba(255,255,255,0.05);
-  display: flex; align-items: center; justify-content: center;
-}
-
-/* Spinner / empty */
-.voc-spinner {
-  width: 26px; height: 26px; margin: 48px auto;
-  border: 2px solid rgba(138,92,246,0.15); border-top-color: #7c3aed;
-  border-radius: 50%; animation: vocSpin 0.65s linear infinite;
-}
-@keyframes vocSpin { to { transform: rotate(360deg); } }
-.voc-empty {
-  display: flex; flex-direction: column; align-items: center;
-  padding: 56px 32px; text-align: center; gap: 10px;
-}
-.voc-empty-ico {
-  width: 56px; height: 56px; border-radius: 18px;
-  background: rgba(138,92,246,0.07); border: 1px solid rgba(138,92,246,0.1);
-  display: flex; align-items: center; justify-content: center; margin-bottom: 4px;
-}
-.voc-empty-title { font-size: 15px; font-weight: 900; color: rgba(255,255,255,0.4); }
-.voc-empty-sub { font-size: 12px; color: rgba(255,255,255,0.2); line-height: 1.6; }
-.voc-link-btn {
-  display: inline-block; margin-top: 6px; padding: 10px 20px;
-  border-radius: 12px; background: rgba(138,92,246,0.1);
-  border: 1px solid rgba(138,92,246,0.2);
-  color: rgba(138,92,246,0.9); font-size: 12px; font-weight: 800;
-  text-decoration: none;
-}
-
-/* ─── TELA DE LETRA ──────────────────────────────────────────────────────── */
-#voc-letra-tela {
   display: none; position: absolute; inset: 0;
   background: rgba(7,7,18,0.92);
   backdrop-filter: blur(48px) saturate(1.8);
@@ -22284,9 +22195,12 @@ body[data-ambiente="vocalista"] #play-btn { display: none !important; }
   display: flex; align-items: center; justify-content: center;
   margin-left: 10px; flex-shrink: 0; touch-action: manipulation;
 }
-.voc-perf-scroll { flex: 1; overflow-y: auto; -webkit-overflow-scrolling: touch; scrollbar-width: none; }
+.voc-perf-scroll { flex: 1; overflow-y: auto; -webkit-overflow-scrolling: touch; scrollbar-width: none; scroll-behavior: smooth; }
 .voc-perf-scroll::-webkit-scrollbar { display: none; }
-.voc-perf-letra { padding: 22px 22px 40px; word-break: break-word; }
+.voc-perf-letra { padding: 22px 22px 40px; word-break: break-word; font-size: 22px; line-height: 1.8; }
+.voc-perf-secao-bloco { margin-bottom: 36px; scroll-margin-top: 60px; }
+.voc-perf-secao-titulo { font-size: 11px; font-weight: 900; letter-spacing: 2px; text-transform: uppercase; color: rgba(138,92,246,0.7); margin-bottom: 10px; }
+.voc-perf-secao-texto { color: #fff; white-space: pre-wrap; }
 .voc-perf-footer {
   flex-shrink: 0; border-top: 1px solid rgba(255,255,255,0.05);
   padding: 10px 16px 14px; display: flex; align-items: center; gap: 10px;
@@ -22319,76 +22233,6 @@ body[data-ambiente="vocalista"] #play-btn { display: none !important; }
 .voc-perf-vel {
   width: 70px; accent-color: #8a5cf6;
 }
-#voc-letra-tela.aberta { display: flex; }
-.voc-letra-topbar {
-  display: flex; align-items: center; gap: 10px;
-  padding: 0 12px 0 8px; height: 56px; flex-shrink: 0;
-  background: rgba(9,9,26,0.88); backdrop-filter: blur(36px) saturate(1.8); -webkit-backdrop-filter: blur(36px) saturate(1.8); border-bottom: 1px solid rgba(138,92,246,0.18);
-}
-.voc-icon-btn {
-  width: 38px; height: 38px; border-radius: 11px;
-  background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.08);
-  color: rgba(255,255,255,0.6); cursor: pointer;
-  display: flex; align-items: center; justify-content: center;
-  flex-shrink: 0; touch-action: manipulation; transition: all 0.2s;
-}
-.voc-icon-btn:active { background: rgba(138,92,246,0.12); }
-.voc-icon-btn.fav-ativo { background: rgba(245,196,0,0.08); border-color: rgba(245,196,0,0.2); color: #f5c400; }
-.voc-letra-info { flex: 1; min-width: 0; }
-.voc-letra-titulo { font-size: 14px; font-weight: 900; color: #fff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.voc-letra-artista { font-size: 11px; color: rgba(138,92,246,0.65); font-weight: 700; margin-top: 1px; }
-.voc-controls-bar {
-  display: flex; align-items: center; gap: 8px;
-  padding: 9px 14px; border-bottom: 1px solid rgba(255,255,255,0.04); flex-shrink: 0;
-}
-.voc-ctrl {
-  display: flex; align-items: center; gap: 5px;
-  background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.07);
-  border-radius: 9px; color: rgba(255,255,255,0.45);
-  font-size: 11px; font-weight: 800; padding: 6px 11px;
-  cursor: pointer; font-family: inherit; touch-action: manipulation; transition: all 0.2s;
-}
-.voc-ctrl:active { background: rgba(138,92,246,0.12); }
-.voc-ctrl.ativo { background: rgba(138,92,246,0.12); border-color: rgba(138,92,246,0.3); color: #8a5cf6; }
-.voc-letra-scroll { flex: 1; overflow-y: auto; -webkit-overflow-scrolling: touch; scrollbar-width: none; }
-.voc-letra-scroll::-webkit-scrollbar { display: none; }
-.voc-letra-texto { padding: 20px 20px 120px; word-break: break-word; }
-.voc-transp-bar {
-  display: none; align-items: center; justify-content: center; gap: 10px;
-  padding: 10px 16px;
-  background: rgba(138,92,246,0.08);
-  border-bottom: 1px solid rgba(138,92,246,0.12);
-  flex-shrink: 0;
-}
-.voc-transp-bar.visivel { display: flex; }
-.voc-transp-btn {
-  width: 36px; height: 36px; border-radius: 10px;
-  background: rgba(138,92,246,0.12); border: 1px solid rgba(138,92,246,0.25);
-  color: #a78bfa; font-size: 18px; font-weight: 900;
-  cursor: pointer; display: flex; align-items: center; justify-content: center;
-  touch-action: manipulation; transition: background 0.15s;
-}
-.voc-transp-btn:active { background: rgba(138,92,246,0.3); }
-.voc-transp-display {
-  min-width: 80px; text-align: center;
-  font-size: 13px; font-weight: 900; color: #fff;
-  letter-spacing: 0.5px;
-}
-.voc-transp-tom { font-size: 20px; color: #a78bfa; }
-.voc-transp-delta { font-size: 10px; color: rgba(255,255,255,0.35); margin-top: 1px; }
-.voc-secao-tag {
-  display: inline-block; font-size: 9px; font-weight: 900;
-  letter-spacing: 2px; text-transform: uppercase;
-  padding: 3px 10px; border-radius: 6px; margin: 18px 0 8px; border: 1px solid;
-}
-.voc-secao-tag.intro  { color:rgba(100,200,255,0.8); background:rgba(100,200,255,0.07); border-color:rgba(100,200,255,0.15); }
-.voc-secao-tag.verso  { color:rgba(255,255,255,0.4); background:rgba(255,255,255,0.03); border-color:rgba(255,255,255,0.07); }
-.voc-secao-tag.pre    { color:rgba(255,180,60,0.8);  background:rgba(255,180,60,0.07);  border-color:rgba(255,180,60,0.15); }
-.voc-secao-tag.refrao { color:rgba(167,139,250,0.95);background:rgba(138,92,246,0.12);  border-color:rgba(138,92,246,0.28); }
-.voc-secao-tag.ponte  { color:rgba(100,220,180,0.8); background:rgba(100,220,180,0.07); border-color:rgba(100,220,180,0.15); }
-.voc-secao-tag.outra  { color:rgba(255,255,255,0.3); background:rgba(255,255,255,0.02); border-color:rgba(255,255,255,0.06); }
-.voc-secao-bloco { margin-bottom: 4px; white-space: pre-wrap; }
-
 /* ─── TOM ────────────────────────────────────────────────────────────────── */
 .voc-card {
   margin: 12px 16px 0;
@@ -22636,12 +22480,7 @@ body[data-ambiente="vocalista"] #play-btn { display: none !important; }
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
           Amigos
         </div>
-        <div style="margin:4px 12px;border-top:1px solid rgba(255,255,255,0.05);"></div>
-        <div style="padding:10px 18px 6px;font-size:9px;font-weight:800;color:rgba(138,92,246,0.5);letter-spacing:2px;text-transform:uppercase;">IA</div>
-        <div class="menu-item" onclick="_vocPedirChave();fecharVocalMenu()">
-          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
-          Chave API
-        </div>
+        
         <div style="margin:4px 12px;border-top:1px solid rgba(255,255,255,0.05);"></div>
         <div class="menu-item danger" onclick="desconectar()" style="color:rgba(248,113,113,0.8);margin-bottom:4px;">
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
@@ -23233,8 +23072,12 @@ body[data-ambiente="vocalista"] #play-btn { display: none !important; }
   <!-- MODO PERFORMANCE VOCALISTA -->
   <div id="voc-perf-overlay">
     <div class="voc-perf-header">
-      <div class="voc-perf-nome" id="voc-perf-nome">—</div>
-      <div class="voc-perf-tom" id="voc-perf-tom" style="display:none;"></div>
+      <div style="display:flex;flex-direction:column;gap:2px;flex:1;min-width:0;">
+        <div class="voc-perf-nome" id="voc-perf-nome">—</div>
+        <div class="voc-perf-tom" id="voc-perf-tom" style="display:none;"></div>
+      </div>
+      <!-- Indicador de seção atual -->
+      <div id="voc-perf-secao" style="display:none;background:rgba(138,92,246,0.15);border:1px solid rgba(138,92,246,0.3);border-radius:8px;padding:3px 10px;font-size:10px;font-weight:900;color:#a78bfa;letter-spacing:1px;text-transform:uppercase;white-space:nowrap;"></div>
       <button class="voc-perf-close" onclick="vocFecharPerformance()" title="Sair do modo performance">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
       </button>
@@ -23247,57 +23090,16 @@ body[data-ambiente="vocalista"] #play-btn { display: none !important; }
         <div class="voc-perf-prox-lbl">A seguir</div>
         <div class="voc-perf-prox-nome" id="voc-perf-prox-nome"></div>
       </div>
-      <div class="voc-perf-scroll-ctrl" style="margin-left:auto;">
+      <div class="voc-perf-scroll-ctrl" style="margin-left:auto;display:flex;align-items:center;gap:8px;">
+        <!-- Controle de fonte -->
+        <button onclick="vocPerfFonteMenos()" style="background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.1);border-radius:8px;color:rgba(255,255,255,0.5);width:30px;height:30px;font-size:14px;cursor:pointer;display:flex;align-items:center;justify-content:center;touch-action:manipulation;">A−</button>
+        <button onclick="vocPerfFonteMais()" style="background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.1);border-radius:8px;color:rgba(255,255,255,0.5);width:30px;height:30px;font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center;touch-action:manipulation;">A+</button>
         <input type="range" class="voc-perf-vel" id="voc-perf-vel" min="20" max="120" step="5" value="55" title="Velocidade">
         <button class="voc-perf-scroll-btn" id="voc-perf-scroll-btn" onclick="vocPerfToggleScroll()">
           <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="6 9 12 15 18 9"/></svg>
           Auto
         </button>
       </div>
-    </div>
-  </div>
-
-  <!-- TELA LETRA -->
-  <div id="voc-letra-tela">
-    <div class="voc-letra-topbar">
-      <button class="voc-icon-btn" onclick="vocFecharLetra()">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
-      </button>
-      <div class="voc-letra-info">
-        <div class="voc-letra-titulo" id="voc-letra-titulo"></div>
-        <div class="voc-letra-artista" id="voc-letra-artista"></div>
-      </div>
-      <button class="voc-icon-btn" id="voc-fav-btn" onclick="vocToggleFav()">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
-      </button>
-      <button onclick="vocAbrirPerformanceDaLetraAtual()" title="Cantar — modo show"
-        style="background:rgba(138,92,246,0.18);border:1px solid rgba(138,92,246,0.45);border-radius:20px;padding:5px 12px;color:#a78bfa;font-size:11px;font-weight:800;cursor:pointer;font-family:inherit;display:flex;align-items:center;gap:5px;letter-spacing:0.3px;flex-shrink:0;">
-        <svg width="9" height="9" viewBox="0 0 24 24" fill="#a78bfa"><polygon points="5 3 19 12 5 21 5 3"/></svg>
-        CANTAR
-      </button>
-    </div>
-    <div class="voc-controls-bar">
-      <button class="voc-ctrl" onclick="vocFonteMenos()"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="5" y1="12" x2="19" y2="12"/></svg>A</button>
-      <button class="voc-ctrl" onclick="vocFonteMais()"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>A</button>
-      <button class="voc-ctrl" id="voc-scroll-btn" onclick="vocToggleScroll()"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="6 9 12 15 18 9"/></svg>Auto</button>
-      <input id="voc-letra-vel" type="range" min="15" max="120" value="55" step="5"
-        style="width:60px;height:3px;accent-color:#a78bfa;cursor:pointer;opacity:0.6;vertical-align:middle;"
-        title="Velocidade do scroll"
-        oninput="if(_voc.scrollTimer){_vocPararScroll();_vocIniciarScroll();}">
-      <button class="voc-ctrl" onclick="vocIrParaTom()" style="margin-left:auto;"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>Tom</button>
-      <button class="voc-ctrl" id="voc-transp-toggle" onclick="vocToggleTransp()" title="Transpor tom da letra"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="17 1 21 5 17 9"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/><polyline points="7 23 3 19 7 15"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/></svg>Tom↕</button>
-    </div>
-    <div class="voc-transp-bar" id="voc-transp-bar">
-      <button class="voc-transp-btn" onclick="vocTransporLetra(-1)" title="-1 semitom">−</button>
-      <div class="voc-transp-display">
-        <div class="voc-transp-tom" id="voc-transp-tom">—</div>
-        <div class="voc-transp-delta" id="voc-transp-delta">tom original</div>
-      </div>
-      <button class="voc-transp-btn" onclick="vocTransporLetra(1)" title="+1 semitom">+</button>
-      <button onclick="vocResetarTransp()" style="margin-left:8px;background:none;border:none;color:rgba(255,255,255,0.25);font-size:11px;font-weight:700;cursor:pointer;padding:4px 8px;touch-action:manipulation;">reset</button>
-    </div>
-    <div class="voc-letra-scroll" id="voc-letra-scroll">
-      <div class="voc-letra-texto" id="voc-letra-texto"></div>
     </div>
   </div>
 
@@ -23468,465 +23270,6 @@ function vocAba(id) {
   var map = { letras:'letras', tonalidades:'tom', aulas:'aulas', videos:'videos', favoritos:'salvos' };
   vocAbrirPainel(map[id]||id);
 }
-
-// ── Histórico ─────────────────────────────────────────────────────────────────
-function _vocAddHist(item){ var h=vocHist()||[]; h=h.filter(function(x){ return !(x.titulo===item.titulo&&x.artista===item.artista); }); h.unshift(item); vocHist(h.slice(0,20)); }
-function _vocRenderHist(){
-  var el=document.getElementById('voc-hist-area'); if(!el)return;
-  var h=vocHist()||[]; if(!h.length){ el.innerHTML=''; return; }
-  el.innerHTML='<div class="voc-hist-label">Recentes</div>'
-    +h.slice(0,6).map(function(x){
-      return '<div class="voc-hist-item" data-titulo="'+_ve(x.titulo)+'" data-artista="'+_ve(x.artista)+'" data-letra="'+_ve(x.letra)+'" onclick="vocAbrirDaHistEl(this)">'
-        +'<div class="voc-hist-ico"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="rgba(138,92,246,0.55)" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg></div>'
-        +'<div><div style="font-size:13px;font-weight:700;color:rgba(255,255,255,0.65);">'+_ve(x.titulo)+'</div><div style="font-size:11px;color:rgba(255,255,255,0.3);">'+_ve(x.artista)+'</div></div>'
-        +'</div>';
-    }).join('');
-}
-function vocAbrirDaHistEl(el){
-  var t=el.getAttribute('data-titulo'), a=el.getAttribute('data-artista'), l=el.getAttribute('data-letra');
-  if(t&&a&&l){ _voc.titulo=t;_voc.artista=a;_voc.letra=l; vocAbrirLetra(t,a,l); }
-}
-
-// ── Claude API ────────────────────────────────────────────────────────────────
-function _vocGetKey(){ try{ return localStorage.getItem('voc_claude_key')||''; }catch(e){ return ''; } }
-function _vocSaveKey(k){ try{ localStorage.setItem('voc_claude_key', k.trim()); }catch(e){} }
-
-async function _vocClaude(prompt, maxTokens) {
-  var key = _vocGetKey();
-  if(!key) { _vocPedirChave(); return null; }
-  try {
-    var r = await Promise.race([
-      fetch('https://api.anthropic.com/v1/messages', {
-        method:'POST',
-        headers:{
-          'Content-Type':'application/json',
-          'anthropic-version':'2023-06-01',
-          'anthropic-dangerous-direct-browser-access':'true',
-          'x-api-key': key
-        },
-        body: JSON.stringify({ model:'claude-haiku-4-5', max_tokens:maxTokens||1000, messages:[{role:'user',content:prompt}] })
-      }),
-      new Promise(function(_,rej){ setTimeout(function(){ rej(new Error('timeout')); }, 30000); })
-    ]);
-    if(r.status === 401) { _vocSaveKey(''); _vocPedirChave('Chave inválida. Insira novamente.'); return null; }
-    if(!r.ok){ var e=await r.text(); if (window._DEBUG) console.error('API erro:',r.status,e); return null; }
-    var d=await r.json();
-    return d.content&&d.content[0]?d.content[0].text:null;
-  } catch(e) { return null; }
-}
-
-function _vocPedirChave(msgExtra) {
-  // Remove modal anterior se existir
-  var old = document.getElementById('voc-key-modal');
-  if(old) old.remove();
-
-  var msg = msgExtra || 'Para usar Letras, Aulas e Vídeos, insira sua chave da API Anthropic.';
-  var overlay = document.createElement('div');
-  overlay.id = 'voc-key-modal';
-  overlay.style.cssText = 'position:fixed;inset:0;z-index:99999;background:rgba(0,0,0,0.88);backdrop-filter:blur(24px) saturate(1.6);display:flex;align-items:flex-end;justify-content:center;padding:0;';
-  overlay.innerHTML =
-    '<div style="background:#0d0d1a;border:1px solid rgba(138,92,246,0.25);border-radius:24px 24px 0 0;padding:28px 24px 40px;width:100%;max-width:480px;box-shadow:0 -20px 60px rgba(0,0,0,0.8);">'
-    + '<div style="width:36px;height:4px;background:rgba(255,255,255,0.12);border-radius:2px;margin:0 auto 24px;"></div>'
-    + '<div style="display:flex;align-items:center;gap:12px;margin-bottom:8px;">'
-    +   '<div style="width:42px;height:42px;border-radius:12px;background:rgba(138,92,246,0.15);border:1px solid rgba(138,92,246,0.25);display:flex;align-items:center;justify-content:center;">'
-    +     '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#a78bfa" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>'
-    +   '</div>'
-    +   '<div>'
-    +     '<div style="font-size:15px;font-weight:900;color:#fff;">Chave da API</div>'
-    +     '<div style="font-size:11px;color:rgba(138,92,246,0.7);font-weight:700;letter-spacing:0.5px;">Anthropic · claude.ai</div>'
-    +   '</div>'
-    + '</div>'
-    + '<p style="font-size:13px;color:rgba(255,255,255,0.45);line-height:1.6;margin:16px 0 20px;">' + msg + '</p>'
-    + '<input id="voc-key-input" type="password" placeholder="sk-ant-..." '
-    +   'style="width:100%;box-sizing:border-box;background:rgba(255,255,255,0.05);border:1px solid rgba(138,92,246,0.3);border-radius:12px;color:#fff;font-size:14px;padding:14px 16px;outline:none;font-family:inherit;letter-spacing:0.5px;margin-bottom:12px;">'
-    + '<button onclick="_vocConfirmarChave()" '
-    +   'style="width:100%;padding:15px;border-radius:12px;background:linear-gradient(135deg,#7c3aed,#8a5cf6);border:none;color:#fff;font-size:14px;font-weight:800;cursor:pointer;font-family:inherit;letter-spacing:0.5px;touch-action:manipulation;">'
-    +   'Salvar e continuar'
-    + '</button>'
-    + '<button onclick="var m=document.getElementById(&quot;voc-key-modal&quot;);if(m)m.remove();" '
-    +   'style="width:100%;padding:12px;border-radius:12px;background:none;border:none;color:rgba(255,255,255,0.25);font-size:13px;cursor:pointer;font-family:inherit;margin-top:8px;touch-action:manipulation;">'
-    +   'Agora não'
-    + '</button>'
-    + '<p style="font-size:11px;color:rgba(255,255,255,0.18);text-align:center;margin-top:16px;line-height:1.5;">A chave fica salva apenas neste dispositivo.</p>'    + '<div style="margin-top:10px;background:rgba(251,191,36,0.05);border:1px solid rgba(251,191,36,0.15);border-radius:12px;padding:11px 14px;display:flex;gap:8px;align-items:flex-start;">'    +   '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="rgba(251,191,36,0.6)" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="margin-top:1px;flex-shrink:0;"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>'    +   '<span style="font-size:11px;color:rgba(251,191,36,0.55);line-height:1.6;">Recomendamos criar uma chave com <strong style="color:rgba(251,191,36,0.75);">limite de gasto baixo</strong> no console Anthropic, pois ela fica salva no armazenamento local do navegador.</span>'    + '</div>'    + '<div style="margin-top:14px;background:rgba(138,92,246,0.07);border:1px solid rgba(138,92,246,0.18);border-radius:14px;padding:16px 18px;">'    +   '<div style="font-size:11px;font-weight:900;color:rgba(138,92,246,0.8);letter-spacing:1px;margin-bottom:12px;">COMO OBTER SUA CHAVE</div>'    +   '<div style="font-size:12px;color:rgba(255,255,255,0.5);line-height:2;">'    +     '<span style="color:#a78bfa;font-weight:800;">1.</span> Acesse <a href="https://console.anthropic.com" target="_blank" style="color:#a78bfa;text-decoration:none;font-weight:700;">console.anthropic.com</a><br>'    +     '<span style="color:#a78bfa;font-weight:800;">2.</span> Faça login ou crie uma conta gratuita<br>'    +     '<span style="color:#a78bfa;font-weight:800;">3.</span> No menu lateral, toque em <span style="color:#fff;font-weight:700;">API Keys</span><br>'    +     '<span style="color:#a78bfa;font-weight:800;">4.</span> Toque em <span style="color:#fff;font-weight:700;">Create Key</span> e dê um nome<br>'    +     '<span style="color:#a78bfa;font-weight:800;">5.</span> Copie a chave (começa com <span style="color:#fff;font-weight:700;">sk-ant-</span>)<br>'    +     '<span style="color:#a78bfa;font-weight:800;">6.</span> Cole no campo acima e toque em Salvar'    +   '</div>'    + '</div>'
-    + '</div>';
-  document.body.appendChild(overlay);
-  setTimeout(function(){ var i=document.getElementById('voc-key-input'); if(i)i.focus(); }, 300);
-}
-
-function _vocConfirmarChave() {
-  var input = document.getElementById('voc-key-input');
-  var key = input ? input.value.trim() : '';
-  if(!key || !key.startsWith('sk-ant-')) {
-    input.style.borderColor = 'rgba(248,113,113,0.6)';
-    input.placeholder = 'Chave inválida — deve começar com sk-ant-...';
-    setTimeout(function(){ input.style.borderColor = 'rgba(138,92,246,0.3)'; }, 2000);
-    return;
-  }
-  _vocSaveKey(key);
-  var modal = document.getElementById('voc-key-modal');
-  if(modal) modal.remove();
-  showToast('Chave salva!', 'success');
-  // Reexecuta a busca automaticamente se houver termo digitado
-  var inputBusca = document.getElementById('voc-input-busca');
-  if(inputBusca && inputBusca.value.trim()) {
-    vocBuscarLetras();
-  }
-}
-
-// ── Busca de letras ───────────────────────────────────────────────────────────
-var _vocBuscaTimer = null;
-function vocBuscarLetrasDebounce(){
-  clearTimeout(_vocBuscaTimer);
-  _vocBuscaTimer = setTimeout(vocBuscarLetras, 300);
-}
-
-async function vocBuscarLetras(){
-  clearTimeout(_vocBuscaTimer);
-  var q=(document.getElementById('voc-input-busca').value||'').trim(); if(!q)return;
-  var res=document.getElementById('voc-resultados');
-  var area=document.getElementById('voc-hist-area');
-  if(area)area.style.display='none';
-  res.innerHTML='<div class="voc-spinner"></div>';
-
-  // Extrai título e artista do termo digitado (ex: "Título - Artista" ou só "Título")
-  var partes = q.split(/\s*[-–]\s*/);
-  var tituloGuess = partes[0].trim();
-  var artistaGuess = partes[1] ? partes[1].trim() : '';
-
-  // Tenta carregar direto pelo lyrics.ovh sem precisar de chave Claude
-  try {
-    var urlDireto = 'https://api.lyrics.ovh/v1/'
-      + encodeURIComponent(artistaGuess || 'gospel')
-      + '/' + encodeURIComponent(tituloGuess);
-    var rDireto = await Promise.race([
-      fetch(urlDireto),
-      new Promise(function(_,rej){ setTimeout(function(){ rej(new Error('timeout')); }, 6000); })
-    ]);
-    if(rDireto.ok) {
-      var dDireto = await rDireto.json();
-      if(dDireto.lyrics && dDireto.lyrics.trim().length > 30) {
-        var letraLimpa = dDireto.lyrics.trim().replace(/\r\n/g,'\n').replace(/\n{3,}/g,'\n\n');
-        _vocAddHist({titulo:tituloGuess, artista:artistaGuess, letra:letraLimpa});
-        _voc.titulo=tituloGuess; _voc.artista=artistaGuess; _voc.letra=letraLimpa;
-        _vocDefinirTom(tituloGuess, artistaGuess);
-        vocAbrirLetra(tituloGuess, artistaGuess, letraLimpa);
-        return;
-      }
-    }
-  } catch(e) { /* lyrics.ovh falhou — tenta Claude */ }
-
-  // Se não tem chave Claude, mostra links de busca externos
-  var chaveDisp = _vocGetKey();
-  if(!chaveDisp) {
-    res.innerHTML =
-      '<div class="voc-empty">'
-      + '<div class="voc-empty-ico"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="rgba(138,92,246,0.5)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></div>'
-      + '<div class="voc-empty-title">Letra não encontrada</div>'
-      + '<div class="voc-empty-sub" style="margin-bottom:12px;">Busque direto nos sites de letras</div>'
-      + '<a class="voc-link-btn" href="https://www.letras.mus.br/busca/?q='+encodeURIComponent(q)+'" target="_blank" style="margin-bottom:8px;display:block;">Buscar no Letras.mus.br</a>'
-      + '<a class="voc-link-btn" href="https://www.google.com/search?q=letra+'+encodeURIComponent(q)+'" target="_blank" style="background:rgba(255,255,255,0.04);border-color:rgba(255,255,255,0.1);color:rgba(255,255,255,0.4);">Buscar no Google</a>'
-      + '<button onclick="_vocPedirChave()" style="width:100%;margin-top:10px;padding:11px;border-radius:10px;background:rgba(138,92,246,0.08);border:1px solid rgba(138,92,246,0.2);color:rgba(138,92,246,0.7);font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;">Configurar API para busca avançada</button>'
-      + '</div>';
-    return;
-  }
-
-  // Com chave Claude: busca inteligente por lista de músicas
-  try{
-    var prompt='Liste ate 8 musicas que correspondam a busca: "'+q+'". '
-      +'Priorize musicas gospel, cristao, worship, louvor ou hino, mas inclua qualquer musica relevante se nao houver opcoes gospel. '
-      +'Responda SOMENTE com JSON valido, sem texto extra, sem markdown. '
-      +'Formato exato: {"results":[{"titulo":"nome da musica","artista":"nome do artista"}]}. '
-      +'Se realmente nao encontrar nenhuma correspondencia, retorne {"results":[]}.';
-    var txt=await _vocClaude(prompt,600);
-    if(!txt){ _vocSemRes(res,q); return; }
-    var clean=txt.replace(/```json|```/g,'').trim();
-    var jm=clean.match(/\{[\s\S]*\}/); if(!jm){ _vocSemRes(res,q); return; }
-    var data; try{ data=JSON.parse(jm[0]); }catch(pe){ _vocSemRes(res,q); return; }
-    var docs=data.results||[]; if(!docs.length){ _vocSemRes(res,q); return; }
-    // Resultado único — carrega letra diretamente
-    if(docs.length===1){
-      await _vocCarregarLetraDireto(docs[0].titulo, docs[0].artista, res);
-      return;
-    }
-    var html='';
-    docs.forEach(function(doc){
-      var ini=(doc.artista||'?').charAt(0).toUpperCase();
-      html+='<div class="voc-result-item" data-titulo="'+_ve(doc.titulo)+'" data-artista="'+_ve(doc.artista)+'" onclick="vocCarregarLetraEl(this)">'
-        +'<div class="voc-result-art"><span style="font-size:15px;font-weight:900;color:#a78bfa;">'+_ve(ini)+'</span></div>'
-        +'<div style="flex:1;min-width:0;"><div class="voc-result-name">'+_ve(doc.titulo)+'</div><div class="voc-result-artist">'+_ve(doc.artista)+'</div></div>'
-        +'<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.13)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>'
-        +'</div>';
-    });
-    res.innerHTML=html;
-  }catch(e){ _vocSemRes(res,q); }
-}
-
-function _vocSemRes(el,q){
-  el.innerHTML='<div class="voc-empty"><div class="voc-empty-ico"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="rgba(138,92,246,0.5)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg></div><div class="voc-empty-title">Nenhum resultado</div><div class="voc-empty-sub">Tente buscar pelo nome da música ou artista</div></div>';
-}
-
-// Função central de carregamento de letra — usa lyrics.ovh (gratuita, sem chave)
-// com fallback para Claude caso a API não encontre
-async function _vocCarregarLetraDireto(titulo, artista, resEl) {
-  // Spinner com nome da música
-  resEl.innerHTML='<div class="voc-spinner"></div>'
-    +'<div style="text-align:center;padding:10px 16px 0;">'
-    +'<div style="font-size:13px;font-weight:700;color:rgba(255,255,255,0.65);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">'+_ve(titulo)+'</div>'
-    +'<div style="font-size:11px;color:rgba(255,255,255,0.3);margin-top:2px;">'+_ve(artista)+'</div>'
-    +'<div style="font-size:11px;color:rgba(138,92,246,0.5);margin-top:6px;">Buscando letra...</div>'
-    +'</div>';
-
-  function _mostrarNaoEncontrada() {
-    resEl.innerHTML='<div class="voc-empty">'
-      +'<div class="voc-empty-ico"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="rgba(138,92,246,0.5)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></div>'
-      +'<div class="voc-empty-title">Letra não encontrada</div>'
-      +'<div class="voc-empty-sub" style="margin-bottom:12px;">Tente buscar diretamente</div>'
-      +'<a class="voc-link-btn" href="https://www.letras.mus.br/busca/?q='+encodeURIComponent(titulo+' '+artista)+'" target="_blank" style="margin-bottom:8px;display:block;">Buscar no Letras.mus.br</a>'
-      +'<a class="voc-link-btn" href="https://www.google.com/search?q=letra+'+encodeURIComponent(titulo+' '+artista)+'" target="_blank" style="background:rgba(255,255,255,0.04);border-color:rgba(255,255,255,0.1);color:rgba(255,255,255,0.4);">Buscar no Google</a>'
-      +'</div>';
-  }
-
-  function _limparLetra(txt) {
-    return txt.trim().replace(/\r\n/g,'\n').replace(/\n{3,}/g,'\n\n');
-  }
-
-  function _salvarEAbrir(letraLimpa) {
-    _vocAddHist({titulo:titulo, artista:artista, letra:letraLimpa});
-    _voc.titulo=titulo; _voc.artista=artista; _voc.letra=letraLimpa;
-    _vocDefinirTom(titulo, artista);
-    vocAbrirLetra(titulo, artista, letraLimpa);
-  }
-
-  // ── 1ª tentativa: lyrics.ovh (gratuita, sem chave, boa cobertura gospel) ─
-  try {
-    var r1 = await Promise.race([
-      fetch('https://api.lyrics.ovh/v1/' + encodeURIComponent(artista) + '/' + encodeURIComponent(titulo)),
-      new Promise(function(_,rej){ setTimeout(function(){ rej(new Error('timeout')); }, 8000); })
-    ]);
-    if(r1.ok) {
-      var d1 = await r1.json();
-      if(d1.lyrics && d1.lyrics.trim().length > 30) {
-        _salvarEAbrir(_limparLetra(d1.lyrics));
-        return;
-      }
-    }
-  } catch(e) { /* timeout ou CORS — tenta próxima fonte */ }
-
-  // ── 2ª tentativa: Claude (fallback inteligente) ───────────────────────────
-  var chave = _vocGetKey();
-  if(chave) {
-    try {
-      var prompt =
-        'Escreva a letra COMPLETA da musica "'+titulo+'" de '+artista+'.\n'
-        +'Regras:\n'
-        +'- Apenas a letra cantada, sem introducao nem explicacoes\n'
-        +'- Separe secoes com tags: [Verso 1], [Refrao], [Ponte], etc\n'
-        +'- Sem acordes, cifras ou notacao musical\n'
-        +'- Se realmente nao conhecer esta musica, responda apenas: LETRA_NAO_ENCONTRADA';
-      var txt = await _vocClaude(prompt, 3000);
-      if(txt) {
-        var limpo = txt.trim();
-        if(!limpo.startsWith('LETRA_NAO_ENCONTRADA') && limpo.length > 30) {
-          _salvarEAbrir(_limparLetra(limpo));
-          return;
-        }
-      }
-    } catch(e) { /* Claude falhou — mostra links */ }
-  }
-
-  // ── Fallback final: links externos ────────────────────────────────────────
-  _mostrarNaoEncontrada();
-}
-
-async function vocCarregarLetraEl(el){
-  try {
-
-  var titulo=el.getAttribute('data-titulo'), artista=el.getAttribute('data-artista');
-  if(!titulo||!artista)return;
-  var res=document.getElementById('voc-resultados');
-  await _vocCarregarLetraDireto(titulo, artista, res);
-
-  } catch(e) {
-    if (window._DEBUG) console.error('Erro ao carregar letra:', e);
-  }
-}
-
-// ── Tela de Letra ─────────────────────────────────────────────────────────────
-function _vocRenderLetra(letra,fontSize){
-  var classeMap={ 'intro':'intro','interludio':'intro','solo':'intro','verso':'verso','pre-refrao':'pre','pre refrao':'pre','refrao':'refrao','coro':'refrao','chorus':'refrao','ponte':'ponte','bridge':'ponte','coda':'outra','outro':'outra','final':'outra' };
-  function getClasse(tag){ var t=tag.toLowerCase().replace(/\s+\d+$/,'').trim().replace(/[áàãâ]/g,'a').replace(/[éê]/g,'e').replace(/[í]/g,'i').replace(/[óô]/g,'o').replace(/[ú]/g,'u'); for(var k in classeMap){ if(t.startsWith(k))return classeMap[k]; } return 'outra'; }
-  var linhas=letra.replace(/\r\n/g,'\n').split('\n'), html='', buf=[];
-  function flush(){ if(!buf.length)return; var texto=buf.join('\n').replace(/\n{2,}/g,'\n').trim(); if(texto)html+='<div class="voc-secao-bloco" style="font-size:'+fontSize+'px;line-height:2;color:rgba(255,255,255,0.82);">'+_ve(texto)+'</div>'; buf=[]; }
-  linhas.forEach(function(l){ var m=l.match(/^\[([^\]]+)\]\s*$/); if(m){ flush(); html+='<div class="voc-secao-tag '+getClasse(m[1])+'">'+_ve(m[1])+'</div>'; }else{ buf.push(l.replace(/\[[A-G][#b]?m?[0-9]?\]/gi,'').trim()); } });
-  flush(); return html;
-}
-
-var _vocLetraRenderCache = { titulo: null, artista: null, fontSize: null, html: null };
-
-function _vocAtualizarHdrTom(titulo){
-  var hdrTom = document.getElementById('voc-hdr-tom');
-  var hdrNota = document.getElementById('voc-hdr-tom-nota');
-  if(!hdrTom || !hdrNota) return;
-  if(!titulo){ hdrTom.style.display='none'; return; }
-  var tons = vocTons() || [];
-  var salvo = tons.find(function(t){ return t.titulo === titulo; });
-  if(salvo){ hdrNota.textContent = salvo.tom; hdrTom.style.display='flex'; }
-  else { hdrTom.style.display='none'; }
-}
-
-function vocAbrirLetra(titulo,artista,letra){
-  document.getElementById('voc-letra-titulo').textContent =titulo;
-  document.getElementById('voc-letra-artista').textContent =artista;
-  var el=document.getElementById('voc-letra-texto');
-  // Só re-renderiza se mudou o conteúdo ou o tamanho de fonte
-  if(_vocLetraRenderCache.titulo!==titulo||_vocLetraRenderCache.artista!==artista||_vocLetraRenderCache.fontSize!==_voc.fontSize){
-    var html=_vocRenderLetra(letra,_voc.fontSize);
-    el.innerHTML=html;
-    _vocLetraRenderCache={titulo:titulo,artista:artista,fontSize:_voc.fontSize,html:html};
-  }
-  var favs=vocFavs()||[]; _voc.isFav=favs.some(function(f){ return f.titulo===titulo&&f.artista===artista; }); _vocAtualizarFavBtn();
-  _vocPararScroll();
-  document.getElementById('voc-letra-tela').classList.add('aberta');
-  var vi=document.getElementById('voc-input-video'); if(vi)vi.value=titulo+' '+artista;
-  _vocAtualizarHdrTom(titulo);
-}
-function vocFecharLetra(){
-  _vocPararScroll();
-  document.getElementById('voc-letra-tela').classList.remove('aberta');
-  _vocAtualizarHdrTom(null);
-  // Resetar transposição ao fechar
-  _voc.transpDelta = 0;
-  var bar = document.getElementById('voc-transp-bar');
-  if(bar) bar.classList.remove('visivel');
-}
-
-// ── Transposição de tom na tela da letra ──────────────────────────────────────
-var _VOC_ACORDES_REGEX = /([A-G](?:#|b)?(?:m|maj|min|dim|aug|sus|add)?(?:\d+)?(?:\/[A-G](?:#|b)?)?)/g;
-
-function _vocTransporAcorde(acorde, semis) {
-  var notas = ['C','C#','D','D#','E','F','F#','G','G#','A','A#','B'];
-  var notas_b= ['C','Db','D','Eb','E','F','Gb','G','Ab','A','Bb','B'];
-  var partes = acorde.match(/^([A-G](?:#|b)?)(.*?)(\/[A-G](?:#|b)?)?$/);
-  if(!partes) return acorde;
-  var raiz = partes[1], sufixo = partes[2]||'', baixo = partes[3]||'';
-  var usaB = raiz.indexOf('b') !== -1;
-  var tabela = usaB ? notas_b : notas;
-  var idx = notas.indexOf(raiz.replace('b','').replace('#',''));
-  if(idx === -1) {
-    // Tentar com b → equivalente #
-    var alt = raiz.replace('b','').replace('Db','C#').replace('Eb','D#').replace('Gb','F#').replace('Ab','G#').replace('Bb','A#');
-    idx = notas.indexOf(alt);
-  }
-  if(idx === -1) return acorde;
-  // Transpor raiz
-  var novoIdx = ((idx + semis) % 12 + 12) % 12;
-  var novaRaiz = usaB ? notas_b[novoIdx] : notas[novoIdx];
-  // Transpor baixo se houver
-  var novoBaixo = '';
-  if(baixo) {
-    var notaBaixo = baixo.slice(1);
-    var idxB = notas.indexOf(notaBaixo.replace('b','')) ;
-    if(idxB !== -1) {
-      var novoB = ((idxB + semis) % 12 + 12) % 12;
-      novoBaixo = '/' + (usaB ? notas_b[novoB] : notas[novoB]);
-    } else { novoBaixo = baixo; }
-  }
-  return novaRaiz + sufixo + novoBaixo;
-}
-
-function _vocTransporTexto(texto, semis) {
-  if(!semis) return texto;
-  // Transpõe acordes em linhas que contenham predominantemente acordes
-  var linhas = texto.split('\n');
-  return linhas.map(function(linha) {
-    // Detectar linha de acordes: maioria dos tokens são acordes válidos
-    var tokens = linha.trim().split(/\s+/);
-    if(!tokens.length || !tokens[0]) return linha;
-    var acCount = tokens.filter(function(t){ return /^[A-G](?:#|b)?(?:m|maj|min|dim|aug|sus|add|\d)*(?:\/[A-G](?:#|b)?)?$/.test(t); }).length;
-    if(acCount >= tokens.length * 0.5 && acCount >= 1) {
-      // Linha de acordes — transpor cada token
-      return tokens.map(function(t) {
-        if(/^[A-G](?:#|b)?/.test(t)) return _vocTransporAcorde(t, semis);
-        return t;
-      }).join(' ');
-    }
-    return linha;
-  }).join('\n');
-}
-
-function vocToggleTransp() {
-  var bar = document.getElementById('voc-transp-bar');
-  var btn = document.getElementById('voc-transp-toggle');
-  if(!bar) return;
-  var aberta = bar.classList.toggle('visivel');
-  if(btn) { btn.style.color = aberta ? '#a78bfa' : ''; btn.style.borderColor = aberta ? 'rgba(138,92,246,0.4)' : ''; }
-  _vocAtualizarBarraTransp();
-}
-
-function vocTransporLetra(delta) {
-  if(!_voc.letra) return;
-  _voc.transpDelta = ((_voc.transpDelta||0) + delta + 24) % 24;
-  if(_voc.transpDelta > 12) _voc.transpDelta -= 24; // manter entre -11 e +12
-  _vocAtualizarLetraTransposta();
-  _vocAtualizarBarraTransp();
-}
-
-function vocResetarTransp() {
-  _voc.transpDelta = 0;
-  _vocAtualizarLetraTransposta();
-  _vocAtualizarBarraTransp();
-}
-
-function _vocAtualizarLetraTransposta() {
-  var el = document.getElementById('voc-letra-texto');
-  if(!el || !_voc.letra) return;
-  var letraTransp = _vocTransporTexto(_voc.letra, _voc.transpDelta||0);
-  el.innerHTML = _vocRenderLetra(letraTransp, _voc.fontSize);
-}
-
-function _vocAtualizarBarraTransp() {
-  var tomEl   = document.getElementById('voc-transp-tom');
-  var deltaEl = document.getElementById('voc-transp-delta');
-  if(!tomEl || !deltaEl) return;
-  var delta = _voc.transpDelta || 0;
-  // Tom base detectado
-  var tomBase = _voc.tomSel || (vocTons ? (vocTons()||[]).find(function(t){return t.titulo===_voc.titulo;}) || null : null);
-  var tomNome = tomBase ? (typeof tomBase === 'string' ? tomBase : tomBase.tom) : '—';
-  tomEl.textContent = tomNome;
-  if(delta === 0) {
-    deltaEl.textContent = 'tom original';
-  } else {
-    deltaEl.textContent = (delta > 0 ? '+' : '') + delta + ' semitom' + (Math.abs(delta)===1?'':'s');
-  }
-}
-function vocFonteMais(){ if(_voc.fontSize>=28)return; _voc.fontSize+=2; _vocLetraRenderCache.fontSize=null; document.querySelectorAll('.voc-secao-bloco').forEach(function(b){b.style.fontSize=_voc.fontSize+'px';}); }
-function vocFonteMenos(){ if(_voc.fontSize<=12)return; _voc.fontSize-=2; _vocLetraRenderCache.fontSize=null; document.querySelectorAll('.voc-secao-bloco').forEach(function(b){b.style.fontSize=_voc.fontSize+'px';}); }
-function vocToggleScroll(){ if(_voc.scrollTimer)_vocPararScroll(); else _vocIniciarScroll(); }
-function _vocIniciarScroll(){
-  var a=document.getElementById('voc-letra-scroll'),btn=document.getElementById('voc-scroll-btn');
-  if(!a)return;
-  if(btn)btn.classList.add('ativo');
-  var vel = parseInt((document.getElementById('voc-letra-vel')||{}).value||55);
-  var pxPerMs = vel / 1000;
-  var last=null;
-  function tick(ts){
-    if(!_voc.scrollTimer)return;
-    if(last!==null){
-      var velAtual = parseInt((document.getElementById('voc-letra-vel')||{}).value||55);
-      var delta=(ts-last)*(velAtual/1000);
-      a.scrollTop+=delta;
-      if(a.scrollTop+a.clientHeight>=a.scrollHeight-5){_vocPararScroll();return;}
-    }
-    last=ts;
-    _voc.scrollTimer=requestAnimationFrame(tick);
-  }
-  _voc.scrollTimer=requestAnimationFrame(tick);
-}
-function _vocPararScroll(){
-  if(_voc.scrollTimer){cancelAnimationFrame(_voc.scrollTimer);_voc.scrollTimer=null;}
-  var btn=document.getElementById('voc-scroll-btn'); if(btn)btn.classList.remove('ativo');
-}
-function vocIrParaTom(){ vocFecharLetra(); vocAbrirPainel('tom'); }
 
 // ─── PAINEL EVENTOS VOCALISTA ────────────────────────────────────────────────
 var _vocEvOrdem = 'data'; // 'data' | 'az'
@@ -24103,9 +23446,9 @@ function vocEvClicarMusica(idx) {
   } else {
     // Abre busca de letras com o nome pré-preenchido
     vocAbrirPainel('letras');
-    var input = document.getElementById('voc-input-busca');
+    var input = null;
     if (input) { input.value = m.nome; }
-    setTimeout(function() { vocBuscarLetras(); }, 200);
+    setTimeout(function() { /* vocBuscarLetras removida */ }, 200);
   }
 }
 
@@ -24114,7 +23457,7 @@ function vocEvAbrirPerformanceDireto(fav, idx) {
   // Usa vocAbrirPerformance mas com dados diretos (não por índice em favs)
   document.getElementById('voc-perf-nome').textContent = fav.titulo;
   var letraEl = document.getElementById('voc-perf-letra');
-  letraEl.innerHTML = _vocRenderLetra(fav.letra || '', _voc.fontSize);
+  letraEl.innerHTML = ''; // _vocRenderLetra removido — usar seções do editor
   var tons = vocTons() || [];
   var tonSalvo = tons.find(function(t) { return t.titulo === fav.titulo; });
   var tomEl = document.getElementById('voc-perf-tom');
@@ -24565,7 +23908,7 @@ async function _vocSheetBuscar() {
       +'Responda SOMENTE com JSON valido, sem texto extra, sem markdown. '
       +'Formato exato: {"results":[{"titulo":"nome da musica","artista":"nome do artista"}]}. '
       +'Se realmente nao encontrar nenhuma correspondencia, retorne {"results":[]}.';
-    var txt = await _vocClaude(prompt, 600);
+    var txt = null; /* _vocClaude removida */
     if (!txt) { res.innerHTML='<div class="voc-empty"><div class="voc-empty-title">Sem resultado</div></div>'; return; }
     var clean = txt.replace(/```json|```/g,'').trim();
     var jm = clean.match(/\{[\s\S]*\}/); if (!jm) { res.innerHTML='<div class="voc-empty"><div class="voc-empty-title">Sem resultado</div></div>'; return; }
@@ -24592,7 +23935,7 @@ function _vocSheetCarregarLetraEl(el) {
 async function _vocSheetCarregarLetra(titulo, artista, resEl) {
   try {
 
-  await _vocCarregarLetraDireto(titulo, artista, resEl);
+  /* _vocCarregarLetraDireto removida */
   // Se letra foi carregada com sucesso, monitorar save e retornar ao evento
   var sheet = document.getElementById('voc-busca-sheet');
   if (!sheet) return;
@@ -24670,8 +24013,8 @@ function vocClicarMusicaSala(idx, nome) {
     vocFecharPainel();
     vocAbrirPainel('letras');
     setTimeout(function() {
-      var inp = document.getElementById('voc-input-busca');
-      if (inp) { inp.value = nome; vocBuscarLetras(); }
+      var inp = null;
+      if (inp) { inp.value = nome; /* vocBuscarLetras removida */ }
     }, 300);
   }
 }
@@ -24681,7 +24024,7 @@ function vocAbrirPerformanceComContexto(fav, proxNome) {
   // Preenche campos do overlay de performance
   document.getElementById('voc-perf-nome').textContent = fav.titulo;
   var letraEl = document.getElementById('voc-perf-letra');
-  letraEl.innerHTML = _vocRenderLetra(fav.letra || '', _voc.fontSize);
+  letraEl.innerHTML = ''; // _vocRenderLetra removido — usar seções do editor
   // Tom
   var tons = vocTons() || [];
   var tonSalvo = tons.find(function(t) { return t.titulo === fav.titulo; });
@@ -24700,20 +24043,95 @@ function vocAbrirPerformanceComContexto(fav, proxNome) {
   document.getElementById('voc-perf-overlay').classList.add('ativo');
 }
 
-// Abre performance com a letra atualmente exibida na tela do vocalista
+// Abre performance com as seções do editor de letras
 function vocAbrirPerformanceDaLetraAtual() {
-  var titulo  = (document.getElementById('voc-letra-titulo')  || {}).textContent || '';
-  var artista = (document.getElementById('voc-letra-artista') || {}).textContent || '';
-  var letraEl = document.getElementById('voc-letra-body');
-  var letra   = letraEl ? (letraEl._letraOriginal || letraEl.innerText) : '';
-  if (!titulo && !letra) return;
-  var fav = { titulo: titulo, artista: artista, letra: letra };
+  // Tenta usar seções do editor
+  var temSecoes = _vocLetraSecoes && _vocLetraSecoes.length > 0 &&
+    _vocLetraSecoes.some(function(s) { return s.texto && s.texto.trim(); });
+
+  if (temSecoes) {
+    // Monta nome da música
+    var musicaAtual = (typeof currentSongIndex !== 'undefined' && currentSongIndex >= 0 && typeof songs !== 'undefined')
+      ? songs[currentSongIndex] : null;
+    var titulo = musicaAtual ? (musicaAtual.name || '') : (_voc.titulo || '');
+
+    // Renderiza seções no overlay
+    var nomeEl = document.getElementById('voc-perf-nome');
+    if (nomeEl) nomeEl.textContent = titulo || '—';
+
+    var letraEl = document.getElementById('voc-perf-letra');
+    if (letraEl) {
+      letraEl.innerHTML = _vocLetraSecoes.map(function(sec) {
+        return '<div class="voc-perf-secao-bloco" data-secao="' + _ve(sec.titulo) + '">' +
+          '<div class="voc-perf-secao-titulo">' + _ve(sec.titulo) + '</div>' +
+          '<div class="voc-perf-secao-texto">' + _ve(sec.texto).replace(/\n/g, '<br>') + '</div>' +
+        '</div>';
+      }).join('');
+    }
+
+    document.getElementById('voc-perf-tom').style.display = 'none';
+    document.getElementById('voc-perf-proxima').style.display = 'none';
+    vocPerfPararScroll();
+    var scrollArea = document.getElementById('voc-perf-scroll');
+    if (scrollArea) scrollArea.scrollTop = 0;
+    document.getElementById('voc-perf-overlay').classList.add('ativo');
+    if (typeof ativarWakeLock === 'function') ativarWakeLock();
+    _vocPerfIniciarObservador();
+    return;
+  }
+
+  // Fallback: usa letra da API se não tiver seções
+  var titulo2  = (null  || {}).textContent || '';
+  var letraEl2 = document.getElementById('voc-letra-body');
+  var letra    = letraEl2 ? (letraEl2._letraOriginal || letraEl2.innerText) : '';
+  if (!titulo2 && !letra) { showToast('Nenhuma letra disponível', 'error'); return; }
+  var fav = { titulo: titulo2, artista: '', letra: letra };
   vocAbrirPerformanceComContexto(fav, null);
 }
 
 // ─── MODO PERFORMANCE VOCALISTA ───────────────────────────────────────────────
 var _vocPerfTimer    = null;
 var _vocSalaSetlist  = null; // setlist recebido da sala: { nomeEvento, codigo, musicas:[], posAtual }
+var _vocPerfFontSize = 22; // tamanho padrão do modo show
+var _vocPerfObserver = null;
+
+function vocPerfFonteMais() {
+  _vocPerfFontSize = Math.min(48, _vocPerfFontSize + 2);
+  _vocPerfAplicarFonte();
+}
+
+function vocPerfFonteMenos() {
+  _vocPerfFontSize = Math.max(14, _vocPerfFontSize - 2);
+  _vocPerfAplicarFonte();
+}
+
+function _vocPerfAplicarFonte() {
+  var el = document.getElementById('voc-perf-letra');
+  if (el) el.style.fontSize = _vocPerfFontSize + 'px';
+}
+
+// Observador de scroll — atualiza indicador de seção atual
+function _vocPerfIniciarObservador() {
+  if (_vocPerfObserver) { _vocPerfObserver.disconnect(); _vocPerfObserver = null; }
+  var scrollArea = document.getElementById('voc-perf-scroll');
+  if (!scrollArea) return;
+
+  var blocos = scrollArea.querySelectorAll('.voc-perf-secao-bloco');
+  if (!blocos.length) { document.getElementById('voc-perf-secao').style.display = 'none'; return; }
+
+  document.getElementById('voc-perf-secao').style.display = '';
+
+  _vocPerfObserver = new IntersectionObserver(function(entries) {
+    var visivel = null;
+    entries.forEach(function(e) { if (e.isIntersecting) visivel = e.target; });
+    if (visivel) {
+      var secao = document.getElementById('voc-perf-secao');
+      if (secao) secao.textContent = visivel.dataset.secao || '';
+    }
+  }, { root: scrollArea, threshold: 0.3 });
+
+  blocos.forEach(function(b) { _vocPerfObserver.observe(b); });
+}
 
 function vocAbrirPerformance(favIdx) {
   var favs = vocFavs() || [];
@@ -24723,7 +24141,7 @@ function vocAbrirPerformance(favIdx) {
   // Nome e letra
   document.getElementById('voc-perf-nome').textContent = fav.titulo;
   var letraEl = document.getElementById('voc-perf-letra');
-  letraEl.innerHTML = _vocRenderLetra(fav.letra || '', _voc.fontSize);
+  letraEl.innerHTML = ''; // _vocRenderLetra removido — usar seções do editor
 
   // Tom salvo para esta música
   var tons = vocTons() || [];
@@ -24826,7 +24244,7 @@ function vocToggleFav(){
   var favs=vocFavs()||[]; var idx=favs.findIndex(function(f){return f.titulo===_voc.titulo&&f.artista===_voc.artista;});
   if(idx>=0){favs.splice(idx,1);_voc.isFav=false;vocToast('Removido dos salvos');}
   else{favs.unshift({titulo:_voc.titulo,artista:_voc.artista,letra:_voc.letra,at:Date.now()});_voc.isFav=true;vocToast('Salvo!');}
-  vocFavs(favs); _vocAtualizarFavBtn(); _vocAtualizarBadgeSalvos();
+  vocFavs(favs); _vocAtualizarBadgeSalvos();
 }
 function _vocAtualizarFavBtn(){ var btn=document.getElementById('voc-fav-btn'); if(!btn)return; if(_voc.isFav){btn.classList.add('fav-ativo');btn.querySelector('svg').setAttribute('fill','rgba(245,196,0,0.85)');}else{btn.classList.remove('fav-ativo');btn.querySelector('svg').setAttribute('fill','none');} }
 
@@ -24867,7 +24285,7 @@ function _vocRenderFavs(){
   var fl=document.getElementById('voc-fav-letras');
   if(fl){
     if(!favs.length){ fl.innerHTML='<div class="voc-empty"><div class="voc-empty-ico"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="rgba(138,92,246,0.4)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg></div><div class="voc-empty-title">Nenhuma letra salva</div><div class="voc-empty-sub">Busque músicas e salve as que gostar</div></div>'; }
-    else{ fl.innerHTML=favs.map(function(f,i){ return '<div class="voc-fav-item" data-titulo="'+_ve(f.titulo)+'" data-artista="'+_ve(f.artista)+'" data-letra="'+_ve(f.letra)+'" onclick="vocAbrirDaHistEl(this)">'+'<div class="voc-fav-art" style="background:rgba(245,196,0,0.08);border:1px solid rgba(245,196,0,0.12);"><svg width="16" height="16" viewBox="0 0 24 24" fill="rgba(245,196,0,0.7)" stroke="rgba(245,196,0,0.8)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg></div>'+'<div style="flex:1;min-width:0;"><div class="voc-fav-name">'+_ve(f.titulo)+'</div><div class="voc-fav-sub">'+_ve(f.artista)+'</div></div>'+'<button onclick="event.stopPropagation();vocAbrirPerformance('+i+')" style="background:rgba(138,92,246,0.1);border:1px solid rgba(138,92,246,0.22);border-radius:9px;color:#a78bfa;font-size:10px;font-weight:800;padding:5px 10px;cursor:pointer;font-family:inherit;margin-right:4px;white-space:nowrap;">Cantar</button>'+'<button onclick="event.stopPropagation();_vocDelFav('+i+')" class="voc-del-btn"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg></button>'+'</div>'; }).join(''); }
+    else{ fl.innerHTML=favs.map(function(f,i){ return '<div class="voc-fav-item" data-titulo="'+_ve(f.titulo)+'" data-artista="'+_ve(f.artista)+'" data-letra="'+_ve(f.letra)+'" onclick="vocAbrirEditorLetras()">'+'<div class="voc-fav-art" style="background:rgba(245,196,0,0.08);border:1px solid rgba(245,196,0,0.12);"><svg width="16" height="16" viewBox="0 0 24 24" fill="rgba(245,196,0,0.7)" stroke="rgba(245,196,0,0.8)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg></div>'+'<div style="flex:1;min-width:0;"><div class="voc-fav-name">'+_ve(f.titulo)+'</div><div class="voc-fav-sub">'+_ve(f.artista)+'</div></div>'+'<button onclick="event.stopPropagation();vocAbrirPerformance('+i+')" style="background:rgba(138,92,246,0.1);border:1px solid rgba(138,92,246,0.22);border-radius:9px;color:#a78bfa;font-size:10px;font-weight:800;padding:5px 10px;cursor:pointer;font-family:inherit;margin-right:4px;white-space:nowrap;">Cantar</button>'+'<button onclick="event.stopPropagation();_vocDelFav('+i+')" class="voc-del-btn"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg></button>'+'</div>'; }).join(''); }
   }
   var ft=document.getElementById('voc-fav-tons');
   if(ft){
@@ -24901,7 +24319,7 @@ function _vocRenderTons(){
   var salva=document.getElementById('voc-tom-salva'); if(salva){ var tons=vocTons()||[]; var s=tons.find(function(t){return t.titulo===_voc.titulo;}); salva.textContent=s?s.tom+' — '+s.artista:'Nenhum salvo ainda'; }
 }
 function vocSelTom(nota){ _voc.tomSel=nota; _vocRenderTons(); }
-function vocSalvarTom(){ if(!_voc.tomSel||!_voc.titulo)return; var tons=(vocTons()||[]).filter(function(t){return t.titulo!==_voc.titulo;}); tons.unshift({titulo:_voc.titulo,artista:_voc.artista,tom:_voc.tomSel,at:Date.now()}); vocTons(tons); vocToast('Tom '+_voc.tomSel+' salvo'); _vocRenderTons(); _vocAtualizarBadgeSalvos(); _vocAtualizarHdrTom(_voc.titulo); }
+function vocSalvarTom(){ if(!_voc.tomSel||!_voc.titulo)return; var tons=(vocTons()||[]).filter(function(t){return t.titulo!==_voc.titulo;}); tons.unshift({titulo:_voc.titulo,artista:_voc.artista,tom:_voc.tomSel,at:Date.now()}); vocTons(tons); vocToast('Tom '+_voc.tomSel+' salvo'); _vocRenderTons(); _vocAtualizarBadgeSalvos(); }
 
 // ── Aulas toggle ──────────────────────────────────────────────────────────────
 // ── Info tooltip dos cards ────────────────────────────────────────────────────
@@ -25140,8 +24558,7 @@ async function vocBuscarVideos(){
 }
 
 async function _vocGerarVideosViaClaude(q){
-  var key = _vocGetKey();
-  if(!key) { _vocPedirChave(); return null; }
+  /* chave API removida */
   try {
     // Prompt direto e simples — menos chance de resposta fora do formato
     var prompt =
@@ -25154,7 +24571,7 @@ async function _vocGerarVideosViaClaude(q){
       + 'filtro pode ser: letra, lyric, karaoke, aovivo, tutorial\n'
       + 'badge pode ser: COM LETRA, LYRIC, KARAOKÊ, AO VIVO, TUTORIAL';
 
-    var txt = await _vocClaude(prompt, 1000);
+    var txt = null; /* _vocClaude removida */
     if(!txt) return [];  // erro de API → fallback para busca YouTube
 
     // Tenta extrair JSON de várias formas
@@ -25251,7 +24668,7 @@ function _vocMostrarSplashSeNecessario(){
 // ── _rotearAmbiente hook ──────────────────────────────────────────────────────
 
 // ── Init ──────────────────────────────────────────────────────────────────────
-setTimeout(function(){ _vocRenderHist(); _vocAtualizarBadgeSalvos(); _cifraFontSincLabel(); _themeInit(); }, 300);
+setTimeout(function(){ _vocAtualizarBadgeSalvos(); _cifraFontSincLabel(); _themeInit(); }, 300);
 </script>
 
 
@@ -26283,10 +25700,31 @@ var _vocLetraSecoes = [];
 var _VOC_SECOES_PADRAO = ['Verso', 'Pré-Refrão', 'Refrão', 'Ponte', 'Coro', 'Final'];
 
 function vocAbrirEditorLetras() {
-  // Carrega seções salvas para a música atual
-  var musicaId = _voc && _voc.id ? String(_voc.id) : null;
+  // Tenta pegar música do editor principal primeiro
+  var musicaAtual = null;
+  if (typeof currentSongIndex !== 'undefined' && currentSongIndex >= 0 && typeof songs !== 'undefined' && songs[currentSongIndex]) {
+    musicaAtual = songs[currentSongIndex];
+  }
+
+  // Fallback: usa _voc se tiver id (veio da API de letras)
+  var musicaId = null;
+  var musicaTitulo = 'Nenhuma música selecionada';
+  var musicaArtista = '';
+
+  if (musicaAtual) {
+    musicaId    = String(musicaAtual.id);
+    musicaTitulo = musicaAtual.name || 'Sem título';
+    musicaArtista = musicaAtual.artist || '';
+  } else if (_voc && _voc.id) {
+    musicaId     = String(_voc.id);
+    musicaTitulo = _voc.titulo || '';
+    musicaArtista = _voc.artista || '';
+  }
+
   var info = document.getElementById('voc-letra-musica-info');
-  if (info) info.textContent = _voc && _voc.titulo ? '♪ ' + _voc.titulo + (_voc.artista ? ' — ' + _voc.artista : '') : 'Nenhuma música selecionada';
+  if (info) info.textContent = musicaId
+    ? '♪ ' + musicaTitulo + (musicaArtista ? ' — ' + musicaArtista : '')
+    : 'Nenhuma música selecionada — abra uma música primeiro';
 
   // Tenta carregar do Firebase
   if (musicaId && window._fb) {
@@ -26349,9 +25787,18 @@ async function vocSalvarLetraSecoes() {
   var btn = document.getElementById('voc-letra-save-btn');
   if (btn) { btn.textContent = 'Salvando...'; btn.disabled = true; }
 
-  var musicaId = _voc && _voc.id ? String(_voc.id) : null;
+  // Pega música do editor principal primeiro
+  var musicaAtual = null;
+  if (typeof currentSongIndex !== 'undefined' && currentSongIndex >= 0 && typeof songs !== 'undefined' && songs[currentSongIndex]) {
+    musicaAtual = songs[currentSongIndex];
+  }
+
+  var musicaId    = musicaAtual ? String(musicaAtual.id) : (_voc && _voc.id ? String(_voc.id) : null);
+  var musicaTitulo = musicaAtual ? (musicaAtual.name || '') : (_voc ? _voc.titulo || '' : '');
+  var musicaArtista = musicaAtual ? (musicaAtual.artist || '') : (_voc ? _voc.artista || '' : '');
+
   if (!musicaId) {
-    showToast('Selecione uma música primeiro', 'error');
+    showToast('Abra uma música no editor primeiro', 'error');
     if (btn) { btn.textContent = 'Salvar'; btn.disabled = false; }
     return;
   }
@@ -26366,8 +25813,8 @@ async function vocSalvarLetraSecoes() {
   try {
     await window._fb._set('letras_secoes/' + uid + '/' + musicaId, {
       secoes: _vocLetraSecoes,
-      titulo: _voc.titulo || '',
-      artista: _voc.artista || '',
+      titulo: musicaTitulo,
+      artista: musicaArtista,
       atualizadoEm: Date.now()
     }, false);
     showToast('Letra salva!', 'success');
