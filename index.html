@@ -14505,41 +14505,23 @@ function _dcDrumAtualizarRange() {
 
 async function dcToggleAfinadorBateria() {
   if (_dcDrumTuner.ativo) { _dcDrumPararMic(); return; }
-  var btn = document.getElementById('dc-drum-tuner-btn');
-  var freqEl   = document.getElementById('dc-drum-freq');
-  var statusEl = document.getElementById('dc-drum-status');
   try {
-    if (btn) { btn.textContent = 'Aguardando mic...'; btn.disabled = true; }
-
-    _dcDrumTuner.stream = await navigator.mediaDevices.getUserMedia({
-      audio: { echoCancellation: false, noiseSuppression: false, autoGainControl: false },
-      video: false
-    });
-
-    _dcDrumTuner.ctx = new (window.AudioContext || window.webkitAudioContext)();
-
-    // iOS Safari exige resume() após interação do usuário
-    if (_dcDrumTuner.ctx.state === 'suspended') {
-      await _dcDrumTuner.ctx.resume();
-    }
-
+    _dcDrumTuner.stream   = await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
+    _dcDrumTuner.ctx      = new (window.AudioContext || window.webkitAudioContext)();
+    if (_dcDrumTuner.ctx.state === 'suspended') await _dcDrumTuner.ctx.resume();
     _dcDrumTuner.analyser = _dcDrumTuner.ctx.createAnalyser();
-    // fftSize máximo seguro para iOS Safari é 8192
     _dcDrumTuner.analyser.fftSize = 8192;
-    _dcDrumTuner.analyser.smoothingTimeConstant = 0;
-
+    _dcDrumTuner.analyser.smoothingTimeConstant = 0.85;
     var src = _dcDrumTuner.ctx.createMediaStreamSource(_dcDrumTuner.stream);
     src.connect(_dcDrumTuner.analyser);
-
     _dcDrumTuner.ativo = true;
-    if (btn) { btn.textContent = '■ Parar'; btn.disabled = false; btn.style.background = 'rgba(0,255,100,0.18)'; btn.style.borderColor = 'rgba(0,255,100,0.5)'; }
+    var btn = document.getElementById('dc-drum-tuner-btn');
+    if (btn) { btn.textContent = '■ Parar'; btn.style.background = 'rgba(0,255,100,0.18)'; btn.style.borderColor = 'rgba(0,255,100,0.5)'; }
+    var statusEl = document.getElementById('dc-drum-status');
     if (statusEl) { statusEl.textContent = 'Ouvindo...'; statusEl.style.color = '#00ff64'; }
     _dcDrumLoop();
   } catch(e) {
-    if (btn) { btn.textContent = '▶ Iniciar Microfone'; btn.disabled = false; }
-    var msg = (e && e.name === 'NotAllowedError') ? 'Permissão de microfone negada' : 'Microfone não disponível';
-    if (typeof showToast === 'function') showToast(msg, 'error');
-    if (statusEl) { statusEl.textContent = 'Erro: ' + msg; statusEl.style.color = '#ff4444'; }
+    if (typeof showToast === 'function') showToast('Microfone não disponível', 'error');
   }
 }
 
@@ -14560,68 +14542,10 @@ function _dcDrumPararMic() {
 
 function _dcDrumLoop() {
   if (!_dcDrumTuner.ativo) return;
-
-  var sampleRate = _dcDrumTuner.ctx.sampleRate;
-  var fftSize    = _dcDrumTuner.analyser.fftSize;
-  var freqEl     = document.getElementById('dc-drum-freq');
-  var statusEl   = document.getElementById('dc-drum-status');
-
-  // Lê sinal no domínio do tempo para verificar se há sinal
-  var timeBuf = new Float32Array(fftSize);
-  _dcDrumTuner.analyser.getFloatTimeDomainData(timeBuf);
-  var rms = 0;
-  for (var i = 0; i < fftSize; i++) rms += timeBuf[i] * timeBuf[i];
-  rms = Math.sqrt(rms / fftSize);
-
-  if (rms < 0.0005) {
-    if (freqEl) { freqEl.textContent = '-- Hz'; freqEl.style.color = '#00ff64'; }
-    if (statusEl) { statusEl.textContent = 'Ouvindo...'; statusEl.style.color = 'rgba(255,255,255,0.4)'; }
-    _dcDrumTuner.raf = requestAnimationFrame(_dcDrumLoop);
-    return;
-  }
-
-  if (freqEl) freqEl.style.fontSize = '36px';
-
-  // Usa FFT para detectar frequência dominante
-  var bufLen   = _dcDrumTuner.analyser.frequencyBinCount;
-  var binSize  = sampleRate / fftSize;
-  var freqData = new Uint8Array(bufLen); // Uint8 é mais estável no iOS
-  _dcDrumTuner.analyser.getByteFrequencyData(freqData);
-
-  // Faixa 20Hz–800Hz
-  var minBin = Math.max(1, Math.floor(20  / binSize));
-  var maxBin = Math.min(bufLen - 2, Math.floor(800 / binSize));
-
-  // Pico FFT
-  var maxVal = 0, maxBinIdx = -1;
-  for (var i = minBin; i <= maxBin; i++) {
-    if (freqData[i] > maxVal) { maxVal = freqData[i]; maxBinIdx = i; }
-  }
-
-  // Threshold: pelo menos 10/255 de energia
-  if (maxVal < 10 || maxBinIdx < 1) {
-    if (statusEl) { statusEl.textContent = 'Detectando...'; statusEl.style.color = 'rgba(255,255,255,0.4)'; }
-    _dcDrumTuner.raf = requestAnimationFrame(_dcDrumLoop);
-    return;
-  }
-
-  // Centroide espectral na janela ao redor do pico (±10 bins)
-  var winStart = Math.max(minBin, maxBinIdx - 10);
-  var winEnd   = Math.min(maxBin, maxBinIdx + 10);
-  var sumW = 0, sumWF = 0;
-  for (var i = winStart; i <= winEnd; i++) {
-    var w = freqData[i] * freqData[i];
-    sumW  += w;
-    sumWF += w * (i * binSize);
-  }
-  var freq = sumW > 0 ? sumWF / sumW : maxBinIdx * binSize;
-
-  if (freq > 20 && freq < 800) {
-    _dcDrumAtualizar(freq);
-  } else {
-    if (statusEl) { statusEl.textContent = 'Detectando...'; statusEl.style.color = 'rgba(255,255,255,0.4)'; }
-  }
-
+  var buf = new Float32Array(_dcDrumTuner.analyser.fftSize);
+  _dcDrumTuner.analyser.getFloatTimeDomainData(buf);
+  var freq = _tunerACF(buf, _dcDrumTuner.ctx.sampleRate);
+  if (freq > 20) _dcDrumAtualizar(freq);
   _dcDrumTuner.raf = requestAnimationFrame(_dcDrumLoop);
 }
 
@@ -14629,7 +14553,7 @@ function _dcDrumAtualizar(freq) {
   var freqEl   = document.getElementById('dc-drum-freq');
   var statusEl = document.getElementById('dc-drum-status');
   var ind      = document.getElementById('dc-drum-indicator');
-  var r        = _DC_DRUM_RANGES[_dcDrumTuner.tambor];
+  var r        = _dcDrumGetRange(); // usa a função correta
   if (freqEl) freqEl.textContent = Math.round(freq) + ' Hz';
   if (!r) return;
   var FREQ_MIN = 40, FREQ_MAX = 600;
