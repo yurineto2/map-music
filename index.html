@@ -21767,7 +21767,25 @@ async function _fbFazerBackupAgora(btn) {
 }
 .voc-hdr-btn:hover { background: rgba(255,255,255,0.08); }
 
-/* ── Modo escuro reforçado ── */
+/* ── Shine nos álbuns da home ── */
+@keyframes _vocShine {
+  0%   { transform: translateX(-120%) skewX(-20deg); }
+  100% { transform: translateX(220%) skewX(-20deg); }
+}
+._voc-alb-shine {
+  position: absolute; inset: 0; pointer-events: none; overflow: hidden; border-radius: inherit; z-index: 3;
+}
+._voc-alb-shine::after {
+  content: '';
+  position: absolute; top: 0; left: 0; width: 40%; height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.12), transparent);
+  transform: translateX(-120%) skewX(-20deg);
+}
+._voc-alb-shine.ativo::after {
+  animation: _vocShine 0.7s ease forwards;
+}
+
+
 #vocal-app, #voc-painel-bib, #voc-painel-criar, #voc-perf-modal {
   background: #000 !important;
 }
@@ -21847,7 +21865,9 @@ async function _fbFazerBackupAgora(btn) {
   </div>
 
   <!-- CONTEÚDO -->
-  <div id="voc-home" style="flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;">
+  <div id="voc-home" style="flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;position:relative;">
+    <!-- Notas musicais flutuantes -->
+    <canvas id="voc-notas-canvas" style="position:absolute;inset:0;width:100%;height:100%;pointer-events:none;z-index:0;opacity:0.07;"></canvas>
 
     <!-- Saudação -->
     <div style="padding:24px 20px 8px;">
@@ -21859,7 +21879,7 @@ async function _fbFazerBackupAgora(btn) {
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;padding:16px 16px 80px;max-width:400px;">
 
       <!-- Criar Letra -->
-      <div onclick="vocAbrirCriarLetra()" style="background:linear-gradient(145deg,rgba(138,92,246,0.15),rgba(109,40,217,0.08));border:1px solid rgba(138,92,246,0.25);border-radius:20px;padding:0;overflow:hidden;cursor:pointer;touch-action:manipulation;transition:transform 0.15s,box-shadow 0.15s;position:relative;min-height:140px;max-height:180px;" onmouseenter="this.style.transform='scale(1.03)';this.style.boxShadow='0 8px 32px rgba(138,92,246,0.3)'" onmouseleave="this.style.transform='scale(1)';this.style.boxShadow='none'">
+      <div class="_voc-home-alb" onclick="vocAbrirCriarLetra()" style="background:linear-gradient(145deg,rgba(138,92,246,0.15),rgba(109,40,217,0.08));border:1px solid rgba(138,92,246,0.25);border-radius:20px;padding:0;overflow:hidden;cursor:pointer;touch-action:manipulation;transition:transform 0.15s,box-shadow 0.15s;position:relative;min-height:140px;max-height:180px;" onmouseenter="this.style.transform='scale(1.03)';this.style.boxShadow='0 8px 32px rgba(138,92,246,0.3)'" onmouseleave="this.style.transform='scale(1)';this.style.boxShadow='none'">
         <div style="position:absolute;bottom:-16px;right:-16px;opacity:0.12;">
           <svg width="100" height="100" viewBox="0 0 24 24" fill="white"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8" fill="none" stroke="white" stroke-width="2"/></svg>
         </div>
@@ -21875,7 +21895,7 @@ async function _fbFazerBackupAgora(btn) {
       </div>
 
       <!-- Biblioteca -->
-      <div onclick="vocAbrirBiblioteca()" style="background:linear-gradient(145deg,rgba(10,158,110,0.15),rgba(5,100,70,0.08));border:1px solid rgba(10,158,110,0.25);border-radius:20px;padding:0;overflow:hidden;cursor:pointer;touch-action:manipulation;transition:transform 0.15s,box-shadow 0.15s;position:relative;min-height:140px;max-height:180px;" onmouseenter="this.style.transform='scale(1.03)';this.style.boxShadow='0 8px 32px rgba(10,158,110,0.3)'" onmouseleave="this.style.transform='scale(1)';this.style.boxShadow='none'">
+      <div class="_voc-home-alb" onclick="vocAbrirBiblioteca()" style="background:linear-gradient(145deg,rgba(10,158,110,0.15),rgba(5,100,70,0.08));border:1px solid rgba(10,158,110,0.25);border-radius:20px;padding:0;overflow:hidden;cursor:pointer;touch-action:manipulation;transition:transform 0.15s,box-shadow 0.15s;position:relative;min-height:140px;max-height:180px;" onmouseenter="this.style.transform='scale(1.03)';this.style.boxShadow='0 8px 32px rgba(10,158,110,0.3)'" onmouseleave="this.style.transform='scale(1)';this.style.boxShadow='none'">
         <div style="position:absolute;bottom:-16px;right:-16px;opacity:0.12;">
           <svg width="100" height="100" viewBox="0 0 24 24" fill="white"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
         </div>
@@ -21891,7 +21911,7 @@ async function _fbFazerBackupAgora(btn) {
       </div>
 
       <!-- Modo Show -->
-      <div onclick="vocAbrirModoShow()" style="background:linear-gradient(145deg,rgba(255,165,0,0.15),rgba(180,90,0,0.08));border:1px solid rgba(255,165,0,0.25);border-radius:20px;padding:0;overflow:hidden;cursor:pointer;touch-action:manipulation;transition:transform 0.15s,box-shadow 0.15s;position:relative;min-height:140px;max-height:180px;grid-column:span 2;" onmouseenter="this.style.transform='scale(1.02)';this.style.boxShadow='0 8px 32px rgba(255,165,0,0.2)'" onmouseleave="this.style.transform='scale(1)';this.style.boxShadow='none'">
+      <div class="_voc-home-alb" onclick="vocAbrirModoShow()" style="background:linear-gradient(145deg,rgba(255,165,0,0.15),rgba(180,90,0,0.08));border:1px solid rgba(255,165,0,0.25);border-radius:20px;padding:0;overflow:hidden;cursor:pointer;touch-action:manipulation;transition:transform 0.15s,box-shadow 0.15s;position:relative;min-height:140px;max-height:180px;grid-column:span 2;" onmouseenter="this.style.transform='scale(1.02)';this.style.boxShadow='0 8px 32px rgba(255,165,0,0.2)'" onmouseleave="this.style.transform='scale(1)';this.style.boxShadow='none'">
         <div style="position:absolute;bottom:-16px;right:-16px;opacity:0.1;">
           <svg width="120" height="120" viewBox="0 0 24 24" fill="white"><polygon points="5 3 19 12 5 21 5 3"/></svg>
         </div>
@@ -23376,6 +23396,113 @@ function _confirmarAcao(titulo, desc, labelOk, corOk, callback) {
   overlay.addEventListener('click', function(e) { if (e.target === overlay) overlay.remove(); });
   document.body.appendChild(overlay);
 }
+
+// ── Notas musicais flutuantes no fundo ───────────────────────────────────
+(function _vocNotasInit() {
+  var NOTAS = ['♩','♪','♫','♬','𝄞','𝄢'];
+  var particulas = [];
+  var raf = null;
+  var canvas, ctx, W, H;
+
+  function init() {
+    canvas = document.getElementById('voc-notas-canvas');
+    if (!canvas) { setTimeout(init, 500); return; }
+    ctx = canvas.getContext('2d');
+    resize();
+    criarParticulas();
+    animar();
+    window.addEventListener('resize', resize);
+  }
+
+  function resize() {
+    var home = document.getElementById('voc-home');
+    if (!home || !canvas) return;
+    W = canvas.width  = home.offsetWidth  || window.innerWidth;
+    H = canvas.height = home.offsetHeight || window.innerHeight;
+  }
+
+  function criarParticulas() {
+    particulas = [];
+    var qtd = Math.min(18, Math.floor((W * H) / 18000));
+    for (var i = 0; i < qtd; i++) {
+      particulas.push(novaNota(true));
+    }
+  }
+
+  function novaNota(aleatorio) {
+    var tamanho = 14 + Math.random() * 22;
+    return {
+      x:    aleatorio ? Math.random() * W : W + tamanho,
+      y:    Math.random() * H,
+      nota: NOTAS[Math.floor(Math.random() * NOTAS.length)],
+      size: tamanho,
+      vel:  0.2 + Math.random() * 0.5,
+      vy:   (Math.random() - 0.5) * 0.3,
+      alfa: 0.3 + Math.random() * 0.7,
+    };
+  }
+
+  function animar() {
+    if (!ctx) return;
+    ctx.clearRect(0, 0, W, H);
+    ctx.fillStyle = '#fff';
+    particulas.forEach(function(p) {
+      p.x -= p.vel;
+      p.y += p.vy;
+      if (p.x < -40) {
+        // Renasce do lado direito
+        Object.assign(p, novaNota(false));
+      }
+      ctx.globalAlpha = p.alfa * 0.9;
+      ctx.font = p.size + 'px serif';
+      ctx.fillText(p.nota, p.x, p.y);
+    });
+    ctx.globalAlpha = 1;
+    raf = requestAnimationFrame(animar);
+  }
+
+  // Pausa quando o voc-home não está visível
+  var observer = new MutationObserver(function() {
+    var home = document.getElementById('voc-home');
+    var vocal = document.getElementById('vocal-app');
+    var visivel = vocal && vocal.classList.contains('ativo') && home;
+    if (visivel && !raf) { resize(); criarParticulas(); animar(); }
+    else if (!visivel && raf) { cancelAnimationFrame(raf); raf = null; }
+  });
+
+  var vocApp = document.getElementById('vocal-app');
+  if (vocApp) observer.observe(vocApp, { attributes: true, attributeFilter: ['class'] });
+
+  setTimeout(init, 600);
+})();
+
+// ── Shine aleatório nos álbuns da home ───────────────────────────────────
+(function _vocShineInit() {
+  var ultimo = -1;
+  function disparar() {
+    var cards = Array.from(document.querySelectorAll('._voc-home-alb'));
+    if (!cards.length) { setTimeout(disparar, 1500); return; }
+    var idx;
+    do { idx = Math.floor(Math.random() * cards.length); } while (idx === ultimo && cards.length > 1);
+    ultimo = idx;
+    var card = cards[idx];
+    // Injeta o div shine se não tiver
+    var shine = card.querySelector('._voc-alb-shine');
+    if (!shine) {
+      shine = document.createElement('div');
+      shine.className = '_voc-alb-shine';
+      card.appendChild(shine);
+    }
+    shine.classList.remove('ativo');
+    void shine.offsetWidth; // reflow
+    shine.classList.add('ativo');
+    shine.addEventListener('animationend', function() {
+      shine.classList.remove('ativo');
+    }, { once: true });
+    setTimeout(disparar, 1800 + Math.random() * 2000);
+  }
+  setTimeout(disparar, 1000);
+})();
 
 function toggleVocalMenu(e) {
   if (e) e.stopPropagation();
