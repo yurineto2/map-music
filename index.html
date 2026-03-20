@@ -4422,121 +4422,31 @@ body { font-family: -apple-system, 'Inter', BlinkMacSystemFont, 'Segoe UI', sans
   .dc-fx-row    { grid-template-columns: 1fr; }
 }
 
-/* ══════════════════════════════════════════════════════
-   PERFORMANCE & FLUIDEZ GLOBAL
-   ══════════════════════════════════════════════════════ */
-
-/* GPU acceleration nos elementos que animam */
-.biblioteca-overlay, .modal-overlay, .album-ctx-menu,
-.dc-addpad-overlay, .voc-panel, #voc-perf-overlay,
-.dropdown-menu, .sync-bar,
-#onboarding-overlay, .sheet-overlay {
-  -webkit-backface-visibility: hidden;
-  backface-visibility: hidden;
-}
-
-/* Transições suaves para painéis e overlays */
-.biblioteca-overlay {
-  transition: opacity 0.22s ease;
-}
-.biblioteca-overlay:not(.show) {
-  opacity: 0;
-  pointer-events: none;
-}
-.biblioteca-overlay.show {
-  opacity: 1;
-}
-
-.voc-panel {
-  transition: transform 0.28s cubic-bezier(0.4,0,0.2,1), opacity 0.22s ease;
-  will-change: transform;
-}
-
-/* Transição do overlay do vocalista */
-#voc-perf-overlay {
-  transition: opacity 0.2s ease;
-}
-#voc-perf-overlay:not(.ativo) { opacity: 0; pointer-events: none; }
-#voc-perf-overlay.ativo { opacity: 1; pointer-events: auto; }
-
-/* ── Ripple Effect ─────────────────────────────────── */
-.ripple-host { position: relative; overflow: hidden; }
-@keyframes _ripple {
-  to { transform: scale(4); opacity: 0; }
-}
+/* ── Ripple Effect ─────────────────────────────────────────────────────────── */
+@keyframes _ripple { to { transform: scale(4); opacity: 0; } }
 ._ripple-wave {
-  position: absolute;
-  border-radius: 50%;
+  position: absolute; border-radius: 50%;
   background: rgba(255,255,255,0.18);
-  transform: scale(0);
-  animation: _ripple 0.5s linear;
+  transform: scale(0); animation: _ripple 0.5s linear;
   pointer-events: none;
 }
 
-/* Touch feedback nos botões principais */
-button, .album-cover, .voc-alb,
-.biblioteca-tab, .sort-btn, .ctx-item,
-.menu-item, .voc-panel-top button {
+/* Tap highlight off */
+button, .album-cover, .voc-alb, .biblioteca-tab,
+.sort-btn, .ctx-item, .menu-item {
   -webkit-tap-highlight-color: transparent;
-  tap-highlight-color: transparent;
 }
 
+/* Scroll suave */
+html { scroll-behavior: smooth; -webkit-overflow-scrolling: touch; }
 
-
-/* ── Responsividade Global ─────────────────────────── */
-
-/* App container — centralizado em desktop */
-@media (min-width: 768px) {
-  #vocal-app {
-    max-width: 640px;
-    margin: 0 auto;
-  }
-}
-
-/* Tablet: layout mais espaçoso */
-@media (min-width: 768px) and (max-width: 1024px) {
-  .biblioteca-grid {
-    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
-    gap: 14px;
-  }
-  .album-grid {
-    grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
-  }
-}
-
-/* Desktop grande: coluna centralizada */
-@media (min-width: 1025px) {
-  .biblioteca-grid {
-    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
-  }
-}
-
-/* Safe area iOS — bottom */
-@supports (padding-bottom: env(safe-area-inset-bottom)) {
-  .app-nav, .dc-machine,
-  .voc-perf-footer, .voc-panel-body {
-    padding-bottom: calc(var(--base-pb, 10px) + env(safe-area-inset-bottom));
-  }
-}
-
-/* Scroll suave global */
-* { scroll-behavior: smooth; }
-html { -webkit-overflow-scrolling: touch; }
-
-/* Evita flash de layout no iOS ao focar input */
-input, textarea, select {
-  font-size: 16px !important; /* previne zoom automático no iOS */
-}
-
-/* Scroll sem scrollbar visível */
-.biblioteca-grid, .voc-panel-body, .voc-perf-scroll,
-.dc-addpad-box, .chord-area {
-  scrollbar-width: none;
-  -ms-overflow-style: none;
-}
-.biblioteca-grid::-webkit-scrollbar,
+/* Scrollbar oculta */
 .voc-panel-body::-webkit-scrollbar,
 .voc-perf-scroll::-webkit-scrollbar { display: none; }
+.voc-panel-body, .voc-perf-scroll { scrollbar-width: none; }
+
+/* font-size 16px evita zoom iOS */
+input, textarea, select { font-size: 16px !important; }
 
 /* ── Desktop & Global Responsive ── */
 
