@@ -4429,7 +4429,7 @@ body { font-family: -apple-system, 'Inter', BlinkMacSystemFont, 'Segoe UI', sans
 /* GPU acceleration nos elementos que animam */
 .biblioteca-overlay, .modal-overlay, .album-ctx-menu,
 .dc-addpad-overlay, .voc-panel, #voc-perf-overlay,
-.dropdown-menu, .perf-bottom-panel, .sync-bar,
+.dropdown-menu, .sync-bar,
 #onboarding-overlay, .sheet-overlay {
   -webkit-backface-visibility: hidden;
   backface-visibility: hidden;
@@ -4542,7 +4542,7 @@ button:active, [onclick]:active {
 
 /* Safe area iOS — bottom */
 @supports (padding-bottom: env(safe-area-inset-bottom)) {
-  .app-nav, .perf-bottom-panel, .dc-machine,
+  .app-nav, .dc-machine,
   .voc-perf-footer, .voc-panel-body {
     padding-bottom: calc(var(--base-pb, 10px) + env(safe-area-inset-bottom));
   }
