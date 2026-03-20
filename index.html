@@ -8882,7 +8882,17 @@ function _limparHistoricoShow() {
 }
 
 function fecharModalPerfil() {
-  _unlockScroll();
+  _scrollLockCount = Math.max(0, _scrollLockCount - 1);
+  // Reset forçado se não há outros modais visíveis
+  var temModal = document.querySelector('.modal-overlay.show, #biblioteca-overlay.show, #modal-amigos.show');
+  if (!temModal) {
+    _scrollLockCount = 0;
+    document.body.style.overflow = '';
+    document.body.style.position = '';
+    document.body.style.top      = '';
+    document.body.style.width    = '';
+    window.scrollTo(0, _scrollLockY);
+  }
   var _mp = document.getElementById('modal-perfil');
   if (_mp) _mp.style.display = 'none';
 }
@@ -21851,7 +21861,7 @@ async function _fbFazerBackupAgora(btn) {
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;padding:16px 16px 80px;">
 
       <!-- Criar Letra -->
-      <div onclick="vocAbrirCriarLetra()" style="background:linear-gradient(145deg,rgba(138,92,246,0.15),rgba(109,40,217,0.08));border:1px solid rgba(138,92,246,0.25);border-radius:20px;padding:0;overflow:hidden;cursor:pointer;touch-action:manipulation;transition:transform 0.15s,box-shadow 0.15s;position:relative;aspect-ratio:1;" onmouseenter="this.style.transform='scale(1.03)';this.style.boxShadow='0 8px 32px rgba(138,92,246,0.3)'" onmouseleave="this.style.transform='scale(1)';this.style.boxShadow='none'">
+      <div onclick="vocAbrirCriarLetra()" style="background:linear-gradient(145deg,rgba(138,92,246,0.15),rgba(109,40,217,0.08));border:1px solid rgba(138,92,246,0.25);border-radius:20px;padding:0;overflow:hidden;cursor:pointer;touch-action:manipulation;transition:transform 0.15s,box-shadow 0.15s;position:relative;min-height:140px;max-height:180px;" onmouseenter="this.style.transform='scale(1.03)';this.style.boxShadow='0 8px 32px rgba(138,92,246,0.3)'" onmouseleave="this.style.transform='scale(1)';this.style.boxShadow='none'">
         <div style="position:absolute;bottom:-16px;right:-16px;opacity:0.12;">
           <svg width="100" height="100" viewBox="0 0 24 24" fill="white"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8" fill="none" stroke="white" stroke-width="2"/></svg>
         </div>
@@ -21867,7 +21877,7 @@ async function _fbFazerBackupAgora(btn) {
       </div>
 
       <!-- Biblioteca -->
-      <div onclick="vocAbrirBiblioteca()" style="background:linear-gradient(145deg,rgba(10,158,110,0.15),rgba(5,100,70,0.08));border:1px solid rgba(10,158,110,0.25);border-radius:20px;padding:0;overflow:hidden;cursor:pointer;touch-action:manipulation;transition:transform 0.15s,box-shadow 0.15s;position:relative;aspect-ratio:1;" onmouseenter="this.style.transform='scale(1.03)';this.style.boxShadow='0 8px 32px rgba(10,158,110,0.3)'" onmouseleave="this.style.transform='scale(1)';this.style.boxShadow='none'">
+      <div onclick="vocAbrirBiblioteca()" style="background:linear-gradient(145deg,rgba(10,158,110,0.15),rgba(5,100,70,0.08));border:1px solid rgba(10,158,110,0.25);border-radius:20px;padding:0;overflow:hidden;cursor:pointer;touch-action:manipulation;transition:transform 0.15s,box-shadow 0.15s;position:relative;min-height:140px;max-height:180px;" onmouseenter="this.style.transform='scale(1.03)';this.style.boxShadow='0 8px 32px rgba(10,158,110,0.3)'" onmouseleave="this.style.transform='scale(1)';this.style.boxShadow='none'">
         <div style="position:absolute;bottom:-16px;right:-16px;opacity:0.12;">
           <svg width="100" height="100" viewBox="0 0 24 24" fill="white"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
         </div>
