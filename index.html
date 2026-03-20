@@ -22396,6 +22396,18 @@ function vocConfirmarSalvarLetra() {
 }
 
 
+// ── Utilitários de overlay (usados em modais do app) ─────────────────────────
+function _overlayBg() {
+  return 'position:fixed;inset:0;z-index:300000;background:rgba(0,0,0,0.85);display:flex;align-items:center;justify-content:center;padding:20px;';
+}
+function _overlayBgBottom() {
+  return 'position:fixed;inset:0;z-index:300000;background:rgba(0,0,0,0.85);display:flex;align-items:flex-end;justify-content:center;padding:0;';
+}
+function _boxBg(extra) {
+  return 'background:#0d0d1a;border:1px solid rgba(255,255,255,0.08);border-radius:20px;' + (extra || '');
+}
+function _txtColor() { return '#fff'; }
+
 function toggleVocalMenu(e) {
   if (e) e.stopPropagation();
   var d = document.getElementById('vocal-drop');
