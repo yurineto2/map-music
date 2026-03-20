@@ -1399,7 +1399,7 @@ async function obFazerLogin() {
       if (btn) { btn.disabled = false; btn.textContent = 'Entrar'; }
       const isBanido = statusConta === 'banido';
       const overlay = document.createElement('div');
-      overlay.style.cssText = 'position:fixed;inset:0;z-index:100030;background:rgba(0,0,0,0.95);display:flex;align-items:center;justify-content:center;padding:24px;';
+      overlay.style.cssText = 'position:fixed;inset:0;z-index:300030;background:rgba(0,0,0,0.95);display:flex;align-items:center;justify-content:center;padding:24px;';
       overlay.innerHTML =
         '<div style="background:#111119;border:1px solid rgba(255,50,50,0.25);border-radius:20px;padding:32px 24px;width:100%;max-width:340px;display:flex;flex-direction:column;align-items:center;gap:16px;text-align:center;">'
       + '<div style="width:64px;height:64px;border-radius:50%;background:rgba(255,50,50,0.1);border:2px solid rgba(255,50,50,0.3);display:flex;align-items:center;justify-content:center;">'
@@ -6976,7 +6976,7 @@ body.auth-pending #toast {
 </div>
 
 <!-- MODAL HISTÓRICO DE SHOWS -->
-<div id="modal-historico-shows" style="position:fixed;inset:0;z-index:100050;background:rgba(0,0,0,0.92);display:none;align-items:flex-end;justify-content:center;padding:0;" onclick="if(event.target===this)fecharHistoricoShows()" ontouchend="if(event.target===this){event.preventDefault();fecharHistoricoShows();}">
+<div id="modal-historico-shows" style="position:fixed;inset:0;z-index:300000;background:rgba(0,0,0,0.92);display:none;align-items:flex-end;justify-content:center;padding:0;" onclick="if(event.target===this)fecharHistoricoShows()" ontouchend="if(event.target===this){event.preventDefault();fecharHistoricoShows();}">
   <div style="background:#0c0c14;border:1px solid rgba(255,255,255,0.08);border-radius:24px 24px 0 0;width:100%;max-width:480px;display:flex;flex-direction:column;max-height:88vh;animation:slideUpModal 0.28s cubic-bezier(0.34,1.56,0.64,1);">
     <!-- Header -->
     <div style="padding:18px 20px 14px;border-bottom:1px solid rgba(255,255,255,0.06);display:flex;align-items:center;justify-content:space-between;flex-shrink:0;">
@@ -7273,7 +7273,7 @@ body.auth-pending #toast {
         <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
       </button>
       <!-- Dropdown ESPAÇO -->
-      <div id="adm-espaco-drop" style="display:none;position:absolute;top:calc(100% + 8px);left:0;z-index:100050;background:#111119;border:1px solid rgba(255,255,255,0.1);border-radius:14px;overflow:hidden;min-width:200px;box-shadow:0 12px 40px rgba(0,0,0,0.7);">
+      <div id="adm-espaco-drop" style="display:none;position:absolute;top:calc(100% + 8px);left:0;z-index:300050;background:#111119;border:1px solid rgba(255,255,255,0.1);border-radius:14px;overflow:hidden;min-width:200px;box-shadow:0 12px 40px rgba(0,0,0,0.7);">
         <button onclick="adminMostrarAba('painel');admFecharEspacoMenu()"
           style="width:100%;padding:13px 16px;background:transparent;border:none;border-bottom:1px solid rgba(255,255,255,0.06);cursor:pointer;font-family:inherit;touch-action:manipulation;display:flex;align-items:center;gap:12px;text-align:left;transition:background 0.15s;"
           onmouseover="this.style.background='rgba(255,200,0,0.07)'" onmouseout="this.style.background='transparent'">
@@ -8204,7 +8204,7 @@ body.auth-pending #toast {
 <button class="btn-pad-flutuante" id="btn-pad-flutuante" onclick="togglePadFlutuante()">PAD TOCANDO — PARAR</button>
 
 <!-- FRASES PRONTAS — modo show (só host) -->
-<div id="frases-prontas-btn" style="display:none;position:fixed;bottom:24px;left:20px;z-index:200010;">
+<div id="frases-prontas-btn" style="display:none;position:fixed;bottom:24px;left:20px;z-index:300010;">
   <button onclick="toggleFrasesProntas()" id="frases-toggle-btn"
     style="background:rgba(138,92,246,0.12);border:1px solid rgba(138,92,246,0.4);color:rgba(167,139,250,0.9);padding:11px 18px;border-radius:999px;font-size:11px;font-weight:900;letter-spacing:1.5px;text-transform:uppercase;cursor:pointer;font-family:inherit;touch-action:manipulation;backdrop-filter:blur(24px);-webkit-backdrop-filter:blur(24px);box-shadow:0 4px 20px rgba(0,0,0,0.4);display:flex;align-items:center;gap:8px;transition:0.2s;">
     <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
@@ -8213,7 +8213,7 @@ body.auth-pending #toast {
 </div>
 
 <!-- PAINEL DE FRASES PRONTAS -->
-<div id="frases-prontas-painel" style="display:none;position:fixed;bottom:80px;left:20px;z-index:200009;width:min(320px,calc(100vw - 40px));">
+<div id="frases-prontas-painel" style="display:none;position:fixed;bottom:80px;left:20px;z-index:300009;width:min(320px,calc(100vw - 40px));">
   <div style="background:rgba(10,10,20,0.96);border:1px solid rgba(138,92,246,0.3);border-radius:16px;padding:14px;backdrop-filter:blur(24px);-webkit-backdrop-filter:blur(24px);box-shadow:0 16px 48px rgba(0,0,0,0.7);">
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
       <span style="font-size:9px;font-weight:900;letter-spacing:2px;color:rgba(167,139,250,0.7);text-transform:uppercase;">Frases Prontas</span>
@@ -8224,7 +8224,7 @@ body.auth-pending #toast {
 </div>
 
 <!-- MODAL EDITAR FRASES -->
-<div id="modal-editar-frases" style="display:none;position:fixed;inset:0;z-index:200020;background:rgba(0,0,0,0.82);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);align-items:center;justify-content:center;padding:20px;" onclick="if(event.target===this)fecharEditarFrases()">
+<div id="modal-editar-frases" style="display:none;position:fixed;inset:0;z-index:300020;background:rgba(0,0,0,0.82);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);align-items:center;justify-content:center;padding:20px;" onclick="if(event.target===this)fecharEditarFrases()">
   <div style="background:#0d0d1a;border:1px solid rgba(138,92,246,0.25);border-radius:20px;width:100%;max-width:360px;max-height:85vh;display:flex;flex-direction:column;overflow:hidden;box-shadow:0 24px 80px rgba(0,0,0,0.9);">
     <div style="display:flex;align-items:center;justify-content:space-between;padding:16px 20px 12px;border-bottom:1px solid rgba(255,255,255,0.06);">
       <span style="font-size:9px;font-weight:900;letter-spacing:3px;color:rgba(255,255,255,0.3);text-transform:uppercase;">Editar Frases</span>
@@ -8940,7 +8940,7 @@ function perfilAlterarPin(ativarDepois) {
 
   var overlay = document.createElement('div');
   overlay.id = '_pin-alterar-modal';
-  overlay.style.cssText = 'position:fixed;inset:0;z-index:200010;background:rgba(0,0,0,0.82);display:flex;align-items:center;justify-content:center;padding:24px;backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);';
+  overlay.style.cssText = 'position:fixed;inset:0;z-index:300010;background:rgba(0,0,0,0.82);display:flex;align-items:center;justify-content:center;padding:24px;backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);';
 
   overlay.innerHTML =
     '<div style="background:#0d0d1a;border:1px solid rgba(138,92,246,0.25);border-radius:20px;width:100%;max-width:320px;display:flex;flex-direction:column;overflow:hidden;box-shadow:0 24px 80px rgba(0,0,0,0.9);">' +
@@ -15772,7 +15772,7 @@ async function _fbRestaurarBackup() {
   const dataStr = backup.updatedAt ? new Date(backup.updatedAt).toLocaleString('pt-BR') : '';
 
   const msgModal = document.createElement('div');
-  msgModal.style.cssText = 'position:fixed;inset:0;z-index:100020;background:rgba(0,0,0,0.92);display:flex;align-items:center;justify-content:center;padding:24px;';
+  msgModal.style.cssText = 'position:fixed;inset:0;z-index:300020;background:rgba(0,0,0,0.92);display:flex;align-items:center;justify-content:center;padding:24px;';
   msgModal.innerHTML =
     '<div style="background:#111118;border:1px solid rgba(255,255,255,0.1);border-radius:20px;padding:28px 24px;width:100%;max-width:340px;display:flex;flex-direction:column;gap:16px;">'
   + '<div style="font-size:16px;font-weight:900;color:#fff;">Backup encontrado</div>'
@@ -20814,7 +20814,7 @@ async function _fbFazerBackupAgora(btn) {
 </div>
 
 <!-- TELA DE LOGIN (PIN) — usuário já cadastrado -->
-<div id="pin-lock-screen" style="display:none;position:fixed;inset:0;z-index:100001;background:#06060c;flex-direction:column;align-items:center;justify-content:center;gap:0;">
+<div id="pin-lock-screen" style="display:none;position:fixed;inset:0;z-index:300001;background:#06060c;flex-direction:column;align-items:center;justify-content:center;gap:0;">
   <div style="display:flex;flex-direction:column;align-items:center;gap:28px;width:100%;max-width:320px;padding:0 32px;">
     <!-- Logo -->
     <div style="text-align:center;">
@@ -20858,7 +20858,7 @@ async function _fbFazerBackupAgora(btn) {
 </div>
 
 <!-- MODAL ESQUECI A SENHA ────────────────────────────────────── -->
-<div id="modal-esqueci-senha" style="display:none;position:fixed;inset:0;z-index:100002;background:rgba(0,0,0,0.85);align-items:center;justify-content:center;">
+<div id="modal-esqueci-senha" style="display:none;position:fixed;inset:0;z-index:300000;background:rgba(0,0,0,0.85);align-items:center;justify-content:center;">
   <div style="background:#111118;border:1px solid rgba(255,255,255,0.1);border-radius:20px;padding:32px 24px;width:calc(100% - 48px);max-width:360px;display:flex;flex-direction:column;gap:20px;">
     <h3 style="margin:0;font-size:18px;font-weight:800;color:#fff;">Recuperar senha</h3>
     <p style="margin:0;font-size:13px;color:rgba(255,255,255,0.5);line-height:1.5;">Digite o email da tua conta. Vais receber um link para criar uma nova senha.</p>
@@ -20878,7 +20878,7 @@ async function _fbFazerBackupAgora(btn) {
 </div>
 
 <!-- MODAL ALTERAR SENHA ─────────────────────────────────────── -->
-<div id="modal-alterar-senha" style="display:none;position:fixed;inset:0;z-index:100002;background:rgba(0,0,0,0.85);align-items:center;justify-content:center;">
+<div id="modal-alterar-senha" style="display:none;position:fixed;inset:0;z-index:300000;background:rgba(0,0,0,0.85);align-items:center;justify-content:center;">
   <div style="background:#111118;border:1px solid rgba(255,255,255,0.1);border-radius:20px;padding:32px 24px;width:calc(100% - 48px);max-width:360px;display:flex;flex-direction:column;gap:20px;">
     <h3 style="margin:0;font-size:18px;font-weight:800;color:#fff;">Alterar senha</h3>
     <div style="display:flex;flex-direction:column;gap:12px;">
@@ -20916,7 +20916,7 @@ async function _fbFazerBackupAgora(btn) {
 </div>
 
 <!-- ══ Modal Formalizar Conta ════════════════════════════════════════════════ -->
-<div id="modal-formalizar-conta" style="display:none;position:fixed;inset:0;z-index:100002;background:rgba(0,0,0,0.88);align-items:center;justify-content:center;padding:24px;box-sizing:border-box;">
+<div id="modal-formalizar-conta" style="display:none;position:fixed;inset:0;z-index:300000;background:rgba(0,0,0,0.88);align-items:center;justify-content:center;padding:24px;box-sizing:border-box;">
   <div style="background:#111118;border:1px solid rgba(255,200,50,0.18);border-radius:20px;padding:28px 24px;width:100%;max-width:360px;display:flex;flex-direction:column;gap:18px;">
     <div style="display:flex;align-items:center;gap:10px;">
       <div style="width:36px;height:36px;border-radius:10px;background:rgba(255,200,50,0.1);border:1px solid rgba(255,200,50,0.2);display:flex;align-items:center;justify-content:center;flex-shrink:0;">
@@ -21005,7 +21005,7 @@ async function _fbFazerBackupAgora(btn) {
 
 
 <!-- MODAL ADMIN -->
-<div id="modal-admin" style="display:none;position:fixed;inset:0;z-index:100002;background:rgba(0,0,0,0.92);align-items:center;justify-content:center;">
+<div id="modal-admin" style="display:none;position:fixed;inset:0;z-index:300002;background:rgba(0,0,0,0.92);align-items:center;justify-content:center;">
   <div style="background:#0e0e15;border:1px solid rgba(255,255,255,0.07);border-radius:20px;padding:32px 28px;width:calc(100% - 64px);max-width:300px;display:flex;flex-direction:column;align-items:center;gap:20px;">
     <div style="font-size:11px;font-weight:900;letter-spacing:3px;color:rgba(255,255,255,0.2);text-transform:uppercase;">Acesso restrito</div>
     <!-- Dots indicadores -->
@@ -21461,7 +21461,7 @@ async function _fbFazerBackupAgora(btn) {
 </style>
 
 <!-- MODAL LINK SEGURO -->
-<div id="modal-link-seguro" style="display:none;position:fixed;inset:0;z-index:100020;background:rgba(0,0,0,0.94);align-items:center;justify-content:center;padding:20px;" onclick="if(event.target===this)admFecharLinkSeguro()">
+<div id="modal-link-seguro" style="display:none;position:fixed;inset:0;z-index:300020;background:rgba(0,0,0,0.94);align-items:center;justify-content:center;padding:20px;" onclick="if(event.target===this)admFecharLinkSeguro()">
   <div style="background:#0e0e18;border:1px solid rgba(251,191,36,0.2);border-radius:20px;width:100%;max-width:420px;padding:24px 20px;display:flex;flex-direction:column;gap:18px;">
 
     <!-- Header -->
@@ -21531,7 +21531,7 @@ async function _fbFazerBackupAgora(btn) {
 </div>
 
 <!-- MODAL AÇÃO ADMIN -->
-<div id="modal-adm-acao" style="display:none;position:fixed;inset:0;z-index:100010;background:rgba(0,0,0,0.92);align-items:flex-end;justify-content:center;">
+<div id="modal-adm-acao" style="display:none;position:fixed;inset:0;z-index:300010;background:rgba(0,0,0,0.92);align-items:flex-end;justify-content:center;">
   <div style="background:#111119;border:1px solid rgba(255,255,255,0.08);border-radius:24px 24px 0 0;padding:24px 20px 36px;width:100%;max-width:480px;">
     <div style="display:flex;align-items:center;gap:14px;margin-bottom:18px;">
       <div id="adm-acao-avatar" style="width:50px;height:50px;border-radius:50%;background:linear-gradient(135deg,#1a2f1a,#223322);border:2px solid rgba(10,158,110,0.25);display:flex;align-items:center;justify-content:center;font-size:20px;font-weight:900;color:#0A9E6E;flex-shrink:0;"></div>
@@ -21584,7 +21584,7 @@ async function _fbFazerBackupAgora(btn) {
 </div>
 
 <!-- TELA DE ESCOLHA ADMIN (aparece após PIN correto) -->
-<div id="admin-escolha" style="display:none;position:fixed;inset:0;z-index:100003;background:rgba(0,0,0,0.96);align-items:center;justify-content:center;padding:24px;">
+<div id="admin-escolha" style="display:none;position:fixed;inset:0;z-index:300003;background:rgba(0,0,0,0.96);align-items:center;justify-content:center;padding:24px;">
   <div style="width:100%;max-width:340px;display:flex;flex-direction:column;align-items:center;gap:28px;">
 
     <!-- Título -->
@@ -21657,7 +21657,7 @@ async function _fbFazerBackupAgora(btn) {
 </div>
 
 <!-- MODAL PERFIL PUBLICO -->
-<div id="modal-perfil-publico" style="display:none;position:fixed;inset:0;z-index:99999;background:rgba(0,0,0,0.92);align-items:flex-end;justify-content:center;padding:0;" onclick="if(event.target===this)fecharPerfilPublico()">
+<div id="modal-perfil-publico" style="display:none;position:fixed;inset:0;z-index:300000;background:rgba(0,0,0,0.92);align-items:flex-end;justify-content:center;padding:0;" onclick="if(event.target===this)fecharPerfilPublico()">
   <div style="background:#0c0c14;border:1px solid rgba(255,255,255,0.08);border-radius:24px 24px 0 0;width:100%;max-width:480px;display:flex;flex-direction:column;overflow:hidden;max-height:90vh;animation:slideUpModal 0.3s cubic-bezier(0.34,1.56,0.64,1);">
     <!-- Banner -->
     <div id="pp-banner" style="position:relative;height:110px;background:linear-gradient(135deg,#0d2918,#0a1a10);background-size:cover;background-position:center;flex-shrink:0;overflow:hidden;">
@@ -21682,7 +21682,7 @@ async function _fbFazerBackupAgora(btn) {
 </div>
 
 <!-- MODAL EXCLUIR CONTA -->
-<div id="modal-excluir-conta" style="display:none;position:fixed;inset:0;z-index:100010;background:rgba(0,0,0,0.92);align-items:center;justify-content:center;padding:24px;">
+<div id="modal-excluir-conta" style="display:none;position:fixed;inset:0;z-index:300010;background:rgba(0,0,0,0.92);align-items:center;justify-content:center;padding:24px;">
   <div style="background:#111118;border:1px solid rgba(255,50,50,0.2);border-radius:20px;padding:28px 24px;width:100%;max-width:340px;display:flex;flex-direction:column;gap:16px;">
     <div style="text-align:center;">
       <div style="width:48px;height:48px;border-radius:50%;background:rgba(255,50,50,0.1);border:1px solid rgba(255,50,50,0.2);display:flex;align-items:center;justify-content:center;margin:0 auto 12px;">
@@ -21914,7 +21914,7 @@ async function _fbFazerBackupAgora(btn) {
   </div>
 
   <!-- MODAL PERFORMANCE -->
-  <div id="voc-perf-modal" style="display:none;position:fixed;inset:0;z-index:99999;background:#05050d;flex-direction:column;">
+  <div id="voc-perf-modal" style="display:none;position:fixed;inset:0;z-index:300000;background:#05050d;flex-direction:column;">
 
     <!-- Header -->
     <div style="display:flex;align-items:center;gap:12px;padding:14px 18px;border-bottom:1px solid rgba(255,255,255,0.07);flex-shrink:0;">
