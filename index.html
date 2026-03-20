@@ -8391,6 +8391,7 @@ let perfilFotoBase64 = null; // foto atual em edição
 
 
 function abrirModalPerfil() {
+  _lockScroll();
   // Sliders de fonte foram movidos para os painéis individuais — nada a sincronizar aqui
   _renderHistoricoShow();
   const perfil = _lsGet('map_perfil_v1', {});
@@ -8891,6 +8892,7 @@ function _limparHistoricoShow() {
 }
 
 function fecharModalPerfil() {
+  _unlockScroll();
   var _mp = document.getElementById('modal-perfil');
   if (_mp) _mp.style.display = 'none';
 }
@@ -9890,6 +9892,7 @@ document.addEventListener('keydown', e => {
 
 // ─── MODAL ────────────────────────────────────────────────────────────────
 function abrirModalSala() {
+  _lockScroll();
   var _mso=document.getElementById('modal-sala'); _mso.style.pointerEvents=''; _mso.classList.add('show');
   if (isHost) {
     mostrarTabsSala('criar');
@@ -9946,6 +9949,7 @@ function mostrarTabsSala(tab) {
 }
 
 function fecharModal() {
+  _unlockScroll();
   var _ms = document.getElementById('modal-sala');
   _ms.classList.remove('show');
   _ms.style.pointerEvents = 'none';
@@ -11675,6 +11679,7 @@ function albumColor(id) {
 }
 
 function abrirBiblioteca() {
+  _lockScroll();
   fecharMenu();
   var _bo2 = document.getElementById('biblioteca-overlay');
   _bo2.style.pointerEvents = '';
@@ -11699,6 +11704,7 @@ function abrirBiblioteca() {
 }
 
 function fecharBiblioteca() {
+  _unlockScroll();
   var _bo = document.getElementById('biblioteca-overlay');
   _bo.classList.remove('show');
   _bo.style.pointerEvents = 'none'; // bloqueia imediatamente durante transição de saída
@@ -12216,6 +12222,7 @@ function _evMenuEditar(id) { _fecharMenuEvento(); abrirEditarEvento(id, { stopPr
 function _evMenuDeletar(id){ _fecharMenuEvento(); deletarEvento(id, { stopPropagation: function(){} }); }
 
 function abrirModalEvento() {
+  _lockScroll();
   editarEventoId = null;
   document.getElementById('modal-evento-title').textContent = 'Novo Evento';
   document.getElementById('evento-nome-input').value = '';
@@ -12225,6 +12232,7 @@ function abrirModalEvento() {
 }
 
 function fecharModalEvento() {
+  _unlockScroll();
   document.getElementById('modal-evento').classList.remove('show');
   editarEventoId = null;
 }
@@ -12524,6 +12532,7 @@ function _initEventoDragDrop(grid) {
 
 // ── ADICIONAR MÚSICA AO EVENTO ──
 function abrirAddMusica() {
+  _lockScroll();
   const ev = eventos.find(e => e.id === eventoAbertoId);
   if (!ev) return;
   const lista = document.getElementById('modal-addmusica-list');
@@ -12540,6 +12549,7 @@ function abrirAddMusica() {
 }
 
 function fecharAddMusica() {
+  _unlockScroll();
   document.getElementById('modal-addmusica').classList.remove('show');
 }
 
@@ -14130,6 +14140,30 @@ function _frasesAtualizarVisibilidade() {
 
 // ── Fim Frases Prontas ───────────────────────────────────────────────────────
 
+// ── Scroll Lock (evita scroll do fundo ao abrir modais) ──────────────────────
+var _scrollLockCount = 0;
+var _scrollLockY = 0;
+
+function _lockScroll() {
+  _scrollLockCount++;
+  if (_scrollLockCount > 1) return; // já bloqueado
+  _scrollLockY = window.scrollY || window.pageYOffset || 0;
+  document.body.style.overflow   = 'hidden';
+  document.body.style.position   = 'fixed';
+  document.body.style.top        = '-' + _scrollLockY + 'px';
+  document.body.style.width      = '100%';
+}
+
+function _unlockScroll() {
+  _scrollLockCount = Math.max(0, _scrollLockCount - 1);
+  if (_scrollLockCount > 0) return; // ainda tem modal aberto
+  document.body.style.overflow = '';
+  document.body.style.position = '';
+  document.body.style.top      = '';
+  document.body.style.width    = '';
+  window.scrollTo(0, _scrollLockY);
+}
+
 // ─── Afinador Cromático — Rack Style ────────────────────────────────────────
 var _tunerAberto     = false;
 var _tunerAtivo      = false;
@@ -15222,6 +15256,7 @@ function dcTap() {
 let cifraSecoes = [];
 
 function abrirModalCifra() {
+  _lockScroll();
   var _mco=document.getElementById('modal-cifra'); _mco.style.pointerEvents=''; _mco.classList.add('show');
   document.getElementById('cifra-step-1').style.display = 'block';
   document.getElementById('cifra-step-2').style.display = 'none';
@@ -15232,6 +15267,7 @@ function abrirModalCifra() {
   cifraSecoes = [];
 }
 function fecharModalCifra() {
+  _unlockScroll();
   _bloquearFantasma();
   var _mc = document.getElementById('modal-cifra');
   _mc.classList.remove('show');
@@ -16372,6 +16408,7 @@ function _atualizarBadgesAmigos() {
 }
 
 async function abrirModalAmigos() {
+  _lockScroll();
   try {
 
   var _mao=document.getElementById('modal-amigos'); _mao.style.pointerEvents=''; _mao.classList.add('show');
@@ -16387,6 +16424,7 @@ async function abrirModalAmigos() {
 }
 
 function fecharModalAmigos() {
+  _unlockScroll();
   var _ma = document.getElementById('modal-amigos');
   if (!_ma) return;
   _ma.classList.remove('show');
