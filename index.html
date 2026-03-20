@@ -785,6 +785,20 @@ window._DEBUG = (window.location.hostname === 'localhost' || window.location.hos
       } catch(e) { return []; }
     }
   ,
+    async listarLetrasVocalista(uid) {
+      try {
+        const url = 'https://firestore.googleapis.com/v1/projects/' + _PROJECT
+          + '/databases/(default)/documents/letras_vocalista/' + uid + '?pageSize=200'
+          + '&key=' + _API_KEY;
+        const r = await _ft(url, { method: 'GET', headers: { 'Content-Type': 'application/json' } });
+        if (!r.ok) return [];
+        const data = await r.json();
+        return (data.documents || []).map(function(doc) {
+          return Object.assign({ _id: doc.name.split('/').pop() }, _fromFirestore(doc.fields));
+        });
+      } catch(e) { return []; }
+    },
+
     async listarTodosUsuarios(limite) {
       try {
         const url = 'https://firestore.googleapis.com/v1/projects/' + _PROJECT
@@ -25666,16 +25680,14 @@ function _vocBibRenderLetras() {
     return;
   }
   cont.innerHTML = '<div style="text-align:center;padding:20px;color:rgba(255,255,255,0.2);font-size:12px;">Carregando...</div>';
-  window._fb._get('letras_vocalista/' + uid).then(function(dados) {
-    if (!dados || !Object.keys(dados).length) {
+  window._fb.listarLetrasVocalista(uid).then(function(letras) {
+    if (!letras || !letras.length) {
       cont.innerHTML = '<div style="text-align:center;padding:40px 20px;color:rgba(255,255,255,0.2);font-size:13px;">Nenhuma letra criada ainda</div>';
       return;
     }
-    var letras = Object.entries(dados).map(function(e) {
-      return Object.assign({ _id: e[0] }, e[1]);
-    }).sort(function(a, b) { return (b.criadoEm || 0) - (a.criadoEm || 0); });
+    var ordenadas = letras.sort(function(a, b) { return (b.criadoEm || 0) - (a.criadoEm || 0); });
 
-    cont.innerHTML = letras.map(function(l) {
+    cont.innerHTML = ordenadas.map(function(l) {
       var data = l.criadoEm ? new Date(l.criadoEm).toLocaleDateString('pt-BR', {day:'2-digit',month:'short'}) : '';
       var iconFill = l.favorito ? 'rgba(245,196,0,0.7)' : 'none';
       var iconStr  = l.favorito ? 'rgba(245,196,0,0.8)' : '#a78bfa';
