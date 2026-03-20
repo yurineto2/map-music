@@ -22234,9 +22234,15 @@ function _vocExcluirLetra(letra) {
     overlay.remove();
     var uid = localStorage.getItem('map_uid_v1');
     if (!uid || !window._fb) return;
-    window._fb._set('letras_voc/' + uid + '_' + letra._id, null, false).catch(function(){});
-    if (typeof showToast === 'function') showToast('Letra excluída', 'warning');
-    _vocCarregarBiblioteca();
+    window._fb._delete('letras_voc/' + uid + '_' + letra._id).then(function() {
+      if (typeof showToast === 'function') showToast('Letra excluída', 'warning');
+      _vocCarregarBiblioteca();
+    }).catch(function() {
+      // Fallback: tentar via _set null
+      window._fb._set('letras_voc/' + uid + '_' + letra._id, null, false).catch(function(){});
+      if (typeof showToast === 'function') showToast('Letra excluída', 'warning');
+      _vocCarregarBiblioteca();
+    });
   };
   btns.appendChild(btnCancel);
   btns.appendChild(btnOk);
@@ -22407,6 +22413,35 @@ function _boxBg(extra) {
   return 'background:#0d0d1a;border:1px solid rgba(255,255,255,0.08);border-radius:20px;' + (extra || '');
 }
 function _txtColor() { return '#fff'; }
+
+function _confirmarAcao(titulo, desc, labelOk, corOk, callback) {
+  var old = document.querySelector('[data-confirmar-modal]');
+  if (old) old.remove();
+  var overlay = document.createElement('div');
+  overlay.setAttribute('data-confirmar-modal', '1');
+  overlay.style.cssText = 'position:fixed;inset:0;z-index:400000;background:rgba(0,0,0,0.8);display:flex;align-items:center;justify-content:center;padding:20px;';
+  var box = document.createElement('div');
+  box.style.cssText = 'background:#0d0d1a;border:1px solid rgba(255,255,255,0.08);border-radius:20px;padding:24px 20px;width:100%;max-width:320px;display:flex;flex-direction:column;gap:14px;';
+  box.innerHTML =
+    '<div style="font-size:16px;font-weight:900;color:#fff;">' + (titulo || 'Confirmar?') + '</div>' +
+    (desc ? '<div style="font-size:13px;color:rgba(255,255,255,0.45);line-height:1.5;">' + desc + '</div>' : '');
+  var btns = document.createElement('div');
+  btns.style.cssText = 'display:flex;gap:10px;margin-top:4px;';
+  var btnC = document.createElement('button');
+  btnC.style.cssText = 'flex:1;padding:12px;border-radius:12px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);color:rgba(255,255,255,0.4);font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;touch-action:manipulation;';
+  btnC.textContent = 'Cancelar';
+  btnC.onclick = function() { overlay.remove(); };
+  var btnO = document.createElement('button');
+  btnO.style.cssText = 'flex:2;padding:12px;border-radius:12px;background:' + (corOk || 'rgba(255,60,60,0.85)') + ';border:none;color:#fff;font-size:12px;font-weight:900;cursor:pointer;font-family:inherit;touch-action:manipulation;';
+  btnO.textContent = labelOk || 'Confirmar';
+  btnO.onclick = function() { overlay.remove(); if (typeof callback === 'function') callback(); };
+  btns.appendChild(btnC);
+  btns.appendChild(btnO);
+  box.appendChild(btns);
+  overlay.appendChild(box);
+  overlay.addEventListener('click', function(e) { if (e.target === overlay) overlay.remove(); });
+  document.body.appendChild(overlay);
+}
 
 function toggleVocalMenu(e) {
   if (e) e.stopPropagation();
