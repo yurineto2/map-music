@@ -785,6 +785,24 @@ window._DEBUG = (window.location.hostname === 'localhost' || window.location.hos
       } catch(e) { return []; }
     }
   ,
+    async listarSetlistsShow(uid) {
+      try {
+        const url = 'https://firestore.googleapis.com/v1/projects/' + _PROJECT
+          + '/databases/(default)/documents/shows_voc?pageSize=200'
+          + '&key=' + _API_KEY;
+        const r = await _ft(url, { method: 'GET', headers: { 'Content-Type': 'application/json' } });
+        if (!r.ok) return [];
+        const data = await r.json();
+        return (data.documents || []).filter(function(doc) {
+          return doc.name.split('/').pop().startsWith(uid + '_');
+        }).map(function(doc) {
+          var docId = doc.name.split('/').pop();
+          var id = docId.slice(uid.length + 1);
+          return Object.assign({ _id: id }, _fromFirestore(doc.fields));
+        });
+      } catch(e) { return []; }
+    },
+
     async listarLetrasVocalista(uid) {
       try {
         const url = 'https://firestore.googleapis.com/v1/projects/' + _PROJECT
@@ -21872,6 +21890,22 @@ async function _fbFazerBackupAgora(btn) {
         </div>
       </div>
 
+      <!-- Modo Show -->
+      <div onclick="vocAbrirModoShow()" style="background:linear-gradient(145deg,rgba(255,165,0,0.15),rgba(180,90,0,0.08));border:1px solid rgba(255,165,0,0.25);border-radius:20px;padding:0;overflow:hidden;cursor:pointer;touch-action:manipulation;transition:transform 0.15s,box-shadow 0.15s;position:relative;min-height:140px;max-height:180px;grid-column:span 2;" onmouseenter="this.style.transform='scale(1.02)';this.style.boxShadow='0 8px 32px rgba(255,165,0,0.2)'" onmouseleave="this.style.transform='scale(1)';this.style.boxShadow='none'">
+        <div style="position:absolute;bottom:-16px;right:-16px;opacity:0.1;">
+          <svg width="120" height="120" viewBox="0 0 24 24" fill="white"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+        </div>
+        <div style="position:relative;z-index:1;padding:18px 20px;display:flex;align-items:center;gap:16px;height:100%;box-sizing:border-box;">
+          <div style="width:48px;height:48px;border-radius:14px;background:rgba(255,165,0,0.2);border:1px solid rgba(255,165,0,0.35);display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#ffa500" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+          </div>
+          <div>
+            <div style="font-size:15px;font-weight:900;color:#fff;">Modo Show</div>
+            <div style="font-size:11px;color:rgba(255,255,255,0.4);margin-top:3px;">Monte seu setlist e apresente</div>
+          </div>
+        </div>
+      </div>
+
     </div>
   </div>
 
@@ -21914,26 +21948,135 @@ async function _fbFazerBackupAgora(btn) {
   </div>
 
   <!-- MODAL PERFORMANCE -->
-  <div id="voc-perf-modal" style="display:none;position:fixed;inset:0;z-index:300000;background:#05050d;flex-direction:column;">
+  <div id="voc-perf-modal" style="display:none;position:fixed;inset:0;z-index:300000;background:#000;flex-direction:column;" onclick="_vocPerfTap(event)" ondblclick="_vocPerfDblTap(event)">
 
-    <!-- Header -->
-    <div style="display:flex;align-items:center;gap:12px;padding:14px 18px;border-bottom:1px solid rgba(255,255,255,0.07);flex-shrink:0;">
-      <button onclick="vocFecharPerf()" style="width:34px;height:34px;border-radius:10px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.08);color:rgba(255,255,255,0.6);cursor:pointer;display:flex;align-items:center;justify-content:center;touch-action:manipulation;">
+    <!-- Barra de progresso -->
+    <div style="position:absolute;top:0;left:0;right:0;height:3px;background:rgba(255,255,255,0.06);z-index:3;pointer-events:none;">
+      <div id="voc-perf-progress" style="height:100%;background:linear-gradient(90deg,#a78bfa,#7c3aed);width:0%;transition:width 0.4s;"></div>
+    </div>
+
+    <!-- Header (auto-hide) -->
+    <div id="voc-perf-hdr" style="display:flex;align-items:center;gap:12px;padding:18px 18px 12px;background:rgba(0,0,0,0.95);flex-shrink:0;transition:opacity 0.3s,transform 0.3s;z-index:2;">
+      <button onclick="vocFecharPerf()" style="width:34px;height:34px;border-radius:10px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.08);color:rgba(255,255,255,0.6);cursor:pointer;display:flex;align-items:center;justify-content:center;touch-action:manipulation;flex-shrink:0;">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
       </button>
       <div style="flex:1;min-width:0;">
         <div id="voc-perf-titulo" style="font-size:15px;font-weight:900;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;"></div>
         <div id="voc-perf-artista" style="font-size:11px;color:rgba(255,255,255,0.35);margin-top:1px;"></div>
       </div>
-      <div style="display:flex;gap:8px;">
-        <button onclick="vocPerfFonte(-1)" style="width:32px;height:32px;border-radius:8px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.08);color:rgba(255,255,255,0.5);cursor:pointer;font-size:14px;font-weight:900;touch-action:manipulation;">A−</button>
-        <button onclick="vocPerfFonte(1)" style="width:32px;height:32px;border-radius:8px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.08);color:rgba(255,255,255,0.5);cursor:pointer;font-size:16px;font-weight:900;touch-action:manipulation;">A+</button>
+      <div style="display:flex;gap:6px;align-items:center;">
+        <button onclick="vocPerfFonte(-1)" style="width:32px;height:32px;border-radius:8px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.08);color:rgba(255,255,255,0.5);cursor:pointer;font-size:13px;font-weight:900;touch-action:manipulation;display:flex;align-items:center;justify-content:center;">A−</button>
+        <button onclick="vocPerfFonte(1)" style="width:32px;height:32px;border-radius:8px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.08);color:rgba(255,255,255,0.5);cursor:pointer;font-size:15px;font-weight:900;touch-action:manipulation;display:flex;align-items:center;justify-content:center;">A+</button>
+        <button onclick="_vocPerfToggleFullscreen()" style="width:32px;height:32px;border-radius:8px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.08);color:rgba(255,255,255,0.5);cursor:pointer;touch-action:manipulation;display:flex;align-items:center;justify-content:center;">
+          <svg id="voc-perf-fs-ico" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/><line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/></svg>
+        </button>
       </div>
     </div>
 
-    <!-- Conteúdo das seções -->
-    <div id="voc-perf-conteudo" style="flex:1;overflow-y:auto;padding:20px 18px 60px;display:flex;flex-direction:column;gap:28px;"></div>
+    <!-- Indicador seção + número -->
+    <div id="voc-perf-secao-ind" style="display:flex;align-items:center;justify-content:space-between;padding:6px 18px;background:rgba(0,0,0,0.98);flex-shrink:0;transition:opacity 0.3s,transform 0.3s;z-index:2;">
+      <span id="voc-perf-secao-nome" style="font-size:10px;font-weight:900;color:#a78bfa;letter-spacing:2px;text-transform:uppercase;"></span>
+      <div style="display:flex;align-items:center;gap:10px;">
+        <span id="voc-perf-secao-num" style="font-size:10px;font-weight:700;color:rgba(255,255,255,0.25);"></span>
+        <div id="voc-perf-dots" style="display:flex;gap:4px;align-items:center;"></div>
+      </div>
+    </div>
 
+    <!-- Conteúdo rolável -->
+    <div id="voc-perf-conteudo" style="flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none;" ontouchstart="_vocPerfTouchStart(event)" ontouchend="_vocPerfTouchEnd(event)"></div>
+
+    <!-- Barra inferior (auto-hide) -->
+    <div id="voc-perf-footer" style="display:flex;align-items:center;justify-content:center;gap:14px;padding:12px 18px 16px;background:rgba(0,0,0,0.95);border-top:1px solid rgba(255,255,255,0.05);flex-shrink:0;transition:opacity 0.3s,transform 0.3s;z-index:2;">
+      <button onclick="_vocPerfVelMenos()" style="width:34px;height:34px;border-radius:10px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.08);color:rgba(255,255,255,0.5);cursor:pointer;font-size:18px;font-weight:900;touch-action:manipulation;display:flex;align-items:center;justify-content:center;">−</button>
+      <button id="voc-perf-rep-btn" onclick="_vocPerfToggleRepeat()" title="Repetir seção" style="width:34px;height:34px;border-radius:10px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.08);color:rgba(255,255,255,0.3);cursor:pointer;touch-action:manipulation;display:flex;align-items:center;justify-content:center;transition:0.2s;">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="17 1 21 5 17 9"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/><polyline points="7 23 3 19 7 15"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/></svg>
+      </button>
+      <button id="voc-perf-play-btn" onclick="_vocPerfToggleScroll()" style="width:52px;height:52px;border-radius:50%;background:rgba(138,92,246,0.2);border:1.5px solid rgba(138,92,246,0.5);color:#a78bfa;cursor:pointer;display:flex;align-items:center;justify-content:center;touch-action:manipulation;transition:0.2s;">
+        <svg id="voc-perf-play-ico" width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+      </button>
+      <button onclick="_vocPerfVelMais()" style="width:34px;height:34px;border-radius:10px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.08);color:rgba(255,255,255,0.5);cursor:pointer;font-size:18px;font-weight:900;touch-action:manipulation;display:flex;align-items:center;justify-content:center;">+</button>
+      <span id="voc-perf-vel-label" style="font-size:10px;color:rgba(255,255,255,0.3);font-weight:700;min-width:32px;"></span>
+    </div>
+
+  </div>
+
+
+  <!-- PAINEL MODO SHOW (lista de setlists) -->
+  <div id="voc-painel-show" style="display:none;position:absolute;inset:0;background:#000;flex-direction:column;z-index:10;top:58px;">
+    <div style="display:flex;align-items:center;gap:12px;padding:14px 16px;border-bottom:1px solid rgba(255,165,0,0.15);flex-shrink:0;">
+      <button onclick="vocFecharPainelShow()" style="width:34px;height:34px;border-radius:10px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.08);color:rgba(255,255,255,0.6);cursor:pointer;display:flex;align-items:center;justify-content:center;touch-action:manipulation;">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+      </button>
+      <span style="font-size:15px;font-weight:900;color:#fff;flex:1;">Modo Show</span>
+      <button onclick="vocAbrirCriarShow()" style="background:rgba(255,165,0,0.12);border:1px solid rgba(255,165,0,0.3);color:#ffa500;padding:7px 14px;border-radius:10px;font-size:11px;font-weight:900;cursor:pointer;font-family:inherit;touch-action:manipulation;">+ Novo</button>
+    </div>
+    <div id="voc-show-lista" style="flex:1;overflow-y:auto;padding:16px;display:flex;flex-direction:column;gap:10px;"></div>
+  </div>
+
+  <!-- PAINEL CRIAR SETLIST -->
+  <div id="voc-painel-criar-show" style="display:none;position:absolute;inset:0;background:#000;flex-direction:column;z-index:11;top:58px;">
+    <div style="display:flex;align-items:center;gap:12px;padding:14px 16px;border-bottom:1px solid rgba(255,165,0,0.15);flex-shrink:0;">
+      <button onclick="vocFecharCriarShow()" style="width:34px;height:34px;border-radius:10px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.08);color:rgba(255,255,255,0.6);cursor:pointer;display:flex;align-items:center;justify-content:center;touch-action:manipulation;">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+      </button>
+      <span id="voc-criar-show-titulo-hdr" style="font-size:15px;font-weight:900;color:#fff;flex:1;">Novo Setlist</span>
+      <button onclick="vocSalvarShow()" id="voc-criar-show-save-btn" style="background:rgba(255,165,0,0.12);border:1px solid rgba(255,165,0,0.3);color:#ffa500;padding:7px 14px;border-radius:10px;font-size:11px;font-weight:900;cursor:pointer;font-family:inherit;touch-action:manipulation;">Salvar</button>
+    </div>
+    <!-- Campo título do evento -->
+    <div style="padding:14px 16px 0;flex-shrink:0;">
+      <input id="voc-show-titulo-input" type="text" placeholder="Título do evento (ex: Culto domingo...)"
+        style="width:100%;background:rgba(255,255,255,0.05);border:1px solid rgba(255,165,0,0.2);border-radius:12px;padding:12px 14px;color:#fff;font-size:14px;font-weight:700;font-family:inherit;outline:none;box-sizing:border-box;"
+        onfocus="this.style.borderColor='rgba(255,165,0,0.5)'" onblur="this.style.borderColor='rgba(255,165,0,0.2)'">
+    </div>
+    <!-- Letras selecionadas -->
+    <div style="padding:12px 16px 6px;flex-shrink:0;">
+      <div style="font-size:10px;font-weight:800;color:rgba(255,165,0,0.6);letter-spacing:1.5px;text-transform:uppercase;margin-bottom:8px;">Setlist <span id="voc-show-count" style="color:rgba(255,255,255,0.3);">0 letras</span></div>
+      <div id="voc-show-selecionadas" style="display:flex;flex-direction:column;gap:6px;min-height:40px;"></div>
+    </div>
+    <div style="height:1px;background:rgba(255,255,255,0.06);flex-shrink:0;margin:0 16px;"></div>
+    <!-- Biblioteca para selecionar -->
+    <div style="padding:10px 16px 6px;flex-shrink:0;">
+      <div style="font-size:10px;font-weight:800;color:rgba(255,255,255,0.3);letter-spacing:1.5px;text-transform:uppercase;">Biblioteca</div>
+    </div>
+    <div id="voc-show-bib" style="flex:1;overflow-y:auto;padding:6px 16px 80px;display:flex;flex-direction:column;gap:6px;"></div>
+  </div>
+
+  <!-- MODAL SHOW (performance sequencial) -->
+  <div id="voc-show-modal" style="display:none;position:fixed;inset:0;z-index:300001;background:#000;flex-direction:column;">
+    <!-- Header -->
+    <div id="voc-show-hdr" style="display:flex;align-items:center;gap:12px;padding:16px 18px 10px;background:rgba(0,0,0,0.95);flex-shrink:0;transition:opacity 0.3s,transform 0.3s;">
+      <button onclick="vocFecharShow()" style="width:34px;height:34px;border-radius:10px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.08);color:rgba(255,255,255,0.6);cursor:pointer;display:flex;align-items:center;justify-content:center;touch-action:manipulation;flex-shrink:0;">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+      </button>
+      <div style="flex:1;min-width:0;">
+        <div id="voc-show-evento-nome" style="font-size:11px;font-weight:700;color:rgba(255,165,0,0.7);letter-spacing:1px;text-transform:uppercase;"></div>
+        <div id="voc-show-letra-titulo" style="font-size:15px;font-weight:900;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;"></div>
+      </div>
+      <div style="display:flex;flex-direction:column;align-items:flex-end;gap:2px;">
+        <span id="voc-show-num" style="font-size:11px;font-weight:900;color:rgba(255,165,0,0.8);"></span>
+        <div style="display:flex;gap:6px;">
+          <button onclick="vocShowPerfFonte(-1)" style="width:28px;height:28px;border-radius:8px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.08);color:rgba(255,255,255,0.5);cursor:pointer;font-size:11px;font-weight:900;touch-action:manipulation;display:flex;align-items:center;justify-content:center;">A−</button>
+          <button onclick="vocShowPerfFonte(1)" style="width:28px;height:28px;border-radius:8px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.08);color:rgba(255,255,255,0.5);cursor:pointer;font-size:13px;font-weight:900;touch-action:manipulation;display:flex;align-items:center;justify-content:center;">A+</button>
+        </div>
+      </div>
+    </div>
+    <!-- Barra de progresso -->
+    <div style="height:2px;background:rgba(255,255,255,0.06);flex-shrink:0;">
+      <div id="voc-show-progress" style="height:100%;background:linear-gradient(90deg,#ffa500,#ff6b00);width:0%;transition:width 0.4s;"></div>
+    </div>
+    <!-- Conteúdo letra atual -->
+    <div id="voc-show-conteudo" style="flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none;"></div>
+    <!-- Navegação -->
+    <div id="voc-show-nav" style="display:flex;align-items:center;gap:10px;padding:12px 18px 16px;background:rgba(0,0,0,0.95);border-top:1px solid rgba(255,255,255,0.05);flex-shrink:0;">
+      <button onclick="vocShowAnterior()" id="voc-show-btn-ant" style="flex:1;padding:12px;border-radius:12px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.08);color:rgba(255,255,255,0.5);cursor:pointer;font-size:12px;font-weight:700;font-family:inherit;touch-action:manipulation;display:flex;align-items:center;justify-content:center;gap:6px;">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+        Anterior
+      </button>
+      <button onclick="vocShowProximo()" id="voc-show-btn-prox" style="flex:2;padding:12px;border-radius:12px;background:rgba(255,165,0,0.15);border:1px solid rgba(255,165,0,0.4);color:#ffa500;cursor:pointer;font-size:12px;font-weight:900;font-family:inherit;touch-action:manipulation;display:flex;align-items:center;justify-content:center;gap:6px;">
+        Próxima
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+      </button>
+    </div>
   </div>
 
   <!-- PAINEL CRIAR LETRA -->
@@ -21981,6 +22124,330 @@ async function _fbFazerBackupAgora(btn) {
 var _vocBibDocs    = [];
 var _vocBibFavOnly = false;
 var _vocBibOrdem   = 'data';
+
+function vocAbrirModoShow() {
+  var painel = document.getElementById('voc-painel-show');
+  if (!painel) return;
+  painel.style.display = 'flex';
+  _vocShowCarregarLista();
+}
+
+function vocFecharPainelShow() {
+  var p = document.getElementById('voc-painel-show');
+  if (p) p.style.display = 'none';
+}
+
+// ── Lista de setlists salvos ──────────────────────────────────────────────
+function _vocShowCarregarLista() {
+  var lista = document.getElementById('voc-show-lista');
+  if (!lista) return;
+  var uid = localStorage.getItem('map_uid_v1');
+  if (!uid || !window._fb) {
+    lista.innerHTML = '<div style="text-align:center;padding:40px;color:rgba(255,255,255,0.2);font-size:13px;">Faça login para ver seus shows</div>';
+    return;
+  }
+  lista.innerHTML = '<div style="text-align:center;padding:20px;color:rgba(255,255,255,0.2);font-size:12px;">Carregando...</div>';
+  window._fb.listarSetlistsShow(uid).then(function(docs) {
+    if (!docs || !docs.length) {
+      lista.innerHTML = '<div style="text-align:center;padding:40px;color:rgba(255,255,255,0.2);font-size:13px;">Nenhum show criado ainda</div>';
+      return;
+    }
+    docs.sort(function(a,b){ return (b.criadoEm||0)-(a.criadoEm||0); });
+    lista.innerHTML = '';
+    docs.forEach(function(show) {
+      var card = document.createElement('div');
+      card.style.cssText = 'background:rgba(255,165,0,0.07);border:1px solid rgba(255,165,0,0.18);border-radius:14px;padding:14px 16px;display:flex;align-items:center;gap:12px;cursor:pointer;touch-action:manipulation;transition:0.15s;';
+      card.onmouseenter = function(){ this.style.background='rgba(255,165,0,0.13)'; };
+      card.onmouseleave = function(){ this.style.background='rgba(255,165,0,0.07)'; };
+      var qtd = (show.letras||[]).length;
+      card.innerHTML =
+        '<div style="width:40px;height:40px;border-radius:11px;background:rgba(255,165,0,0.15);border:1px solid rgba(255,165,0,0.25);display:flex;align-items:center;justify-content:center;flex-shrink:0;">' +
+          '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#ffa500" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polygon points="5 3 19 12 5 21 5 3"/></svg>' +
+        '</div>' +
+        '<div style="flex:1;min-width:0;">' +
+          '<div style="font-size:13px;font-weight:900;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + _ve(show.titulo||'Sem título') + '</div>' +
+          '<div style="font-size:10px;color:rgba(255,255,255,0.3);margin-top:3px;">' + qtd + ' letra' + (qtd!==1?'s':'') + '</div>' +
+        '</div>' +
+        '<button class="_voc-show-menu-btn" style="background:none;border:none;color:rgba(255,255,255,0.3);cursor:pointer;padding:4px;touch-action:manipulation;">' +
+          '<svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="12" cy="19" r="1.5"/></svg>' +
+        '</button>';
+      card.querySelector('div[style*="flex:1"]').addEventListener('click', function(){ _vocIniciarShow(show); });
+      card.querySelector('._voc-show-menu-btn').addEventListener('click', function(e){ e.stopPropagation(); _vocShowMenu(show, this); });
+      lista.appendChild(card);
+    });
+  }).catch(function(){
+    lista.innerHTML = '<div style="text-align:center;padding:40px;color:rgba(255,255,255,0.2);font-size:13px;">Erro ao carregar</div>';
+  });
+}
+
+function _vocShowMenu(show, btn) {
+  var old = document.getElementById('_voc-show-ctx');
+  if (old) { old.remove(); if (old._showId === show._id) return; }
+  var menu = document.createElement('div');
+  menu.id = '_voc-show-ctx';
+  menu._showId = show._id;
+  menu.style.cssText = 'position:fixed;z-index:400000;background:rgba(10,10,18,0.97);border:1px solid rgba(255,255,255,0.1);border-radius:14px;backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);box-shadow:0 16px 48px rgba(0,0,0,0.8);min-width:160px;padding:4px;';
+  [
+    { label:'Iniciar',  fn: function(){ _vocIniciarShow(show); } },
+    { label:'Editar',   fn: function(){ _vocEditarShow(show); } },
+    { label:'Excluir',  fn: function(){ _vocExcluirShow(show); }, danger: true },
+  ].forEach(function(item) {
+    var div = document.createElement('div');
+    div.style.cssText = 'padding:11px 14px;font-size:12px;font-weight:700;color:' + (item.danger?'rgba(248,113,113,0.85)':'rgba(255,255,255,0.8)') + ';cursor:pointer;border-radius:10px;';
+    div.textContent = item.label;
+    div.onmouseenter = function(){ this.style.background='rgba(255,255,255,0.06)'; };
+    div.onmouseleave = function(){ this.style.background='none'; };
+    div.onclick = function(){ menu.remove(); item.fn(); };
+    menu.appendChild(div);
+  });
+  document.body.appendChild(menu);
+  var r = btn.getBoundingClientRect();
+  var top = r.bottom + 4, left = r.right - 165;
+  if (left < 8) left = 8;
+  if (top + 130 > window.innerHeight - 8) top = r.top - 134;
+  menu.style.top = top+'px'; menu.style.left = left+'px';
+  setTimeout(function(){
+    document.addEventListener('click', function _c(){ var m=document.getElementById('_voc-show-ctx'); if(m)m.remove(); document.removeEventListener('click',_c); }, {once:true});
+  }, 50);
+}
+
+// ── Criar / Editar setlist ────────────────────────────────────────────────
+var _vocShowEditandoId  = null;
+var _vocShowLetras      = [];  // letras selecionadas no setlist
+
+function vocAbrirCriarShow() {
+  _vocShowEditandoId = null;
+  _vocShowLetras = [];
+  var input = document.getElementById('voc-show-titulo-input');
+  if (input) input.value = '';
+  var hdr = document.getElementById('voc-criar-show-titulo-hdr');
+  if (hdr) hdr.textContent = 'Novo Setlist';
+  var p = document.getElementById('voc-painel-criar-show');
+  if (p) p.style.display = 'flex';
+  _vocShowRenderSelecionadas();
+  _vocShowCarregarBib();
+}
+
+function _vocEditarShow(show) {
+  _vocShowEditandoId = show._id;
+  _vocShowLetras = (show.letras || []).slice();
+  var input = document.getElementById('voc-show-titulo-input');
+  if (input) input.value = show.titulo || '';
+  var hdr = document.getElementById('voc-criar-show-titulo-hdr');
+  if (hdr) hdr.textContent = 'Editar Setlist';
+  var p = document.getElementById('voc-painel-criar-show');
+  if (p) p.style.display = 'flex';
+  _vocShowRenderSelecionadas();
+  _vocShowCarregarBib();
+}
+
+function vocFecharCriarShow() {
+  var p = document.getElementById('voc-painel-criar-show');
+  if (p) p.style.display = 'none';
+}
+
+function _vocShowCarregarBib() {
+  var cont = document.getElementById('voc-show-bib');
+  if (!cont) return;
+  var uid = localStorage.getItem('map_uid_v1');
+  if (!uid || !window._fb) return;
+  cont.innerHTML = '<div style="text-align:center;padding:20px;color:rgba(255,255,255,0.2);font-size:12px;">Carregando...</div>';
+  window._fb.listarLetrasVocalista(uid).then(function(docs) {
+    if (!docs || !docs.length) {
+      cont.innerHTML = '<div style="text-align:center;padding:20px;color:rgba(255,255,255,0.2);font-size:12px;">Nenhuma letra na biblioteca</div>';
+      return;
+    }
+    docs.sort(function(a,b){ return (b.criadoEm||0)-(a.criadoEm||0); });
+    cont.innerHTML = '';
+    docs.forEach(function(letra) {
+      var selecionada = _vocShowLetras.some(function(l){ return l._id === letra._id; });
+      var item = document.createElement('div');
+      item.dataset.id = letra._id;
+      item.style.cssText = 'display:flex;align-items:center;gap:12px;padding:10px 12px;border-radius:12px;border:1px solid ' + (selecionada?'rgba(255,165,0,0.3)':'rgba(255,255,255,0.06)') + ';background:' + (selecionada?'rgba(255,165,0,0.08)':'rgba(255,255,255,0.02)') + ';cursor:pointer;touch-action:manipulation;transition:0.15s;';
+      item.innerHTML =
+        '<div style="width:28px;height:28px;border-radius:8px;background:' + (selecionada?'rgba(255,165,0,0.2)':'rgba(255,255,255,0.05)') + ';border:1px solid ' + (selecionada?'rgba(255,165,0,0.4)':'rgba(255,255,255,0.08)') + ';display:flex;align-items:center;justify-content:center;flex-shrink:0;">' +
+          (selecionada ? '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#ffa500" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>' : '') +
+        '</div>' +
+        '<div style="flex:1;min-width:0;">' +
+          '<div style="font-size:12px;font-weight:800;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + _ve(letra.nome||letra.titulo||'Sem título') + '</div>' +
+          '<div style="font-size:10px;color:rgba(255,255,255,0.3);">' + _ve(letra.artista||letra.cantor||'—') + '</div>' +
+        '</div>';
+      item.addEventListener('click', function(){ _vocShowToggleLetra(letra); });
+      cont.appendChild(item);
+    });
+  });
+}
+
+function _vocShowToggleLetra(letra) {
+  var idx = _vocShowLetras.findIndex(function(l){ return l._id === letra._id; });
+  if (idx >= 0) {
+    _vocShowLetras.splice(idx, 1);
+  } else {
+    _vocShowLetras.push({ _id: letra._id, nome: letra.nome||letra.titulo||'', artista: letra.artista||letra.cantor||'', secoes: letra.secoes||[] });
+  }
+  _vocShowRenderSelecionadas();
+  _vocShowCarregarBib();
+}
+
+function _vocShowRenderSelecionadas() {
+  var cont = document.getElementById('voc-show-selecionadas');
+  var count = document.getElementById('voc-show-count');
+  if (count) count.textContent = _vocShowLetras.length + ' letra' + (_vocShowLetras.length!==1?'s':'');
+  if (!cont) return;
+  if (!_vocShowLetras.length) {
+    cont.innerHTML = '<div style="font-size:11px;color:rgba(255,255,255,0.2);padding:8px 0;">Selecione letras abaixo</div>';
+    return;
+  }
+  cont.innerHTML = '';
+  _vocShowLetras.forEach(function(l, idx) {
+    var item = document.createElement('div');
+    item.style.cssText = 'display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:10px;background:rgba(255,165,0,0.08);border:1px solid rgba(255,165,0,0.2);';
+    item.innerHTML =
+      '<span style="font-size:10px;font-weight:900;color:rgba(255,165,0,0.6);min-width:16px;">' + (idx+1) + '</span>' +
+      '<div style="flex:1;min-width:0;font-size:12px;font-weight:800;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + _ve(l.nome) + '</div>' +
+      '<button style="background:none;border:none;color:rgba(255,255,255,0.3);cursor:pointer;padding:2px;font-size:16px;line-height:1;touch-action:manipulation;">×</button>';
+    item.querySelector('button').addEventListener('click', function(){
+      _vocShowLetras.splice(idx, 1);
+      _vocShowRenderSelecionadas();
+      _vocShowCarregarBib();
+    });
+    cont.appendChild(item);
+  });
+}
+
+async function vocSalvarShow() {
+  var titulo = (document.getElementById('voc-show-titulo-input')||{}).value||'';
+  titulo = titulo.trim();
+  if (!titulo) {
+    var inp = document.getElementById('voc-show-titulo-input');
+    if (inp) { inp.style.borderColor='rgba(248,113,113,0.6)'; inp.focus(); }
+    return;
+  }
+  if (!_vocShowLetras.length) { if(typeof showToast==='function') showToast('Adicione ao menos uma letra','error'); return; }
+  var uid = localStorage.getItem('map_uid_v1');
+  if (!uid || !window._fb) return;
+  var btn = document.getElementById('voc-criar-show-save-btn');
+  if (btn) { btn.textContent='Salvando...'; btn.disabled=true; }
+  var id = _vocShowEditandoId || (Date.now()+'_'+Math.random().toString(36).slice(2,6));
+  var dados = { titulo: titulo, letras: _vocShowLetras, criadoEm: _vocShowEditandoId ? undefined : Date.now() };
+  if (_vocShowEditandoId) delete dados.criadoEm;
+  await window._fb._set('shows_voc/'+uid+'_'+id, dados, !!_vocShowEditandoId);
+  if (btn) { btn.textContent='Salvar'; btn.disabled=false; }
+  if(typeof showToast==='function') showToast('Show salvo!','success');
+  vocFecharCriarShow();
+  _vocShowCarregarLista();
+}
+
+function _vocExcluirShow(show) {
+  _confirmarAcao('Excluir show?', '"'+_ve(show.titulo)+'" será removido.', 'Excluir', 'rgba(255,60,60,0.85)', function(){
+    var uid = localStorage.getItem('map_uid_v1');
+    if (!uid || !window._fb) return;
+    window._fb._delete('shows_voc/'+uid+'_'+show._id).catch(function(){});
+    if(typeof showToast==='function') showToast('Show excluído','warning');
+    _vocShowCarregarLista();
+  });
+}
+
+// ── Modo Show — performance sequencial ───────────────────────────────────
+var _vocShowAtual       = null;
+var _vocShowIdxAtual    = 0;
+var _vocShowFontSize    = 18;
+var _vocShowSwipeX      = 0;
+
+function _vocIniciarShow(show) {
+  if (!show.letras || !show.letras.length) { if(typeof showToast==='function') showToast('Show sem letras','error'); return; }
+  _vocShowAtual   = show;
+  _vocShowIdxAtual = 0;
+  _vocShowFontSize = 18;
+  var modal = document.getElementById('voc-show-modal');
+  if (!modal) return;
+  document.getElementById('voc-show-evento-nome').textContent = show.titulo || '';
+  _vocShowRenderLetraAtual();
+  modal.style.display = 'flex';
+
+  // Swipe entre letras
+  var cont = document.getElementById('voc-show-conteudo');
+  if (cont) {
+    cont.ontouchstart = function(e){ _vocShowSwipeX = e.touches[0].clientX; };
+    cont.ontouchend   = function(e){
+      var dx = e.changedTouches[0].clientX - _vocShowSwipeX;
+      if (Math.abs(dx) > 60) { if (dx < 0) vocShowProximo(); else vocShowAnterior(); }
+    };
+  }
+}
+
+function _vocShowRenderLetraAtual() {
+  if (!_vocShowAtual) return;
+  var letras = _vocShowAtual.letras;
+  var letra  = letras[_vocShowIdxAtual];
+  var total  = letras.length;
+
+  document.getElementById('voc-show-letra-titulo').textContent = letra.nome || '—';
+  document.getElementById('voc-show-num').textContent = (_vocShowIdxAtual+1) + ' / ' + total;
+
+  // Progresso
+  var bar = document.getElementById('voc-show-progress');
+  if (bar) bar.style.width = ((_vocShowIdxAtual+1)/total*100)+'%';
+
+  // Conteúdo
+  var cont = document.getElementById('voc-show-conteudo');
+  cont.innerHTML = '';
+  cont.scrollTop = 0;
+  (letra.secoes || []).forEach(function(sec) {
+    var bloco = document.createElement('div');
+    bloco.style.cssText = 'padding:24px 22px 32px;border-bottom:1px solid rgba(255,255,255,0.04);';
+    bloco.innerHTML =
+      '<div style="font-size:9px;font-weight:900;color:#ffa500;letter-spacing:2.5px;text-transform:uppercase;margin-bottom:14px;">' + _ve(sec.titulo) + '</div>' +
+      '<div class="_voc-show-texto" style="font-size:'+_vocShowFontSize+'px;color:#fff;line-height:2;white-space:pre-wrap;font-weight:300;letter-spacing:0.3px;font-family:Georgia,\'Times New Roman\',serif;">' + _ve(sec.texto||'') + '</div>';
+    cont.appendChild(bloco);
+  });
+
+  // Botões nav
+  var btnAnt  = document.getElementById('voc-show-btn-ant');
+  var btnProx = document.getElementById('voc-show-btn-prox');
+  if (btnAnt)  btnAnt.disabled  = _vocShowIdxAtual === 0;
+  if (btnProx) {
+    if (_vocShowIdxAtual === total-1) {
+      btnProx.textContent = 'Finalizar';
+      btnProx.style.background = 'rgba(10,158,110,0.2)';
+      btnProx.style.borderColor = 'rgba(10,158,110,0.4)';
+      btnProx.style.color = '#4ade80';
+    } else {
+      btnProx.innerHTML = 'Próxima <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>';
+      btnProx.style.background = 'rgba(255,165,0,0.15)';
+      btnProx.style.borderColor = 'rgba(255,165,0,0.4)';
+      btnProx.style.color = '#ffa500';
+    }
+  }
+}
+
+function vocShowProximo() {
+  if (!_vocShowAtual) return;
+  if (_vocShowIdxAtual >= _vocShowAtual.letras.length-1) { vocFecharShow(); return; }
+  _vocShowIdxAtual++;
+  _vocShowRenderLetraAtual();
+}
+function vocShowAnterior() {
+  if (_vocShowIdxAtual <= 0) return;
+  _vocShowIdxAtual--;
+  _vocShowRenderLetraAtual();
+}
+function vocShowPerfFonte(dir) {
+  _vocShowFontSize = Math.min(32, Math.max(12, _vocShowFontSize + dir * 2));
+  document.querySelectorAll('._voc-show-texto').forEach(function(el){ el.style.fontSize = _vocShowFontSize+'px'; });
+}
+function vocFecharShow() {
+  var modal = document.getElementById('voc-show-modal');
+  if (modal) modal.style.display = 'none';
+}
+
+function vocAbrirModoShow() {
+  var painel = document.getElementById('voc-painel-show');
+  if (!painel) return;
+  painel.style.display = 'flex';
+  _vocShowCarregarLista();
+}
+
 
 function vocAbrirBiblioteca() {
   var painel = document.getElementById('voc-painel-bib');
@@ -22110,36 +22577,503 @@ function _vocBibAtualizarBtnOrd() {
 
 
 // ── Modal Performance ──────────────────────────────────────────────────────
-var _vocPerfFontSize = 16;
+var _vocPerfFontSize    = 18;
+var _vocPerfScrolling   = false;
+var _vocPerfRepeat      = false;
+var _vocPerfFullscreen  = false;
+var _vocPerfVel         = 3;
+var _vocPerfRaf         = null;
+var _vocPerfAccum       = 0;
+var _vocPerfTouchY      = 0;
+var _vocPerfLastTap     = 0;
+var _vocPerfHdrTimer    = null;
+var _vocPerfHdrVisible  = true;
+var _vocPerfSecaoAtual  = 0;
+var _vocPerfWakeLock    = null;
 
 function _vocAbrirPerf(letra) {
   var modal = document.getElementById('voc-perf-modal');
   if (!modal) return;
-  document.getElementById('voc-perf-titulo').textContent = letra.nome || '—';
-  document.getElementById('voc-perf-artista').textContent = letra.artista || '';
+  _vocPerfScrolling  = false;
+  _vocPerfRepeat     = false;
+  _vocPerfFullscreen = false;
+  _vocPerfVel        = 3;
+  _vocPerfSecaoAtual = 0;
+
+  document.getElementById('voc-perf-titulo').textContent  = letra.nome || letra.titulo || '—';
+  document.getElementById('voc-perf-artista').textContent = letra.artista || letra.cantor || '';
+
   var cont = document.getElementById('voc-perf-conteudo');
   cont.innerHTML = '';
-  _vocPerfFontSize = 16;
-  (letra.secoes || []).forEach(function(sec) {
+  cont.scrollTop = 0;
+  var secoes = letra.secoes || [];
+
+  secoes.forEach(function(sec, idx) {
     var bloco = document.createElement('div');
+    bloco.className = '_voc-perf-bloco';
+    bloco.dataset.idx = idx;
+    bloco.style.cssText = 'padding:28px 22px 36px;border-bottom:1px solid rgba(255,255,255,0.04);';
+    // Fonte serifada elegante para o texto
     bloco.innerHTML =
-      '<div style="font-size:10px;font-weight:900;color:#a78bfa;letter-spacing:2px;text-transform:uppercase;margin-bottom:10px;">' + _ve(sec.titulo) + '</div>' +
-      '<div class="_voc-perf-texto" style="font-size:' + _vocPerfFontSize + 'px;color:#fff;line-height:1.8;white-space:pre-wrap;font-weight:500;">' + _ve(sec.texto) + '</div>';
+      '<div class="_voc-perf-secao-label" style="font-size:9px;font-weight:900;color:#a78bfa;letter-spacing:2.5px;text-transform:uppercase;margin-bottom:16px;font-family:inherit;">' + _ve(sec.titulo) + '</div>' +
+      '<div class="_voc-perf-texto" style="font-size:' + _vocPerfFontSize + 'px;color:#fff;line-height:2;white-space:pre-wrap;font-weight:300;letter-spacing:0.3px;font-family:Georgia,\'Times New Roman\',serif;">' + _ve(sec.texto || '') + '</div>';
     cont.appendChild(bloco);
   });
+
+  _vocPerfRenderDots(secoes.length);
+  _vocPerfAtualizarVelLabel();
+  _vocPerfAtualizarPlayBtn();
+  _vocPerfAtualizarRepBtn();
+  _vocPerfMostrarHdr();
+
+  cont.onscroll = function() {
+    _vocPerfAtualizarSecaoAtual();
+    _vocPerfAtualizarProgresso();
+  };
+
+  _vocPerfAtivarWakeLock();
   modal.style.display = 'flex';
+
+  // Auto-hide header após 3s
+  _vocPerfAgendarHide();
 }
 
 function vocFecharPerf() {
+  _vocPerfPararScroll();
+  _vocPerfSoltarWakeLock();
+  if (_vocPerfHdrTimer) { clearTimeout(_vocPerfHdrTimer); _vocPerfHdrTimer = null; }
   var modal = document.getElementById('voc-perf-modal');
   if (modal) modal.style.display = 'none';
 }
 
 function vocPerfFonte(dir) {
-  _vocPerfFontSize = Math.min(28, Math.max(12, _vocPerfFontSize + dir * 2));
+  _vocPerfFontSize = Math.min(32, Math.max(12, _vocPerfFontSize + dir * 2));
   document.querySelectorAll('._voc-perf-texto').forEach(function(el) {
     el.style.fontSize = _vocPerfFontSize + 'px';
   });
+}
+
+// ── Toque simples / duplo ─────────────────────────────────────────────────
+function _vocPerfTap(e) {
+  // Ignorar cliques em botões
+  if (e.target.closest('button')) return;
+  var agora = Date.now();
+  if (agora - _vocPerfLastTap < 300) return; // vai cair no dblclick
+  _vocPerfLastTap = agora;
+  setTimeout(function() {
+    if (Date.now() - _vocPerfLastTap >= 280) {
+      // Toque simples — pausa/retoma + mostra header
+      _vocPerfToggleScroll();
+      _vocPerfMostrarHdr();
+      _vocPerfAgendarHide();
+    }
+  }, 300);
+}
+
+function _vocPerfDblTap(e) {
+  if (e.target.closest('button')) return;
+  _vocPerfLastTap = 0;
+  // Duplo toque — volta ao início
+  var cont = document.getElementById('voc-perf-conteudo');
+  if (cont) cont.scrollTo({ top: 0, behavior: 'smooth' });
+  _vocPerfPararScroll();
+  _vocPerfMostrarHdr();
+}
+
+// ── Auto-hide header ──────────────────────────────────────────────────────
+function _vocPerfAgendarHide() {
+  if (_vocPerfHdrTimer) clearTimeout(_vocPerfHdrTimer);
+  _vocPerfHdrTimer = setTimeout(function() {
+    if (_vocPerfScrolling) _vocPerfEsconderHdr();
+  }, 3000);
+}
+
+function _vocPerfMostrarHdr() {
+  _vocPerfHdrVisible = true;
+  ['voc-perf-hdr','voc-perf-secao-ind','voc-perf-footer'].forEach(function(id) {
+    var el = document.getElementById(id);
+    if (el) { el.style.opacity = '1'; el.style.transform = 'translateY(0)'; }
+  });
+}
+
+function _vocPerfEsconderHdr() {
+  _vocPerfHdrVisible = false;
+  var hdr = document.getElementById('voc-perf-hdr');
+  var ind = document.getElementById('voc-perf-secao-ind');
+  var ftr = document.getElementById('voc-perf-footer');
+  if (hdr) { hdr.style.opacity = '0'; hdr.style.transform = 'translateY(-100%)'; }
+  if (ind) { ind.style.opacity = '0'; }
+  if (ftr) { ftr.style.opacity = '0'; ftr.style.transform = 'translateY(100%)'; }
+}
+
+// ── Tela cheia ────────────────────────────────────────────────────────────
+function _vocPerfToggleFullscreen() {
+  var modal = document.getElementById('voc-perf-modal');
+  if (!modal) return;
+  if (!document.fullscreenElement) {
+    modal.requestFullscreen && modal.requestFullscreen();
+    modal.webkitRequestFullscreen && modal.webkitRequestFullscreen();
+  } else {
+    document.exitFullscreen && document.exitFullscreen();
+    document.webkitExitFullscreen && document.webkitExitFullscreen();
+  }
+}
+
+// ── Rolagem automática ────────────────────────────────────────────────────
+function _vocPerfToggleScroll() {
+  if (_vocPerfScrolling) { _vocPerfPararScroll(); }
+  else { _vocPerfIniciarScroll(); }
+}
+
+function _vocPerfIniciarScroll() {
+  _vocPerfScrolling = true;
+  _vocPerfAtualizarPlayBtn();
+  _vocPerfAgendarHide();
+  var cont = document.getElementById('voc-perf-conteudo');
+  var lastTs = null;
+  function step(ts) {
+    if (!_vocPerfScrolling) return;
+    if (lastTs !== null) {
+      var pxPerMs = _vocPerfVel * 0.022;
+      _vocPerfAccum += (ts - lastTs) * pxPerMs;
+      if (_vocPerfAccum >= 1) {
+        var px = Math.floor(_vocPerfAccum);
+        _vocPerfAccum -= px;
+        if (_vocPerfRepeat) {
+          // Repetir seção atual
+          var blocos = cont.querySelectorAll('._voc-perf-bloco');
+          var prox = blocos[_vocPerfSecaoAtual + 1];
+          if (prox && cont.scrollTop + px >= prox.offsetTop) {
+            cont.scrollTop = blocos[_vocPerfSecaoAtual].offsetTop;
+          } else {
+            cont.scrollTop += px;
+          }
+        } else {
+          cont.scrollTop += px;
+          if (cont.scrollTop + cont.clientHeight >= cont.scrollHeight - 4) {
+            _vocPerfPararScroll();
+            _vocPerfMostrarHdr();
+            return;
+          }
+        }
+      }
+    }
+    lastTs = ts;
+    _vocPerfRaf = requestAnimationFrame(step);
+  }
+  _vocPerfRaf = requestAnimationFrame(step);
+}
+
+function _vocPerfPararScroll() {
+  _vocPerfScrolling = false;
+  if (_vocPerfRaf) { cancelAnimationFrame(_vocPerfRaf); _vocPerfRaf = null; }
+  _vocPerfAtualizarPlayBtn();
+}
+
+function _vocPerfVelMenos() { _vocPerfVel = Math.max(1, _vocPerfVel - 1); _vocPerfAtualizarVelLabel(); }
+function _vocPerfVelMais()  { _vocPerfVel = Math.min(10, _vocPerfVel + 1); _vocPerfAtualizarVelLabel(); }
+
+function _vocPerfAtualizarVelLabel() {
+  var el = document.getElementById('voc-perf-vel-label');
+  if (el) el.textContent = 'vel ' + _vocPerfVel;
+}
+
+function _vocPerfAtualizarPlayBtn() {
+  var btn = document.getElementById('voc-perf-play-btn');
+  var ico = document.getElementById('voc-perf-play-ico');
+  if (!btn || !ico) return;
+  if (_vocPerfScrolling) {
+    btn.style.background   = 'rgba(138,92,246,0.4)';
+    btn.style.borderColor  = 'rgba(138,92,246,0.8)';
+    ico.innerHTML = '<rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/>';
+  } else {
+    btn.style.background   = 'rgba(138,92,246,0.2)';
+    btn.style.borderColor  = 'rgba(138,92,246,0.5)';
+    ico.innerHTML = '<polygon points="5 3 19 12 5 21 5 3"/>';
+  }
+}
+
+// ── Repetir seção ─────────────────────────────────────────────────────────
+function _vocPerfToggleRepeat() {
+  _vocPerfRepeat = !_vocPerfRepeat;
+  _vocPerfAtualizarRepBtn();
+}
+function _vocPerfAtualizarRepBtn() {
+  var btn = document.getElementById('voc-perf-rep-btn');
+  if (!btn) return;
+  btn.style.color       = _vocPerfRepeat ? '#a78bfa' : 'rgba(255,255,255,0.3)';
+  btn.style.borderColor = _vocPerfRepeat ? 'rgba(138,92,246,0.4)' : 'rgba(255,255,255,0.08)';
+  btn.style.background  = _vocPerfRepeat ? 'rgba(138,92,246,0.1)' : 'rgba(255,255,255,0.05)';
+}
+
+// ── Dots, progresso e seção atual ─────────────────────────────────────────
+function _vocPerfRenderDots(total) {
+  var dots = document.getElementById('voc-perf-dots');
+  if (!dots) return;
+  dots.innerHTML = '';
+  for (var i = 0; i < Math.min(total, 12); i++) {
+    var d = document.createElement('div');
+    d.style.cssText = 'width:6px;height:6px;border-radius:50%;background:rgba(255,255,255,0.2);transition:0.25s;flex-shrink:0;';
+    d.dataset.idx = i;
+    dots.appendChild(d);
+  }
+}
+
+function _vocPerfAtualizarSecaoAtual() {
+  var cont = document.getElementById('voc-perf-conteudo');
+  var nomeEl = document.getElementById('voc-perf-secao-nome');
+  var numEl  = document.getElementById('voc-perf-secao-num');
+  var dots   = document.getElementById('voc-perf-dots');
+  if (!cont) return;
+  var blocos = cont.querySelectorAll('._voc-perf-bloco');
+  var atual = 0;
+  blocos.forEach(function(b, i) {
+    if (b.offsetTop <= cont.scrollTop + 80) atual = i;
+  });
+  _vocPerfSecaoAtual = atual;
+  if (blocos[atual]) {
+    var label = blocos[atual].querySelector('._voc-perf-secao-label');
+    if (nomeEl && label) nomeEl.textContent = label.textContent;
+  }
+  if (numEl) numEl.textContent = (atual + 1) + '/' + blocos.length;
+  if (dots) {
+    dots.querySelectorAll('div').forEach(function(d, i) {
+      var ativo = i === atual;
+      d.style.background   = ativo ? '#a78bfa' : 'rgba(255,255,255,0.2)';
+      d.style.width        = ativo ? '16px' : '6px';
+      d.style.borderRadius = ativo ? '3px' : '50%';
+    });
+  }
+}
+
+function _vocPerfAtualizarProgresso() {
+  var cont = document.getElementById('voc-perf-conteudo');
+  var bar  = document.getElementById('voc-perf-progress');
+  if (!cont || !bar) return;
+  var max = cont.scrollHeight - cont.clientHeight;
+  var pct = max > 0 ? Math.min(100, (cont.scrollTop / max) * 100) : 0;
+  bar.style.width = pct + '%';
+}
+
+// ── Swipe para fechar ─────────────────────────────────────────────────────
+function _vocPerfTouchStart(e) {
+  _vocPerfTouchY = e.touches[0].clientY;
+  _vocPerfMostrarHdr();
+  if (_vocPerfHdrTimer) clearTimeout(_vocPerfHdrTimer);
+  if (_vocPerfScrolling) _vocPerfAgendarHide();
+}
+function _vocPerfTouchEnd(e) {
+  var dy = e.changedTouches[0].clientY - _vocPerfTouchY;
+  var cont = document.getElementById('voc-perf-conteudo');
+  if (dy > 80 && cont && cont.scrollTop <= 0) vocFecharPerf();
+}
+
+// ── WakeLock ──────────────────────────────────────────────────────────────
+function _vocPerfAtivarWakeLock() {
+  if ('wakeLock' in navigator) {
+    navigator.wakeLock.request('screen').then(function(l) { _vocPerfWakeLock = l; }).catch(function(){});
+  }
+}
+function _vocPerfSoltarWakeLock() {
+  if (_vocPerfWakeLock) { _vocPerfWakeLock.release().catch(function(){}); _vocPerfWakeLock = null; }
+}
+
+
+
+function _vocAbrirPerf(letra) {
+  var modal = document.getElementById('voc-perf-modal');
+  if (!modal) return;
+  _vocPerfLetra = letra;
+  _vocPerfScrolling = false;
+  _vocPerfVel = 3;
+
+  // Título e artista
+  document.getElementById('voc-perf-titulo').textContent = letra.nome || letra.titulo || '—';
+  document.getElementById('voc-perf-artista').textContent = letra.artista || letra.cantor || '';
+
+  // Renderizar seções
+  var cont = document.getElementById('voc-perf-conteudo');
+  cont.innerHTML = '';
+  cont.scrollTop = 0;
+  var secoes = letra.secoes || [];
+  secoes.forEach(function(sec, idx) {
+    var bloco = document.createElement('div');
+    bloco.className = '_voc-perf-bloco';
+    bloco.dataset.idx = idx;
+    bloco.style.cssText = 'padding:24px 20px 32px;border-bottom:1px solid rgba(255,255,255,0.04);';
+    bloco.innerHTML =
+      '<div style="font-size:9px;font-weight:900;color:#a78bfa;letter-spacing:2.5px;text-transform:uppercase;margin-bottom:14px;">' + _ve(sec.titulo) + '</div>' +
+      '<div class="_voc-perf-texto" style="font-size:' + _vocPerfFontSize + 'px;color:#fff;line-height:1.85;white-space:pre-wrap;font-weight:400;letter-spacing:0.2px;">' + _ve(sec.texto || '') + '</div>';
+    cont.appendChild(bloco);
+  });
+
+  // Dots de progresso
+  _vocPerfRenderDots(secoes.length);
+  _vocPerfAtualizarSecaoAtual();
+
+  // Scroll → atualiza seção
+  cont.onscroll = function() { _vocPerfAtualizarSecaoAtual(); };
+
+  // Velocidade label
+  _vocPerfAtualizarVelLabel();
+
+  // Play button
+  _vocPerfAtualizarPlayBtn();
+
+  // WakeLock
+  _vocPerfAtivarWakeLock();
+
+  modal.style.display = 'flex';
+}
+
+function vocFecharPerf() {
+  _vocPerfPararScroll();
+  _vocPerfSoltarWakeLock();
+  var modal = document.getElementById('voc-perf-modal');
+  if (modal) modal.style.display = 'none';
+}
+
+function vocPerfFonte(dir) {
+  _vocPerfFontSize = Math.min(30, Math.max(12, _vocPerfFontSize + dir * 2));
+  document.querySelectorAll('._voc-perf-texto').forEach(function(el) {
+    el.style.fontSize = _vocPerfFontSize + 'px';
+  });
+}
+
+// ── Rolagem automática ────────────────────────────────────────────────────
+function _vocPerfToggleScroll() {
+  if (_vocPerfScrolling) {
+    _vocPerfPararScroll();
+  } else {
+    _vocPerfIniciarScroll();
+  }
+}
+
+function _vocPerfIniciarScroll() {
+  _vocPerfScrolling = true;
+  _vocPerfAtualizarPlayBtn();
+  var cont = document.getElementById('voc-perf-conteudo');
+  var lastTs = null;
+  function step(ts) {
+    if (!_vocPerfScrolling) return;
+    if (lastTs !== null) {
+      // px por ms — vel 1=0.02, vel 10=0.2
+      var pxPerMs = _vocPerfVel * 0.022;
+      _vocPerfAccum += (ts - lastTs) * pxPerMs;
+      if (_vocPerfAccum >= 1) {
+        var px = Math.floor(_vocPerfAccum);
+        cont.scrollTop += px;
+        _vocPerfAccum -= px;
+        // Pausa automática no fim
+        if (cont.scrollTop + cont.clientHeight >= cont.scrollHeight - 4) {
+          _vocPerfPararScroll();
+          return;
+        }
+      }
+    }
+    lastTs = ts;
+    _vocPerfRaf = requestAnimationFrame(step);
+  }
+  _vocPerfRaf = requestAnimationFrame(step);
+}
+
+function _vocPerfPararScroll() {
+  _vocPerfScrolling = false;
+  if (_vocPerfRaf) { cancelAnimationFrame(_vocPerfRaf); _vocPerfRaf = null; }
+  _vocPerfAtualizarPlayBtn();
+}
+
+function _vocPerfVelMenos() {
+  _vocPerfVel = Math.max(1, _vocPerfVel - 1);
+  _vocPerfAtualizarVelLabel();
+}
+function _vocPerfVelMais() {
+  _vocPerfVel = Math.min(10, _vocPerfVel + 1);
+  _vocPerfAtualizarVelLabel();
+}
+function _vocPerfAtualizarVelLabel() {
+  var el = document.getElementById('voc-perf-vel-label');
+  if (el) el.textContent = 'vel ' + _vocPerfVel;
+}
+function _vocPerfAtualizarPlayBtn() {
+  var btn = document.getElementById('voc-perf-play-btn');
+  var ico = document.getElementById('voc-perf-play-ico');
+  if (!btn || !ico) return;
+  if (_vocPerfScrolling) {
+    btn.style.background = 'rgba(138,92,246,0.4)';
+    btn.style.borderColor = 'rgba(138,92,246,0.8)';
+    ico.innerHTML = '<rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/>';
+  } else {
+    btn.style.background = 'rgba(138,92,246,0.2)';
+    btn.style.borderColor = 'rgba(138,92,246,0.5)';
+    ico.innerHTML = '<polygon points="5 3 19 12 5 21 5 3"/>';
+  }
+}
+
+// ── Dots e seção atual ────────────────────────────────────────────────────
+function _vocPerfRenderDots(total) {
+  var dots = document.getElementById('voc-perf-dots');
+  if (!dots) return;
+  dots.innerHTML = '';
+  for (var i = 0; i < Math.min(total, 12); i++) {
+    var d = document.createElement('div');
+    d.style.cssText = 'width:6px;height:6px;border-radius:50%;background:rgba(255,255,255,0.2);transition:0.2s;';
+    d.dataset.idx = i;
+    dots.appendChild(d);
+  }
+}
+
+function _vocPerfAtualizarSecaoAtual() {
+  var cont = document.getElementById('voc-perf-conteudo');
+  var nomeEl = document.getElementById('voc-perf-secao-nome');
+  var dots = document.getElementById('voc-perf-dots');
+  if (!cont) return;
+  var blocos = cont.querySelectorAll('._voc-perf-bloco');
+  var atual = 0;
+  blocos.forEach(function(b, i) {
+    if (b.offsetTop <= cont.scrollTop + 60) atual = i;
+  });
+  if (blocos[atual]) {
+    var tituloEl = blocos[atual].querySelector('div');
+    if (nomeEl && tituloEl) nomeEl.textContent = tituloEl.textContent;
+  }
+  // Atualizar dots
+  if (dots) {
+    dots.querySelectorAll('div').forEach(function(d, i) {
+      d.style.background = i === atual ? '#a78bfa' : 'rgba(255,255,255,0.2)';
+      d.style.width = i === atual ? '18px' : '6px';
+      d.style.borderRadius = i === atual ? '3px' : '50%';
+    });
+  }
+}
+
+// ── Swipe para fechar ─────────────────────────────────────────────────────
+function _vocPerfTouchStart(e) {
+  _vocPerfTouchY = e.touches[0].clientY;
+}
+function _vocPerfTouchEnd(e) {
+  var dy = e.changedTouches[0].clientY - _vocPerfTouchY;
+  var cont = document.getElementById('voc-perf-conteudo');
+  // Swipe down no topo fecha
+  if (dy > 80 && cont && cont.scrollTop <= 0) {
+    vocFecharPerf();
+  }
+}
+
+// ── WakeLock ──────────────────────────────────────────────────────────────
+var _vocPerfWakeLock = null;
+function _vocPerfAtivarWakeLock() {
+  if ('wakeLock' in navigator) {
+    navigator.wakeLock.request('screen').then(function(lock) {
+      _vocPerfWakeLock = lock;
+    }).catch(function() {});
+  }
+}
+function _vocPerfSoltarWakeLock() {
+  if (_vocPerfWakeLock) {
+    _vocPerfWakeLock.release().catch(function(){});
+    _vocPerfWakeLock = null;
+  }
 }
 
 // ── Menu ··· dos cards ────────────────────────────────────────────────────────
