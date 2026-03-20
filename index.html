@@ -4422,6 +4422,151 @@ body { font-family: -apple-system, 'Inter', BlinkMacSystemFont, 'Segoe UI', sans
   .dc-fx-row    { grid-template-columns: 1fr; }
 }
 
+/* ══════════════════════════════════════════════════════
+   PERFORMANCE & FLUIDEZ GLOBAL
+   ══════════════════════════════════════════════════════ */
+
+/* GPU acceleration nos elementos que animam */
+.biblioteca-overlay, .modal-overlay, .album-ctx-menu,
+.dc-addpad-overlay, .voc-panel, #voc-perf-overlay,
+.dropdown-menu, .perf-bottom-panel, .sync-bar,
+#onboarding-overlay, .sheet-overlay {
+  -webkit-backface-visibility: hidden;
+  backface-visibility: hidden;
+  -webkit-transform: translateZ(0);
+  transform: translateZ(0);
+}
+
+/* Transições suaves para painéis e overlays */
+.biblioteca-overlay {
+  transition: opacity 0.22s ease, transform 0.22s cubic-bezier(0.4,0,0.2,1);
+}
+.biblioteca-overlay:not(.show) {
+  opacity: 0;
+  pointer-events: none;
+  transform: translateY(10px);
+}
+.biblioteca-overlay.show {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.voc-panel {
+  transition: transform 0.28s cubic-bezier(0.4,0,0.2,1), opacity 0.22s ease;
+  will-change: transform;
+}
+
+/* Transição do overlay do vocalista */
+#voc-perf-overlay {
+  transition: opacity 0.2s ease;
+}
+#voc-perf-overlay:not(.ativo) { opacity: 0; pointer-events: none; }
+#voc-perf-overlay.ativo { opacity: 1; pointer-events: auto; }
+
+/* ── Ripple Effect ─────────────────────────────────── */
+.ripple-host { position: relative; overflow: hidden; }
+@keyframes _ripple {
+  to { transform: scale(4); opacity: 0; }
+}
+._ripple-wave {
+  position: absolute;
+  border-radius: 50%;
+  background: rgba(255,255,255,0.18);
+  transform: scale(0);
+  animation: _ripple 0.5s linear;
+  pointer-events: none;
+}
+
+/* Touch feedback nos botões principais */
+button, [onclick], .album-cover, .voc-alb,
+.biblioteca-tab, .sort-btn, .ctx-item,
+.menu-item, .voc-panel-top button {
+  -webkit-tap-highlight-color: transparent;
+  tap-highlight-color: transparent;
+}
+
+button:active, [onclick]:active {
+  transform: scale(0.97);
+  transition: transform 0.08s ease;
+}
+
+/* ── Responsividade Global ─────────────────────────── */
+
+/* App container — centralizado em desktop */
+@media (min-width: 768px) {
+  body { display: flex; justify-content: center; }
+  #app-root, .app-wrapper, main {
+    max-width: 640px;
+    width: 100%;
+  }
+  .app-header {
+    max-width: 640px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 100%;
+  }
+  .biblioteca-overlay {
+    max-width: 640px;
+    left: 50%;
+    transform: translateX(-50%);
+  }
+  .biblioteca-overlay.show {
+    transform: translateX(-50%) translateY(0);
+  }
+  .biblioteca-overlay:not(.show) {
+    transform: translateX(-50%) translateY(10px);
+  }
+  #vocal-app {
+    max-width: 640px;
+    margin: 0 auto;
+  }
+}
+
+/* Tablet: layout mais espaçoso */
+@media (min-width: 768px) and (max-width: 1024px) {
+  .biblioteca-grid {
+    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+    gap: 14px;
+  }
+  .album-grid {
+    grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+  }
+}
+
+/* Desktop grande: coluna centralizada */
+@media (min-width: 1025px) {
+  .biblioteca-grid {
+    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  }
+}
+
+/* Safe area iOS — bottom */
+@supports (padding-bottom: env(safe-area-inset-bottom)) {
+  .app-nav, .perf-bottom-panel, .dc-machine,
+  .voc-perf-footer, .voc-panel-body {
+    padding-bottom: calc(var(--base-pb, 10px) + env(safe-area-inset-bottom));
+  }
+}
+
+/* Scroll suave global */
+* { scroll-behavior: smooth; }
+html { -webkit-overflow-scrolling: touch; }
+
+/* Evita flash de layout no iOS ao focar input */
+input, textarea, select {
+  font-size: 16px !important; /* previne zoom automático no iOS */
+}
+
+/* Scroll sem scrollbar visível */
+.biblioteca-grid, .voc-panel-body, .voc-perf-scroll,
+.dc-addpad-box, .chord-area {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+.biblioteca-grid::-webkit-scrollbar,
+.voc-panel-body::-webkit-scrollbar,
+.voc-perf-scroll::-webkit-scrollbar { display: none; }
+
 /* ── Desktop & Global Responsive ── */
 
 /* Onboarding: centra e limita largura no desktop */
@@ -17073,6 +17218,28 @@ window.addEventListener('load', function() {
   atualizarBadge();
   verificarAtualizacoes();
   setTimeout(verificarEventosProximos, 1500);
+
+  // ── Ripple Effect Global ───────────────────────────────────────────────────
+  document.addEventListener('pointerdown', function(e) {
+    var el = e.target.closest('button, .voc-alb, .album-cover, .ctx-item, .menu-item, .biblioteca-tab, .sort-btn, .voc-back-btn, .voc-hdr-btn');
+    if (!el) return;
+    var rect = el.getBoundingClientRect();
+    var size = Math.max(rect.width, rect.height) * 2;
+    var x = e.clientX - rect.left - size / 2;
+    var y = e.clientY - rect.top - size / 2;
+    var wave = document.createElement('span');
+    wave.className = '_ripple-wave';
+    wave.style.cssText = 'width:' + size + 'px;height:' + size + 'px;left:' + x + 'px;top:' + y + 'px;';
+    // Garante overflow hidden no elemento
+    var prev = el.style.overflow;
+    el.style.overflow = 'hidden';
+    el.style.position = el.style.position || 'relative';
+    el.appendChild(wave);
+    wave.addEventListener('animationend', function() {
+      wave.remove();
+      if (!prev) el.style.overflow = '';
+    });
+  }, { passive: true });
   // Faz backup automático ao abrir o app (garante que a nuvem está atualizada)
   setTimeout(function() {
     if (songs.length > 0) _fbBackupMusicas();
@@ -25666,6 +25833,8 @@ function vocBibAba(aba) {
   }
 }
 
+var _vocLetrasCache = {};
+
 function _vocBibRenderLetras() {
   var cont = document.getElementById('voc-bib-letras');
   if (!cont) return;
@@ -25680,6 +25849,9 @@ function _vocBibRenderLetras() {
       cont.innerHTML = '<div style="text-align:center;padding:40px 20px;color:rgba(255,255,255,0.2);font-size:13px;">Nenhuma letra criada ainda</div>';
       return;
     }
+    // Guarda no cache para acesso rápido
+    _vocLetrasCache = {};
+    letras.forEach(function(l) { _vocLetrasCache[l._id] = l; });
     var ordenadas = letras.sort(function(a, b) { return (b.criadoEm || 0) - (a.criadoEm || 0); });
 
     cont.innerHTML = ordenadas.map(function(l) {
@@ -25738,32 +25910,42 @@ function _vocLetraMenu(id, btn) {
 }
 
 function vocBibAbrirLetra(id) {
+  // Tenta usar cache primeiro, senão busca no Firebase
+  var dados = _vocLetrasCache[id];
+  if (dados) {
+    _vocAbrirLetraNoShow(dados);
+    return;
+  }
   var uid = localStorage.getItem('map_uid_v1');
   if (!uid || !window._fb) return;
-  window._fb._get('letras_voc/' + uid + '_' + id).then(function(dados) {
-    if (!dados) return;
-    _vocLetraSecoes = (dados.secoes && dados.secoes.length) ? dados.secoes : [];
-    var nomeEl = document.getElementById('voc-perf-nome');
-    if (nomeEl) nomeEl.textContent = (dados.titulo || '—') + (dados.cantor ? '  ·  ' + dados.cantor : '');
-    var letraEl = document.getElementById('voc-perf-letra');
-    if (letraEl) {
-      letraEl.style.fontSize = _vocPerfFontSize + 'px';
-      letraEl.innerHTML = _vocLetraSecoes.map(function(sec) {
-        return '<div class="voc-perf-secao-bloco" data-secao="' + _ve(sec.titulo) + '">' +
-          '<div class="voc-perf-secao-titulo">' + _ve(sec.titulo) + '</div>' +
-          '<div class="voc-perf-secao-texto">' + _ve(sec.texto || '').replace(/\n/g, '<br>') + '</div>' +
-        '</div>';
-      }).join('');
-    }
-    document.getElementById('voc-perf-tom').style.display = 'none';
-    document.getElementById('voc-perf-proxima').style.display = 'none';
-    vocPerfPararScroll();
-    var scrollArea = document.getElementById('voc-perf-scroll');
-    if (scrollArea) scrollArea.scrollTop = 0;
-    document.getElementById('voc-perf-overlay').classList.add('ativo');
-    if (typeof ativarWakeLock === 'function') ativarWakeLock();
-    _vocPerfIniciarObservador();
+  window._fb._get('letras_voc/' + uid + '_' + id).then(function(d) {
+    if (!d) { showToast('Letra não encontrada', 'error'); return; }
+    _vocAbrirLetraNoShow(d);
   }).catch(function() { showToast('Erro ao abrir letra', 'error'); });
+}
+
+function _vocAbrirLetraNoShow(dados) {
+  _vocLetraSecoes = (dados.secoes && dados.secoes.length) ? dados.secoes : [];
+  var nomeEl = document.getElementById('voc-perf-nome');
+  if (nomeEl) nomeEl.textContent = (dados.titulo || '—') + (dados.cantor ? '  ·  ' + dados.cantor : '');
+  var letraEl = document.getElementById('voc-perf-letra');
+  if (letraEl) {
+    letraEl.style.fontSize = _vocPerfFontSize + 'px';
+    letraEl.innerHTML = _vocLetraSecoes.map(function(sec) {
+      return '<div class="voc-perf-secao-bloco" data-secao="' + _ve(sec.titulo) + '">' +
+        '<div class="voc-perf-secao-titulo">' + _ve(sec.titulo) + '</div>' +
+        '<div class="voc-perf-secao-texto">' + _ve(sec.texto || '').replace(/\n/g, '<br>') + '</div>' +
+      '</div>';
+    }).join('');
+  }
+  document.getElementById('voc-perf-tom').style.display = 'none';
+  document.getElementById('voc-perf-proxima').style.display = 'none';
+  vocPerfPararScroll();
+  var scrollArea = document.getElementById('voc-perf-scroll');
+  if (scrollArea) scrollArea.scrollTop = 0;
+  document.getElementById('voc-perf-overlay').classList.add('ativo');
+  if (typeof ativarWakeLock === 'function') ativarWakeLock();
+  _vocPerfIniciarObservador();
 }
 
 function _vocLetraEditar(id) {
