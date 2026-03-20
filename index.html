@@ -4438,15 +4438,16 @@ button, .album-cover, .voc-alb, .biblioteca-tab,
 }
 
 /* Scroll suave */
-html { scroll-behavior: smooth; -webkit-overflow-scrolling: touch; }
-
 /* Scrollbar oculta */
 .voc-panel-body::-webkit-scrollbar,
 .voc-perf-scroll::-webkit-scrollbar { display: none; }
 .voc-panel-body, .voc-perf-scroll { scrollbar-width: none; }
 
-/* font-size 16px evita zoom iOS */
-input, textarea, select { font-size: 16px !important; }
+/* font-size 16px evita zoom iOS em inputs de texto */
+input[type="text"], input[type="email"], input[type="password"],
+input[type="search"], textarea {
+  font-size: 16px !important;
+}
 
 /* ── Desktop & Global Responsive ── */
 
