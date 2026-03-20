@@ -788,13 +788,17 @@ window._DEBUG = (window.location.hostname === 'localhost' || window.location.hos
     async listarLetrasVocalista(uid) {
       try {
         const url = 'https://firestore.googleapis.com/v1/projects/' + _PROJECT
-          + '/databases/(default)/documents/letras_vocalista/' + uid + '?pageSize=200'
+          + '/databases/(default)/documents/letras_voc?pageSize=200'
           + '&key=' + _API_KEY;
         const r = await _ft(url, { method: 'GET', headers: { 'Content-Type': 'application/json' } });
         if (!r.ok) return [];
         const data = await r.json();
-        return (data.documents || []).map(function(doc) {
-          return Object.assign({ _id: doc.name.split('/').pop() }, _fromFirestore(doc.fields));
+        return (data.documents || []).filter(function(doc) {
+          return doc.name.split('/').pop().startsWith(uid + '_');
+        }).map(function(doc) {
+          var docId = doc.name.split('/').pop();
+          var id = docId.slice(uid.length + 1);
+          return Object.assign({ _id: id }, _fromFirestore(doc.fields));
         });
       } catch(e) { return []; }
     },
@@ -22656,20 +22660,17 @@ body[data-ambiente="vocalista"] #play-btn { display: none !important; }
       <button class="voc-back-btn" onclick="vocFecharPainel()">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
       </button>
-      <span class="voc-panel-title">Biblioteca de Músicas</span>
+      <span class="voc-panel-title">Biblioteca</span>
     </div>
     <!-- Abas -->
     <div style="display:flex;gap:6px;padding:0 16px 12px;flex-shrink:0;">
-      <button id="voc-bib-tab-musicas" onclick="vocBibAba('musicas')"
-        style="flex:1;padding:9px;border-radius:10px;border:1px solid rgba(10,158,110,0.4);background:rgba(10,158,110,0.12);color:#0A9E6E;font-size:11px;font-weight:800;font-family:inherit;cursor:pointer;transition:0.2s;touch-action:manipulation;">Músicas</button>
       <button id="voc-bib-tab-letras" onclick="vocBibAba('letras')"
-        style="flex:1;padding:9px;border-radius:10px;border:1px solid rgba(255,255,255,0.07);background:rgba(255,255,255,0.03);color:rgba(255,255,255,0.35);font-size:11px;font-weight:800;font-family:inherit;cursor:pointer;transition:0.2s;touch-action:manipulation;">Letras</button>
+        style="flex:1;padding:9px;border-radius:10px;border:1px solid rgba(10,158,110,0.4);background:rgba(10,158,110,0.12);color:#0A9E6E;font-size:11px;font-weight:800;font-family:inherit;cursor:pointer;transition:0.2s;touch-action:manipulation;">Letras</button>
       <button id="voc-bib-tab-eventos" onclick="vocBibAba('eventos')"
         style="flex:1;padding:9px;border-radius:10px;border:1px solid rgba(255,255,255,0.07);background:rgba(255,255,255,0.03);color:rgba(255,255,255,0.35);font-size:11px;font-weight:800;font-family:inherit;cursor:pointer;transition:0.2s;touch-action:manipulation;">Eventos</button>
     </div>
     <div class="voc-panel-body" style="padding:0 16px 80px;">
-      <div id="voc-bib-musicas"></div>
-      <div id="voc-bib-letras" style="display:none;"></div>
+      <div id="voc-bib-letras"></div>
       <div id="voc-bib-eventos" style="display:none;"></div>
     </div>
   </div>
@@ -25637,30 +25638,24 @@ function _vocCalVerificarHoje() {
 var _vocBibAbaAtual = 'musicas';
 
 function vocAbrirBiblioteca() {
-  _vocBibAbaAtual = 'musicas';
-  vocBibAba('musicas');
+  _vocBibAbaAtual = 'letras';
+  vocBibAba('letras');
 }
 
 function vocBibAba(aba) {
   _vocBibAbaAtual = aba;
-  var tabM = document.getElementById('voc-bib-tab-musicas');
   var tabL = document.getElementById('voc-bib-tab-letras');
   var tabE = document.getElementById('voc-bib-tab-eventos');
-  var divM = document.getElementById('voc-bib-musicas');
   var divL = document.getElementById('voc-bib-letras');
   var divE = document.getElementById('voc-bib-eventos');
 
   var ativo = 'flex:1;padding:9px;border-radius:10px;border:1px solid rgba(10,158,110,0.4);background:rgba(10,158,110,0.12);color:#0A9E6E;font-size:11px;font-weight:800;font-family:inherit;cursor:pointer;transition:0.2s;touch-action:manipulation;';
   var inato = 'flex:1;padding:9px;border-radius:10px;border:1px solid rgba(255,255,255,0.07);background:rgba(255,255,255,0.03);color:rgba(255,255,255,0.35);font-size:11px;font-weight:800;font-family:inherit;cursor:pointer;transition:0.2s;touch-action:manipulation;';
 
-  [tabM, tabL, tabE].forEach(function(t) { if (t) t.style.cssText = inato; });
-  [divM, divL, divE].forEach(function(d) { if (d) d.style.display = 'none'; });
+  [tabL, tabE].forEach(function(t) { if (t) t.style.cssText = inato; });
+  [divL, divE].forEach(function(d) { if (d) d.style.display = 'none'; });
 
-  if (aba === 'musicas') {
-    if (tabM) tabM.style.cssText = ativo;
-    if (divM) divM.style.display = '';
-    _vocBibRenderMusicas();
-  } else if (aba === 'letras') {
+  if (aba === 'letras') {
     if (tabL) tabL.style.cssText = ativo;
     if (divL) divL.style.display = '';
     _vocBibRenderLetras();
@@ -25745,7 +25740,7 @@ function _vocLetraMenu(id, btn) {
 function vocBibAbrirLetra(id) {
   var uid = localStorage.getItem('map_uid_v1');
   if (!uid || !window._fb) return;
-  window._fb._get('letras_vocalista/' + uid + '/' + id).then(function(dados) {
+  window._fb._get('letras_voc/' + uid + '_' + id).then(function(dados) {
     if (!dados) return;
     _vocLetraSecoes = (dados.secoes && dados.secoes.length) ? dados.secoes : [];
     var nomeEl = document.getElementById('voc-perf-nome');
@@ -25774,7 +25769,7 @@ function vocBibAbrirLetra(id) {
 function _vocLetraEditar(id) {
   var uid = localStorage.getItem('map_uid_v1');
   if (!uid || !window._fb) return;
-  window._fb._get('letras_vocalista/' + uid + '/' + id).then(function(dados) {
+  window._fb._get('letras_voc/' + uid + '_' + id).then(function(dados) {
     if (!dados) return;
     var ti = document.getElementById('voc-letra-titulo-input');
     var ci = document.getElementById('voc-letra-cantor-input');
@@ -25790,9 +25785,9 @@ function _vocLetraEditar(id) {
 function _vocLetraFavoritar(id) {
   var uid = localStorage.getItem('map_uid_v1');
   if (!uid || !window._fb) return;
-  window._fb._get('letras_vocalista/' + uid + '/' + id).then(function(dados) {
+  window._fb._get('letras_voc/' + uid + '_' + id).then(function(dados) {
     if (!dados) return;
-    window._fb._set('letras_vocalista/' + uid + '/' + id, { favorito: !dados.favorito }, true).then(function() {
+    window._fb._set('letras_voc/' + uid + '_' + id, { favorito: !dados.favorito }, true).then(function() {
       showToast(!dados.favorito ? 'Favoritado!' : 'Desfavoritado', 'success');
       _vocBibRenderLetras();
     });
@@ -25829,33 +25824,13 @@ function _vocLetraExcluir(id) {
 function _vocLetraExcluirOk(id) {
   var uid = localStorage.getItem('map_uid_v1');
   if (!uid || !window._fb) return;
-  window._fb._set('letras_vocalista/' + uid + '/' + id, null, false).catch(function(){});
+  window._fb._set('letras_voc/' + uid + '_' + id, null, false).catch(function(){});
   showToast('Letra excluída', 'warning');
   _vocBibRenderLetras();
 }
 
 
-function _vocBibRenderMusicas() {
-  var cont = document.getElementById('voc-bib-musicas');
-  if (!cont) return;
-  var lista = (typeof songs !== 'undefined' ? songs : []);
-  if (!lista.length) {
-    cont.innerHTML = '<div style="text-align:center;padding:40px 20px;color:rgba(255,255,255,0.2);font-size:13px;">Nenhuma música criada ainda</div>';
-    return;
-  }
-  cont.innerHTML = lista.map(function(s, i) {
-    return '<div onclick="vocBibAbrirMusica(' + i + ')" style="display:flex;align-items:center;gap:12px;padding:12px 0;border-bottom:1px solid rgba(255,255,255,0.05);cursor:pointer;">' +
-      '<div style="width:40px;height:40px;border-radius:10px;background:rgba(10,158,110,0.1);border:1px solid rgba(10,158,110,0.2);display:flex;align-items:center;justify-content:center;flex-shrink:0;">' +
-        '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#4ade80" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>' +
-      '</div>' +
-      '<div style="flex:1;min-width:0;">' +
-        '<div style="font-size:13px;font-weight:800;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + _ve(s.name || 'Sem título') + '</div>' +
-        '<div style="font-size:11px;color:rgba(255,255,255,0.3);margin-top:2px;">' + (s.bpm ? s.bpm + ' BPM' : '') + (s.tags && s.tags.length ? ' · ' + s.tags.slice(0,2).join(', ') : '') + '</div>' +
-      '</div>' +
-      '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.15)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>' +
-    '</div>';
-  }).join('');
-}
+// ── Fim Biblioteca ────────────────────────────────────────────────────────────
 
 function _vocBibRenderEventos() {
   var cont = document.getElementById('voc-bib-eventos');
@@ -25881,15 +25856,7 @@ function _vocBibRenderEventos() {
   }).join('');
 }
 
-function vocBibAbrirMusica(idx) {
-  var s = (typeof songs !== 'undefined' ? songs : [])[idx];
-  if (!s) return;
-  loadSong(s.id);
-  showToast('Música carregada: ' + (s.name || ''), 'success');
-  vocFecharPainel();
-}
-
-// ── Fim Biblioteca de Músicas ─────────────────────────────────────────────────
+// ── Fim Biblioteca ────────────────────────────────────────────────────────────
 var _vocLetraSecoes = [];
 var _VOC_SECOES_PADRAO = ['Verso', 'Pré-Refrão', 'Refrão', 'Ponte', 'Coro', 'Final'];
 
@@ -25968,7 +25935,7 @@ async function vocSalvarLetraSecoes() {
   var letraId = titulo.toLowerCase().replace(/[^a-z0-9]/g, '_').replace(/_+/g, '_') + '_' + Date.now();
 
   try {
-    await window._fb._set('letras_vocalista/' + uid + '/' + letraId, {
+    await window._fb._set('letras_voc/' + uid + '_' + letraId, {
       titulo: titulo,
       cantor: cantor,
       secoes: _vocLetraSecoes,
