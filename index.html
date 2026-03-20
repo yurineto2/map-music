@@ -6473,17 +6473,6 @@ body.auth-pending #toast {
 /* ═══════════════════════════════════════════════════════════
    AMBIENTE VOCALISTA
    ═══════════════════════════════════════════════════════════ */
-#vocal-app {
-  display: none;
-  position: fixed;
-  inset: 0;
-  z-index: 100;
-  background: rgba(6,6,12,0.97);
-  backdrop-filter: blur(0px);
-  -webkit-backdrop-filter: blur(0px);
-  flex-direction: column;
-  overflow: hidden;
-}
 #vocal-app.ativo {
   display: flex;
 }
@@ -7343,39 +7332,6 @@ body.auth-pending #toast {
           <div class="menu-item" onclick="event.stopPropagation();fecharMenu({target:document.body});abrirModalPerfil()">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
             Meu Perfil
-          </div>
-          <div class="menu-item" onclick="event.stopPropagation();fecharMenu({target:document.body});abrirChatGlobal()">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
-            Chat Global
-            <span id="chat-global-badge" style="display:none;margin-left:auto;background:rgba(138,92,246,0.85);color:#fff;font-size:9px;font-weight:900;border-radius:10px;min-width:16px;height:16px;padding:0 4px;align-items:center;justify-content:center;line-height:1;box-sizing:border-box;"></span>
-          </div>
-          <div class="menu-item" onclick="event.stopPropagation();fecharMenu({target:document.body});abrirBiblioteca()">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>
-            Biblioteca
-          </div>
-          <div class="menu-item" onclick="event.stopPropagation();fecharMenu({target:document.body});abrirDrumCam()">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="3"/></svg>
-            Drum Pad
-          </div>
-          <div class="menu-item" onclick="event.stopPropagation();fecharMenu({target:document.body});abrirPads()">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="9" height="9" rx="2"/><rect x="13" y="3" width="9" height="9" rx="2"/><rect x="2" y="13" width="9" height="9" rx="2"/><rect x="13" y="13" width="9" height="9" rx="2"/></svg>
-            Pads
-          </div>
-          <div class="menu-item" onclick="event.stopPropagation();fecharMenu({target:document.body});abrirModalStats()">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
-            Estatísticas
-          </div>
-          <div class="menu-item" onclick="event.stopPropagation();fecharMenu({target:document.body});abrirModalCifra()">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
-            Importar Cifra
-          </div>
-          <div class="menu-item" onclick="event.stopPropagation();fecharMenu({target:document.body});abrirConfigAudio()">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14M4.93 4.93a10 10 0 0 0 0 14.14"/></svg>
-            Áudio
-          </div>
-          <div class="menu-item danger" onclick="event.stopPropagation();fecharMenu({target:document.body});resetSection()">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg>
-            Limpar Seção
           </div>
         </div>
       </div>
@@ -22639,8 +22595,8 @@ body[data-ambiente="vocalista"] #play-btn { display: none !important; }
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#4ade80" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
           </div>
           <div>
-            <div class="voc-alb-name">Biblioteca de Músicas</div>
-            <div class="voc-alb-desc">Músicas e eventos do editor principal</div>
+            <div class="voc-alb-name">Biblioteca</div>
+            <div class="voc-alb-desc">Suas letras e eventos</div>
           </div>
         </div>
       </div>
@@ -23075,66 +23031,6 @@ body[data-ambiente="vocalista"] #play-btn { display: none !important; }
     </div>
   </div>
 
-  <!-- SHOWS -->
-  <div class="voc-panel" id="voc-panel-shows">
-    <div class="voc-panel-top">
-      <button class="voc-back-btn" onclick="vocFecharPainel()">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
-      </button>
-      <span class="voc-panel-title">Shows</span>
-    </div>
-    <div class="voc-shows-tabs">
-      <button class="voc-shows-tab ativo" id="voc-shows-tab-eventos" onclick="vocShowsAba('eventos')">Eventos</button>
-      <button class="voc-shows-tab" id="voc-shows-tab-sala" onclick="vocShowsAba('sala')">Sala ao vivo</button>
-    </div>
-    <!-- Sub-painel Eventos -->
-    <div id="voc-shows-eventos" style="display:flex;flex-direction:column;flex:1;overflow:hidden;">
-      <div class="voc-sort-bar">
-        <button class="voc-sort-btn ativo" id="voc-shows-sort-az" onclick="vocShowsOrdenar('az')">A–Z</button>
-        <button class="voc-sort-btn" id="voc-shows-sort-data" onclick="vocShowsOrdenar('data')">Data</button>
-      </div>
-      <div id="voc-eventos-lista" style="overflow-y:auto;flex:1;padding-bottom:20px;"></div>
-    </div>
-    <!-- Sub-painel Sala ao vivo -->
-    <div id="voc-shows-sala" style="display:none;flex-direction:column;flex:1;overflow:hidden;">
-      <div id="voc-sala-setlist-wrap" style="overflow-y:auto;flex:1;padding-bottom:20px;"></div>
-    </div>
-  </div>
-
-  <!-- MÚSICAS DO EVENTO (sub-tela) -->
-  <div class="voc-panel" id="voc-panel-ev-musicas" style="z-index:11;">
-    <div class="voc-panel-top">
-      <button class="voc-back-btn" onclick="vocFecharEvMusicas()">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
-      </button>
-      <span class="voc-panel-title" id="voc-ev-musicas-titulo">Setlist</span>
-    </div>
-    <div class="voc-setlist-header">
-      <div class="voc-setlist-sub" id="voc-ev-musicas-sub"></div>
-    </div>
-    <div id="voc-ev-musicas-lista" style="overflow-y:auto;flex:1;padding-bottom:20px;"></div>
-  </div>
-
-  <div class="voc-panel" id="voc-panel-salvos">
-    <div class="voc-panel-top">
-      <button class="voc-back-btn" onclick="vocFecharPainel()">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
-      </button>
-      <span class="voc-panel-title">Salvos</span>
-    </div>
-    <div class="voc-panel-body">
-      <div class="voc-section-head" style="padding-bottom:12px;">
-        <div id="voc-fav-count" class="voc-section-sub">0 itens salvos</div>
-      </div>
-      <div class="voc-subtabs">
-        <button class="voc-subtab ativo" id="voc-sub-letras" onclick="vocFavAba('letras')">Letras</button>
-        <button class="voc-subtab" id="voc-sub-tons" onclick="vocFavAba('tons')">Tonalidades</button>
-      </div>
-      <div id="voc-fav-letras"></div>
-      <div id="voc-fav-tons" style="display:none;"></div>
-    </div>
-  </div>
-
   <!-- MODO PERFORMANCE VOCALISTA -->
   <div id="voc-perf-overlay">
     <div class="voc-perf-header">
@@ -23309,7 +23205,6 @@ function vocAbrirPainel(id, originEl) {
   if(id === 'calendario') vocAbrirCalendario();
   if(id === 'tom') _vocRenderTons();
   if(id === 'shows') _vocRenderShows();
-  if(id === 'eventos') { _vocAtualizarBadgeSala(); vocEvRenderLista(); }
   if(id === 'videos') { var vi=document.getElementById('voc-input-video'); if(vi&&_voc.titulo) vi.value=_voc.titulo+' '+_voc.artista; _vocVideoHistRender(); if(vi&&vi.value.trim()) setTimeout(vocBuscarVideos, 100); }
 
   // Mostrar e animar
@@ -23342,120 +23237,10 @@ var _vocEvOrdem = 'data'; // 'data' | 'az'
 var _vocEvSetAtual = null; // { nome, musicas:[{nome,temLetra,favIdx}] }
 window._vocSetlistRecebido = null;
 
-function _vocAtualizarBadgeSala() {
-  var badge = document.getElementById('voc-sala-badge');
-  var badgeTxt = document.getElementById('voc-sala-badge-txt');
-  var sl = window._vocSetlistRecebido;
-  if (!badge) return;
-  if (sl && sl.nomes && sl.nomes.length) {
-    badge.classList.add('ativo');
-    var txt = sl.eventoNome ? ('Ao vivo · ' + sl.eventoNome) : 'Sala ao vivo';
-    if (badgeTxt) badgeTxt.textContent = txt;
-  } else {
-    badge.classList.remove('ativo');
-  }
-  // Atualiza badge do card no grid
-  var evBadge = document.getElementById('voc-eventos-badge');
-  var total = (typeof eventos !== 'undefined' ? eventos.length : 0);
-  if (evBadge) {
-    if (total > 0) { evBadge.textContent = total; evBadge.style.display = 'flex'; }
-    else { evBadge.style.display = 'none'; }
-  }
-}
-
-function vocEvRenderLista() {
-  var lista = document.getElementById('voc-ev-lista');
-  if (!lista) return;
-  var favs = vocFavs() || [];
-  var sl = window._vocSetlistRecebido;
-
-  var html = '';
-
-  // Bloco sala ao vivo (se tiver setlist recebido via sala)
-  if (sl && sl.nomes && sl.nomes.length) {
-    var posAtual = sl.pos || 0;
-    html += '<div style="padding:8px 16px 4px;">'
-      + '<div style="font-size:9px;font-weight:800;letter-spacing:2px;color:rgba(96,165,250,0.5);text-transform:uppercase;margin-bottom:6px;">Sala ao vivo'
-      + (sl.eventoNome ? ' · ' + _ve(sl.eventoNome) : '') + '</div>';
-    sl.nomes.forEach(function(nome, i) {
-      var fav = favs.find(function(f) { return f.titulo && f.titulo.toLowerCase() === nome.toLowerCase(); });
-      var temLetra = !!fav;
-      var atual = (i === posAtual);
-      html += '<div class="voc-set-item' + (atual ? ' atual' : '') + '" onclick="vocEvAbrirSetlistSala(' + i + ')">'
-        + '<span class="voc-set-num">' + (i + 1) + '</span>'
-        + '<span class="voc-set-nome">' + _ve(nome) + '</span>'
-        + '<span class="voc-set-tag ' + (temLetra ? 'tem-letra' : 'sem-letra') + '">' + (temLetra ? 'Letra' : 'Buscar') + '</span>'
-        + '</div>';
-    });
-    html += '</div><div style="height:1px;background:rgba(255,255,255,0.05);margin:8px 0;"></div>';
-  }
-
-  // Eventos locais
-  var evs = (typeof eventos !== 'undefined' ? eventos.slice() : []);
-  if (!evs.length && !html) {
-    lista.innerHTML = '<div class="voc-empty"><div class="voc-empty-title">Nenhum evento criado</div>'
-      + '<div class="voc-empty-sub">Cria eventos no app principal para vê-los aqui</div></div>';
-    return;
-  }
-  if (evs.length) {
-    if (_vocEvOrdem === 'az') {
-      evs.sort(function(a, b) { return (a.nome || '').localeCompare(b.nome || ''); });
-    } else {
-      evs.sort(function(a, b) { return (b.id || 0) - (a.id || 0); });
-    }
-    html += '<div style="padding:8px 16px 4px;font-size:9px;font-weight:800;letter-spacing:2px;color:rgba(255,255,255,0.2);text-transform:uppercase;">Meus eventos</div>';
-    evs.forEach(function(ev) {
-      var musTotal = (ev.musicIds || []).length;
-      var musComLetra = (ev.musicIds || []).filter(function(id) {
-        var s = (typeof songs !== 'undefined' ? songs : []).find(function(x) { return x.id === id; });
-        if (!s) return false;
-        return favs.some(function(f) { return f.titulo && f.titulo.toLowerCase() === (s.name||'').toLowerCase(); });
-      }).length;
-      var dataStr = ev.data ? new Date(ev.data + 'T12:00:00').toLocaleDateString('pt-BR', {day:'2-digit',month:'short',year:'numeric'}) : '';
-      html += '<div class="voc-ev-item" onclick="vocEvAbrirEvento(' + ev.id + ')">'
-        + '<div style="flex:1;min-width:0;">'
-        +   '<div class="voc-ev-nome">' + _ve(ev.nome || 'Sem nome') + '</div>'
-        +   (dataStr ? '<div class="voc-ev-data">' + dataStr + '</div>' : '')
-        + '</div>'
-        + '<div class="voc-ev-cnt">' + musComLetra + '/' + musTotal + ' letras</div>'
-        + '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.2)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>'
-        + '</div>';
-    });
-  }
-  lista.innerHTML = html;
-}
-
 function vocEvOrdenar(ord) {
   _vocEvOrdem = ord;
   document.getElementById('voc-sort-data').classList.toggle('ativo', ord === 'data');
   document.getElementById('voc-sort-az').classList.toggle('ativo', ord === 'az');
-  vocEvRenderLista();
-}
-
-function vocEvAbrirEvento(evId) {
-  var ev = (typeof eventos !== 'undefined' ? eventos : []).find(function(e) { return e.id === evId; });
-  if (!ev) return;
-  var favs = vocFavs() || [];
-  var musicas = (ev.musicIds || []).map(function(id, i) {
-    var s = (typeof songs !== 'undefined' ? songs : []).find(function(x) { return x.id === id; });
-    if (!s) return null;
-    var fav = favs.find(function(f) { return f.titulo && f.titulo.toLowerCase() === (s.name||'').toLowerCase(); });
-    return { nome: s.name, temLetra: !!fav, fav: fav || null, pos: i };
-  }).filter(Boolean);
-  _vocEvSetAtual = { nome: ev.nome, musicas: musicas, tipo: 'evento' };
-  vocEvMostrarSet();
-}
-
-function vocEvAbrirSetlistSala(posInicial) {
-  var sl = window._vocSetlistRecebido;
-  if (!sl || !sl.nomes) return;
-  var favs = vocFavs() || [];
-  var musicas = sl.nomes.map(function(nome, i) {
-    var fav = favs.find(function(f) { return f.titulo && f.titulo.toLowerCase() === nome.toLowerCase(); });
-    return { nome: nome, temLetra: !!fav, fav: fav || null, pos: i };
-  });
-  _vocEvSetAtual = { nome: sl.eventoNome || 'Sala ao vivo', musicas: musicas, tipo: 'sala', posAtual: posInicial };
-  vocEvMostrarSet();
 }
 
 function vocEvMostrarSet() {
@@ -23508,7 +23293,6 @@ function vocEvClicarMusica(idx) {
     // Calcula próxima
     var prox = _vocEvSetAtual.musicas[idx + 1];
     window._vocPerfProxima = prox ? prox.nome : null;
-    vocEvAbrirPerformanceDireto(m.fav, idx);
   } else {
     // Abre busca de letras com o nome pré-preenchido
     vocAbrirPainel('letras');
@@ -23518,37 +23302,12 @@ function vocEvClicarMusica(idx) {
   }
 }
 
-function vocEvAbrirPerformanceDireto(fav, idx) {
-  var set = _vocEvSetAtual;
-  // Usa vocAbrirPerformance mas com dados diretos (não por índice em favs)
-  document.getElementById('voc-perf-nome').textContent = fav.titulo;
-  var letraEl = document.getElementById('voc-perf-letra');
-  letraEl.innerHTML = ''; // _vocRenderLetra removido — usar seções do editor
-  var tons = vocTons() || [];
-  var tonSalvo = tons.find(function(t) { return t.titulo === fav.titulo; });
-  var tomEl = document.getElementById('voc-perf-tom');
-  if (tonSalvo) { tomEl.textContent = tonSalvo.tom; tomEl.style.display = ''; }
-  else { tomEl.style.display = 'none'; }
-  // Próxima música
-  var proxEl = document.getElementById('voc-perf-proxima');
-  var proxNomeEl = document.getElementById('voc-perf-prox-nome');
-  var proximaNome = window._vocPerfProxima || null;
-  if (!proximaNome && set && set.musicas[idx + 1]) proximaNome = set.musicas[idx + 1].nome;
-  if (proximaNome) { proxNomeEl.textContent = proximaNome; proxEl.style.display = ''; }
-  else { proxEl.style.display = 'none'; }
-  vocPerfPararScroll();
-  var scrollArea = document.getElementById('voc-perf-scroll');
-  if (scrollArea) scrollArea.scrollTop = 0;
-  document.getElementById('voc-perf-overlay').classList.add('ativo');
-}
-
 function vocEvVoltarLista() {
   _vocEvSetAtual = null;
   document.getElementById('voc-ev-panel-titulo').textContent = 'Eventos';
   document.getElementById('voc-ev-back-btn').style.display = 'none';
   document.getElementById('voc-ev-lista-wrap').style.display = '';
   document.getElementById('voc-ev-set-wrap').style.display = 'none';
-  vocEvRenderLista();
 }
 
 // ─── LINK SEGURO DE ACESSO ───────────────────────────────────────────────────
@@ -23788,79 +23547,11 @@ function _mostrarErroBloqueio(titulo, msg) {
 
 // ─── PAINEL SHOWS ────────────────────────────────────────────────────────────
 var _vocShowsOrdem = 'az';   // 'az' | 'data'
-var _vocShowsAba   = 'eventos'; // 'eventos' | 'sala'
 var _vocEvAtual    = null;   // evento aberto na sub-tela
 
-// Abre o painel Shows e renderiza a aba ativa
-function _vocRenderShows() {
-  if (_vocShowsAba === 'eventos') _vocRenderEventos();
-  else _vocRenderSalaVivo();
-}
-
 // ── Aba selector ──────────────────────────────────────────────────────────────
-function vocShowsAba(aba) {
-  _vocShowsAba = aba;
-  var te = document.getElementById('voc-shows-tab-eventos');
-  var ts = document.getElementById('voc-shows-tab-sala');
-  var de = document.getElementById('voc-shows-eventos');
-  var ds = document.getElementById('voc-shows-sala');
-  if (aba === 'eventos') {
-    te.classList.add('ativo'); ts.classList.remove('ativo');
-    de.style.display = 'flex'; ds.style.display = 'none';
-    _vocRenderEventos();
-  } else {
-    ts.classList.add('ativo'); te.classList.remove('ativo');
-    ds.style.display = 'flex'; de.style.display = 'none';
-    _vocRenderSalaVivo();
-  }
-}
-
 // ── Ordenação ─────────────────────────────────────────────────────────────────
-function vocShowsOrdenar(ord) {
-  _vocShowsOrdem = ord;
-  document.getElementById('voc-sort-az').classList.toggle('ativo', ord === 'az');
-  document.getElementById('voc-sort-data').classList.toggle('ativo', ord === 'data');
-  _vocRenderEventos();
-}
-
 // ── Lista de eventos (cenário solo) ──────────────────────────────────────────
-function _vocRenderEventos() {
-  var lista = document.getElementById('voc-eventos-lista');
-  if (!lista) return;
-  var evs = (typeof eventos !== 'undefined' ? eventos : []).slice();
-  if (!evs.length) {
-    lista.innerHTML = '<div class="voc-empty" style="margin:32px 16px;"><div class="voc-empty-title">Nenhum evento encontrado</div><div class="voc-empty-sub">Crie eventos no app principal e eles aparecerão aqui</div></div>';
-    return;
-  }
-  // Ordenação
-  if (_vocShowsOrdem === 'az') {
-    evs.sort(function(a, b) { return (a.nome||'').localeCompare(b.nome||'', 'pt'); });
-  } else {
-    evs.sort(function(a, b) { return (b.data||'') > (a.data||'') ? 1 : -1; });
-  }
-  // Conta quantas músicas têm letra salva por evento
-  var favs = vocFavs() || [];
-  var favTitulos = favs.map(function(f) { return (f.titulo||'').toLowerCase(); });
-  lista.innerHTML = evs.map(function(ev) {
-    var musicas = (ev.musicIds || []).map(function(id) {
-      return (typeof songs !== 'undefined' ? songs : []).find(function(s) { return s.id === id; });
-    }).filter(Boolean);
-    var comLetra = musicas.filter(function(s) {
-      return favTitulos.indexOf((s.name||'').toLowerCase()) !== -1;
-    }).length;
-    var dataStr = ev.data ? new Date(ev.data + 'T12:00:00').toLocaleDateString('pt-BR', {day:'2-digit', month:'short'}) : '';
-    var badge = comLetra ? '<span class="voc-ev-letras-badge">' + comLetra + '/' + musicas.length + ' letras</span>' : '';
-    return '<div class="voc-ev-card" onclick="vocAbrirEvMusicas(' + ev.id + ')">'
-      + '<div class="voc-ev-nome">' + _ve(ev.nome) + '</div>'
-      + '<div class="voc-ev-meta">'
-      +   (dataStr ? '<span>' + dataStr + '</span>' : '')
-      +   '<span>' + musicas.length + ' música' + (musicas.length !== 1 ? 's' : '') + '</span>'
-      +   badge
-      + '</div>'
-      + '</div>';
-  }).join('');
-}
-
 // ── Abrir músicas de um evento ────────────────────────────────────────────────
 function vocAbrirEvMusicas(evId) {
   var ev = (typeof eventos !== 'undefined' ? eventos : []).find(function(e) { return e.id === evId; });
@@ -23870,12 +23561,6 @@ function vocAbrirEvMusicas(evId) {
   var dataStr = ev.data ? new Date(ev.data + 'T12:00:00').toLocaleDateString('pt-BR', {weekday:'long', day:'2-digit', month:'long'}) : '';
   document.getElementById('voc-ev-musicas-sub').textContent = dataStr;
   _vocRenderEvMusicasLista(ev, null);
-  document.getElementById('voc-panel-ev-musicas').classList.add('ativo');
-}
-
-function vocFecharEvMusicas() {
-  document.getElementById('voc-panel-ev-musicas').classList.remove('ativo');
-  _vocEvAtual = null;
 }
 
 function _vocRenderEvMusicasLista(ev, posAtual) {
@@ -23883,7 +23568,7 @@ function _vocRenderEvMusicasLista(ev, posAtual) {
   if (!lista) return;
   var favs = vocFavs() || [];
   var musicas = (ev.musicIds || []).map(function(id) {
-    return (typeof songs !== 'undefined' ? songs : []).find(function(s) { return s.id === id; });
+    return null; // songs do editor removido
   }).filter(Boolean);
   if (!musicas.length) {
     lista.innerHTML = '<div class="voc-empty" style="margin:32px 16px;"><div class="voc-empty-title">Nenhuma música neste evento</div></div>';
@@ -23914,7 +23599,7 @@ function vocClicarMusicaEv(idx, nome, evId) {
     var proxNome = null;
     if (ev) {
       var musicas = (ev.musicIds || []).map(function(id) {
-        return (typeof songs !== 'undefined' ? songs : []).find(function(s) { return s.id === id; });
+        return null; // songs do editor removido
       }).filter(Boolean);
       for (var i = idx + 1; i < musicas.length; i++) {
         var pf = favs.find(function(f) { return (f.titulo||'').toLowerCase() === (musicas[i].name||'').toLowerCase(); });
@@ -24117,8 +23802,7 @@ function vocAbrirPerformanceDaLetraAtual() {
 
   if (temSecoes) {
     // Monta nome da música
-    var musicaAtual = (typeof currentSongIndex !== 'undefined' && currentSongIndex >= 0 && typeof songs !== 'undefined')
-      ? songs[currentSongIndex] : null;
+    var musicaAtual = null; // songs do editor removido
     var titulo = musicaAtual ? (musicaAtual.name || '') : (_voc.titulo || '');
 
     // Renderiza seções no overlay
