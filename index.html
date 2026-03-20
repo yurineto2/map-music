@@ -4433,22 +4433,18 @@ body { font-family: -apple-system, 'Inter', BlinkMacSystemFont, 'Segoe UI', sans
 #onboarding-overlay, .sheet-overlay {
   -webkit-backface-visibility: hidden;
   backface-visibility: hidden;
-  -webkit-transform: translateZ(0);
-  transform: translateZ(0);
 }
 
 /* Transições suaves para painéis e overlays */
 .biblioteca-overlay {
-  transition: opacity 0.22s ease, transform 0.22s cubic-bezier(0.4,0,0.2,1);
+  transition: opacity 0.22s ease;
 }
 .biblioteca-overlay:not(.show) {
   opacity: 0;
   pointer-events: none;
-  transform: translateY(10px);
 }
 .biblioteca-overlay.show {
   opacity: 1;
-  transform: translateY(0);
 }
 
 .voc-panel {
@@ -4478,14 +4474,14 @@ body { font-family: -apple-system, 'Inter', BlinkMacSystemFont, 'Segoe UI', sans
 }
 
 /* Touch feedback nos botões principais */
-button, [onclick], .album-cover, .voc-alb,
+button, .album-cover, .voc-alb,
 .biblioteca-tab, .sort-btn, .ctx-item,
 .menu-item, .voc-panel-top button {
   -webkit-tap-highlight-color: transparent;
   tap-highlight-color: transparent;
 }
 
-button:active, [onclick]:active {
+button:active {
   transform: scale(0.97);
   transition: transform 0.08s ease;
 }
@@ -4498,23 +4494,6 @@ button:active, [onclick]:active {
   #app-root, .app-wrapper, main {
     max-width: 640px;
     width: 100%;
-  }
-  .app-header {
-    max-width: 640px;
-    left: 50%;
-    transform: translateX(-50%);
-    width: 100%;
-  }
-  .biblioteca-overlay {
-    max-width: 640px;
-    left: 50%;
-    transform: translateX(-50%);
-  }
-  .biblioteca-overlay.show {
-    transform: translateX(-50%) translateY(0);
-  }
-  .biblioteca-overlay:not(.show) {
-    transform: translateX(-50%) translateY(10px);
   }
   #vocal-app {
     max-width: 640px;
