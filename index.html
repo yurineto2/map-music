@@ -4422,32 +4422,6 @@ body { font-family: -apple-system, 'Inter', BlinkMacSystemFont, 'Segoe UI', sans
   .dc-fx-row    { grid-template-columns: 1fr; }
 }
 
-/* ── Ripple Effect ─────────────────────────────────────────────────────────── */
-@keyframes _ripple { to { transform: scale(4); opacity: 0; } }
-._ripple-wave {
-  position: absolute; border-radius: 50%;
-  background: rgba(255,255,255,0.18);
-  transform: scale(0); animation: _ripple 0.5s linear;
-  pointer-events: none;
-}
-
-/* Tap highlight off */
-button, .album-cover, .voc-alb, .biblioteca-tab,
-.sort-btn, .ctx-item, .menu-item {
-  -webkit-tap-highlight-color: transparent;
-}
-
-/* Scroll suave */
-/* Scrollbar oculta */
-.voc-panel-body::-webkit-scrollbar,
-.voc-perf-scroll::-webkit-scrollbar { display: none; }
-.voc-panel-body, .voc-perf-scroll { scrollbar-width: none; }
-
-/* font-size 16px evita zoom iOS em inputs de texto */
-input[type="text"], input[type="email"], input[type="password"],
-input[type="search"], textarea {
-  font-size: 16px !important;
-}
 
 /* ── Desktop & Global Responsive ── */
 
@@ -17101,27 +17075,6 @@ window.addEventListener('load', function() {
   verificarAtualizacoes();
   setTimeout(verificarEventosProximos, 1500);
 
-  // ── Ripple Effect Global ───────────────────────────────────────────────────
-  document.addEventListener('pointerdown', function(e) {
-    var el = e.target.closest('button, .voc-alb, .album-cover, .ctx-item, .menu-item, .biblioteca-tab, .sort-btn, .voc-back-btn, .voc-hdr-btn');
-    if (!el) return;
-    var rect = el.getBoundingClientRect();
-    var size = Math.max(rect.width, rect.height) * 2;
-    var x = e.clientX - rect.left - size / 2;
-    var y = e.clientY - rect.top - size / 2;
-    var wave = document.createElement('span');
-    wave.className = '_ripple-wave';
-    wave.style.cssText = 'width:' + size + 'px;height:' + size + 'px;left:' + x + 'px;top:' + y + 'px;';
-    // Garante overflow hidden no elemento
-    var prev = el.style.overflow;
-    el.style.overflow = 'hidden';
-    el.style.position = el.style.position || 'relative';
-    el.appendChild(wave);
-    wave.addEventListener('animationend', function() {
-      wave.remove();
-      if (!prev) el.style.overflow = '';
-    });
-  }, { passive: true });
   // Faz backup automático ao abrir o app (garante que a nuvem está atualizada)
   setTimeout(function() {
     if (songs.length > 0) _fbBackupMusicas();
