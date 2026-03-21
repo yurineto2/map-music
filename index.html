@@ -23787,5 +23787,96 @@ document.addEventListener('click', function(e) {
 <script>
 // Espaço Vocalista — script reservado
 </script>
+
+<script>
+// ─── Push Notifications — Show Agendado ──────────────────────────────────────
+var _PUSH_VAPID_KEY = 'BFIeEZqH5mhU7VBnttq3X0QpNcoqjj2VvbTzjt7T_uvA6--gHCES7waHnWXDlegy3tbJo7GAuXjvCzWqFV104II';
+var _pushSW = null;
+
+// Converte chave VAPID base64url para Uint8Array
+function _vapidToUint8(base64String) {
+  var padding = '='.repeat((4 - base64String.length % 4) % 4);
+  var base64  = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/');
+  var raw     = window.atob(base64);
+  var arr     = new Uint8Array(raw.length);
+  for (var i = 0; i < raw.length; i++) arr[i] = raw.charCodeAt(i);
+  return arr;
+}
+
+// Inicializa service worker e solicita permissão
+async function _pushInit() {
+  if (!('serviceWorker' in navigator) || !('PushManager' in window)) return;
+  try {
+    // Registra o SW
+    var reg = await navigator.serviceWorker.register('/sw.js');
+    _pushSW = reg;
+    // Aguarda SW estar ativo
+    await navigator.serviceWorker.ready;
+    // Pede permissão só se ainda não decidiu
+    if (Notification.permission === 'default') {
+      // Aguarda interação do usuário para pedir permissão (melhor UX)
+      window.addEventListener('click', function _pedirPermissao() {
+        Notification.requestPermission().then(function(perm) {
+          if (perm === 'granted') _pushAgendarEventos();
+        });
+        window.removeEventListener('click', _pedirPermissao);
+      }, { once: true });
+    } else if (Notification.permission === 'granted') {
+      _pushAgendarEventos();
+    }
+  } catch(e) {
+    if (window._DEBUG) console.warn('Push SW error:', e);
+  }
+}
+
+// Agenda notificações para eventos próximos
+function _pushAgendarEventos() {
+  if (!_pushSW) return;
+  var evts = [];
+  try { evts = _lsGet('map_pro_eventos_v1', []); } catch(e) {}
+  if (!evts || evts.length === 0) return;
+
+  var agora   = new Date();
+  var hoje    = new Date(agora.getFullYear(), agora.getMonth(), agora.getDate());
+  var amanha  = new Date(hoje); amanha.setDate(amanha.getDate() + 1);
+
+  evts.forEach(function(ev) {
+    if (!ev.data || !ev.nome) return;
+    var dataEv = new Date(ev.data + 'T12:00:00');
+    var diaEv  = new Date(dataEv.getFullYear(), dataEv.getMonth(), dataEv.getDate());
+    var diff   = diaEv - hoje; // ms
+    var dias   = Math.round(diff / 86400000);
+
+    // Notificação no dia do show — 8h da manhã
+    if (dias === 0) {
+      var ts = new Date(agora.getFullYear(), agora.getMonth(), agora.getDate(), 8, 0, 0).getTime();
+      if (ts > Date.now()) _pushEnviarParaSW('Show hoje', ev.nome, ts, 'show-hoje-' + ev.id);
+    }
+    // Notificação 1 dia antes — 20h da noite anterior
+    if (dias === 1) {
+      var tsAnt = new Date(hoje.getFullYear(), hoje.getMonth(), hoje.getDate(), 20, 0, 0).getTime();
+      if (tsAnt > Date.now()) _pushEnviarParaSW('Show amanhã', ev.nome, tsAnt, 'show-amanha-' + ev.id);
+    }
+  });
+}
+
+// Envia mensagem para o SW agendar a notificação
+function _pushEnviarParaSW(title, body, timestamp, tag) {
+  if (!navigator.serviceWorker.controller) return;
+  navigator.serviceWorker.controller.postMessage({
+    type:      'AGENDAR_NOTIF',
+    title:     title,
+    body:      body,
+    timestamp: timestamp,
+    tag:       tag
+  });
+}
+
+// Inicia quando o app estiver pronto
+window.addEventListener('firebase-ready', function() {
+  setTimeout(_pushInit, 2000); // pequeno delay para não competir com o boot
+});
+// ── Fim Push Notifications ────────────────────────────────────────────────────
+</script>
 </body>
 </html>
