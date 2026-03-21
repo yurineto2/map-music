@@ -3796,7 +3796,7 @@ body { font-family: -apple-system, 'Inter', BlinkMacSystemFont, 'Segoe UI', sans
   position: fixed; inset: 0; z-index: 300600;
   background: #080810;
   display: none; flex-direction: column;
-  align-items: stretch; overflow: hidden;
+  align-items: stretch; overflow: visible;
 }
 .drumcam-overlay.show { display: flex; }
 
@@ -12861,6 +12861,86 @@ function dcVolMaster(val) {
   _dcMasterVol = parseInt(val) / 100;
 }
 
+// ── IndexedDB para persistência local de samples ──
+var _dcIDB = null;
+var _DC_IDB_NAME    = 'map_music_samples';
+var _DC_IDB_STORE   = 'samples';
+var _DC_IDB_VERSION = 1;
+
+function _dcIDBAbrir(callback) {
+  if (_dcIDB) { callback(_dcIDB); return; }
+  var req = indexedDB.open(_DC_IDB_NAME, _DC_IDB_VERSION);
+  req.onupgradeneeded = function(e) {
+    var db = e.target.result;
+    if (!db.objectStoreNames.contains(_DC_IDB_STORE)) {
+      db.createObjectStore(_DC_IDB_STORE);
+    }
+  };
+  req.onsuccess = function(e) {
+    _dcIDB = e.target.result;
+    callback(_dcIDB);
+  };
+  req.onerror = function() {
+    if (window._DEBUG) console.warn('IndexedDB não disponível para samples');
+  };
+}
+
+function _dcIDBSalvar(idbKey, arrayBuffer) {
+  _dcIDBAbrir(function(db) {
+    try {
+      var tx = db.transaction(_DC_IDB_STORE, 'readwrite');
+      tx.objectStore(_DC_IDB_STORE).put(arrayBuffer, idbKey);
+    } catch(e) {
+      if (window._DEBUG) console.warn('Erro ao salvar sample no IDB:', e);
+    }
+  });
+}
+
+function _dcIDBRemover(idbKey) {
+  _dcIDBAbrir(function(db) {
+    try {
+      var tx = db.transaction(_DC_IDB_STORE, 'readwrite');
+      tx.objectStore(_DC_IDB_STORE).delete(idbKey);
+    } catch(e) {}
+  });
+}
+
+function _dcIDBCarregarTodos() {
+  _dcIDBAbrir(function(db) {
+    try {
+      var tx  = db.transaction(_DC_IDB_STORE, 'readonly');
+      var req = tx.objectStore(_DC_IDB_STORE).openCursor();
+      req.onsuccess = function(e) {
+        var cursor = e.target.result;
+        if (!cursor) return;
+        var idbKey = cursor.key;       // ex: "0_3"
+        var ab     = cursor.value;     // ArrayBuffer
+        var parts  = String(idbKey).split('_');
+        var bank   = parseInt(parts[0]);
+        var padIdx = parseInt(parts[1]);
+        if (isNaN(bank) || isNaN(padIdx)) { cursor.continue(); return; }
+        var ctx = _getAudioCtx();
+        if (!ctx) { cursor.continue(); return; }
+        // Copia o ArrayBuffer antes de decodificar (evita detached buffer)
+        var abCopy = ab.slice(0);
+        (function(b, p, abuf) {
+          var resume = ctx.state === 'suspended' ? ctx.resume() : Promise.resolve();
+          resume.then(function() {
+            ctx.decodeAudioData(abuf, function(buf) {
+              var key = b * 16 + p;
+              _dcSamples[key] = buf;
+              renderDcPads();
+            });
+          });
+        })(bank, padIdx, abCopy);
+        cursor.continue();
+      };
+    } catch(e) {
+      if (window._DEBUG) console.warn('Erro ao carregar samples do IDB:', e);
+    }
+  });
+}
+
 // ── Sample import ──
 function dcImportarSample(padIdx) {
   _dcFileTarget = padIdx;
@@ -12869,24 +12949,40 @@ function dcImportarSample(padIdx) {
 }
 
 document.addEventListener('DOMContentLoaded', function() {
+  // Carrega samples salvos ao iniciar
+  _dcIDBCarregarTodos();
+
   var inp = document.getElementById('dc-file-input');
   if (!inp) return;
   inp.addEventListener('change', function(e) {
     var file = e.target.files && e.target.files[0];
     if (!file || _dcFileTarget < 0) return;
-    var padIdx = _dcFileTarget;
+    var padIdx   = _dcFileTarget;
+    var bankSnap = _dcBank;
     _dcFileTarget = -1;
     var reader = new FileReader();
     reader.onload = function(ev) {
       var ctx = _getAudioCtx();
-      if (!ctx) return;
-      ctx.decodeAudioData(ev.target.result, function(buf) {
-        var key = _dcBank * 16 + padIdx;
-        _dcSamples[key] = buf;
-        renderDcPads();
-        showToast('Sample importado para ' + DC_BANKS[_dcBank][padIdx].name + '!');
-      }, function() {
-        showToast('Arquivo de áudio inválido.', 'error');
+      if (!ctx) { showToast('Áudio não disponível.', 'error'); return; }
+      // Ponto 1: garante que o AudioContext não está suspenso
+      var ab = ev.target.result;
+      var resume = ctx.state === 'suspended' ? ctx.resume() : Promise.resolve();
+      resume.then(function() {
+        // Copia o ArrayBuffer para salvar no IDB antes de decodificar (decodificar consome o buffer)
+        var abParaSalvar = ab.slice(0);
+        ctx.decodeAudioData(ab, function(buf) {
+          var key    = bankSnap * 16 + padIdx;
+          var idbKey = bankSnap + '_' + padIdx;
+          _dcSamples[key] = buf;
+          // Ponto 2: persiste no IndexedDB
+          _dcIDBSalvar(idbKey, abParaSalvar);
+          renderDcPads();
+          showToast('Sample importado para ' + DC_BANKS[bankSnap][padIdx].name + '!');
+        }, function() {
+          showToast('Arquivo de áudio inválido.', 'error');
+        });
+      }).catch(function() {
+        showToast('Erro ao ativar áudio. Toque na tela e tente novamente.', 'error');
       });
     };
     reader.readAsArrayBuffer(file);
@@ -13706,6 +13802,13 @@ function dcPadFxToggleFx(fx) {
 function dcPadFxRemover() {
   if (_dcPadFxTarget < 0) return;
   if (_dcPadFx[_dcBank]) _dcPadFx[_dcBank][_dcPadFxTarget] = { types: [], params: {} };
+  // Remove sample da memória e do IndexedDB
+  var key    = _dcBank * 16 + _dcPadFxTarget;
+  var idbKey = _dcBank + '_' + _dcPadFxTarget;
+  if (_dcSamples[key]) {
+    delete _dcSamples[key];
+    _dcIDBRemover(idbKey);
+  }
   dcFecharPadFxModal();
   renderDcPads();
 }
@@ -13965,8 +14068,7 @@ function dcToggleMoreMenu() {
     menu.id = 'dc-more-menu';
     menu.style.cssText = 'position:fixed;background:#111119;border:1px solid rgba(255,255,255,0.1);border-radius:12px;padding:6px;min-width:160px;z-index:99999999;box-shadow:0 8px 24px rgba(0,0,0,0.6);';
     menu.innerHTML =
-      '<button onclick="dcAbrirAddPad();dcFecharMoreMenu()" id="dc-addpad-hdr-btn" style="display:flex;align-items:center;gap:10px;width:100%;background:none;border:none;color:rgba(255,255,255,0.6);font-size:11px;font-weight:700;padding:9px 12px;border-radius:8px;cursor:pointer;font-family:inherit;touch-action:manipulation;" onmouseenter="this.style.background=\'rgba(255,255,255,0.06)\'" onmouseleave="this.style.background=\'none\'">' +
-      '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>Adicionar Pad</button>' +
+
       '<button onclick="dcAbrirFxModal();dcFecharMoreMenu()" id="dc-fx-hdr-btn" style="display:flex;align-items:center;gap:10px;width:100%;background:none;border:none;color:rgba(255,255,255,0.6);font-size:11px;font-weight:700;padding:9px 12px;border-radius:8px;cursor:pointer;font-family:inherit;touch-action:manipulation;" onmouseenter="this.style.background=\'rgba(255,255,255,0.06)\'" onmouseleave="this.style.background=\'none\'">' +
       '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14M4.93 4.93a10 10 0 0 0 0 14.14"/></svg>FX Global</button>' +
       '<button onclick="dcToggleStereo();dcFecharMoreMenu()" id="dc-stereo-btn" style="display:flex;align-items:center;gap:10px;width:100%;background:none;border:none;color:rgba(255,255,255,0.6);font-size:11px;font-weight:700;padding:9px 12px;border-radius:8px;cursor:pointer;font-family:inherit;touch-action:manipulation;" onmouseenter="this.style.background=\'rgba(255,255,255,0.06)\'" onmouseleave="this.style.background=\'none\'">' +
