@@ -4572,13 +4572,14 @@ body { font-family: -apple-system, 'Inter', BlinkMacSystemFont, 'Segoe UI', sans
 .btn-save-vitro:hover { color: var(--accent-primary); border-color: var(--accent-primary); background: rgba(255,255,255,0.05); }
 
 /* LAYOUT */
-.main-layout { display: grid; grid-template-columns: 280px 1fr 300px; gap: 20px; max-width: 1400px; margin: 0 auto; width: 100%; padding: 20px; }
+.main-layout { display: grid; grid-template-columns: 280px 1fr 300px; gap: 20px; max-width: 1400px; margin: 0 auto; width: 100%; padding: 20px; align-items: start; }
 
 /* ── TABLET (até 1100px) ── */
 @media (max-width: 1100px) {
   .main-layout { grid-template-columns: 1fr; padding: 16px; }
   .side-panel { order: 2; max-height: 300px !important; margin-bottom: 50px; }
   .metronome-card { order: 1; position: relative !important; top: 0 !important; }
+  aside { height: fit-content !important; }
   .section-grid { grid-template-columns: 1fr 1fr; }
 }
 
@@ -7831,7 +7832,7 @@ body.auth-pending #toast {
     <!-- Menu 3 pontinhos -->
     <div style="position:relative;">
       <button id="dc-more-btn" onclick="dcToggleMoreMenu()" class="dc-header-fx-btn" style="font-size:16px;letter-spacing:1px;padding:5px 8px;" title="Mais opções">···</button>
-      <div id="dc-more-menu" style="display:none;position:absolute;top:calc(100% + 6px);right:0;background:#111119;border:1px solid rgba(255,255,255,0.1);border-radius:12px;padding:6px;min-width:160px;z-index:100;box-shadow:0 8px 24px rgba(0,0,0,0.6);">
+      <div id="dc-more-menu" style="display:none;position:fixed;background:#111119;border:1px solid rgba(255,255,255,0.1);border-radius:12px;padding:6px;min-width:160px;z-index:99999999;box-shadow:0 8px 24px rgba(0,0,0,0.6);">
         <button onclick="dcAbrirAddPad();dcFecharMoreMenu()" id="dc-addpad-hdr-btn"
           style="display:flex;align-items:center;gap:10px;width:100%;background:none;border:none;color:rgba(255,255,255,0.6);font-size:11px;font-weight:700;padding:9px 12px;border-radius:8px;cursor:pointer;font-family:inherit;touch-action:manipulation;transition:0.15s;"
           onmouseenter="this.style.background='rgba(255,255,255,0.06)'" onmouseleave="this.style.background='none'">
@@ -13982,18 +13983,23 @@ function dcToggleMoreMenu() {
   var menu = document.getElementById('dc-more-menu');
   if (!menu) return;
   var isOpen = menu.style.display !== 'none';
-  menu.style.display = isOpen ? 'none' : 'block';
-  if (!isOpen) {
-    // Fecha ao clicar fora
-    setTimeout(function() {
-      document.addEventListener('click', function _close(e) {
-        if (!e.target.closest('#dc-more-btn') && !e.target.closest('#dc-more-menu')) {
-          dcFecharMoreMenu();
-          document.removeEventListener('click', _close);
-        }
-      });
-    }, 10);
+  if (isOpen) { menu.style.display = 'none'; return; }
+  // Posiciona o menu relativo ao botão
+  var btn = document.getElementById('dc-more-btn');
+  if (btn) {
+    var r = btn.getBoundingClientRect();
+    menu.style.top  = (r.bottom + 6) + 'px';
+    menu.style.right = (window.innerWidth - r.right) + 'px';
   }
+  menu.style.display = 'block';
+  setTimeout(function() {
+    document.addEventListener('click', function _close(e) {
+      if (!e.target.closest('#dc-more-btn') && !e.target.closest('#dc-more-menu')) {
+        dcFecharMoreMenu();
+        document.removeEventListener('click', _close);
+      }
+    });
+  }, 10);
 }
 
 function dcFecharMoreMenu() {
