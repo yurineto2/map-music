@@ -5559,6 +5559,13 @@ body.theme-light .toast-info .toast-icon { background: rgba(0,0,0,0.05) !importa
 }
 /* Oculta afinador no painel vocalista */
 body[data-ambiente="vocalista"] #tuner-btn { display: none !important; }
+body[data-ambiente="vocalista"] #map-notif-musica { display: none !important; }
+body[data-ambiente="vocalista"] #cifra-font-ctrl { display: none !important; }
+body[data-ambiente="vocalista"] #perf-bottom-panel { display: none !important; }
+body[data-ambiente="vocalista"] .perf-bottom-panel { display: none !important; }
+body[data-ambiente="vocalista"] .sync-bar { display: none !important; }
+body[data-ambiente="vocalista"] .harmonic-popup { display: none !important; }
+body[data-ambiente="vocalista"] #notif-panel { display: none !important; }
 #tuner-btn::before, #tuner-btn::after {
   content: '';
   position: absolute; left: 50%; transform: translateX(-50%);
@@ -14162,6 +14169,14 @@ function _unlockScroll() {
   document.body.style.width    = '';
 }
 
+// Garante que o body não tenha estilos residuais que travem modais
+function _limparBodyStyles() {
+  document.body.style.overflow = '';
+  document.body.style.position = '';
+  document.body.style.top      = '';
+  document.body.style.width    = '';
+}
+
 // ─── Afinador Cromático — Rack Style ────────────────────────────────────────
 var _tunerAberto     = false;
 var _tunerAtivo      = false;
@@ -17744,6 +17759,11 @@ function _aplicarBannerFoto(base64) {
 // ─── BPM MIC SEARCH ──────────────────────────────────────────────────────────
 
 function bpmMicSearch() {
+  // Limpa estilos residuais do body que possam travar o modal
+  document.body.style.overflow = '';
+  document.body.style.position = '';
+  document.body.style.top      = '';
+  document.body.style.width    = '';
   // Abre modal e pré-preenche com nome da música atual se existir
   const modal = document.getElementById('modal-bpm-mic');
   if (!modal) return;
@@ -21767,6 +21787,39 @@ async function _fbFazerBackupAgora(btn) {
 }
 .voc-hdr-btn:hover { background: rgba(255,255,255,0.08); }
 
+/* ── Banner notificação próxima música ── */
+#map-notif-musica {
+  position: fixed; bottom: 80px; left: 16px; right: 16px;
+  z-index: 100050;
+  background: rgba(10,10,20,0.95);
+  border: 1px solid rgba(138,92,246,0.25);
+  border-radius: 16px;
+  backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+  padding: 12px 14px;
+  display: none;
+  align-items: center; gap: 12px;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.6);
+  animation: _notifSlideUp 0.3s ease;
+}
+#map-notif-musica.visivel { display: flex; }
+@keyframes _notifSlideUp {
+  from { opacity: 0; transform: translateY(16px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.map-notif-icon {
+  width: 32px; height: 32px; border-radius: 8px;
+  background: rgba(138,92,246,0.15); border: 1px solid rgba(138,92,246,0.25);
+  display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+  color: #a78bfa; font-size: 14px;
+}
+.map-notif-texto { flex: 1; min-width: 0; }
+.map-notif-label { font-size: 9px; font-weight: 800; color: rgba(255,255,255,0.4); letter-spacing: 1.5px; text-transform: uppercase; }
+.map-notif-nome  { font-size: 13px; font-weight: 800; color: #fff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-top: 2px; }
+.map-notif-close {
+  background: none; border: none; color: rgba(255,255,255,0.3);
+  font-size: 18px; cursor: pointer; padding: 4px; line-height: 1; flex-shrink: 0;
+}
+
 /* ── Shine nos álbuns da home ── */
 @keyframes _vocShine {
   0%   { left: -80%; }
@@ -22461,13 +22514,6 @@ function vocFecharShow() {
   if (modal) modal.style.display = 'none';
 }
 
-function vocAbrirModoShow() {
-  var painel = document.getElementById('voc-painel-show');
-  if (!painel) return;
-  painel.style.display = 'flex';
-  _vocShowCarregarLista();
-}
-
 
 function vocAbrirBiblioteca() {
   var painel = document.getElementById('voc-painel-bib');
@@ -22900,201 +22946,6 @@ function _vocPerfSoltarWakeLock() {
 
 
 
-function _vocAbrirPerf(letra) {
-  var modal = document.getElementById('voc-perf-modal');
-  if (!modal) return;
-  _vocPerfLetra = letra;
-  _vocPerfScrolling = false;
-  _vocPerfVel = 3;
-
-  // Título e artista
-  document.getElementById('voc-perf-titulo').textContent = letra.nome || letra.titulo || '—';
-  document.getElementById('voc-perf-artista').textContent = letra.artista || letra.cantor || '';
-
-  // Renderizar seções
-  var cont = document.getElementById('voc-perf-conteudo');
-  cont.innerHTML = '';
-  cont.scrollTop = 0;
-  var secoes = letra.secoes || [];
-  secoes.forEach(function(sec, idx) {
-    var bloco = document.createElement('div');
-    bloco.className = '_voc-perf-bloco';
-    bloco.dataset.idx = idx;
-    bloco.style.cssText = 'padding:24px 20px 32px;border-bottom:1px solid rgba(255,255,255,0.04);';
-    bloco.innerHTML =
-      '<div style="font-size:9px;font-weight:900;color:#a78bfa;letter-spacing:2.5px;text-transform:uppercase;margin-bottom:14px;">' + _ve(sec.titulo) + '</div>' +
-      '<div class="_voc-perf-texto" style="font-size:' + _vocPerfFontSize + 'px;color:#fff;line-height:1.85;white-space:pre-wrap;font-weight:400;letter-spacing:0.2px;">' + _ve(sec.texto || '') + '</div>';
-    cont.appendChild(bloco);
-  });
-
-  // Dots de progresso
-  _vocPerfRenderDots(secoes.length);
-  _vocPerfAtualizarSecaoAtual();
-
-  // Scroll → atualiza seção
-  cont.onscroll = function() { _vocPerfAtualizarSecaoAtual(); };
-
-  // Velocidade label
-  _vocPerfAtualizarVelLabel();
-
-  // Play button
-  _vocPerfAtualizarPlayBtn();
-
-  // WakeLock
-  _vocPerfAtivarWakeLock();
-
-  modal.style.display = 'flex';
-}
-
-function vocFecharPerf() {
-  _vocPerfPararScroll();
-  _vocPerfSoltarWakeLock();
-  var modal = document.getElementById('voc-perf-modal');
-  if (modal) modal.style.display = 'none';
-}
-
-function vocPerfFonte(dir) {
-  _vocPerfFontSize = Math.min(30, Math.max(12, _vocPerfFontSize + dir * 2));
-  document.querySelectorAll('._voc-perf-texto').forEach(function(el) {
-    el.style.fontSize = _vocPerfFontSize + 'px';
-  });
-}
-
-// ── Rolagem automática ────────────────────────────────────────────────────
-function _vocPerfToggleScroll() {
-  if (_vocPerfScrolling) {
-    _vocPerfPararScroll();
-  } else {
-    _vocPerfIniciarScroll();
-  }
-}
-
-function _vocPerfIniciarScroll() {
-  _vocPerfScrolling = true;
-  _vocPerfAtualizarPlayBtn();
-  var cont = document.getElementById('voc-perf-conteudo');
-  var lastTs = null;
-  function step(ts) {
-    if (!_vocPerfScrolling) return;
-    if (lastTs !== null) {
-      // px por ms — vel 1=0.02, vel 10=0.2
-      var pxPerMs = _vocPerfVel * 0.022;
-      _vocPerfAccum += (ts - lastTs) * pxPerMs;
-      if (_vocPerfAccum >= 1) {
-        var px = Math.floor(_vocPerfAccum);
-        cont.scrollTop += px;
-        _vocPerfAccum -= px;
-        // Pausa automática no fim
-        if (cont.scrollTop + cont.clientHeight >= cont.scrollHeight - 4) {
-          _vocPerfPararScroll();
-          return;
-        }
-      }
-    }
-    lastTs = ts;
-    _vocPerfRaf = requestAnimationFrame(step);
-  }
-  _vocPerfRaf = requestAnimationFrame(step);
-}
-
-function _vocPerfPararScroll() {
-  _vocPerfScrolling = false;
-  if (_vocPerfRaf) { cancelAnimationFrame(_vocPerfRaf); _vocPerfRaf = null; }
-  _vocPerfAtualizarPlayBtn();
-}
-
-function _vocPerfVelMenos() {
-  _vocPerfVel = Math.max(1, _vocPerfVel - 1);
-  _vocPerfAtualizarVelLabel();
-}
-function _vocPerfVelMais() {
-  _vocPerfVel = Math.min(10, _vocPerfVel + 1);
-  _vocPerfAtualizarVelLabel();
-}
-function _vocPerfAtualizarVelLabel() {
-  var el = document.getElementById('voc-perf-vel-label');
-  if (el) el.textContent = 'vel ' + _vocPerfVel;
-}
-function _vocPerfAtualizarPlayBtn() {
-  var btn = document.getElementById('voc-perf-play-btn');
-  var ico = document.getElementById('voc-perf-play-ico');
-  if (!btn || !ico) return;
-  if (_vocPerfScrolling) {
-    btn.style.background = 'rgba(138,92,246,0.4)';
-    btn.style.borderColor = 'rgba(138,92,246,0.8)';
-    ico.innerHTML = '<rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/>';
-  } else {
-    btn.style.background = 'rgba(138,92,246,0.2)';
-    btn.style.borderColor = 'rgba(138,92,246,0.5)';
-    ico.innerHTML = '<polygon points="5 3 19 12 5 21 5 3"/>';
-  }
-}
-
-// ── Dots e seção atual ────────────────────────────────────────────────────
-function _vocPerfRenderDots(total) {
-  var dots = document.getElementById('voc-perf-dots');
-  if (!dots) return;
-  dots.innerHTML = '';
-  for (var i = 0; i < Math.min(total, 12); i++) {
-    var d = document.createElement('div');
-    d.style.cssText = 'width:6px;height:6px;border-radius:50%;background:rgba(255,255,255,0.2);transition:0.2s;';
-    d.dataset.idx = i;
-    dots.appendChild(d);
-  }
-}
-
-function _vocPerfAtualizarSecaoAtual() {
-  var cont = document.getElementById('voc-perf-conteudo');
-  var nomeEl = document.getElementById('voc-perf-secao-nome');
-  var dots = document.getElementById('voc-perf-dots');
-  if (!cont) return;
-  var blocos = cont.querySelectorAll('._voc-perf-bloco');
-  var atual = 0;
-  blocos.forEach(function(b, i) {
-    if (b.offsetTop <= cont.scrollTop + 60) atual = i;
-  });
-  if (blocos[atual]) {
-    var tituloEl = blocos[atual].querySelector('div');
-    if (nomeEl && tituloEl) nomeEl.textContent = tituloEl.textContent;
-  }
-  // Atualizar dots
-  if (dots) {
-    dots.querySelectorAll('div').forEach(function(d, i) {
-      d.style.background = i === atual ? '#a78bfa' : 'rgba(255,255,255,0.2)';
-      d.style.width = i === atual ? '18px' : '6px';
-      d.style.borderRadius = i === atual ? '3px' : '50%';
-    });
-  }
-}
-
-// ── Swipe para fechar ─────────────────────────────────────────────────────
-function _vocPerfTouchStart(e) {
-  _vocPerfTouchY = e.touches[0].clientY;
-}
-function _vocPerfTouchEnd(e) {
-  var dy = e.changedTouches[0].clientY - _vocPerfTouchY;
-  var cont = document.getElementById('voc-perf-conteudo');
-  // Swipe down no topo fecha
-  if (dy > 80 && cont && cont.scrollTop <= 0) {
-    vocFecharPerf();
-  }
-}
-
-// ── WakeLock ──────────────────────────────────────────────────────────────
-var _vocPerfWakeLock = null;
-function _vocPerfAtivarWakeLock() {
-  if ('wakeLock' in navigator) {
-    navigator.wakeLock.request('screen').then(function(lock) {
-      _vocPerfWakeLock = lock;
-    }).catch(function() {});
-  }
-}
-function _vocPerfSoltarWakeLock() {
-  if (_vocPerfWakeLock) {
-    _vocPerfWakeLock.release().catch(function(){});
-    _vocPerfWakeLock = null;
-  }
-}
 
 // ── Menu ··· dos cards ────────────────────────────────────────────────────────
 function _vocCardMenu(letra, btn) {
@@ -23358,6 +23209,21 @@ function vocConfirmarSalvarLetra() {
 
 
 // ── Utilitários de overlay (usados em modais do app) ─────────────────────────
+function _mapNotifMostrar(nome) {
+  var el = document.getElementById('map-notif-musica');
+  var nomeEl = document.getElementById('map-notif-nome');
+  if (!el) return;
+  if (nomeEl) nomeEl.textContent = nome || '—';
+  el.classList.add('visivel');
+  clearTimeout(el._timer);
+  el._timer = setTimeout(function() { _mapNotifFechar(); }, 5000);
+}
+function _mapNotifFechar() {
+  var el = document.getElementById('map-notif-musica');
+  if (el) el.classList.remove('visivel');
+}
+
+
 function _overlayBg() {
   return 'position:fixed;inset:0;z-index:300000;background:rgba(0,0,0,0.85);display:flex;align-items:center;justify-content:center;padding:20px;';
 }
