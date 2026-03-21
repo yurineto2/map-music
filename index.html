@@ -14355,8 +14355,18 @@ function _tunerPararMic() {
   _tunerSetLeds(null);
 }
 
-function _tunerLoop() {
+var _tunerLastLoopTime = 0;
+var _TUNER_INTERVAL_MS = 66; // ~15fps — suficiente para afinador, reduz captação de ruído
+
+function _tunerLoop(timestamp) {
   if (!_tunerAtivo) return;
+  // Throttle: só processa a cada ~66ms (~15fps)
+  if (timestamp - _tunerLastLoopTime < _TUNER_INTERVAL_MS) {
+    _tunerRaf = requestAnimationFrame(_tunerLoop);
+    return;
+  }
+  _tunerLastLoopTime = timestamp;
+
   var buf = new Float32Array(_tunerAnalyser.fftSize);
   _tunerAnalyser.getFloatTimeDomainData(buf);
   var freq = _tunerACF(buf, _tunerCtx.sampleRate);
@@ -14379,7 +14389,7 @@ function _tunerACF(buf, sampleRate) {
   var rms = 0;
   for (var i = 0; i < SIZE; i++) rms += buf[i] * buf[i];
   rms = Math.sqrt(rms / SIZE);
-  if (rms < 0.015) return -1;
+  if (rms < 0.03) return -1;
 
   var r1 = 0, r2 = SIZE - 1;
   for (var i = 0; i < SIZE / 2; i++) { if (Math.abs(buf[i]) < 0.2) { r1 = i; break; } }
@@ -14402,6 +14412,12 @@ function _tunerACF(buf, sampleRate) {
   var x1 = c[T0-1], x2 = c[T0], x3 = c[T0+1];
   var a = (x1 + x3 - 2*x2) / 2, b = (x3 - x1) / 2;
   if (a) T0 = T0 - b / (2*a);
+
+  // Clarity check: pico deve ser forte em relação ao início da correlação
+  // Sinal limpo tem clarity > 0.85; ruído ambiente fica abaixo disso
+  var clarity = c[0] > 0 ? maxVal / c[0] : 0;
+  if (clarity < 0.85) return -1;
+
   return sampleRate / T0;
 }
 
