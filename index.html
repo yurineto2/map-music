@@ -14078,6 +14078,9 @@ function dcToggleMoreMenu() {
     document.body.appendChild(menu);
   }
 
+  // Sempre move para o final do body ao abrir — garante que fica acima de todos os overlays
+  document.body.appendChild(menu);
+
   // Posiciona abaixo do botão
   var btn = document.getElementById('dc-more-btn');
   if (btn) {
