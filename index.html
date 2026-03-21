@@ -6817,7 +6817,7 @@ body.auth-pending #toast {
 </div><!-- /onboarding-overlay -->
 
 <!-- MODAL PERFIL -->
-<div id="modal-perfil" style="position:fixed;inset:0;z-index:200000;background:rgba(0,0,0,0.92);display:none;align-items:flex-end;justify-content:center;padding:0;" onclick="if(event.target===this)fecharModalPerfil()" ontouchend="if(event.target===this){event.preventDefault();fecharModalPerfil();}">
+<div id="modal-perfil" style="position:fixed;inset:0;z-index:99999999;background:rgba(0,0,0,0.92);display:none;align-items:flex-end;justify-content:center;padding:0;" onclick="if(event.target===this)fecharModalPerfil()" ontouchend="if(event.target===this){event.preventDefault();fecharModalPerfil();}">
   <div style="background:#0c0c14;border:1px solid rgba(255,255,255,0.08);border-radius:24px 24px 0 0;width:100%;max-width:480px;display:flex;flex-direction:column;overflow:hidden;max-height:95vh;animation:slideUpModal 0.3s cubic-bezier(0.34,1.56,0.64,1);">
 
     <!-- Hero banner -->
@@ -7001,7 +7001,7 @@ body.auth-pending #toast {
 </div>
 
 <!-- MODAL HISTÓRICO DE SHOWS -->
-<div id="modal-historico-shows" style="position:fixed;inset:0;z-index:300000;background:rgba(0,0,0,0.92);display:none;align-items:flex-end;justify-content:center;padding:0;" onclick="if(event.target===this)fecharHistoricoShows()" ontouchend="if(event.target===this){event.preventDefault();fecharHistoricoShows();}">
+<div id="modal-historico-shows" style="position:fixed;inset:0;z-index:99999999;background:rgba(0,0,0,0.92);display:none;align-items:flex-end;justify-content:center;padding:0;" onclick="if(event.target===this)fecharHistoricoShows()" ontouchend="if(event.target===this){event.preventDefault();fecharHistoricoShows();}">
   <div style="background:#0c0c14;border:1px solid rgba(255,255,255,0.08);border-radius:24px 24px 0 0;width:100%;max-width:480px;display:flex;flex-direction:column;max-height:88vh;animation:slideUpModal 0.28s cubic-bezier(0.34,1.56,0.64,1);">
     <!-- Header -->
     <div style="padding:18px 20px 14px;border-bottom:1px solid rgba(255,255,255,0.06);display:flex;align-items:center;justify-content:space-between;flex-shrink:0;">
@@ -20852,7 +20852,7 @@ async function _fbFazerBackupAgora(btn) {
 </div>
 
 <!-- TELA DE LOGIN (PIN) — usuário já cadastrado -->
-<div id="pin-lock-screen" style="display:none;position:fixed;inset:0;z-index:300001;background:#06060c;flex-direction:column;align-items:center;justify-content:center;gap:0;">
+<div id="pin-lock-screen" style="display:none;position:fixed;inset:0;z-index:99999999;background:#06060c;flex-direction:column;align-items:center;justify-content:center;gap:0;">
   <div style="display:flex;flex-direction:column;align-items:center;gap:28px;width:100%;max-width:320px;padding:0 32px;">
     <!-- Logo -->
     <div style="text-align:center;">
@@ -20896,7 +20896,7 @@ async function _fbFazerBackupAgora(btn) {
 </div>
 
 <!-- MODAL ESQUECI A SENHA ────────────────────────────────────── -->
-<div id="modal-esqueci-senha" style="display:none;position:fixed;inset:0;z-index:300000;background:rgba(0,0,0,0.85);align-items:center;justify-content:center;">
+<div id="modal-esqueci-senha" style="display:none;position:fixed;inset:0;z-index:99999999;background:rgba(0,0,0,0.85);align-items:center;justify-content:center;">
   <div style="background:#111118;border:1px solid rgba(255,255,255,0.1);border-radius:20px;padding:32px 24px;width:calc(100% - 48px);max-width:360px;display:flex;flex-direction:column;gap:20px;">
     <h3 style="margin:0;font-size:18px;font-weight:800;color:#fff;">Recuperar senha</h3>
     <p style="margin:0;font-size:13px;color:rgba(255,255,255,0.5);line-height:1.5;">Digite o email da tua conta. Vais receber um link para criar uma nova senha.</p>
@@ -20916,7 +20916,7 @@ async function _fbFazerBackupAgora(btn) {
 </div>
 
 <!-- MODAL ALTERAR SENHA ─────────────────────────────────────── -->
-<div id="modal-alterar-senha" style="display:none;position:fixed;inset:0;z-index:300000;background:rgba(0,0,0,0.85);align-items:center;justify-content:center;">
+<div id="modal-alterar-senha" style="display:none;position:fixed;inset:0;z-index:99999999;background:rgba(0,0,0,0.85);align-items:center;justify-content:center;">
   <div style="background:#111118;border:1px solid rgba(255,255,255,0.1);border-radius:20px;padding:32px 24px;width:calc(100% - 48px);max-width:360px;display:flex;flex-direction:column;gap:20px;">
     <h3 style="margin:0;font-size:18px;font-weight:800;color:#fff;">Alterar senha</h3>
     <div style="display:flex;flex-direction:column;gap:12px;">
@@ -20954,7 +20954,7 @@ async function _fbFazerBackupAgora(btn) {
 </div>
 
 <!-- ══ Modal Formalizar Conta ════════════════════════════════════════════════ -->
-<div id="modal-formalizar-conta" style="display:none;position:fixed;inset:0;z-index:300000;background:rgba(0,0,0,0.88);align-items:center;justify-content:center;padding:24px;box-sizing:border-box;">
+<div id="modal-formalizar-conta" style="display:none;position:fixed;inset:0;z-index:99999999;background:rgba(0,0,0,0.88);align-items:center;justify-content:center;padding:24px;box-sizing:border-box;">
   <div style="background:#111118;border:1px solid rgba(255,200,50,0.18);border-radius:20px;padding:28px 24px;width:100%;max-width:360px;display:flex;flex-direction:column;gap:18px;">
     <div style="display:flex;align-items:center;gap:10px;">
       <div style="width:36px;height:36px;border-radius:10px;background:rgba(255,200,50,0.1);border:1px solid rgba(255,200,50,0.2);display:flex;align-items:center;justify-content:center;flex-shrink:0;">
@@ -21007,7 +21007,7 @@ async function _fbFazerBackupAgora(btn) {
 
 
 <!-- MODAL BPM MIC SEARCH -->
-<div id="modal-bpm-mic" style="display:none;position:fixed;inset:0;z-index:301000;background:rgba(0,0,0,0.88);align-items:center;justify-content:center;">
+<div id="modal-bpm-mic" style="display:none;position:fixed;inset:0;z-index:99999999;background:rgba(0,0,0,0.88);align-items:center;justify-content:center;">
   <div style="background:#111118;border:1px solid rgba(255,255,255,0.1);border-radius:20px;padding:28px 24px;width:calc(100% - 48px);max-width:360px;display:flex;flex-direction:column;gap:16px;">
     <div style="display:flex;align-items:center;justify-content:space-between;">
       <h3 style="margin:0;font-size:17px;font-weight:800;color:#fff;">Pesquisar BPM</h3>
@@ -21140,7 +21140,7 @@ async function _fbFazerBackupAgora(btn) {
 .vu-bar:nth-child(6) { animation-delay:.18s; }
 </style>
 
-<div id="modal-config-audio" style="display:none;position:fixed;inset:0;z-index:300950;background:rgba(0,0,0,0.93);align-items:flex-end;justify-content:center;">
+<div id="modal-config-audio" style="display:none;position:fixed;inset:0;z-index:99999999;background:rgba(0,0,0,0.93);align-items:flex-end;justify-content:center;">
 <div style="background:#0c0c13;border:1px solid rgba(255,255,255,0.07);border-top:1px solid rgba(10,158,110,0.18);border-radius:24px 24px 0 0;width:100%;max-width:520px;max-height:94vh;overflow-y:auto;display:flex;flex-direction:column;">
 
   <!-- HANDLE -->
@@ -21720,7 +21720,7 @@ async function _fbFazerBackupAgora(btn) {
 </div>
 
 <!-- MODAL EXCLUIR CONTA -->
-<div id="modal-excluir-conta" style="display:none;position:fixed;inset:0;z-index:300010;background:rgba(0,0,0,0.92);align-items:center;justify-content:center;padding:24px;">
+<div id="modal-excluir-conta" style="display:none;position:fixed;inset:0;z-index:99999999;background:rgba(0,0,0,0.92);align-items:center;justify-content:center;padding:24px;">
   <div style="background:#111118;border:1px solid rgba(255,50,50,0.2);border-radius:20px;padding:28px 24px;width:100%;max-width:340px;display:flex;flex-direction:column;gap:16px;">
     <div style="text-align:center;">
       <div style="width:48px;height:48px;border-radius:50%;background:rgba(255,50,50,0.1);border:1px solid rgba(255,50,50,0.2);display:flex;align-items:center;justify-content:center;margin:0 auto 12px;">
