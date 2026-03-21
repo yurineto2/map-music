@@ -1417,7 +1417,7 @@ async function obFazerLogin() {
       if (btn) { btn.disabled = false; btn.textContent = 'Entrar'; }
       const isBanido = statusConta === 'banido';
       const overlay = document.createElement('div');
-      overlay.style.cssText = 'position:fixed;inset:0;z-index:300030;background:rgba(0,0,0,0.95);display:flex;align-items:center;justify-content:center;padding:24px;';
+      overlay.style.cssText = 'position:fixed;inset:0;z-index:99999999;background:rgba(0,0,0,0.95);display:flex;align-items:center;justify-content:center;padding:24px;';
       overlay.innerHTML =
         '<div style="background:#111119;border:1px solid rgba(255,50,50,0.25);border-radius:20px;padding:32px 24px;width:100%;max-width:340px;display:flex;flex-direction:column;align-items:center;gap:16px;text-align:center;">'
       + '<div style="width:64px;height:64px;border-radius:50%;background:rgba(255,50,50,0.1);border:2px solid rgba(255,50,50,0.3);display:flex;align-items:center;justify-content:center;">'
@@ -8965,7 +8965,7 @@ function perfilAlterarPin(ativarDepois) {
 
   var overlay = document.createElement('div');
   overlay.id = '_pin-alterar-modal';
-  overlay.style.cssText = 'position:fixed;inset:0;z-index:300010;background:rgba(0,0,0,0.82);display:flex;align-items:center;justify-content:center;padding:24px;backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);';
+  overlay.style.cssText = 'position:fixed;inset:0;z-index:99999999;background:rgba(0,0,0,0.82);display:flex;align-items:center;justify-content:center;padding:24px;backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);';
 
   overlay.innerHTML =
     '<div style="background:#0d0d1a;border:1px solid rgba(138,92,246,0.25);border-radius:20px;width:100%;max-width:320px;display:flex;flex-direction:column;overflow:hidden;box-shadow:0 24px 80px rgba(0,0,0,0.9);">' +
@@ -15805,7 +15805,7 @@ async function _fbRestaurarBackup() {
   const dataStr = backup.updatedAt ? new Date(backup.updatedAt).toLocaleString('pt-BR') : '';
 
   const msgModal = document.createElement('div');
-  msgModal.style.cssText = 'position:fixed;inset:0;z-index:300020;background:rgba(0,0,0,0.92);display:flex;align-items:center;justify-content:center;padding:24px;';
+  msgModal.style.cssText = 'position:fixed;inset:0;z-index:99999999;background:rgba(0,0,0,0.92);display:flex;align-items:center;justify-content:center;padding:24px;';
   msgModal.innerHTML =
     '<div style="background:#111118;border:1px solid rgba(255,255,255,0.1);border-radius:20px;padding:28px 24px;width:100%;max-width:340px;display:flex;flex-direction:column;gap:16px;">'
   + '<div style="font-size:16px;font-weight:900;color:#fff;">Backup encontrado</div>'
@@ -16023,7 +16023,7 @@ async function abrirModalStats() {
   // Cria o modal via DOM (sem innerHTML/insertAdjacentHTML para evitar problemas de aspas)
   var overlay = document.createElement('div');
   overlay.id = 'modal-stats';
-  overlay.style.cssText = 'position:fixed;inset:0;z-index:301997;background:rgba(0,0,0,0.92);display:flex;align-items:flex-end;justify-content:center;';
+  overlay.style.cssText = 'position:fixed;inset:0;z-index:99999999;background:rgba(0,0,0,0.92);display:flex;align-items:flex-end;justify-content:center;';
   overlay.addEventListener('click', function(e) { if (e.target === overlay) overlay.remove(); });
   overlay.addEventListener('touchend', function(e) { if (e.target === overlay) { e.preventDefault(); overlay.remove(); } });
 
@@ -23225,10 +23225,10 @@ function _mapNotifFechar() {
 
 
 function _overlayBg() {
-  return 'position:fixed;inset:0;z-index:300000;background:rgba(0,0,0,0.85);display:flex;align-items:center;justify-content:center;padding:20px;';
+  return 'position:fixed;inset:0;z-index:99999999;background:rgba(0,0,0,0.85);display:flex;align-items:center;justify-content:center;padding:20px;';
 }
 function _overlayBgBottom() {
-  return 'position:fixed;inset:0;z-index:300000;background:rgba(0,0,0,0.85);display:flex;align-items:flex-end;justify-content:center;padding:0;';
+  return 'position:fixed;inset:0;z-index:99999999;background:rgba(0,0,0,0.85);display:flex;align-items:flex-end;justify-content:center;padding:0;';
 }
 function _boxBg(extra) {
   return 'background:#0d0d1a;border:1px solid rgba(255,255,255,0.08);border-radius:20px;' + (extra || '');
