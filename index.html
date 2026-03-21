@@ -7830,34 +7830,8 @@ body.auth-pending #toast {
         oninput="dcVolMaster(this.value)" style="-webkit-appearance:none;width:70px;height:3px;border-radius:2px;outline:none;cursor:pointer;background:rgba(255,255,255,0.12);">
     </div>
     <!-- Menu 3 pontinhos -->
-    <div style="position:relative;">
+    <div>
       <button id="dc-more-btn" onclick="dcToggleMoreMenu()" class="dc-header-fx-btn" style="font-size:16px;letter-spacing:1px;padding:5px 8px;" title="Mais opções">···</button>
-      <div id="dc-more-menu" style="display:none;position:fixed;background:#111119;border:1px solid rgba(255,255,255,0.1);border-radius:12px;padding:6px;min-width:160px;z-index:99999999;box-shadow:0 8px 24px rgba(0,0,0,0.6);">
-        <button onclick="dcAbrirAddPad();dcFecharMoreMenu()" id="dc-addpad-hdr-btn"
-          style="display:flex;align-items:center;gap:10px;width:100%;background:none;border:none;color:rgba(255,255,255,0.6);font-size:11px;font-weight:700;padding:9px 12px;border-radius:8px;cursor:pointer;font-family:inherit;touch-action:manipulation;transition:0.15s;"
-          onmouseenter="this.style.background='rgba(255,255,255,0.06)'" onmouseleave="this.style.background='none'">
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-          Adicionar Pad
-        </button>
-        <button onclick="dcAbrirFxModal();dcFecharMoreMenu()" id="dc-fx-hdr-btn"
-          style="display:flex;align-items:center;gap:10px;width:100%;background:none;border:none;color:rgba(255,255,255,0.6);font-size:11px;font-weight:700;padding:9px 12px;border-radius:8px;cursor:pointer;font-family:inherit;touch-action:manipulation;transition:0.15s;"
-          onmouseenter="this.style.background='rgba(255,255,255,0.06)'" onmouseleave="this.style.background='none'">
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14M4.93 4.93a10 10 0 0 0 0 14.14"/></svg>
-          FX Global
-        </button>
-        <button onclick="dcToggleStereo();dcFecharMoreMenu()" id="dc-stereo-btn"
-          style="display:flex;align-items:center;gap:10px;width:100%;background:none;border:none;color:rgba(255,255,255,0.6);font-size:11px;font-weight:700;padding:9px 12px;border-radius:8px;cursor:pointer;font-family:inherit;touch-action:manipulation;transition:0.15s;"
-          onmouseenter="this.style.background='rgba(255,255,255,0.06)'" onmouseleave="this.style.background='none'">
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 18v-6a9 9 0 0 1 18 0v6"/><path d="M21 19a2 2 0 0 1-2 2h-1a2 2 0 0 1-2-2v-3a2 2 0 0 1 2-2h3zM3 19a2 2 0 0 0 2 2h1a2 2 0 0 0 2-2v-3a2 2 0 0 0-2-2H3z"/></svg>
-          Stereo Split
-        </button>
-        <button onclick="dcAbrirAfinadorBateria();dcFecharMoreMenu()"
-          style="display:flex;align-items:center;gap:10px;width:100%;background:none;border:none;color:rgba(255,255,255,0.6);font-size:11px;font-weight:700;padding:9px 12px;border-radius:8px;cursor:pointer;font-family:inherit;touch-action:manipulation;transition:0.15s;"
-          onmouseenter="this.style.background='rgba(255,255,255,0.06)'" onmouseleave="this.style.background='none'">
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 8v4"/><path d="M12 16h.01"/></svg>
-          Afinador de Bateria
-        </button>
-      </div>
     </div>
     <button class="drumcam-close" onclick="fecharDrumCam()">Fechar</button>
   </div>
@@ -13980,11 +13954,28 @@ var _dcPadPanner   = null; // StereoPannerNode para os pads
 var _dcClickPanner = null; // StereoPannerNode para o click
 
 function dcToggleMoreMenu() {
-  var menu = document.getElementById('dc-more-menu');
-  if (!menu) return;
-  var isOpen = menu.style.display !== 'none';
-  if (isOpen) { menu.style.display = 'none'; return; }
-  // Posiciona o menu relativo ao botão
+  var existing = document.getElementById('dc-more-menu');
+  if (existing && existing.style.display !== 'none') { dcFecharMoreMenu(); return; }
+
+  // Cria o menu no body para escapar de qualquer stacking context
+  var menu = existing;
+  if (!menu) {
+    menu = document.createElement('div');
+    menu.id = 'dc-more-menu';
+    menu.style.cssText = 'position:fixed;background:#111119;border:1px solid rgba(255,255,255,0.1);border-radius:12px;padding:6px;min-width:160px;z-index:99999999;box-shadow:0 8px 24px rgba(0,0,0,0.6);';
+    menu.innerHTML =
+      '<button onclick="dcAbrirAddPad();dcFecharMoreMenu()" id="dc-addpad-hdr-btn" style="display:flex;align-items:center;gap:10px;width:100%;background:none;border:none;color:rgba(255,255,255,0.6);font-size:11px;font-weight:700;padding:9px 12px;border-radius:8px;cursor:pointer;font-family:inherit;touch-action:manipulation;" onmouseenter="this.style.background=\'rgba(255,255,255,0.06)\'" onmouseleave="this.style.background=\'none\'">' +
+      '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>Adicionar Pad</button>' +
+      '<button onclick="dcAbrirFxModal();dcFecharMoreMenu()" id="dc-fx-hdr-btn" style="display:flex;align-items:center;gap:10px;width:100%;background:none;border:none;color:rgba(255,255,255,0.6);font-size:11px;font-weight:700;padding:9px 12px;border-radius:8px;cursor:pointer;font-family:inherit;touch-action:manipulation;" onmouseenter="this.style.background=\'rgba(255,255,255,0.06)\'" onmouseleave="this.style.background=\'none\'">' +
+      '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14M4.93 4.93a10 10 0 0 0 0 14.14"/></svg>FX Global</button>' +
+      '<button onclick="dcToggleStereo();dcFecharMoreMenu()" id="dc-stereo-btn" style="display:flex;align-items:center;gap:10px;width:100%;background:none;border:none;color:rgba(255,255,255,0.6);font-size:11px;font-weight:700;padding:9px 12px;border-radius:8px;cursor:pointer;font-family:inherit;touch-action:manipulation;" onmouseenter="this.style.background=\'rgba(255,255,255,0.06)\'" onmouseleave="this.style.background=\'none\'">' +
+      '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 18v-6a9 9 0 0 1 18 0v6"/><path d="M21 19a2 2 0 0 1-2 2h-1a2 2 0 0 1-2-2v-3a2 2 0 0 1 2-2h3zM3 19a2 2 0 0 0 2 2h1a2 2 0 0 0 2-2v-3a2 2 0 0 0-2-2H3z"/></svg>Stereo Split</button>' +
+      '<button onclick="dcAbrirAfinadorBateria();dcFecharMoreMenu()" style="display:flex;align-items:center;gap:10px;width:100%;background:none;border:none;color:rgba(255,255,255,0.6);font-size:11px;font-weight:700;padding:9px 12px;border-radius:8px;cursor:pointer;font-family:inherit;touch-action:manipulation;" onmouseenter="this.style.background=\'rgba(255,255,255,0.06)\'" onmouseleave="this.style.background=\'none\'">' +
+      '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 8v4"/><path d="M12 16h.01"/></svg>Afinador de Bateria</button>';
+    document.body.appendChild(menu);
+  }
+
+  // Posiciona abaixo do botão
   var btn = document.getElementById('dc-more-btn');
   if (btn) {
     var r = btn.getBoundingClientRect();
@@ -13992,6 +13983,7 @@ function dcToggleMoreMenu() {
     menu.style.right = (window.innerWidth - r.right) + 'px';
   }
   menu.style.display = 'block';
+
   setTimeout(function() {
     document.addEventListener('click', function _close(e) {
       if (!e.target.closest('#dc-more-btn') && !e.target.closest('#dc-more-menu')) {
