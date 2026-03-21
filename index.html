@@ -14187,6 +14187,10 @@ var _tunerShockTimer = null;
 var _tunerStringIdx  = 0;
 var _tunerInst       = 'guitar';
 var _tunerTuning     = 'standard';
+var _tunerFreqBuf    = [];   // buffer para média móvel
+var _tunerFreqBufSz  = 8;    // quantidade de leituras para suavizar
+var _tunerLastNote   = '';   // última nota exibida (evita redesenho desnecessário)
+var _tunerLastCents  = null; // últimos cents exibidos
 
 // Definições de instrumentos e afinações
 var _TUNER_INSTS = {
@@ -14337,6 +14341,10 @@ function _tunerPararMic() {
   if (_tunerRaf) { cancelAnimationFrame(_tunerRaf); _tunerRaf = null; }
   if (_tunerStream) { _tunerStream.getTracks().forEach(function(t){ t.stop(); }); _tunerStream = null; }
   if (_tunerCtx) { _tunerCtx.close(); _tunerCtx = null; }
+  // Limpa buffers de suavização
+  _tunerFreqBuf = [];
+  _tunerLastNote = '';
+  _tunerLastCents = null;
   var btn = document.getElementById('tuner-start-btn');
   if (btn) { btn.textContent = '▶ Iniciar Afinação'; btn.classList.remove('ativo'); }
   // Reset display
@@ -14352,7 +14360,16 @@ function _tunerLoop() {
   var buf = new Float32Array(_tunerAnalyser.fftSize);
   _tunerAnalyser.getFloatTimeDomainData(buf);
   var freq = _tunerACF(buf, _tunerCtx.sampleRate);
-  if (freq > 0) _tunerUpdateDisplay(freq);
+  if (freq > 0) {
+    _tunerFreqBuf.push(freq);
+    if (_tunerFreqBuf.length > _tunerFreqBufSz) _tunerFreqBuf.shift();
+    if (_tunerFreqBuf.length >= 3) {
+      var avgFreq = _tunerFreqBuf.reduce(function(a,b){ return a+b; }, 0) / _tunerFreqBuf.length;
+      _tunerUpdateDisplay(avgFreq);
+    }
+  } else {
+    if (_tunerFreqBuf.length > 0) _tunerFreqBuf = [];
+  }
   _tunerRaf = requestAnimationFrame(_tunerLoop);
 }
 
@@ -14362,7 +14379,7 @@ function _tunerACF(buf, sampleRate) {
   var rms = 0;
   for (var i = 0; i < SIZE; i++) rms += buf[i] * buf[i];
   rms = Math.sqrt(rms / SIZE);
-  if (rms < 0.008) return -1;
+  if (rms < 0.015) return -1;
 
   var r1 = 0, r2 = SIZE - 1;
   for (var i = 0; i < SIZE / 2; i++) { if (Math.abs(buf[i]) < 0.2) { r1 = i; break; } }
@@ -14396,10 +14413,17 @@ function _tunerUpdateDisplay(freq) {
   var cents = Math.round(1200 * Math.log2(freq / noteFreq));
   var noteName = noteNames[midi % 12] + Math.floor(midi / 12 - 1);
 
+  // Só atualiza o DOM se nota ou cents mudaram (evita oscilação visual)
   var noteEl  = document.getElementById('tuner-note');
   var centsEl = document.getElementById('tuner-cents');
-  if (noteEl) noteEl.textContent = noteName;
-  if (centsEl) centsEl.textContent = (cents >= 0 ? '+' : '') + cents;
+  if (noteName !== _tunerLastNote) {
+    if (noteEl) noteEl.textContent = noteName;
+    _tunerLastNote = noteName;
+  }
+  if (cents !== _tunerLastCents) {
+    if (centsEl) centsEl.textContent = (cents >= 0 ? '+' : '') + cents;
+    _tunerLastCents = cents;
+  }
 
   // Verifica se está na corda alvo
   var strings = _TUNER_STRINGS[_tunerInst][_tunerTuning] || [];
