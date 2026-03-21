@@ -7300,7 +7300,7 @@ body.auth-pending #toast {
         <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
       </button>
       <!-- Dropdown ESPAÇO -->
-      <div id="adm-espaco-drop" style="display:none;position:absolute;top:calc(100% + 8px);left:0;z-index:300050;background:#111119;border:1px solid rgba(255,255,255,0.1);border-radius:14px;overflow:hidden;min-width:200px;box-shadow:0 12px 40px rgba(0,0,0,0.7);">
+      <div id="adm-espaco-drop" style="display:none;position:absolute;top:calc(100% + 8px);left:0;z-index:301400;background:#111119;border:1px solid rgba(255,255,255,0.1);border-radius:14px;overflow:hidden;min-width:200px;box-shadow:0 12px 40px rgba(0,0,0,0.7);">
         <button onclick="adminMostrarAba('painel');admFecharEspacoMenu()"
           style="width:100%;padding:13px 16px;background:transparent;border:none;border-bottom:1px solid rgba(255,255,255,0.06);cursor:pointer;font-family:inherit;touch-action:manipulation;display:flex;align-items:center;gap:12px;text-align:left;transition:background 0.15s;"
           onmouseover="this.style.background='rgba(255,200,0,0.07)'" onmouseout="this.style.background='transparent'">
@@ -8205,7 +8205,7 @@ body.auth-pending #toast {
 <button class="btn-pad-flutuante" id="btn-pad-flutuante" onclick="togglePadFlutuante()">PAD TOCANDO — PARAR</button>
 
 <!-- FRASES PRONTAS — modo show (só host) -->
-<div id="frases-prontas-btn" style="display:none;position:fixed;bottom:24px;left:20px;z-index:300010;">
+<div id="frases-prontas-btn" style="display:none;position:fixed;bottom:24px;left:20px;z-index:301200;">
   <button onclick="toggleFrasesProntas()" id="frases-toggle-btn"
     style="background:rgba(138,92,246,0.12);border:1px solid rgba(138,92,246,0.4);color:rgba(167,139,250,0.9);padding:11px 18px;border-radius:999px;font-size:11px;font-weight:900;letter-spacing:1.5px;text-transform:uppercase;cursor:pointer;font-family:inherit;touch-action:manipulation;backdrop-filter:blur(24px);-webkit-backdrop-filter:blur(24px);box-shadow:0 4px 20px rgba(0,0,0,0.4);display:flex;align-items:center;gap:8px;transition:0.2s;">
     <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
@@ -8214,7 +8214,7 @@ body.auth-pending #toast {
 </div>
 
 <!-- PAINEL DE FRASES PRONTAS -->
-<div id="frases-prontas-painel" style="display:none;position:fixed;bottom:80px;left:20px;z-index:300009;width:min(320px,calc(100vw - 40px));">
+<div id="frases-prontas-painel" style="display:none;position:fixed;bottom:80px;left:20px;z-index:301200;width:min(320px,calc(100vw - 40px));">
   <div style="background:rgba(10,10,20,0.96);border:1px solid rgba(138,92,246,0.3);border-radius:16px;padding:14px;backdrop-filter:blur(24px);-webkit-backdrop-filter:blur(24px);box-shadow:0 16px 48px rgba(0,0,0,0.7);">
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
       <span style="font-size:9px;font-weight:900;letter-spacing:2px;color:rgba(167,139,250,0.7);text-transform:uppercase;">Frases Prontas</span>
@@ -8225,7 +8225,7 @@ body.auth-pending #toast {
 </div>
 
 <!-- MODAL EDITAR FRASES -->
-<div id="modal-editar-frases" style="display:none;position:fixed;inset:0;z-index:300020;background:rgba(0,0,0,0.82);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);align-items:center;justify-content:center;padding:20px;" onclick="if(event.target===this)fecharEditarFrases()">
+<div id="modal-editar-frases" style="display:none;position:fixed;inset:0;z-index:301300;background:rgba(0,0,0,0.82);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);align-items:center;justify-content:center;padding:20px;" onclick="if(event.target===this)fecharEditarFrases()">
   <div style="background:#0d0d1a;border:1px solid rgba(138,92,246,0.25);border-radius:20px;width:100%;max-width:360px;max-height:85vh;display:flex;flex-direction:column;overflow:hidden;box-shadow:0 24px 80px rgba(0,0,0,0.9);">
     <div style="display:flex;align-items:center;justify-content:space-between;padding:16px 20px 12px;border-bottom:1px solid rgba(255,255,255,0.06);">
       <span style="font-size:9px;font-weight:900;letter-spacing:3px;color:rgba(255,255,255,0.3);text-transform:uppercase;">Editar Frases</span>
@@ -22191,7 +22191,7 @@ async function _fbFazerBackupAgora(btn) {
   </div>
 
   <!-- MODAL PERFORMANCE -->
-  <div id="voc-perf-modal" style="display:none;position:fixed;inset:0;z-index:300000;background:#000;flex-direction:column;" onclick="_vocPerfTap(event)" ondblclick="_vocPerfDblTap(event)">
+  <div id="voc-perf-modal" style="display:none;position:fixed;inset:0;z-index:301100;background:#000;flex-direction:column;" onclick="_vocPerfTap(event)" ondblclick="_vocPerfDblTap(event)">
 
     <!-- Barra de progresso -->
     <div style="position:absolute;top:0;left:0;right:0;height:3px;background:rgba(255,255,255,0.06);z-index:3;pointer-events:none;">
@@ -22285,7 +22285,7 @@ async function _fbFazerBackupAgora(btn) {
   </div>
 
   <!-- MODAL SHOW (performance sequencial) -->
-  <div id="voc-show-modal" style="display:none;position:fixed;inset:0;z-index:300001;background:#000;flex-direction:column;">
+  <div id="voc-show-modal" style="display:none;position:fixed;inset:0;z-index:301100;background:#000;flex-direction:column;">
     <!-- Header -->
     <div id="voc-show-hdr" style="display:flex;align-items:center;gap:12px;padding:16px 18px 10px;background:rgba(0,0,0,0.95);flex-shrink:0;transition:opacity 0.3s,transform 0.3s;">
       <button onclick="vocFecharShow()" style="width:34px;height:34px;border-radius:10px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.08);color:rgba(255,255,255,0.6);cursor:pointer;display:flex;align-items:center;justify-content:center;touch-action:manipulation;flex-shrink:0;">
