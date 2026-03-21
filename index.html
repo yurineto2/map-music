@@ -23417,7 +23417,7 @@ function _confirmarAcao(titulo, desc, labelOk, corOk, callback) {
   if (old) old.remove();
   var overlay = document.createElement('div');
   overlay.setAttribute('data-confirmar-modal', '1');
-  overlay.style.cssText = 'position:fixed;inset:0;z-index:400000;background:rgba(0,0,0,0.8);display:flex;align-items:center;justify-content:center;padding:20px;';
+  overlay.style.cssText = 'position:fixed;inset:0;z-index:9999999999;background:rgba(0,0,0,0.8);display:flex;align-items:center;justify-content:center;padding:20px;';
   var box = document.createElement('div');
   box.style.cssText = 'background:#0d0d1a;border:1px solid rgba(255,255,255,0.08);border-radius:20px;padding:24px 20px;width:100%;max-width:320px;display:flex;flex-direction:column;gap:14px;';
   box.innerHTML =
