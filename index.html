@@ -14108,14 +14108,18 @@ function dcFecharMoreMenu() {
 function dcToggleStereo() {
   _dcStereoAtivo = !_dcStereoAtivo;
   var btn = document.getElementById('dc-stereo-btn');
-  if (btn) btn.classList.toggle('ativo', _dcStereoAtivo);
+  if (btn) {
+    btn.classList.toggle('ativo', _dcStereoAtivo);
+    // Feedback visual direto no botão — sem toast global
+    btn.style.color = _dcStereoAtivo ? '#a78bfa' : 'rgba(255,255,255,0.6)';
+    btn.style.background = _dcStereoAtivo ? 'rgba(138,92,246,0.12)' : 'none';
+    btn.style.borderRadius = '8px';
+  }
 
   // Reseta o master node para recriar com panner
   _dcMasterNode = null;
   _dcPadPanner  = null;
   _dcClickPanner = null;
-
-  showToast(_dcStereoAtivo ? 'Stereo: Pads R · Click L' : 'Stereo desativado', 'success');
 }
 
 // Retorna (ou cria) o panner dos pads
