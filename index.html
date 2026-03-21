@@ -4595,7 +4595,8 @@ body { font-family: -apple-system, 'Inter', BlinkMacSystemFont, 'Segoe UI', sans
   #btn-sala { padding: 6px 12px; font-size: 9px; }
 
   /* Layout */
-  .main-layout { padding: 10px; gap: 14px; }
+  .main-layout { padding: 10px; gap: 14px; align-items: start; }
+  aside { height: fit-content !important; align-self: start; }
   .section-grid { grid-template-columns: 1fr; }
 
   /* Toolbar */
@@ -7652,7 +7653,7 @@ body.auth-pending #toast {
     <div class="section-grid" id="notes-grid"></div>
   </main>
 
-  <aside>
+  <aside style="align-self:start;">
     <div class="metronome-card" style="position:relative;">
       <!-- Botão microfone BPM — canto superior direito -->
       <button id="bpm-mic-btn" onclick="bpmMicSearch()" title="Pesquisar BPM da música"
