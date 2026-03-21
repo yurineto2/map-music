@@ -14646,6 +14646,9 @@ function _dcDrumPararMic() {
   if (_dcDrumTuner.raf)    { cancelAnimationFrame(_dcDrumTuner.raf); _dcDrumTuner.raf = null; }
   if (_dcDrumTuner.stream) { _dcDrumTuner.stream.getTracks().forEach(function(t){ t.stop(); }); _dcDrumTuner.stream = null; }
   if (_dcDrumTuner.ctx)    { _dcDrumTuner.ctx.close(); _dcDrumTuner.ctx = null; }
+  // Limpa buffers de suavização
+  _dcDrumFreqBuf = [];
+  _dcDrumLastLoopTime = 0;
   var btn = document.getElementById('dc-drum-tuner-btn');
   if (btn) { btn.textContent = '▶ Iniciar Microfone'; btn.style.background = 'rgba(0,255,100,0.08)'; btn.style.borderColor = 'rgba(0,255,100,0.25)'; }
   var freqEl = document.getElementById('dc-drum-freq');
@@ -14656,8 +14659,20 @@ function _dcDrumPararMic() {
   if (ind) { ind.style.left = '50%'; ind.style.background = '#00ff64'; }
 }
 
-function _dcDrumLoop() {
+var _dcDrumFreqBuf      = [];   // buffer para média móvel
+var _dcDrumFreqBufSz    = 6;    // últimas 6 leituras
+var _dcDrumLastLoopTime = 0;
+var _DC_DRUM_INTERVAL   = 100;  // ~10fps — suficiente para bateria
+
+function _dcDrumLoop(timestamp) {
   if (!_dcDrumTuner.ativo) return;
+
+  // Throttle ~10fps
+  if (timestamp - _dcDrumLastLoopTime < _DC_DRUM_INTERVAL) {
+    _dcDrumTuner.raf = requestAnimationFrame(_dcDrumLoop);
+    return;
+  }
+  _dcDrumLastLoopTime = timestamp;
 
   var an = _dcDrumTuner.analyser;
   var sampleRate = _dcDrumTuner.ctx.sampleRate;
@@ -14670,14 +14685,28 @@ function _dcDrumLoop() {
   var maxBin = Math.floor(800 / binHz);
   if (maxBin >= bufLen) maxBin = bufLen - 1;
 
-  var maxVal = 0, maxIdx = -1;
+  // Encontra o pico e calcula a média do espectro na faixa
+  var maxVal = 0, maxIdx = -1, soma = 0, count = 0;
   for (var i = minBin; i <= maxBin; i++) {
     if (data[i] > maxVal) { maxVal = data[i]; maxIdx = i; }
+    soma += data[i];
+    count++;
   }
+  var media = count > 0 ? soma / count : 0;
 
-  if (maxVal > 20 && maxIdx > 0) {
+  // Limiar alto (80) para ambiente de bateria + dominância: pico deve ser 1.5x a média
+  if (maxVal > 80 && maxIdx > 0 && maxVal > media * 1.5) {
     var freq = maxIdx * binHz;
-    _dcDrumAtualizar(freq);
+    // Média móvel de frequência
+    _dcDrumFreqBuf.push(freq);
+    if (_dcDrumFreqBuf.length > _dcDrumFreqBufSz) _dcDrumFreqBuf.shift();
+    if (_dcDrumFreqBuf.length >= 3) {
+      var avgFreq = _dcDrumFreqBuf.reduce(function(a,b){ return a+b; }, 0) / _dcDrumFreqBuf.length;
+      _dcDrumAtualizar(avgFreq);
+    }
+  } else {
+    // Sinal fraco ou ruído difuso — limpa o buffer
+    if (_dcDrumFreqBuf.length > 0) _dcDrumFreqBuf = [];
   }
 
   _dcDrumTuner.raf = requestAnimationFrame(_dcDrumLoop);
