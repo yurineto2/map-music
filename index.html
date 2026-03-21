@@ -22779,6 +22779,7 @@ function _vocBibRenderGrid() {
         '<div style="min-width:0;">' +
           '<div style="font-size:12px;font-weight:900;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;padding-right:18px;">' + _ve(letra.nome || letra.titulo || 'Sem título') + '</div>' +
           '<div style="font-size:10px;color:rgba(255,255,255,0.3);margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + _ve(letra.artista || letra.cantor || '—') + '</div>' +
+          (letra.recebidaDe ? '<div style="font-size:9px;font-weight:800;color:rgba(138,92,246,0.7);margin-top:4px;letter-spacing:0.5px;">de @' + _ve(letra.recebidaDe) + '</div>' : '') +
         '</div>' +
       '</div>';
     card.querySelector('._voc-card-body').addEventListener('click', function() { _vocAbrirPerf(letra); });
@@ -23135,10 +23136,11 @@ function _vocCardMenu(letra, btn) {
   menu.style.cssText = 'position:fixed;z-index:301999;background:rgba(10,10,18,0.97);border:1px solid rgba(255,255,255,0.1);border-radius:16px;backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);box-shadow:0 16px 48px rgba(0,0,0,0.8);min-width:160px;padding:4px;';
 
   var itens = [
-    { label: 'Abrir',     danger: false, fn: function() { _vocAbrirPerf(letra); } },
-    { label: 'Editar',    danger: false, fn: function() { _vocEditarLetra(letra); } },
+    { label: 'Abrir',        danger: false, fn: function() { _vocAbrirPerf(letra); } },
+    { label: 'Editar',       danger: false, fn: function() { _vocEditarLetra(letra); } },
     { label: letra.favorito ? 'Desfavoritar' : 'Favoritar', danger: false, fn: function() { _vocFavoritarLetra(letra); } },
-    { label: 'Excluir',   danger: true,  fn: function() { _vocExcluirLetra(letra); } },
+    { label: 'Enviar para...', danger: false, fn: function() { _vocEnviarLetra(letra); } },
+    { label: 'Excluir',      danger: true,  fn: function() { _vocExcluirLetra(letra); } },
   ];
 
   itens.forEach(function(item) {
@@ -23167,6 +23169,124 @@ function _vocCardMenu(letra, btn) {
       document.removeEventListener('click', _c);
     }, { once: true });
   }, 50);
+}
+
+function _vocEnviarLetra(letra) {
+  // Remove modal anterior se existir
+  var oldM = document.getElementById('_voc-enviar-modal');
+  if (oldM) oldM.remove();
+
+  var overlay = document.createElement('div');
+  overlay.id = '_voc-enviar-modal';
+  overlay.style.cssText = 'position:fixed;inset:0;z-index:302000;background:rgba(0,0,0,0.82);display:flex;align-items:flex-end;justify-content:center;';
+
+  var box = document.createElement('div');
+  box.style.cssText = 'background:#0d0d1a;border:1px solid rgba(138,92,246,0.2);border-radius:24px 24px 0 0;padding:24px 20px 40px;width:100%;max-width:480px;display:flex;flex-direction:column;gap:16px;';
+
+  box.innerHTML =
+    '<div style="display:flex;align-items:center;justify-content:space-between;">' +
+      '<div style="font-size:15px;font-weight:900;color:#fff;">Enviar letra</div>' +
+      '<button id="_voc-enviar-fechar" style="background:none;border:none;color:rgba(255,255,255,0.3);font-size:22px;cursor:pointer;line-height:1;padding:4px;">×</button>' +
+    '</div>' +
+    '<div style="font-size:12px;color:rgba(255,255,255,0.35);margin-top:-8px;">' +
+      '"' + (letra.nome || 'Sem título') + '"' +
+    '</div>' +
+    '<div style="position:relative;">' +
+      '<input id="_voc-enviar-busca" type="text" placeholder="Buscar @usuário..." autocomplete="off" ' +
+        'style="width:100%;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);border-radius:12px;padding:12px 14px;color:#fff;font-size:14px;font-family:inherit;outline:none;box-sizing:border-box;" ' +
+        'onfocus="this.style.borderColor=\'rgba(138,92,246,0.5)\'" onblur="this.style.borderColor=\'rgba(255,255,255,0.1)\'">' +
+    '</div>' +
+    '<div id="_voc-enviar-resultados" style="display:flex;flex-direction:column;gap:6px;max-height:200px;overflow-y:auto;"></div>' +
+    '<div id="_voc-enviar-status" style="font-size:12px;color:rgba(255,255,255,0.3);text-align:center;min-height:18px;"></div>';
+
+  overlay.appendChild(box);
+  overlay.addEventListener('click', function(e) { if (e.target === overlay) overlay.remove(); });
+  document.body.appendChild(overlay);
+
+  document.getElementById('_voc-enviar-fechar').onclick = function() { overlay.remove(); };
+
+  // Busca de usuários com debounce
+  var _debTimer = null;
+  var input = document.getElementById('_voc-enviar-busca');
+  input.addEventListener('input', function() {
+    clearTimeout(_debTimer);
+    var q = this.value.replace(/^@/, '').trim();
+    var res = document.getElementById('_voc-enviar-resultados');
+    var status = document.getElementById('_voc-enviar-status');
+    res.innerHTML = '';
+    if (q.length < 2) { status.textContent = 'Digite pelo menos 2 caracteres'; return; }
+    status.textContent = 'Buscando...';
+    _debTimer = setTimeout(function() {
+      if (!window._fb) { status.textContent = 'Firebase indisponível'; return; }
+      var meuUid = localStorage.getItem('map_uid_v1');
+      window._fb.buscarUsuarios(q).then(function(usuarios) {
+        res.innerHTML = '';
+        // Remove o próprio usuário da lista
+        var lista = (usuarios || []).filter(function(u) { return u.uid !== meuUid; });
+        if (lista.length === 0) { status.textContent = 'Nenhum usuário encontrado'; return; }
+        status.textContent = '';
+        lista.forEach(function(u) {
+          var item = document.createElement('div');
+          item.style.cssText = 'display:flex;align-items:center;justify-content:space-between;padding:10px 14px;border-radius:12px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.07);cursor:pointer;transition:0.15s;';
+          item.innerHTML =
+            '<div>' +
+              '<div style="font-size:13px;font-weight:800;color:#fff;">@' + (u.nomeUsuario || u.nome || u.uid) + '</div>' +
+              (u.nome && u.nome !== u.nomeUsuario ? '<div style="font-size:11px;color:rgba(255,255,255,0.35);">' + u.nome + '</div>' : '') +
+            '</div>' +
+            '<div style="font-size:11px;font-weight:700;color:rgba(138,92,246,0.7);padding:4px 10px;border-radius:8px;background:rgba(138,92,246,0.1);border:1px solid rgba(138,92,246,0.2);">Enviar</div>';
+          item.onmouseenter = function() { this.style.background = 'rgba(138,92,246,0.08)'; this.style.borderColor = 'rgba(138,92,246,0.25)'; };
+          item.onmouseleave = function() { this.style.background = 'rgba(255,255,255,0.04)'; this.style.borderColor = 'rgba(255,255,255,0.07)'; };
+          item.onclick = function() { _vocConfirmarEnvio(letra, u, overlay); };
+          res.appendChild(item);
+        });
+      }).catch(function() { status.textContent = 'Erro ao buscar usuários'; });
+    }, 400);
+  });
+
+  setTimeout(function() { input.focus(); }, 150);
+}
+
+function _vocConfirmarEnvio(letra, destinatario, overlay) {
+  var status = document.getElementById('_voc-enviar-status');
+  var res    = document.getElementById('_voc-enviar-resultados');
+  if (status) status.textContent = 'Enviando...';
+  if (res)    res.innerHTML = '';
+
+  var uid = localStorage.getItem('map_uid_v1');
+  if (!uid || !window._fb) {
+    if (status) status.textContent = 'Firebase indisponível';
+    return;
+  }
+
+  // Busca o perfil do remetente para incluir o nome
+  var meuPerfil = {};
+  try { meuPerfil = JSON.parse(localStorage.getItem('map_perfil_v1') || '{}'); } catch(e) {}
+  var meuNome = meuPerfil.nomeUsuario || meuPerfil.nome || uid;
+
+  // Cria cópia da letra no Firestore do destinatário
+  var novoId  = Date.now() + '_' + Math.random().toString(36).slice(2, 7);
+  var destKey = destinatario.uid + '_' + novoId;
+  var dados   = {
+    nome:       letra.nome     || 'Sem título',
+    artista:    letra.artista  || '',
+    secoes:     letra.secoes   || [],
+    criadoEm:   Date.now(),
+    recebidaDe: meuNome,
+    recebidaEm: Date.now()
+  };
+
+  window._fb._set('letras_voc/' + destKey, dados, false).then(function(ok) {
+    if (ok) {
+      if (overlay) overlay.remove();
+      if (typeof showToast === 'function') showToast('Letra enviada para @' + (destinatario.nomeUsuario || destinatario.nome) + '!', 'success');
+    } else {
+      var s = document.getElementById('_voc-enviar-status');
+      if (s) s.textContent = 'Erro ao enviar. Tente novamente.';
+    }
+  }).catch(function() {
+    var s = document.getElementById('_voc-enviar-status');
+    if (s) s.textContent = 'Erro ao enviar. Tente novamente.';
+  });
 }
 
 function _vocEditarLetra(letra) {
