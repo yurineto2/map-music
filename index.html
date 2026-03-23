@@ -289,10 +289,19 @@ window._DEBUG = (window.location.hostname === 'localhost' || window.location.hos
     let last = null;
     let stopped = false;
     let errCount = 0;
+    let _nextTimer = null;
+    function _schedule(delay) {
+      if (stopped) return;
+      _nextTimer = setTimeout(check, delay);
+    }
     async function check() {
       if (stopped) return;
       // Pausa quando app está em background — resgenda para verificar novamente
-      if (window._appPaused) { setTimeout(check, 2000); return; }
+      if (window._appPaused) { _schedule(2000); return; }
+      // Agenda próximo ciclo ANTES de esperar a resposta — elimina latência acumulada
+      var maxDelay = window._emSala ? 30000 : 300000;
+      var nextDelay = errCount > 3 ? Math.min(intervalMs * Math.pow(2, errCount - 3), maxDelay) : intervalMs;
+      _schedule(nextDelay);
       try {
         const data = await _get(path);
         errCount = 0;
@@ -301,15 +310,9 @@ window._DEBUG = (window.location.hostname === 'localhost' || window.location.hos
       } catch(e) {
         errCount++;
       }
-      if (!stopped) {
-        // Em sala ativa, limitar backoff a 30s para reconectar mais rápido
-        var maxDelay = window._emSala ? 30000 : 300000;
-        var delay = errCount > 3 ? Math.min(intervalMs * Math.pow(2, errCount - 3), maxDelay) : intervalMs;
-        setTimeout(check, delay);
-      }
     }
     check();
-    return function() { stopped = true; };
+    return function() { stopped = true; if (_nextTimer) { clearTimeout(_nextTimer); _nextTimer = null; } };
   }
 
   function _pollQuery(col, filters, callback, intervalMs) {
@@ -688,12 +691,12 @@ window._DEBUG = (window.location.hostname === 'localhost' || window.location.hos
       try { await _set('salas/' + codigo, { ativa: false }, true); } catch(e) {}
     },
     ouvirSala(codigo, callback) {
-      // Intervalo adaptativo: show ativo=800ms, normal=2000ms
-      var ms = (document.body && document.body.classList.contains('performance-mode')) ? 800 : 2000;
+      // Intervalo adaptativo: show ativo=500ms, normal=1000ms — latência reduzida
+      var ms = (document.body && document.body.classList.contains('performance-mode')) ? 500 : 1000;
       var stopFn = _poll('salas/' + codigo, callback, ms);
       // Recriar poll com intervalo certo quando modo show muda
       var _obs = setInterval(function() {
-        var novoMs = (document.body && document.body.classList.contains('performance-mode')) ? 800 : 2000;
+        var novoMs = (document.body && document.body.classList.contains('performance-mode')) ? 500 : 1000;
         if (novoMs !== ms) { ms = novoMs; stopFn(); stopFn = _poll('salas/' + codigo, callback, ms); }
       }, 3000);
       return function() { stopFn(); clearInterval(_obs); };
@@ -754,7 +757,7 @@ window._DEBUG = (window.location.hostname === 'localhost' || window.location.hos
         });
         _lastViewers = viewersStr;
         if (msgs.length) callback(msgs, data); // passa salaData para o host atualizar onlineCount
-      }, 3000);
+      }, 1000);
     },
 
     async salvarEstatistica(uid, dados) {
@@ -4530,7 +4533,7 @@ body { font-family: -apple-system, 'Inter', BlinkMacSystemFont, 'Segoe UI', sans
 .btn-pad-flutuante.pad-ativo { display: flex; }
 
 .btn-save-vitro {
-  position: fixed; bottom: 30px; left: 20px; z-index: 900;
+  position: fixed; bottom: calc(24px + env(safe-area-inset-bottom, 0px)); left: 20px; z-index: 900;
   background: var(--glass-bg); backdrop-filter: blur(10px);
   border: 1px solid var(--glass-border);
   color: rgba(255,255,255,0.4);
@@ -4610,8 +4613,8 @@ body { font-family: -apple-system, 'Inter', BlinkMacSystemFont, 'Segoe UI', sans
   /* Sync bar */
   .sync-bar { font-size: 9px; padding: 6px 12px; gap: 8px; }
 
-  /* Botões do fundo */
-  .btn-save-vitro { font-size: 9px; padding: 10px 16px; }
+  /* Botões do fundo — alinhados na mesma altura */
+  .btn-save-vitro { font-size: 9px; padding: 10px 16px; bottom: calc(16px + env(safe-area-inset-bottom, 0px)); left: 12px; }
   .perf-bottom-panel { bottom: calc(80px + env(safe-area-inset-bottom, 0px)); right: 12px; }
   .mode-show-container { bottom: calc(16px + env(safe-area-inset-bottom, 0px)) !important; right: 12px !important; }
 
@@ -4852,7 +4855,7 @@ body.performance-mode .teleprompter-panel { display: block; }
 /* INDICADOR DE MUSICA NO MODO SHOW */
 .perf-song-indicator {
   display: none;
-  position: fixed; top: 20px; left: 20px; z-index: 2000;
+  position: fixed; top: calc(20px + env(safe-area-inset-top, 0px)); left: 20px; z-index: 2000;
   background: rgba(0,0,0,0.85); border: 1px solid rgba(255,62,62,0.4);
   backdrop-filter: blur(10px); border-radius: var(--radius-full);
   padding: 8px 18px; font-size: 11px; font-weight: 800;
@@ -4865,7 +4868,7 @@ body.performance-mode .perf-song-indicator { display: flex; }
 /* Controle de fonte por música no modo show */
 #perf-font-ctrl {
   display: none;
-  position: fixed; top: 20px; right: 20px; z-index: 2000;
+  position: fixed; top: calc(20px + env(safe-area-inset-top, 0px)); right: 20px; z-index: 2000;
   background: rgba(0,0,0,0.85); border: 1px solid rgba(255,255,255,0.12);
   backdrop-filter: blur(10px); border-radius: 999px;
   padding: 5px 6px; gap: 4px; align-items: center;
