@@ -60,7 +60,7 @@ window.addEventListener('unhandledrejection', function(e) {
 });
 </script>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="Map Music PRO">
@@ -1080,9 +1080,6 @@ function _obAvancarStep2() {
   _obValidarCta();
 }
 
-// Intercept verificar button: if nome ok, proceed to check email then step 2
-// Override obVerificarNome to also advance
-const _origObVerificarNome = window.obVerificarNome;
 window._obAvancarStep2 = _obAvancarStep2;
 
 // ── terminarOnboarding ───────────────────────────────────────────────────────
@@ -1097,8 +1094,6 @@ async function terminarOnboarding() {
   if (senha.length < 6 || senha !== senha2) return;
   if (pin.length < 4) return;
   if (!_obEmail) return;
-
-  if (cta) { cta.disabled = true; cta.textContent = 'Criando conta...'; }
 
   if (cta) { cta.disabled = true; cta.textContent = 'Criando conta...'; }
 
@@ -1285,6 +1280,8 @@ function _pinVerificar() {
     document.body.classList.remove('auth-pending');
     if (typeof admInicializar === 'function') admInicializar();
     if (!document.body.style.background) document.body.style.background = '';
+    // Ativa WakeLock imediatamente para todos os usuários — evita hibernação
+    if (typeof ativarWakeLock === 'function') ativarWakeLock();
     // Rotear para o ambiente correto baseado no instrumento
     _rotearAmbiente();
     // Mostra modal de novidades se ainda não foi visto
@@ -1324,18 +1321,6 @@ function _pinVerificar() {
         if (aside)    aside.style.display     = '';
         if (bibMain)  bibMain.style.display   = '';
         document.body.dataset.ambiente = 'instrumentista';
-        // Avisa vocalistas que estão no app errado
-        if (instrumento === 'voz') {
-          setTimeout(function() {
-            if (typeof adicionarNotif === 'function') {
-              adicionarNotif('alert', 'Este espaço é para instrumentistas',
-                'Você escolheu Voz como instrumento. O Espaço Vocalista tem tudo pensado para você — letras, tonalidade, aulas e modo performance.',
-                'voz_app_errado_v1',
-                { label: 'Ir para o Espaço Vocalista', fn: 'adminEscolherModo(&quot;vocalista&quot;);fecharNotifPanel()' }
-              );
-            }
-          }, 2000);
-        }
       }
     } catch(e) {}
   }
@@ -1957,7 +1942,6 @@ function _adminEntrar() {
     criadoEm: Date.now(),
     uid: 'admin_local',
     profileId: '00000000',
-    pin: _ADMIN_PIN,
     isAdmin: true
   };
   _lsSet('map_perfil_v1', adminPerfil);
@@ -4502,8 +4486,8 @@ body { font-family: -apple-system, 'Inter', BlinkMacSystemFont, 'Segoe UI', sans
 
 /* Perf bottom panel: ajuste fino desktop */
 @media (min-width: 641px) {
-  .perf-bottom-panel { bottom: 94px; right: 28px; }
-  .mode-show-container { padding: 13px 26px; font-size: 12px; bottom: 28px !important; right: 28px !important; }
+  .perf-bottom-panel { bottom: calc(94px + env(safe-area-inset-bottom, 0px)); right: 28px; }
+  .mode-show-container { padding: 13px 26px; font-size: 12px; bottom: calc(28px + env(safe-area-inset-bottom, 0px)) !important; right: 28px !important; }
 }
 
 /* Header: expande bem no desktop */
@@ -4526,7 +4510,7 @@ body { font-family: -apple-system, 'Inter', BlinkMacSystemFont, 'Segoe UI', sans
 
 
 .btn-pad-flutuante {
-  position: fixed; bottom: 90px; left: 50%; transform: translateX(-50%);
+  position: fixed; bottom: calc(90px + env(safe-area-inset-bottom, 0px)); left: 50%; transform: translateX(-50%);
   z-index: 910; display: none;
   padding: 10px 24px; border-radius: 30px;
   background: rgba(180,20,20,0.25); backdrop-filter: blur(12px);
@@ -4628,8 +4612,8 @@ body { font-family: -apple-system, 'Inter', BlinkMacSystemFont, 'Segoe UI', sans
 
   /* Botões do fundo */
   .btn-save-vitro { font-size: 9px; padding: 10px 16px; }
-  .perf-bottom-panel { bottom: 80px; right: 12px; }
-  .mode-show-container { bottom: 16px !important; right: 12px !important; }
+  .perf-bottom-panel { bottom: calc(80px + env(safe-area-inset-bottom, 0px)); right: 12px; }
+  .mode-show-container { bottom: calc(16px + env(safe-area-inset-bottom, 0px)) !important; right: 12px !important; }
 
   /* Preview cifra */
   .preview-section { padding: 8px 10px; }
@@ -4743,14 +4727,14 @@ body.performance-mode .scroll-controls { display: none; } /* movido para painel 
 
 /* PAINEL INFERIOR DIREITO — modo show */
 .perf-bottom-panel {
-  position: fixed; bottom: 90px; right: 20px; z-index: 2000;
+  position: fixed; bottom: calc(90px + env(safe-area-inset-bottom, 0px)); right: 20px; z-index: 2000;
   display: flex; flex-direction: column; gap: 10px;
   align-items: flex-end;
 }
 /* Botao SAIR DO SHOW: posicao fixa independente, canto inferior direito */
 .mode-show-container {
   position: fixed !important;
-  bottom: 24px !important;
+  bottom: calc(24px + env(safe-area-inset-bottom, 0px)) !important;
   right: 20px !important;
   z-index: 2100 !important;
 }
@@ -7682,7 +7666,7 @@ body.auth-pending #toast {
 <button class="btn-save-vitro" id="btn-save-vitro" onclick="saveSong()">Salvar Música</button>
 
 <!-- Controle de fonte das cifras — painel individual -->
-<div id="cifra-font-ctrl" style="position:fixed;bottom:90px;right:20px;z-index:2100;display:flex;align-items:center;gap:6px;background:var(--glass-bg);backdrop-filter:blur(10px);border:1px solid var(--glass-border);border-radius:999px;padding:6px 12px;">
+<div id="cifra-font-ctrl" style="position:fixed;bottom:calc(90px + env(safe-area-inset-bottom, 0px));right:max(20px, env(safe-area-inset-right, 20px));z-index:2100;display:flex;align-items:center;gap:6px;background:var(--glass-bg);backdrop-filter:blur(10px);border:1px solid var(--glass-border);border-radius:999px;padding:6px 12px;">
   <button onclick="_cifraFontAjustar(-1)" style="background:none;border:none;color:rgba(255,255,255,0.4);font-size:12px;font-weight:900;cursor:pointer;padding:2px 4px;line-height:1;touch-action:manipulation;" title="Diminuir fonte">A<sup style="font-size:7px">−</sup></button>
   <span id="cifra-font-val" style="font-size:10px;font-weight:900;color:rgba(255,255,255,0.35);min-width:28px;text-align:center;letter-spacing:0.5px;"></span>
   <button onclick="_cifraFontAjustar(+1)" style="background:none;border:none;color:rgba(255,255,255,0.4);font-size:15px;font-weight:900;cursor:pointer;padding:2px 4px;line-height:1;touch-action:manipulation;" title="Aumentar fonte">A<sup style="font-size:7px">+</sup></button>
@@ -8206,7 +8190,7 @@ body.auth-pending #toast {
 <button class="btn-pad-flutuante" id="btn-pad-flutuante" onclick="togglePadFlutuante()">PAD TOCANDO — PARAR</button>
 
 <!-- FRASES PRONTAS — modo show (só host) -->
-<div id="frases-prontas-btn" style="display:none;position:fixed;bottom:24px;left:20px;z-index:301200;">
+<div id="frases-prontas-btn" style="display:none;position:fixed;bottom:calc(24px + env(safe-area-inset-bottom, 0px));left:max(20px, env(safe-area-inset-left, 20px));z-index:301200;">
   <button onclick="toggleFrasesProntas()" id="frases-toggle-btn"
     style="background:rgba(138,92,246,0.12);border:1px solid rgba(138,92,246,0.4);color:rgba(167,139,250,0.9);padding:11px 18px;border-radius:999px;font-size:11px;font-weight:900;letter-spacing:1.5px;text-transform:uppercase;cursor:pointer;font-family:inherit;touch-action:manipulation;backdrop-filter:blur(24px);-webkit-backdrop-filter:blur(24px);box-shadow:0 4px 20px rgba(0,0,0,0.4);display:flex;align-items:center;gap:8px;transition:0.2s;">
     <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
@@ -8215,7 +8199,7 @@ body.auth-pending #toast {
 </div>
 
 <!-- PAINEL DE FRASES PRONTAS -->
-<div id="frases-prontas-painel" style="display:none;position:fixed;bottom:80px;left:20px;z-index:301200;width:min(320px,calc(100vw - 40px));">
+<div id="frases-prontas-painel" style="display:none;position:fixed;bottom:calc(80px + env(safe-area-inset-bottom, 0px));left:max(20px, env(safe-area-inset-left, 20px));z-index:301200;width:min(320px,calc(100vw - 40px));">
   <div style="background:rgba(10,10,20,0.96);border:1px solid rgba(138,92,246,0.3);border-radius:16px;padding:14px;backdrop-filter:blur(24px);-webkit-backdrop-filter:blur(24px);box-shadow:0 16px 48px rgba(0,0,0,0.7);">
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
       <span style="font-size:9px;font-weight:900;letter-spacing:2px;color:rgba(167,139,250,0.7);text-transform:uppercase;">Frases Prontas</span>
@@ -21998,7 +21982,7 @@ async function _fbFazerBackupAgora(btn) {
 
 /* ── Banner notificação próxima música ── */
 #map-notif-musica {
-  position: fixed; bottom: 80px; left: 16px; right: 16px;
+  position: fixed; bottom: calc(80px + env(safe-area-inset-bottom, 0px)); left: max(16px, env(safe-area-inset-left, 16px)); right: max(16px, env(safe-area-inset-right, 16px));
   z-index: 100050;
   background: rgba(10,10,20,0.95);
   border: 1px solid rgba(138,92,246,0.25);
