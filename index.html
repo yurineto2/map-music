@@ -7343,6 +7343,10 @@ body.auth-pending #toast {
           <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="1"/><circle cx="12" cy="5" r="1"/><circle cx="12" cy="19" r="1"/></svg>
         </button>
         <div id="m-drop" class="dropdown-menu">
+          <div class="menu-item" onclick="event.stopPropagation();fecharMenu({target:document.body});abrirCalendario()">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+            Calendário
+          </div>
           <div class="menu-item" onclick="event.stopPropagation();fecharMenu({target:document.body});abrirModalPerfil()">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
             Meu Perfil
@@ -23969,6 +23973,438 @@ document.addEventListener('click', function(e) {
 
 <script>
 // Espaço Vocalista — script reservado
+</script>
+
+<!-- ═══════════════════════════════════════════════════════════════
+     CALENDÁRIO — painel full-screen
+═══════════════════════════════════════════════════════════════ -->
+<div id="cal-overlay" style="display:none;position:fixed;inset:0;z-index:200100;background:#06060c;flex-direction:column;font-family:inherit;">
+
+  <!-- Header -->
+  <div style="display:flex;align-items:center;gap:12px;padding:16px 18px 12px;background:rgba(0,0,0,0.6);border-bottom:1px solid rgba(255,255,255,0.06);flex-shrink:0;">
+    <button onclick="fecharCalendario()" style="width:34px;height:34px;border-radius:10px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.08);color:rgba(255,255,255,0.6);cursor:pointer;display:flex;align-items:center;justify-content:center;touch-action:manipulation;flex-shrink:0;">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+    </button>
+    <div style="flex:1;">
+      <div style="font-size:15px;font-weight:900;color:#fff;letter-spacing:0.3px;">Calendário</div>
+      <div id="cal-mes-label" style="font-size:10px;color:rgba(255,255,255,0.35);font-weight:600;margin-top:1px;text-transform:uppercase;letter-spacing:1px;"></div>
+    </div>
+    <button onclick="abrirFormEvento()" style="display:flex;align-items:center;gap:6px;padding:8px 14px;border-radius:20px;background:rgba(10,158,110,0.15);border:1px solid rgba(10,158,110,0.35);color:#0A9E6E;font-size:11px;font-weight:900;cursor:pointer;touch-action:manipulation;letter-spacing:0.5px;">
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+      Novo
+    </button>
+  </div>
+
+  <!-- Navegação mês -->
+  <div style="display:flex;align-items:center;justify-content:space-between;padding:12px 18px 8px;flex-shrink:0;">
+    <button onclick="calNavMes(-1)" style="width:32px;height:32px;border-radius:50%;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);color:rgba(255,255,255,0.5);cursor:pointer;display:flex;align-items:center;justify-content:center;touch-action:manipulation;">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+    </button>
+    <div id="cal-nav-label" style="font-size:14px;font-weight:900;color:#fff;letter-spacing:0.5px;"></div>
+    <button onclick="calNavMes(1)" style="width:32px;height:32px;border-radius:50%;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);color:rgba(255,255,255,0.5);cursor:pointer;display:flex;align-items:center;justify-content:center;touch-action:manipulation;">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+    </button>
+  </div>
+
+  <!-- Dias da semana -->
+  <div style="display:grid;grid-template-columns:repeat(7,1fr);padding:0 12px;flex-shrink:0;">
+    <div style="text-align:center;font-size:9px;font-weight:800;color:rgba(255,255,255,0.2);letter-spacing:1px;padding:4px 0;">DOM</div>
+    <div style="text-align:center;font-size:9px;font-weight:800;color:rgba(255,255,255,0.2);letter-spacing:1px;padding:4px 0;">SEG</div>
+    <div style="text-align:center;font-size:9px;font-weight:800;color:rgba(255,255,255,0.2);letter-spacing:1px;padding:4px 0;">TER</div>
+    <div style="text-align:center;font-size:9px;font-weight:800;color:rgba(255,255,255,0.2);letter-spacing:1px;padding:4px 0;">QUA</div>
+    <div style="text-align:center;font-size:9px;font-weight:800;color:rgba(255,255,255,0.2);letter-spacing:1px;padding:4px 0;">QUI</div>
+    <div style="text-align:center;font-size:9px;font-weight:800;color:rgba(255,255,255,0.2);letter-spacing:1px;padding:4px 0;">SEX</div>
+    <div style="text-align:center;font-size:9px;font-weight:800;color:rgba(255,80,80,0.4);letter-spacing:1px;padding:4px 0;">SÁB</div>
+  </div>
+
+  <!-- Grid do mês -->
+  <div id="cal-grid" style="display:grid;grid-template-columns:repeat(7,1fr);padding:0 12px;gap:3px;flex-shrink:0;"></div>
+
+  <!-- Lista de eventos do mês -->
+  <div style="flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:16px 16px 100px;">
+    <div style="font-size:9px;font-weight:800;color:rgba(255,255,255,0.2);letter-spacing:2px;text-transform:uppercase;margin-bottom:10px;">PRÓXIMOS EVENTOS</div>
+    <div id="cal-lista-eventos" style="display:flex;flex-direction:column;gap:8px;"></div>
+  </div>
+</div>
+
+<!-- Formulário de novo/editar evento -->
+<div id="cal-form-overlay" style="display:none;position:fixed;inset:0;z-index:200200;background:rgba(0,0,0,0.7);backdrop-filter:blur(8px);align-items:flex-end;justify-content:center;">
+  <div style="background:#0d0d18;border-radius:24px 24px 0 0;border:1px solid rgba(255,255,255,0.08);border-bottom:none;width:100%;max-width:500px;padding:24px 20px 40px;max-height:90vh;overflow-y:auto;">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;">
+      <div id="cal-form-titulo" style="font-size:16px;font-weight:900;color:#fff;">Novo Evento</div>
+      <button onclick="fecharFormEvento()" style="width:30px;height:30px;border-radius:50%;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.1);color:rgba(255,255,255,0.4);cursor:pointer;display:flex;align-items:center;justify-content:center;touch-action:manipulation;">×</button>
+    </div>
+
+    <!-- Nome -->
+    <div style="margin-bottom:14px;">
+      <div style="font-size:9px;font-weight:800;color:rgba(255,255,255,0.3);letter-spacing:2px;text-transform:uppercase;margin-bottom:6px;">NOME DO EVENTO</div>
+      <input id="cal-inp-nome" type="text" maxlength="60" placeholder="Ex: Culto dominical, Ensaio da banda..."
+        style="width:100%;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);border-radius:12px;padding:11px 14px;color:#fff;font-size:14px;font-weight:600;outline:none;font-family:inherit;box-sizing:border-box;">
+    </div>
+
+    <!-- Tipo -->
+    <div style="margin-bottom:14px;">
+      <div style="font-size:9px;font-weight:800;color:rgba(255,255,255,0.3);letter-spacing:2px;text-transform:uppercase;margin-bottom:8px;">TIPO</div>
+      <div id="cal-tipos" style="display:flex;flex-wrap:wrap;gap:6px;"></div>
+    </div>
+
+    <!-- Data e hora -->
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px;">
+      <div>
+        <div style="font-size:9px;font-weight:800;color:rgba(255,255,255,0.3);letter-spacing:2px;text-transform:uppercase;margin-bottom:6px;">DATA</div>
+        <input id="cal-inp-data" type="date" style="width:100%;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);border-radius:12px;padding:11px 12px;color:#fff;font-size:13px;font-weight:700;outline:none;font-family:inherit;box-sizing:border-box;color-scheme:dark;">
+      </div>
+      <div>
+        <div style="font-size:9px;font-weight:800;color:rgba(255,255,255,0.3);letter-spacing:2px;text-transform:uppercase;margin-bottom:6px;">HORA</div>
+        <input id="cal-inp-hora" type="time" style="width:100%;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);border-radius:12px;padding:11px 12px;color:#fff;font-size:13px;font-weight:700;outline:none;font-family:inherit;box-sizing:border-box;color-scheme:dark;">
+      </div>
+    </div>
+
+    <!-- Local -->
+    <div style="margin-bottom:14px;">
+      <div style="font-size:9px;font-weight:800;color:rgba(255,255,255,0.3);letter-spacing:2px;text-transform:uppercase;margin-bottom:6px;">LOCAL <span style="opacity:0.4;font-weight:600;letter-spacing:0;">(opcional)</span></div>
+      <input id="cal-inp-local" type="text" maxlength="80" placeholder="Ex: Igreja Central, Studio X..."
+        style="width:100%;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);border-radius:12px;padding:11px 14px;color:#fff;font-size:13px;font-weight:600;outline:none;font-family:inherit;box-sizing:border-box;">
+    </div>
+
+    <!-- Notas -->
+    <div style="margin-bottom:20px;">
+      <div style="font-size:9px;font-weight:800;color:rgba(255,255,255,0.3);letter-spacing:2px;text-transform:uppercase;margin-bottom:6px;">ANOTAÇÕES <span style="opacity:0.4;font-weight:600;letter-spacing:0;">(opcional)</span></div>
+      <textarea id="cal-inp-notas" rows="3" maxlength="300" placeholder="Repertório, avisos, lembretes..."
+        style="width:100%;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);border-radius:12px;padding:11px 14px;color:#fff;font-size:13px;font-weight:600;outline:none;font-family:inherit;resize:none;box-sizing:border-box;"></textarea>
+    </div>
+
+    <!-- Notificações -->
+    <div style="margin-bottom:20px;">
+      <div style="font-size:9px;font-weight:800;color:rgba(255,255,255,0.3);letter-spacing:2px;text-transform:uppercase;margin-bottom:8px;">NOTIFICAR</div>
+      <div style="display:flex;flex-wrap:wrap;gap:6px;" id="cal-notif-chips"></div>
+    </div>
+
+    <!-- Botões -->
+    <div style="display:flex;gap:10px;">
+      <button id="cal-btn-deletar" onclick="calDeletarEvento()" style="display:none;flex:1;padding:13px;border-radius:14px;background:rgba(255,60,60,0.08);border:1px solid rgba(255,60,60,0.25);color:rgba(255,100,100,0.8);font-size:12px;font-weight:900;cursor:pointer;font-family:inherit;touch-action:manipulation;">Excluir</button>
+      <button onclick="calSalvarEvento()" style="flex:2;padding:13px;border-radius:14px;background:rgba(10,158,110,0.15);border:1px solid rgba(10,158,110,0.4);color:#0A9E6E;font-size:13px;font-weight:900;cursor:pointer;font-family:inherit;touch-action:manipulation;transition:0.15s;" onmouseenter="this.style.background='rgba(10,158,110,0.25)'" onmouseleave="this.style.background='rgba(10,158,110,0.15)'">Salvar Evento</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ═══════════════════════════════════════════════════
+// CALENDÁRIO — lógica completa
+// ═══════════════════════════════════════════════════
+
+var _calEventos = [];
+var _calAno  = new Date().getFullYear();
+var _calMes  = new Date().getMonth(); // 0-11
+var _calEditId = null;
+var _calTipoSel = 'show';
+var _calNotifSel = ['dia', 'antes1d', 'antes7d'];
+
+var CAL_KEY = 'map_cal_eventos_v1';
+
+var CAL_TIPOS = [
+  { id:'show',    label:'🎸 Show',      cor:'rgba(138,92,246,0.7)'  },
+  { id:'culto',   label:'✝️ Culto',     cor:'rgba(10,158,110,0.7)'  },
+  { id:'ensaio',  label:'🥁 Ensaio',    cor:'rgba(255,165,0,0.7)'   },
+  { id:'aula',    label:'🎓 Aula',      cor:'rgba(59,130,246,0.7)'  },
+  { id:'lazer',   label:'🎉 Lazer',     cor:'rgba(236,72,153,0.7)'  },
+  { id:'saude',   label:'💪 Academia',  cor:'rgba(34,197,94,0.7)'   },
+  { id:'pessoal', label:'✂️ Pessoal',   cor:'rgba(251,191,36,0.7)'  },
+  { id:'outro',   label:'📌 Outro',     cor:'rgba(156,163,175,0.7)' }
+];
+
+var CAL_NOTIFS = [
+  { id:'dia',     label:'No dia (8h)' },
+  { id:'antes1d', label:'1 dia antes' },
+  { id:'antes7d', label:'1 semana antes' }
+];
+
+var MESES_PT = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
+
+function _calCarregar() {
+  try { _calEventos = _lsGet(CAL_KEY, []) || []; } catch(e) { _calEventos = []; }
+}
+function _calSalvarLS() {
+  _lsSet(CAL_KEY, _calEventos);
+}
+
+function abrirCalendario() {
+  _calCarregar();
+  var el = document.getElementById('cal-overlay');
+  el.style.display = 'flex';
+  requestAnimationFrame(function(){ el.style.opacity = '1'; });
+  _calAno = new Date().getFullYear();
+  _calMes = new Date().getMonth();
+  _calRenderizar();
+}
+
+function fecharCalendario() {
+  document.getElementById('cal-overlay').style.display = 'none';
+}
+
+function calNavMes(dir) {
+  _calMes += dir;
+  if (_calMes > 11) { _calMes = 0; _calAno++; }
+  if (_calMes < 0)  { _calMes = 11; _calAno--; }
+  _calRenderizar();
+}
+
+function _calRenderizar() {
+  // Labels
+  var label = MESES_PT[_calMes] + ' ' + _calAno;
+  document.getElementById('cal-nav-label').innerText = label;
+  document.getElementById('cal-mes-label').innerText = label;
+
+  // Grid
+  var grid = document.getElementById('cal-grid');
+  grid.innerHTML = '';
+  var primeiroDia = new Date(_calAno, _calMes, 1).getDay(); // 0=dom
+  var totalDias   = new Date(_calAno, _calMes + 1, 0).getDate();
+  var hoje = new Date();
+  var hojeStr = hoje.getFullYear() + '-' + String(hoje.getMonth()+1).padStart(2,'0') + '-' + String(hoje.getDate()).padStart(2,'0');
+
+  // Células vazias antes do dia 1
+  for (var i = 0; i < primeiroDia; i++) {
+    grid.appendChild(_calCelula('', false, false, null));
+  }
+
+  for (var d = 1; d <= totalDias; d++) {
+    var dataStr = _calAno + '-' + String(_calMes+1).padStart(2,'0') + '-' + String(d).padStart(2,'0');
+    var evsDia  = _calEventos.filter(function(e){ return e.data === dataStr; });
+    var isHoje  = dataStr === hojeStr;
+    grid.appendChild(_calCelula(d, evsDia.length > 0, isHoje, evsDia, dataStr));
+  }
+
+  // Lista de próximos eventos
+  _calRenderLista();
+}
+
+function _calCelula(dia, temEvento, isHoje, evs, dataStr) {
+  var cel = document.createElement('div');
+  cel.style.cssText = 'text-align:center;padding:6px 2px;border-radius:8px;cursor:' + (dia ? 'pointer' : 'default') + ';min-height:42px;display:flex;flex-direction:column;align-items:center;justify-content:flex-start;gap:3px;transition:background 0.15s;' + (isHoje ? 'background:rgba(10,158,110,0.15);border:1px solid rgba(10,158,110,0.4);' : 'border:1px solid transparent;');
+  if (dia) {
+    cel.innerHTML = '<span style="font-size:13px;font-weight:' + (isHoje ? '900' : '600') + ';color:' + (isHoje ? '#0A9E6E' : 'rgba(255,255,255,0.8)') + ';">' + dia + '</span>';
+    if (temEvento) {
+      // Pontos coloridos por tipo
+      var dots = document.createElement('div');
+      dots.style.cssText = 'display:flex;gap:2px;flex-wrap:wrap;justify-content:center;max-width:28px;';
+      var vistos = {};
+      evs.forEach(function(ev) {
+        if (vistos[ev.tipo]) return;
+        vistos[ev.tipo] = true;
+        var tipo = CAL_TIPOS.find(function(t){ return t.id === ev.tipo; }) || CAL_TIPOS[7];
+        var dot = document.createElement('div');
+        dot.style.cssText = 'width:5px;height:5px;border-radius:50%;background:' + tipo.cor + ';';
+        dots.appendChild(dot);
+      });
+      cel.appendChild(dots);
+    }
+    cel.addEventListener('click', function(){ abrirFormEvento(null, dataStr); });
+    cel.addEventListener('mouseenter', function(){ if (!isHoje) cel.style.background='rgba(255,255,255,0.04)'; });
+    cel.addEventListener('mouseleave', function(){ if (!isHoje) cel.style.background=''; });
+  }
+  return cel;
+}
+
+function _calRenderLista() {
+  var lista = document.getElementById('cal-lista-eventos');
+  var hoje = new Date();
+  var hojeStr = hoje.getFullYear() + '-' + String(hoje.getMonth()+1).padStart(2,'0') + '-' + String(hoje.getDate()).padStart(2,'0');
+
+  // Eventos do mês atual em diante, ordenados por data
+  var proximos = _calEventos
+    .filter(function(e){ return e.data >= hojeStr; })
+    .sort(function(a,b){ return a.data.localeCompare(b.data) || (a.hora||'').localeCompare(b.hora||''); })
+    .slice(0, 20);
+
+  if (!proximos.length) {
+    lista.innerHTML = '<div style="text-align:center;padding:32px 0;color:rgba(255,255,255,0.2);font-size:13px;">Nenhum evento próximo</div>';
+    return;
+  }
+
+  lista.innerHTML = proximos.map(function(ev) {
+    var tipo = CAL_TIPOS.find(function(t){ return t.id === ev.tipo; }) || CAL_TIPOS[7];
+    var dataFmt = _calFormatarData(ev.data);
+    return '<div onclick="abrirFormEvento(\'' + ev.id + '\')" style="display:flex;align-items:center;gap:12px;padding:12px 14px;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.07);border-radius:14px;cursor:pointer;touch-action:manipulation;" onmouseenter="this.style.background=\'rgba(255,255,255,0.06)\'" onmouseleave="this.style.background=\'rgba(255,255,255,0.03)\'">'
+      + '<div style="width:36px;height:36px;border-radius:10px;background:' + tipo.cor.replace('0.7','0.15') + ';border:1px solid ' + tipo.cor + ';display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0;">' + tipo.label.split(' ')[0] + '</div>'
+      + '<div style="flex:1;min-width:0;">'
+      + '<div style="font-size:13px;font-weight:800;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + _ve(ev.nome) + '</div>'
+      + '<div style="font-size:10px;color:rgba(255,255,255,0.35);margin-top:2px;">' + dataFmt + (ev.hora ? ' · ' + ev.hora : '') + (ev.local ? ' · ' + _ve(ev.local) : '') + '</div>'
+      + '</div>'
+      + '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.2)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>'
+      + '</div>';
+  }).join('');
+}
+
+function _calFormatarData(dataStr) {
+  if (!dataStr) return '';
+  var partes = dataStr.split('-');
+  var d = new Date(parseInt(partes[0]), parseInt(partes[1])-1, parseInt(partes[2]));
+  var hoje = new Date(); hoje.setHours(0,0,0,0);
+  var diff = Math.round((d - hoje) / 86400000);
+  var diasSem = ['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'];
+  var base = diasSem[d.getDay()] + ', ' + partes[2] + '/' + partes[1];
+  if (diff === 0) return '🔴 Hoje — ' + base;
+  if (diff === 1) return '🟡 Amanhã — ' + base;
+  if (diff <= 7)  return '🟢 Em ' + diff + 'd — ' + base;
+  return base;
+}
+
+// ── Formulário ───────────────────────────────────────────────
+function abrirFormEvento(id, dataPreSel) {
+  _calEditId = id || null;
+  var ev = id ? _calEventos.find(function(e){ return e.id === id; }) : null;
+
+  document.getElementById('cal-form-titulo').innerText = ev ? 'Editar Evento' : 'Novo Evento';
+  document.getElementById('cal-inp-nome').value  = ev ? ev.nome  : '';
+  document.getElementById('cal-inp-data').value  = ev ? ev.data  : (dataPreSel || '');
+  document.getElementById('cal-inp-hora').value  = ev ? (ev.hora || '') : '';
+  document.getElementById('cal-inp-local').value = ev ? (ev.local || '') : '';
+  document.getElementById('cal-inp-notas').value = ev ? (ev.notas || '') : '';
+  document.getElementById('cal-btn-deletar').style.display = ev ? '' : 'none';
+
+  _calTipoSel   = ev ? (ev.tipo || 'show') : 'show';
+  _calNotifSel  = ev ? (ev.notifs || ['dia','antes1d']) : ['dia','antes1d'];
+
+  _renderTiposForm();
+  _renderNotifsForm();
+
+  var el = document.getElementById('cal-form-overlay');
+  el.style.display = 'flex';
+}
+
+function fecharFormEvento() {
+  document.getElementById('cal-form-overlay').style.display = 'none';
+}
+
+function _renderTiposForm() {
+  var cont = document.getElementById('cal-tipos');
+  cont.innerHTML = CAL_TIPOS.map(function(t) {
+    var sel = t.id === _calTipoSel;
+    return '<button onclick="_calSelecionarTipo(\'' + t.id + '\')" style="padding:7px 12px;border-radius:20px;border:1px solid ' + (sel ? t.cor : 'rgba(255,255,255,0.1)') + ';background:' + (sel ? t.cor.replace('0.7','0.15') : 'rgba(255,255,255,0.04)') + ';color:' + (sel ? '#fff' : 'rgba(255,255,255,0.5)') + ';font-size:11px;font-weight:' + (sel ? '900' : '600') + ';cursor:pointer;font-family:inherit;touch-action:manipulation;transition:0.15s;" id="cal-tipo-' + t.id + '">' + t.label + '</button>';
+  }).join('');
+}
+
+function _calSelecionarTipo(id) {
+  _calTipoSel = id;
+  _renderTiposForm();
+}
+
+function _renderNotifsForm() {
+  var cont = document.getElementById('cal-notif-chips');
+  cont.innerHTML = CAL_NOTIFS.map(function(n) {
+    var sel = _calNotifSel.indexOf(n.id) !== -1;
+    return '<button onclick="_calToggleNotif(\'' + n.id + '\')" style="padding:7px 12px;border-radius:20px;border:1px solid ' + (sel ? 'rgba(138,92,246,0.6)' : 'rgba(255,255,255,0.1)') + ';background:' + (sel ? 'rgba(138,92,246,0.15)' : 'rgba(255,255,255,0.04)') + ';color:' + (sel ? '#a78bfa' : 'rgba(255,255,255,0.4)') + ';font-size:11px;font-weight:' + (sel ? '800' : '600') + ';cursor:pointer;font-family:inherit;touch-action:manipulation;transition:0.15s;">' + n.label + '</button>';
+  }).join('');
+}
+
+function _calToggleNotif(id) {
+  var idx = _calNotifSel.indexOf(id);
+  if (idx === -1) _calNotifSel.push(id);
+  else _calNotifSel.splice(idx, 1);
+  _renderNotifsForm();
+}
+
+function calSalvarEvento() {
+  var nome  = (document.getElementById('cal-inp-nome').value || '').trim();
+  var data  = document.getElementById('cal-inp-data').value;
+  var hora  = document.getElementById('cal-inp-hora').value;
+  var local = (document.getElementById('cal-inp-local').value || '').trim();
+  var notas = (document.getElementById('cal-inp-notas').value || '').trim();
+
+  if (!nome) { showToast('Digite o nome do evento'); return; }
+  if (!data) { showToast('Escolha a data'); return; }
+
+  if (_calEditId) {
+    var idx = _calEventos.findIndex(function(e){ return e.id === _calEditId; });
+    if (idx !== -1) {
+      _calEventos[idx] = { id:_calEditId, nome, tipo:_calTipoSel, data, hora, local, notas, notifs:[..._calNotifSel] };
+    }
+  } else {
+    var novoEv = {
+      id: 'ev_' + Date.now() + '_' + Math.random().toString(36).slice(2,6),
+      nome, tipo:_calTipoSel, data, hora, local, notas,
+      notifs: [..._calNotifSel]
+    };
+    _calEventos.push(novoEv);
+  }
+
+  _calSalvarLS();
+  fecharFormEvento();
+  _calRenderizar();
+  _calAgendarPushEventos();
+
+  // Notif in-app
+  adicionarNotif('event', '📅 ' + nome, _calFormatarData(data) + (hora ? ' · ' + hora : ''), 'cal_' + data + '_' + nome);
+  showToast('Evento salvo!', 'success');
+}
+
+function calDeletarEvento() {
+  if (!_calEditId) return;
+  _calEventos = _calEventos.filter(function(e){ return e.id !== _calEditId; });
+  _calSalvarLS();
+  fecharFormEvento();
+  _calRenderizar();
+  showToast('Evento excluído');
+}
+
+// ── Push notifications para o calendário ─────────────────────
+function _calAgendarPushEventos() {
+  if (!_pushSW || !navigator.serviceWorker.controller) return;
+  var agora = new Date();
+  var hoje  = new Date(agora.getFullYear(), agora.getMonth(), agora.getDate());
+
+  _calEventos.forEach(function(ev) {
+    if (!ev.data || !ev.nome || !ev.notifs) return;
+    var partes = ev.data.split('-');
+    var diaEv  = new Date(parseInt(partes[0]), parseInt(partes[1])-1, parseInt(partes[2]));
+    var diff   = Math.round((diaEv - hoje) / 86400000);
+
+    ev.notifs.forEach(function(notifId) {
+      var ts = null; var tag = null; var titulo = null; var body = null;
+      if (notifId === 'dia' && diff === 0) {
+        var h = ev.hora ? parseInt(ev.hora.split(':')[0]) : 8;
+        var m = ev.hora ? parseInt(ev.hora.split(':')[1]) : 0;
+        ts = new Date(diaEv.getFullYear(), diaEv.getMonth(), diaEv.getDate(), h > 0 ? h - 1 : 8, m, 0).getTime();
+        tag = 'cal-dia-' + ev.id; titulo = '📅 Hoje: ' + ev.nome; body = ev.hora ? 'Começa às ' + ev.hora + (ev.local ? ' · ' + ev.local : '') : (ev.local || 'Lembre-se do evento!');
+      } else if (notifId === 'antes1d' && diff === 1) {
+        ts = new Date(hoje.getFullYear(), hoje.getMonth(), hoje.getDate(), 20, 0, 0).getTime();
+        tag = 'cal-ant1-' + ev.id; titulo = '⏰ Amanhã: ' + ev.nome; body = ev.hora ? 'Às ' + ev.hora + (ev.local ? ' · ' + ev.local : '') : (ev.local || '');
+      } else if (notifId === 'antes7d' && diff === 7) {
+        ts = new Date(hoje.getFullYear(), hoje.getMonth(), hoje.getDate(), 9, 0, 0).getTime();
+        tag = 'cal-ant7-' + ev.id; titulo = '📆 Em 7 dias: ' + ev.nome; body = _calFormatarData(ev.data) + (ev.local ? ' · ' + ev.local : '');
+      }
+      if (ts && ts > Date.now()) _pushEnviarParaSW(titulo, body, ts, tag);
+    });
+  });
+}
+
+// ── Checagem diária in-app (ao abrir o app) ──────────────────
+function _calChecarNotificacoesHoje() {
+  _calCarregar();
+  if (!_calEventos.length) return;
+  var agora = new Date();
+  var hoje  = new Date(agora.getFullYear(), agora.getMonth(), agora.getDate());
+
+  _calEventos.forEach(function(ev) {
+    if (!ev.data || !ev.nome || !ev.notifs) return;
+    var partes = ev.data.split('-');
+    var diaEv  = new Date(parseInt(partes[0]), parseInt(partes[1])-1, parseInt(partes[2]));
+    var diff   = Math.round((diaEv - hoje) / 86400000);
+
+    if (ev.notifs.indexOf('dia') !== -1 && diff === 0)
+      adicionarNotif('event', '📅 Hoje: ' + ev.nome, ev.hora ? 'Às ' + ev.hora + (ev.local ? ' · ' + ev.local : '') : (ev.local || ''), 'calh_' + ev.id);
+    if (ev.notifs.indexOf('antes1d') !== -1 && diff === 1)
+      adicionarNotif('event', '⏰ Amanhã: ' + ev.nome, ev.hora ? 'Às ' + ev.hora : (ev.local || ''), 'cala1_' + ev.id);
+    if (ev.notifs.indexOf('antes7d') !== -1 && diff === 7)
+      adicionarNotif('event', '📆 Em 7 dias: ' + ev.nome, _calFormatarData(ev.data), 'cala7_' + ev.id);
+  });
+}
+
+// Roda ao iniciar o app
+window.addEventListener('firebase-ready', function() {
+  setTimeout(_calChecarNotificacoesHoje, 3000);
+});
 </script>
 
 <script>
