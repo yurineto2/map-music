@@ -3632,7 +3632,7 @@ body { font-family: -apple-system, 'Inter', BlinkMacSystemFont, 'Segoe UI', sans
 
 /* Dropdown do menu */
 .evento-menu-drop {
-  position: fixed; z-index: 9999;
+  position: fixed; z-index: 400000;
   background: #17171f; border: 1px solid rgba(255,255,255,0.1);
   border-radius: 12px; overflow: hidden;
   box-shadow: 0 8px 32px rgba(0,0,0,0.6);
@@ -4595,8 +4595,9 @@ body { font-family: -apple-system, 'Inter', BlinkMacSystemFont, 'Segoe UI', sans
   #btn-sala { padding: 6px 12px; font-size: 9px; }
 
   /* Layout */
-  .main-layout { padding: 10px; gap: 14px; align-items: start; }
+  .main-layout { padding: 10px; gap: 14px; align-items: start; height: fit-content !important; }
   aside { height: fit-content !important; align-self: start; }
+  .notes-section { height: fit-content !important; align-self: start; }
   .section-grid { grid-template-columns: 1fr; }
 
   /* Toolbar */
@@ -10088,8 +10089,11 @@ function scheduler() {
   if (!isPlaying) return; // segurança: não reinicia se parou
   // Evita rafaga de clicks ao voltar do background
   if (nextNoteTime < actx.currentTime - 0.5) nextNoteTime = actx.currentTime;
-  while (nextNoteTime < actx.currentTime + 0.1) { playClick(); nextNoteTime += 60.0 / bpm; }
-  timerID = setTimeout(scheduler, 25);
+  // Lookahead de 0.2s — agenda mais à frente, tolerando atrasos do setTimeout
+  // causados por Firebase polling, economia de energia ou aba em background
+  while (nextNoteTime < actx.currentTime + 0.2) { playClick(); nextNoteTime += 60.0 / bpm; }
+  // 50ms — menos chamadas por segundo, menos competição com o thread JS
+  timerID = setTimeout(scheduler, 50);
 }
 function togglePlay() {
   const actx = _getAudioCtx(); // usa sempre o helper seguro
