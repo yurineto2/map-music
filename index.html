@@ -4533,11 +4533,11 @@ body { font-family: -apple-system, 'Inter', BlinkMacSystemFont, 'Segoe UI', sans
 .btn-pad-flutuante.pad-ativo { display: flex; }
 
 .btn-save-vitro {
-  position: fixed; bottom: calc(24px + env(safe-area-inset-bottom, 0px)) !important; left: 20px; z-index: 900;
+  position: fixed; bottom: 30px; left: 20px; z-index: 900;
   background: var(--glass-bg); backdrop-filter: blur(10px);
   border: 1px solid var(--glass-border);
   color: rgba(255,255,255,0.4);
-  padding: 11px 22px; border-radius: var(--radius-full);
+  padding: 10px 20px; border-radius: var(--radius-full);
   cursor: pointer; font-weight: 500; font-size: 10px;
   letter-spacing: 1.5px; text-transform: uppercase;
   transition: background 0.3s, color 0.3s, border-color 0.3s,
@@ -4613,10 +4613,10 @@ body { font-family: -apple-system, 'Inter', BlinkMacSystemFont, 'Segoe UI', sans
   /* Sync bar */
   .sync-bar { font-size: 9px; padding: 6px 12px; gap: 8px; }
 
-  /* Botões do fundo — alinhados na mesma altura */
-  .btn-save-vitro { font-size: 10px; padding: 11px 22px; bottom: calc(16px + env(safe-area-inset-bottom, 0px)) !important; left: 12px !important; }
+  /* Botões do fundo — modo show alinhado com salvar música */
+  .btn-save-vitro { font-size: 9px; padding: 10px 16px; }
   .perf-bottom-panel { bottom: calc(80px + env(safe-area-inset-bottom, 0px)); right: 12px; }
-  .mode-show-container { padding: 11px 22px !important; font-size: 10px !important; bottom: calc(16px + env(safe-area-inset-bottom, 0px)) !important; right: 12px !important; }
+  .mode-show-container { padding: 10px 16px !important; font-size: 9px !important; bottom: 30px !important; right: 12px !important; }
 
   /* Preview cifra */
   .preview-section { padding: 8px 10px; }
@@ -4735,19 +4735,16 @@ body.performance-mode .scroll-controls { display: none; } /* movido para painel 
   align-items: flex-end;
 }
 /* Botao SAIR DO SHOW: posicao fixa independente, canto inferior direito */
+/* Botão modo show — posição + estilo */
 .mode-show-container {
   position: fixed !important;
-  bottom: calc(24px + env(safe-area-inset-bottom, 0px)) !important;
+  bottom: 30px !important;
   right: 20px !important;
   z-index: 2100 !important;
-}
-
-/* Botão modo show — vidro verde piscando */
-.mode-show-container {
   background: rgba(10,158,110,0.08);
   border: 1px solid rgba(10,158,110,0.4);
   color: var(--accent-primary);
-  padding: 11px 22px;
+  padding: 10px 20px;
   border-radius: var(--radius-full); cursor: pointer;
   font-weight: 900; font-size: 11px; letter-spacing: 2px;
   text-transform: uppercase;
