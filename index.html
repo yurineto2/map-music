@@ -17263,22 +17263,46 @@ function _ativarFallbackWakeLock() {
   } catch(e) { _ativarTimerWakeLock(); }
 }
 
+let _audioWakeLockCtx = null;
+let _audioWakeLockSrc = null;
+
+function _ativarAudioWakeLock() {
+  if (_audioWakeLockCtx) return;
+  try {
+    var AC = window.AudioContext || window.webkitAudioContext;
+    if (!AC) return;
+    _audioWakeLockCtx = new AC();
+    // Buffer silencioso de 1 sample em loop — mantém o audio engine ativo
+    // sem emitir nenhum som audível. Impede hibernação no iOS/Safari.
+    var buf = _audioWakeLockCtx.createBuffer(1, 1, 22050);
+    _audioWakeLockSrc = _audioWakeLockCtx.createBufferSource();
+    _audioWakeLockSrc.buffer = buf;
+    _audioWakeLockSrc.loop = true;
+    _audioWakeLockSrc.connect(_audioWakeLockCtx.destination);
+    _audioWakeLockSrc.start(0);
+  } catch(e) {}
+}
+
 function _ativarTimerWakeLock() {
-  // Último recurso: faz algo mínimo a cada 20s para manter CPU ativo
+  // Mantido como último recurso — agora complementado pelo AudioContext
+  _ativarAudioWakeLock();
   if (_wakeLockTimer) return;
   _wakeLockTimer = setInterval(function() {
-    // Pequena operação no DOM — suficiente para alguns browsers não dormirem
     if (document.visibilityState === 'visible') {
-      var t = document.title;
-      document.title = t;
+      // Reconecta o AudioContext se o sistema o suspendeu
+      if (_audioWakeLockCtx && _audioWakeLockCtx.state === 'suspended') {
+        _audioWakeLockCtx.resume().catch(function() {});
+      }
     }
-  }, 20000);
+  }, 15000);
 }
 
 function liberarWakeLock() {
   if (_wakeLock) { try { _wakeLock.release(); } catch(e) {} _wakeLock = null; }
   if (_noSleepVideo) { _noSleepVideo.pause(); _noSleepVideo.remove(); _noSleepVideo = null; }
   if (_wakeLockTimer) { clearInterval(_wakeLockTimer); _wakeLockTimer = null; }
+  if (_audioWakeLockSrc) { try { _audioWakeLockSrc.stop(); } catch(e) {} _audioWakeLockSrc = null; }
+  if (_audioWakeLockCtx) { try { _audioWakeLockCtx.close(); } catch(e) {} _audioWakeLockCtx = null; }
 }
 
 // Re-ativa ao voltar ao tab ou desbloquear ecrã
@@ -17291,6 +17315,10 @@ document.addEventListener('visibilitychange', function() {
     // Re-ativa vídeo fallback iOS se parou
     if (_noSleepVideo && _noSleepVideo.paused) {
       _noSleepVideo.play().catch(function() {});
+    }
+    // Reconecta AudioContext se o sistema suspendeu
+    if (_audioWakeLockCtx && _audioWakeLockCtx.state === 'suspended') {
+      _audioWakeLockCtx.resume().catch(function() {});
     }
     // Se nenhum método ativo, tenta de novo
     if (!_wakeLock && !_noSleepVideo && !_wakeLockTimer) {
