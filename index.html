@@ -23534,7 +23534,8 @@ function _overlayBgBottom() {
 function _boxBg(extra) {
   return 'background:#0d0d1a;border:1px solid rgba(255,255,255,0.08);border-radius:20px;' + (extra || '');
 }
-function _txtColor() { return '#fff'; }
+function _txtColor()    { return '#fff'; }
+function _txtSecColor() { return 'rgba(255,255,255,0.45)'; }
 
 function _confirmarAcao(titulo, desc, labelOk, corOk, callback) {
   var old = document.querySelector('[data-confirmar-modal]');
