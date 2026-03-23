@@ -9633,7 +9633,9 @@ function _desativarModoShow() {
   document.getElementById('mode-text').innerText = 'MODO SHOW';
   stopScroll();
   window.scrollTo(0, 0);
-  liberarWakeLock();
+  // Libera apenas Screen Wake Lock API — mantém fallback de áudio/vídeo ativo
+  // para evitar hibernação fora do show também (iOS/Safari precisam disso)
+  if (_wakeLock) { try { _wakeLock.release(); } catch(e) {} _wakeLock = null; }
   limparShowEvento();
   const _b = document.getElementById('perf-evento-badge');
   if (_b) _b.style.display = 'none';
@@ -16153,6 +16155,10 @@ window.addEventListener('pageshow', function(e) {
   _fbMarcarOnline();
   var actx = _getAudioCtx();
   if (actx && actx.state === 'suspended') actx.resume();
+  // Reativar WakeLock — bfcache destrói o fallback no iOS
+  if (!_wakeLock && !_noSleepVideo && !_audioWakeLockCtx && !_wakeLockTimer) {
+    ativarWakeLock();
+  }
   // Retomar scroll se estava ativo
   if (_scrollSpeedBefore > 0) {
     _setScroll(_scrollSpeedBefore);
@@ -17292,20 +17298,23 @@ function liberarWakeLock() {
 // Re-ativa ao voltar ao tab ou desbloquear ecrã
 document.addEventListener('visibilitychange', function() {
   if (document.visibilityState === 'visible') {
-    // Re-adquire Wake Lock API se foi perdido
+    // Re-adquire Screen Wake Lock API se foi perdido pelo sistema
     if (!_wakeLock && 'wakeLock' in navigator && navigator.wakeLock) {
-      ativarWakeLock();
+      navigator.wakeLock.request('screen').then(function(lock) {
+        _wakeLock = lock;
+        lock.addEventListener('release', function() { _wakeLock = null; });
+      }).catch(function() {});
     }
     // Re-ativa vídeo fallback iOS se parou
     if (_noSleepVideo && _noSleepVideo.paused) {
       _noSleepVideo.play().catch(function() {});
     }
-    // Reconecta AudioContext se o sistema suspendeu
+    // Reconecta AudioContext do WakeLock se o sistema suspendeu
     if (_audioWakeLockCtx && _audioWakeLockCtx.state === 'suspended') {
       _audioWakeLockCtx.resume().catch(function() {});
     }
-    // Se nenhum método ativo, tenta de novo
-    if (!_wakeLock && !_noSleepVideo && !_wakeLockTimer) {
+    // Fallback completamente destruído (ex: saiu do show) — relança tudo
+    if (!_wakeLock && !_noSleepVideo && !_audioWakeLockCtx && !_wakeLockTimer) {
       ativarWakeLock();
     }
   }
