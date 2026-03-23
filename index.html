@@ -9309,7 +9309,7 @@ function enviarAvisoSala() {
   var perfil = _getPerfilLocal();
   var uid    = _getUid();
   var hora   = new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
-  var avisoObj = { tipo: 'aviso', uid, nome: perfil.nome || 'Host', texto, _t: Date.now() };
+  var avisoObj = { tipo: 'aviso', uid, nome: perfil.nome || 'Host', texto, _t: String(Date.now()) };
   // Persiste estado + ultimoAviso em uma única chamada atômica — sem race condition
   if (window._fb && myRoomCode) {
     var estado = capturarEstado ? capturarEstado() : {};
@@ -9431,6 +9431,7 @@ async function entrarNaSala() {
 
   isViewer = true;
   window._emSala = true;
+  sessionStorage.removeItem('_sala_last_aviso_t'); // limpa para receber avisos do host
   atualizarLetreiroDrumCam();
   setConnStatus('Conectado!', 'success');
   // Disparar evento para solicitar permissão de notificação
@@ -9462,9 +9463,10 @@ async function entrarNaSala() {
       atualizarSyncBar();
       // Verifica aviso mais recente do host
       if (data.ultimoAviso && data.ultimoAviso._t) {
-        const lastT = parseInt(sessionStorage.getItem('_sala_last_aviso_t') || '0');
-        if (data.ultimoAviso._t > lastT) {
-          sessionStorage.setItem('_sala_last_aviso_t', String(data.ultimoAviso._t));
+        const avisoT = Number(data.ultimoAviso._t);
+        const lastT  = Number(sessionStorage.getItem('_sala_last_aviso_t') || '0');
+        if (avisoT > lastT) {
+          sessionStorage.setItem('_sala_last_aviso_t', String(avisoT));
           _mostrarAvisoBanner(data.ultimoAviso.nome || 'Host', data.ultimoAviso.texto || '');
         }
       }
@@ -14209,7 +14211,7 @@ function enviarFrasePronta(frase) {
   var perfil  = _getPerfilLocal();
   var uid     = _getUid();
   var hora    = new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
-  var avisoObj = { tipo: 'aviso', uid: uid, nome: perfil.nome || 'Host', texto: frase, _t: Date.now() };
+  var avisoObj = { tipo: 'aviso', uid: uid, nome: perfil.nome || 'Host', texto: frase, _t: String(Date.now()) };
   // Salva estado + ultimoAviso em chamada única — sem race condition
   if (window._fb && myRoomCode) {
     var estado = capturarEstado ? capturarEstado() : {};
