@@ -8317,6 +8317,28 @@ function _lsSet(key, val) {
   try { localStorage.setItem(key, JSON.stringify(val)); return true; }
   catch(e) { return false; }
 }
+
+// ── Tema claro/escuro ─────────────────────────────────────────────────────────
+function toggleTheme() {
+  var isLight = document.body.classList.toggle('theme-light');
+  _lsSet('map_pro_theme', isLight ? 'light' : 'dark');
+  var iconDark  = document.getElementById('theme-icon-dark');
+  var iconLight = document.getElementById('theme-icon-light');
+  if (iconDark)  iconDark.style.display  = isLight ? 'none'  : '';
+  if (iconLight) iconLight.style.display = isLight ? ''      : 'none';
+}
+// Restaura tema salvo ao carregar
+(function() {
+  var saved = _lsGet ? _lsGet('map_pro_theme', 'dark') : 'dark';
+  if (saved === 'light') {
+    document.body.classList.add('theme-light');
+    var iconDark  = document.getElementById('theme-icon-dark');
+    var iconLight = document.getElementById('theme-icon-light');
+    if (iconDark)  iconDark.style.display  = 'none';
+    if (iconLight) iconLight.style.display = '';
+  }
+})();
+// ── Fim Tema ──────────────────────────────────────────────────────────────────
 let perfilFotoBase64 = null; // foto atual em edição
 
 
@@ -9287,14 +9309,17 @@ function enviarAvisoSala() {
   var perfil = _getPerfilLocal();
   var uid    = _getUid();
   var hora   = new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
-  // Envia via Firebase mensagens da sala
   var avisoObj = { tipo: 'aviso', uid, nome: perfil.nome || 'Host', texto, _t: Date.now() };
-  window._fb.enviarMensagemSala(myRoomCode, avisoObj).catch(function() {});
-  // Persiste ultimoAviso na sala para viewers que já estão com polling ativo
+  // Persiste estado + ultimoAviso em uma única chamada atômica — sem race condition
   if (window._fb && myRoomCode) {
-    window._fb.atualizarEstadoSala && window._fb.atualizarEstadoSala(myRoomCode,
-      capturarEstado(), [uid, ...Object.keys(_viewersOnline || {})]).catch(function(){});
-    window._fb._set && window._fb._set('salas/' + myRoomCode, { ultimoAviso: avisoObj }, true).catch(function(){});
+    var estado = capturarEstado ? capturarEstado() : {};
+    var onlineUids = [uid, ...Object.keys(_viewersOnline || {})];
+    window._fb._set && window._fb._set('salas/' + myRoomCode, {
+      estado: JSON.stringify(estado),
+      online: onlineUids,
+      onlineCount: onlineUids.length,
+      ultimoAviso: avisoObj
+    }, true).catch(function(){});
   }
   // Registra localmente e atualiza lista
   _salaAvisos.unshift({ texto, hora });
@@ -9401,7 +9426,7 @@ async function entrarNaSala() {
   // Aplica estado atual da sala
   try {
     const estadoAtual = JSON.parse(salaData.estado || '{}');
-    if (estadoAtual && estadoAtual.bpm) aplicarEstado(estadoAtual);
+    if (estadoAtual && Object.keys(estadoAtual).length > 0) aplicarEstado(estadoAtual);
   } catch(e) {}
 
   isViewer = true;
@@ -9428,17 +9453,13 @@ async function entrarNaSala() {
     }
     try {
       const estado = JSON.parse(data.estado || '{}');
-      if (estado && estado.bpm) aplicarEstado(estado);
+      if (estado && Object.keys(estado).length > 0) aplicarEstado(estado);
       // Atualiza contagem online (lê onlineCount do Firestore)
       const total = data.onlineCount || (data.online || []).length || 1;
+      window._onlineCountCache = total;
       const sc = document.querySelector('#sync-guests-count');
       if (sc) sc.innerText = total + ' online';
-      // Também atualiza sync-bar do viewer
-      const guestsEl = document.getElementById('sync-guests');
-      if (guestsEl) {
-        const cnt = guestsEl.querySelector('#sync-guests-count');
-        if (cnt) cnt.innerText = total + ' online';
-      }
+      atualizarSyncBar();
       // Verifica aviso mais recente do host
       if (data.ultimoAviso && data.ultimoAviso._t) {
         const lastT = parseInt(sessionStorage.getItem('_sala_last_aviso_t') || '0');
@@ -9510,13 +9531,19 @@ function atualizarSyncBar(code) {
     codeEl.innerText = myRoomCode || code || '';
     // Usa _onlineCountCache (atualizado do Firestore) ou calcula localmente
     const total = window._onlineCountCache || (1 + Object.keys(_viewersOnline || {}).length);
+    guests.style.display = 'flex';
     guests.querySelector('#sync-guests-count').innerText = total + ' online';
   } else if (isViewer) {
     bar.classList.add('visible', 'viewer');
     label.innerText = 'A VER';
     codeEl.innerText = code || codeEl.innerText || '';
+    // Viewer também vê contagem online
+    const total = window._onlineCountCache || 1;
+    guests.style.display = 'flex';
+    guests.querySelector('#sync-guests-count').innerText = total + ' online';
   } else {
     bar.classList.remove('visible', 'viewer');
+    guests.style.display = 'none';
   }
 }
 
@@ -14179,17 +14206,24 @@ function toggleFrasesProntas() {
 
 function enviarFrasePronta(frase) {
   if (!isHost || !myRoomCode) return;
-  // Reutiliza a função existente de aviso
   var perfil  = _getPerfilLocal();
   var uid     = _getUid();
   var hora    = new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
   var avisoObj = { tipo: 'aviso', uid: uid, nome: perfil.nome || 'Host', texto: frase, _t: Date.now() };
-  window._fb && window._fb.enviarMensagemSala(myRoomCode, avisoObj).catch(function(){});
-  window._fb && window._fb._set && window._fb._set('salas/' + myRoomCode, { ultimoAviso: avisoObj }, true).catch(function(){});
+  // Salva estado + ultimoAviso em chamada única — sem race condition
+  if (window._fb && myRoomCode) {
+    var estado = capturarEstado ? capturarEstado() : {};
+    var onlineUids = [uid, ...Object.keys(_viewersOnline || {})];
+    window._fb._set && window._fb._set('salas/' + myRoomCode, {
+      estado: JSON.stringify(estado),
+      online: onlineUids,
+      onlineCount: onlineUids.length,
+      ultimoAviso: avisoObj
+    }, true).catch(function(){});
+  }
   _salaAvisos && _salaAvisos.unshift({ texto: frase, hora: hora });
   _renderAvisosChat && _renderAvisosChat();
   showToast('"' + frase + '" enviado!', 'success');
-  // Fecha o painel após enviar
   toggleFrasesProntas();
 }
 
