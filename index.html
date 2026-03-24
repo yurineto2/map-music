@@ -7760,6 +7760,8 @@ body.auth-pending #toast {
     <div class="modal-editar-title">Editar Música</div>
     <div class="modal-editar-label">Nome</div>
     <input type="text" id="editar-musica-nome" placeholder="Nome da música">
+    <div class="modal-editar-label">Artista</div>
+    <input type="text" id="editar-musica-artista" placeholder="Nome do artista">
     <div class="modal-editar-label">BPM</div>
     <input type="number" id="editar-musica-bpm" placeholder="BPM" min="40" max="300" inputmode="numeric">
     <div class="modal-editar-label" style="margin-top:10px;">Tags</div>
@@ -10091,7 +10093,8 @@ function playClick(time) {
   const osc = ctx.createOscillator();
   const env = ctx.createGain();
   osc.frequency.value = (window._metroFreq || 1000);
-  env.gain.setValueAtTime(0.8, time);
+  var _mvol = (typeof window._metroVol === 'number') ? window._metroVol : 0.8;
+  env.gain.setValueAtTime(_mvol, time);
   env.gain.exponentialRampToValueAtTime(0.001, time + 0.08);
 
   // Panner do click (L quando stereo ativo, centro quando não)
@@ -10560,6 +10563,9 @@ function saveSong() {
       + '<input id="_save-name-input" type="text" placeholder="Nome da música..." maxlength="80"'
       +   ' style="width:100%;padding:12px 14px;border-radius:12px;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.1);color:#fff;font-size:14px;font-family:inherit;outline:none;box-sizing:border-box;"'
       +   '>'
+      + '<input id="_save-artista-input" type="text" placeholder="Nome do artista..." maxlength="80"'
+      +   ' style="width:100%;padding:12px 14px;border-radius:12px;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.1);color:#fff;font-size:14px;font-family:inherit;outline:none;box-sizing:border-box;"'
+      +   '>'
       + '<div style="display:flex;gap:10px;">'
       + '<button id="_save-cancel" style="flex:1;padding:12px;border-radius:12px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);color:rgba(255,255,255,0.4);font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;touch-action:manipulation;">Cancelar</button>'
       + '<button id="_save-confirm" style="flex:2;padding:12px;border-radius:12px;background:#0A9E6E;border:none;color:#000;font-size:12px;font-weight:900;cursor:pointer;font-family:inherit;touch-action:manipulation;">Salvar</button>'
@@ -10567,12 +10573,16 @@ function saveSong() {
     document.body.appendChild(overlay);
     overlay.addEventListener('click', function(e){ if(e.target===overlay) overlay.remove(); });
     var inp = document.getElementById('_save-name-input');
+    var inpArtista = document.getElementById('_save-artista-input');
     setTimeout(function(){ inp.focus(); }, 100);
     var _doSave = function() {
       var name = inp.value.trim();
       if (!name) { inp.focus(); return; }
+      var artista = inpArtista.value.trim();
       overlay.remove();
-      var newSong = { name: name, bpm: bpm, parts: parts, id: Date.now(), favorite: false };
+      var agora = new Date();
+      var dataSalvo = agora.toLocaleDateString('pt-BR') + ' ' + agora.toLocaleTimeString('pt-BR', {hour:'2-digit',minute:'2-digit'});
+      var newSong = { name: name, artista: artista, dataSalvo: dataSalvo, bpm: bpm, parts: parts, id: Date.now(), favorite: false };
       songs.push(newSong);
       currentSongIndex = songs.length - 1;
       updateStorage();
@@ -11856,7 +11866,8 @@ function renderBiblioteca(filtro) {
       + '</div>'
       + '<div class="album-info">'
       +   '<div class="album-name" title="' + (s.name||'').replace(/"/g,'&quot;') + '">' + (s.name||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;') + '</div>'
-      +   '<div class="album-meta">' + (partes > 0 ? partes + ' parte' + (partes !== 1 ? 's' : '') : 'sem partes') + ' · ' + bpm + ' BPM</div>'
+      +   (s.artista ? '<div class="album-meta" style="color:rgba(255,255,255,0.6);font-weight:600;">' + s.artista.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;') + '</div>' : '')
+      +   '<div class="album-meta">' + (partes > 0 ? partes + ' parte' + (partes !== 1 ? 's' : '') : 'sem partes') + ' · ' + bpm + ' BPM' + (s.dataSalvo ? ' · ' + s.dataSalvo : '') + '</div>'
       +   (s.tags && s.tags.length ? '<div class="album-tags">' + s.tags.map(function(t){ return '<span class="album-tag">' + t + '</span>'; }).join('') + '</div>' : '')
       + '</div>'
       + '</div>';
@@ -12030,6 +12041,7 @@ function abrirEditarMusica(id, e) {
   if (!s) return;
   document.getElementById('editar-musica-nome').value = s.name;
   document.getElementById('editar-musica-bpm').value = s.bpm;
+  document.getElementById('editar-musica-artista').value = s.artista || '';
   _tagsSelecionadas = (s.tags || []).slice();
   _tagEditorRender();
   document.getElementById('modal-editar-musica').classList.add('show');
@@ -12045,12 +12057,14 @@ function fecharEditarMusica() {
 function salvarEditarMusica() {
   const nome = document.getElementById('editar-musica-nome').value.trim();
   const bpmVal = parseInt(document.getElementById('editar-musica-bpm').value);
+  const artistaVal = document.getElementById('editar-musica-artista').value.trim();
   if (!nome) { document.getElementById('editar-musica-nome').focus(); return; }
   const s = songs.find(x => x.id === editarMusicaId);
   if (s) {
     s.name = nome;
     if (!isNaN(bpmVal) && bpmVal >= 40 && bpmVal <= 860) s.bpm = bpmVal;
     s.tags = _tagsSelecionadas.slice();
+    s.artista = artistaVal || s.artista || '';
     updateStorage();
     showToast('Música atualizada!');
   }
@@ -19924,6 +19938,18 @@ function abrirConfigAudio() {
   fecharMenu();
   _getAudioChain(_getAudioCtx());
   _audioSincronizarUI();
+  // Sincroniza estado do stereo split
+  setTimeout(function() {
+    var ativo = (typeof _dcStereoAtivo !== 'undefined') ? _dcStereoAtivo : false;
+    var toggle = document.getElementById('audio-stereo-toggle');
+    var knob   = document.getElementById('audio-stereo-knob');
+    var clickLbl = document.getElementById('audio-stereo-click-label');
+    var instLbl  = document.getElementById('audio-stereo-inst-label');
+    if (toggle) toggle.style.background = ativo ? '#0A9E6E' : 'rgba(255,255,255,0.08)';
+    if (knob)   knob.style.transform    = ativo ? 'translateX(20px)' : 'translateX(0)';
+    if (clickLbl) { clickLbl.textContent = ativo ? 'Esquerdo (L)' : 'Centro'; clickLbl.style.color = ativo ? '#0A9E6E' : 'rgba(255,255,255,0.3)'; }
+    if (instLbl)  { instLbl.textContent  = ativo ? 'Direito (R)'  : 'Centro'; instLbl.style.color  = ativo ? '#a78bfa' : 'rgba(255,255,255,0.3)'; }
+  }, 50);
   const m = document.getElementById('modal-config-audio');
   if (m) m.style.display = 'flex';
   // Ajusta resolução do canvas para o pixel ratio do dispositivo
@@ -19950,6 +19976,19 @@ function fecharConfigAudio() {
   if (m) m.style.display = 'none';
 }
 
+function _audioToggleStereo() {
+  if (typeof dcToggleStereo === 'function') dcToggleStereo();
+  var ativo = (typeof _dcStereoAtivo !== 'undefined') ? _dcStereoAtivo : false;
+  var toggle = document.getElementById('audio-stereo-toggle');
+  var knob   = document.getElementById('audio-stereo-knob');
+  var clickLbl = document.getElementById('audio-stereo-click-label');
+  var instLbl  = document.getElementById('audio-stereo-inst-label');
+  if (toggle) toggle.style.background = ativo ? '#0A9E6E' : 'rgba(255,255,255,0.08)';
+  if (knob)   knob.style.transform    = ativo ? 'translateX(20px)' : 'translateX(0)';
+  if (clickLbl) { clickLbl.textContent = ativo ? 'Esquerdo (L)' : 'Centro'; clickLbl.style.color = ativo ? '#0A9E6E' : 'rgba(255,255,255,0.3)'; }
+  if (instLbl)  { instLbl.textContent  = ativo ? 'Direito (R)'  : 'Centro'; instLbl.style.color  = ativo ? '#a78bfa' : 'rgba(255,255,255,0.3)'; }
+}
+
 function _setVal(id, val) {
   const el = document.getElementById(id); if (el) el.value = val;
 }
@@ -19967,6 +20006,7 @@ function _audioGetState() {
     compThr:   parseFloat(localStorage.getItem('audio_comp_thr') || '-24'),
     compRatio: parseFloat(localStorage.getItem('audio_comp_ratio') || '4'),
     metroFreq: parseFloat(localStorage.getItem('audio_metro_freq') || '1000'),
+    metroVol:  parseFloat(localStorage.getItem('audio_metro_vol')  || '80'),
   };
 }
 
@@ -19975,6 +20015,7 @@ function _audioSincronizarUI() {
   _setVal('audio-vol-master', s.vol);
   _setVal('audio-pan', s.pan);
   _setVal('audio-metro-freq', s.metroFreq);
+  _setVal('audio-metro-vol', s.metroVol);
   _EQ_BANDS.forEach(b => _setVal('eq-fader-' + b.id, s.bands[b.id]));
   // hidden compat
   const compEl = document.getElementById('audio-comp-on');
@@ -19987,7 +20028,8 @@ function _audioSincronizarUI() {
 function _audioAplicar() {
   const vol  = parseFloat(document.getElementById('audio-vol-master')?.value || 100);
   const pan  = parseFloat(document.getElementById('audio-pan')?.value || 0);
-  const freq = parseFloat(document.getElementById('audio-metro-freq')?.value || 1000);
+  const freq     = parseFloat(document.getElementById('audio-metro-freq')?.value || 1000);
+  const metroVol  = parseFloat(document.getElementById('audio-metro-vol')?.value || 80);
   const compOn    = document.getElementById('audio-comp-on')?.checked || false;
   const compThr   = parseFloat(document.getElementById('audio-comp-threshold')?.value || -24);
   const compRatio = parseFloat(document.getElementById('audio-comp-ratio')?.value || 4);
@@ -19995,6 +20037,7 @@ function _audioAplicar() {
   localStorage.setItem('audio_vol', vol);
   localStorage.setItem('audio_pan', pan);
   localStorage.setItem('audio_metro_freq', freq);
+  localStorage.setItem('audio_metro_vol', metroVol);
   localStorage.setItem('audio_comp_on', compOn ? '1' : '0');
   localStorage.setItem('audio_comp_thr', compThr);
   localStorage.setItem('audio_comp_ratio', compRatio);
@@ -20027,6 +20070,7 @@ function _audioAplicarChain() {
     } catch(e) {}
   }
   window._metroFreq = s.metroFreq;
+  window._metroVol  = s.metroVol / 100;
 }
 
 function _audioAtualizarLabels() {
@@ -20037,6 +20081,8 @@ function _audioAtualizarLabels() {
   el('audio-vol-master-val', vol + '%');
   el('audio-pan-val', pan === 0 ? 'Centro' : (pan < 0 ? Math.abs(pan) + '% L' : pan + '% R'));
   el('audio-metro-freq-val', freq >= 1000 ? (freq/1000).toFixed(1) + ' kHz' : freq + ' Hz');
+  const metroVolEl = document.getElementById('audio-metro-vol');
+  if (metroVolEl) el('audio-metro-vol-val', metroVolEl.value + '%');
   // labels dos faders EQ
   _EQ_BANDS.forEach(b => {
     const v = parseFloat(document.getElementById('eq-fader-' + b.id)?.value || 0);
@@ -20061,8 +20107,8 @@ function _audioResetEQ() {
 
 function _audioPreset(tipo) {
   const presets = {
-    reset:   { vol:100, pan:0, bands:{ b80:0,  b250:0,  b800:0,   b2500:0,  b10k:0  }, metroFreq:1000 },
-    flat:    { vol:100, pan:0, bands:{ b80:0,  b250:0,  b800:0,   b2500:0,  b10k:0  }, metroFreq:1000 },
+    reset:   { vol:100, pan:0, bands:{ b80:0,  b250:0,  b800:0,   b2500:0,  b10k:0  }, metroFreq:1000, metroVol:80 },
+    flat:    { vol:100, pan:0, bands:{ b80:0,  b250:0,  b800:0,   b2500:0,  b10k:0  }, metroFreq:1000, metroVol:80 },
     worship: { vol:100, pan:0, bands:{ b80:3,  b250:-2, b800:-1,  b2500:2,  b10k:4  }, metroFreq:900  },
     rock:    { vol:100, pan:0, bands:{ b80:5,  b250:3,  b800:1,   b2500:2,  b10k:3  }, metroFreq:1100 },
     jazz:    { vol:100, pan:0, bands:{ b80:-1, b250:2,  b800:3,   b2500:1,  b10k:-2 }, metroFreq:800  },
@@ -20071,6 +20117,7 @@ function _audioPreset(tipo) {
   _setVal('audio-vol-master', p.vol);
   _setVal('audio-pan', p.pan);
   _setVal('audio-metro-freq', p.metroFreq);
+  if (p.metroVol !== undefined) _setVal('audio-metro-vol', p.metroVol);
   _EQ_BANDS.forEach(b => _setVal('eq-fader-' + b.id, p.bands[b.id]));
   _audioAplicar();
   if (typeof showToast === 'function') showToast('Preset ' + tipo.charAt(0).toUpperCase() + tipo.slice(1) + ' aplicado');
@@ -21360,21 +21407,22 @@ async function _fbFazerBackupAgora(btn) {
   color:rgba(255,255,255,0.2); text-transform:uppercase; margin-bottom:14px;
 }
 .audio-slider-row {
-  display:flex; align-items:center; gap:12px;
+  display:flex; align-items:center; gap:14px;
 }
 .audio-slider-row input[type=range] {
   -webkit-appearance:none; appearance:none;
-  flex:1; height:3px; background:rgba(255,255,255,0.1);
-  border-radius:3px; outline:none; cursor:pointer;
+  flex:1; height:6px; background:rgba(255,255,255,0.12);
+  border-radius:6px; outline:none; cursor:pointer;
 }
 .audio-slider-row input[type=range]::-webkit-slider-thumb {
   -webkit-appearance:none;
-  width:18px; height:18px; border-radius:50%; background:#fff;
-  box-shadow:0 0 0 3px rgba(10,158,110,0.35), 0 2px 8px rgba(0,0,0,0.5);
-  cursor:pointer; transition:box-shadow 0.15s;
+  width:26px; height:26px; border-radius:50%; background:#fff;
+  box-shadow:0 0 0 4px rgba(10,158,110,0.4), 0 3px 10px rgba(0,0,0,0.6);
+  cursor:pointer; transition:box-shadow 0.15s, transform 0.1s;
 }
 .audio-slider-row input[type=range]:active::-webkit-slider-thumb {
-  box-shadow:0 0 0 5px rgba(10,158,110,0.5), 0 2px 12px rgba(0,0,0,0.6);
+  box-shadow:0 0 0 6px rgba(10,158,110,0.55), 0 3px 14px rgba(0,0,0,0.7);
+  transform:scale(1.1);
 }
 .eq-channel {
   display:flex; flex-direction:column; align-items:center;
@@ -21445,7 +21493,7 @@ async function _fbFazerBackupAgora(btn) {
   </div>
 
   <!-- CORPO -->
-  <div style="padding:0 16px 40px;display:flex;flex-direction:column;gap:24px;">
+  <div style="padding:0 16px 48px;display:flex;flex-direction:column;gap:36px;">
 
     <!-- EQ 5 BANDAS -->
     <div>
@@ -21543,7 +21591,7 @@ async function _fbFazerBackupAgora(btn) {
     <!-- VOLUME MASTER -->
     <div>
       <div class="audio-section-label">Volume Master</div>
-      <div style="background:rgba(10,158,110,0.04);border:1px solid rgba(10,158,110,0.1);border-radius:14px;padding:16px 14px;">
+      <div style="background:rgba(10,158,110,0.04);border:1px solid rgba(10,158,110,0.1);border-radius:16px;padding:20px 18px;">
         <div class="audio-slider-row">
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.3)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/></svg>
           <input type="range" id="audio-vol-master" min="0" max="200" value="100" step="1" oninput="_audioAplicar()">
@@ -21569,18 +21617,61 @@ async function _fbFazerBackupAgora(btn) {
       </div>
     </div>
 
-    <!-- TOM METRO -->
+    <!-- METRÔNOMO -->
     <div>
-      <div class="audio-section-label">Tom do Clique · Metrônomo</div>
-      <div style="background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.06);border-radius:14px;padding:16px 14px;">
-        <div class="audio-slider-row">
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.3)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
-          <input type="range" id="audio-metro-freq" min="200" max="2000" value="1000" step="50" oninput="_audioAplicar()">
-          <span id="audio-metro-freq-val" style="font-size:12px;font-weight:900;color:#0A9E6E;min-width:52px;text-align:right;">1.0 kHz</span>
+      <div class="audio-section-label">Metrônomo</div>
+      <div style="background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.06);border-radius:16px;padding:22px 18px;display:flex;flex-direction:column;gap:26px;">
+
+        <!-- Volume do click -->
+        <div>
+          <div style="font-size:9px;font-weight:800;letter-spacing:1.5px;color:rgba(255,255,255,0.3);margin-bottom:10px;">VOLUME DO CLICK</div>
+          <div class="audio-slider-row">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.3)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/></svg>
+            <input type="range" id="audio-metro-vol" min="0" max="100" value="80" step="1" oninput="_audioAplicar()" style="height:6px;">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.3)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14"/></svg>
+            <span id="audio-metro-vol-val" style="font-size:13px;font-weight:900;color:#0A9E6E;min-width:44px;text-align:right;">80%</span>
+          </div>
         </div>
-        <div style="display:flex;justify-content:space-between;margin-top:6px;">
-          <span style="font-size:8.5px;color:rgba(255,255,255,0.16);">Surdo / grave</span>
-          <span style="font-size:8.5px;color:rgba(255,255,255,0.16);">Agudo / click</span>
+
+        <!-- Tom do click -->
+        <div>
+          <div style="font-size:9px;font-weight:800;letter-spacing:1.5px;color:rgba(255,255,255,0.3);margin-bottom:10px;">TOM DO CLICK</div>
+          <div class="audio-slider-row">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.3)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+            <input type="range" id="audio-metro-freq" min="200" max="2000" value="1000" step="50" oninput="_audioAplicar()" style="height:6px;">
+            <span id="audio-metro-freq-val" style="font-size:12px;font-weight:900;color:#0A9E6E;min-width:52px;text-align:right;">1.0 kHz</span>
+          </div>
+          <div style="display:flex;justify-content:space-between;margin-top:6px;">
+            <span style="font-size:8.5px;color:rgba(255,255,255,0.16);">Surdo / grave</span>
+            <span style="font-size:8.5px;color:rgba(255,255,255,0.16);">Agudo / click</span>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- STEREO SPLIT -->
+    <div>
+      <div class="audio-section-label">Stereo Split</div>
+      <div style="background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.06);border-radius:16px;padding:18px 16px;">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;">
+          <div>
+            <div style="font-size:13px;font-weight:800;color:#fff;margin-bottom:3px;">Click esquerdo · Resto direito</div>
+            <div style="font-size:10px;color:rgba(255,255,255,0.35);line-height:1.5;">Metrônomo no fone L, instrumentos no R</div>
+          </div>
+          <button id="audio-stereo-toggle" onclick="_audioToggleStereo()" style="position:relative;width:48px;height:28px;border-radius:999px;border:none;cursor:pointer;transition:background 0.2s;background:rgba(255,255,255,0.08);flex-shrink:0;">
+            <div id="audio-stereo-knob" style="position:absolute;top:4px;left:4px;width:20px;height:20px;border-radius:50%;background:#fff;transition:transform 0.2s;"></div>
+          </button>
+        </div>
+        <div style="display:flex;gap:0;border:1px solid rgba(255,255,255,0.06);border-radius:10px;overflow:hidden;">
+          <div style="flex:1;padding:10px 12px;text-align:center;border-right:1px solid rgba(255,255,255,0.06);">
+            <div style="font-size:9px;font-weight:800;color:rgba(255,255,255,0.25);letter-spacing:1px;margin-bottom:4px;">CLICK</div>
+            <div id="audio-stereo-click-label" style="font-size:13px;font-weight:900;color:rgba(255,255,255,0.3);">Centro</div>
+          </div>
+          <div style="flex:1;padding:10px 12px;text-align:center;">
+            <div style="font-size:9px;font-weight:800;color:rgba(255,255,255,0.25);letter-spacing:1px;margin-bottom:4px;">INSTRUMENTOS</div>
+            <div id="audio-stereo-inst-label" style="font-size:13px;font-weight:900;color:rgba(255,255,255,0.3);">Centro</div>
+          </div>
         </div>
       </div>
     </div>
