@@ -6633,21 +6633,21 @@ body.auth-pending #toast {
       <div style="font-size:11px;font-weight:800;letter-spacing:2px;color:rgba(255,255,255,0.3);text-transform:uppercase;margin-bottom:4px;">Choose your language</div>
       <div style="display:flex;flex-direction:column;gap:10px;width:100%;">
         <button onclick="obSelecionarIdioma('pt')" class="ob-lang-btn" data-lang="pt">
-          <span style="font-size:22px;">🇧🇷</span>
+          <span style="font-size:13px;font-weight:900;">PT</span>
           <div>
             <div style="font-size:14px;font-weight:800;color:#fff;">Português</div>
             <div style="font-size:10px;color:rgba(255,255,255,0.35);">Brasil</div>
           </div>
         </button>
         <button onclick="obSelecionarIdioma('en')" class="ob-lang-btn" data-lang="en">
-          <span style="font-size:22px;">🇺🇸</span>
+          <span style="font-size:13px;font-weight:900;">EN</span>
           <div>
             <div style="font-size:14px;font-weight:800;color:#fff;">English</div>
             <div style="font-size:10px;color:rgba(255,255,255,0.35);">United States</div>
           </div>
         </button>
         <button onclick="obSelecionarIdioma('es')" class="ob-lang-btn" data-lang="es">
-          <span style="font-size:22px;">🇪🇸</span>
+          <span style="font-size:13px;font-weight:900;">ES</span>
           <div>
             <div style="font-size:14px;font-weight:800;color:#fff;">Español</div>
             <div style="font-size:10px;color:rgba(255,255,255,0.35);">Latinoamérica</div>
@@ -6675,15 +6675,15 @@ body.auth-pending #toast {
       <button onclick="obSelecionarIdioma('pt')" id="ob-lang-pt"
         style="background:none;border:none;cursor:pointer;opacity:0.4;font-size:18px;padding:2px 4px;transition:opacity 0.2s,transform 0.15s;touch-action:manipulation;"
         onmouseenter="this.style.opacity='1'" onmouseleave="this.style.opacity=_i18nLang==='pt'?'1':'0.4'"
-        title="Português">🇧🇷</button>
+        title="Português">PT</button>
       <button onclick="obSelecionarIdioma('en')" id="ob-lang-en"
         style="background:none;border:none;cursor:pointer;opacity:0.4;font-size:18px;padding:2px 4px;transition:opacity 0.2s,transform 0.15s;touch-action:manipulation;"
         onmouseenter="this.style.opacity='1'" onmouseleave="this.style.opacity=_i18nLang==='en'?'1':'0.4'"
-        title="English">🇺🇸</button>
+        title="English">EN</button>
       <button onclick="obSelecionarIdioma('es')" id="ob-lang-es"
         style="background:none;border:none;cursor:pointer;opacity:0.4;font-size:18px;padding:2px 4px;transition:opacity 0.2s,transform 0.15s;touch-action:manipulation;"
         onmouseenter="this.style.opacity='1'" onmouseleave="this.style.opacity=_i18nLang==='es'?'1':'0.4'"
-        title="Español">🇪🇸</button>
+        title="Español">ES</button>
     </div>
 
     <!-- ══ ABA LOGIN ══════════════════════════════════════ -->
@@ -9509,6 +9509,7 @@ async function encerrarSala() {
     await window._fb.encerrarSala(myRoomCode);
   }
   isHost = false;
+  window._emSala = false;
   _viewersOnline = {};
   myRoomCode = null;
   _salaAvisos = [];
@@ -9529,27 +9530,29 @@ function atualizarSyncBar(code) {
   const label  = document.getElementById('sync-label');
   const codeEl = document.getElementById('sync-code-display');
   const guests = document.getElementById('sync-guests');
+  const btnSala = document.getElementById('btn-sala');
 
   if (isHost) {
     bar.classList.add('visible');
     bar.classList.remove('viewer');
     label.innerText = 'HOST';
     codeEl.innerText = myRoomCode || code || '';
-    // Usa _onlineCountCache (atualizado do Firestore) ou calcula localmente
     const total = window._onlineCountCache || (1 + Object.keys(_viewersOnline || {}).length);
     guests.style.display = 'flex';
     guests.querySelector('#sync-guests-count').innerText = total + ' online';
+    if (btnSala) { btnSala.innerText = myRoomCode || 'SALA'; btnSala.style.background = 'rgba(10,158,110,0.25)'; btnSala.style.borderColor = 'rgba(10,158,110,0.7)'; }
   } else if (isViewer) {
     bar.classList.add('visible', 'viewer');
     label.innerText = 'A VER';
     codeEl.innerText = code || codeEl.innerText || '';
-    // Viewer também vê contagem online
     const total = window._onlineCountCache || 1;
     guests.style.display = 'flex';
     guests.querySelector('#sync-guests-count').innerText = total + ' online';
+    if (btnSala) { btnSala.innerText = 'AO VIVO'; btnSala.style.background = 'rgba(138,92,246,0.2)'; btnSala.style.borderColor = 'rgba(138,92,246,0.6)'; }
   } else {
     bar.classList.remove('visible', 'viewer');
     guests.style.display = 'none';
+    if (btnSala) { btnSala.innerText = 'SALA'; btnSala.style.background = ''; btnSala.style.borderColor = ''; }
   }
 }
 
@@ -9841,6 +9844,8 @@ function navegarSetlist(dir) {
   }
   atualizarIndicador();
   flashSwipe(dir > 0 ? '>' : '<');
+  _perfFontCarregar(); // aplica fonte da nova música
+  _markClean();
   broadcastEstado();
   _mostrarAlertaProxima();
 }
@@ -9962,9 +9967,8 @@ function fecharModal() {
   _unlockScroll();
   var _ms = document.getElementById('modal-sala');
   _ms.classList.remove('show');
-  _ms.style.pointerEvents = 'none';
+  _ms.style.pointerEvents = '';
   // Apenas fecha o modal — a sala continua ativa em background
-  // O utilizador pode reabrir e ver o código ou desconectar explicitamente
   if (!isHost && !isViewer) mostrarEscolhaSala();
 }
 
@@ -10072,7 +10076,7 @@ if (_tapBtn) _tapBtn.addEventListener('click', function() {
 });
 
 // ─── METRÔNOMO ───────────────────────────────────────────────────────────
-function playClick() {
+function playClick(time) {
   try {
     const dc = document.getElementById('drumcam-overlay');
     if (dc && dc.classList.contains('show')) {
@@ -10087,8 +10091,8 @@ function playClick() {
   const osc = ctx.createOscillator();
   const env = ctx.createGain();
   osc.frequency.value = (window._metroFreq || 1000);
-  env.gain.value = 0.8;
-  env.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.08);
+  env.gain.setValueAtTime(0.8, time);
+  env.gain.exponentialRampToValueAtTime(0.001, time + 0.08);
 
   // Panner do click (L quando stereo ativo, centro quando não)
   var clickPanner = _dcStereoAtivo ? _getDcClickPanner(ctx) : null;
@@ -10100,29 +10104,39 @@ function playClick() {
     osc.connect(env);
     env.connect(_getAudioChain(ctx));
   }
-  osc.start(); osc.stop(ctx.currentTime + 0.08);
+  osc.start(time);
+  osc.stop(time + 0.08);
 }
 function scheduler() {
   const actx = _getAudioCtx(); if (!actx) return;
-  // Cancela qualquer timer anterior para evitar loops duplicados
   if (timerID) { clearTimeout(timerID); timerID = null; }
-  if (!isPlaying) return; // segurança: não reinicia se parou
+  if (!isPlaying) return;
   // Evita rafaga de clicks ao voltar do background
   if (nextNoteTime < actx.currentTime - 0.5) nextNoteTime = actx.currentTime;
-  // Lookahead de 0.2s — agenda mais à frente, tolerando atrasos do setTimeout
-  // causados por Firebase polling, economia de energia ou aba em background
-  while (nextNoteTime < actx.currentTime + 0.2) { playClick(); nextNoteTime += 60.0 / bpm; }
-  // 50ms — menos chamadas por segundo, menos competição com o thread JS
-  timerID = setTimeout(scheduler, 50);
+  // Lookahead de 0.1s — janela menor = timing mais preciso
+  var secondsPerBeat = 60.0 / bpm;
+  while (nextNoteTime < actx.currentTime + 0.1) {
+    playClick(nextNoteTime);
+    nextNoteTime += secondsPerBeat;
+  }
+  // 25ms — mais chamadas, menor chance de perder uma batida
+  timerID = setTimeout(scheduler, 25);
 }
 function togglePlay() {
-  const actx = _getAudioCtx(); // usa sempre o helper seguro
+  const actx = _getAudioCtx();
   if (!actx) { showToast('Áudio não disponível neste dispositivo.'); return; }
   if (actx.state === 'suspended') actx.resume();
   isPlaying = !isPlaying;
   const btn = document.getElementById('play-btn');
-  if (isPlaying) { nextNoteTime = actx.currentTime; scheduler(); btn.innerText = "PARAR"; btn.style.background = "#ff3e3e"; }
-  else { clearTimeout(timerID); btn.innerText = "INICIAR"; btn.style.background = "var(--accent-primary)"; }
+  if (isPlaying) {
+    // Pequeno buffer de 0.05s para a primeira batida não cortar
+    nextNoteTime = actx.currentTime + 0.05;
+    scheduler();
+    btn.innerText = "PARAR"; btn.style.background = "#ff3e3e";
+  } else {
+    clearTimeout(timerID); timerID = null;
+    btn.innerText = "INICIAR"; btn.style.background = "var(--accent-primary)";
+  }
   atualizarBtnMetroDC();
 }
 function adj(v) {
@@ -10393,13 +10407,15 @@ function _perfFontAplicar(size) {
 function perfFontAjustar(delta) {
   var atual = _perfFontAtual();
   var novo = Math.min(96, Math.max(20, atual + delta));
-  // Sempre persiste no estado global (evita "voltar para 48" no próximo press)
   _fonteShow = novo;
   localStorage.setItem(_FONTE_SHOW_KEY, String(novo));
-  // Também salva por música se houver uma carregada
+  // Salva por música sem marcar como dirty
   if (currentSongIndex >= 0 && songs[currentSongIndex]) {
     songs[currentSongIndex].fonteShow = novo;
-    updateStorage();
+    try {
+      songs.sort((a,b) => { if (a.favorite === b.favorite) return 0; return a.favorite ? -1 : 1; });
+      localStorage.setItem('map_pro_elite_v1', JSON.stringify(songs));
+    } catch(e) {}
   }
   _perfFontAplicar(novo);
 }
@@ -10645,6 +10661,7 @@ function loadSong(id) {
   atualizarIndicador();
   broadcastEstado();
   atualizarBtnSalvar();
+  _markClean();
 }
 
 function deleteSong(id, e) {
@@ -14865,7 +14882,7 @@ function _dcDrumAtualizar(freq) {
   var status, cor;
   if (freq < r.min)      { status = '▼ ABAIXO';   cor = '#f59e0b'; }
   else if (freq > r.max) { status = '▲ ACIMA';    cor = '#f472b6'; }
-  else                   { status = '✓ NO PONTO'; cor = '#00ff64'; }
+  else                   { status = 'NO PONTO'; cor = '#00ff64'; }
   if (statusEl) { statusEl.textContent = status; statusEl.style.color = cor; }
   if (freqEl)   freqEl.style.color = cor;
   if (ind)      ind.style.background = cor;
@@ -14898,6 +14915,8 @@ function fecharChatGlobal() {
   var modal = document.getElementById('modal-chat-global');
   if (modal) modal.classList.remove('show');
   _chatGlobalAberto = false;
+  // Para o polling ao fechar — reinicia ao abrir novamente
+  if (_chatGlobalStop) { _chatGlobalStop(); _chatGlobalStop = null; }
   // Salva o timestamp atual como "lido até aqui"
   localStorage.setItem(_CHAT_GLOBAL_T_KEY, String(_chatGlobalUltimoT));
 }
@@ -15022,7 +15041,7 @@ function enviarChatGlobal() {
   var perfil = _getPerfilLocal();
   var uid    = _getUid();
   var hora   = new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
-  var _t     = Date.now();
+  var _t     = String(Date.now());
   var tempId = 'temp-' + _t;
 
   var msg = {
@@ -15094,7 +15113,7 @@ function _chatGlobalAppendMsg(msg, isTemp) {
       '</div>' +
       '<div class="chat-msg-texto">' +
         texto +
-        (isMine && !isTemp ? '<button class="chat-msg-del" onclick="excluirChatGlobalMsg(\'' + id + '\',this)" title="Apagar">✕</button>' : '') +
+        (isMine && !isTemp ? '<button class="chat-msg-del" onclick="excluirChatGlobalMsg(\'' + id + '\',this)" title="Apagar"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>' : '') +
       '</div>' +
     '</div>';
 
@@ -15492,7 +15511,7 @@ function fecharModalCifra() {
   _bloquearFantasma();
   var _mc = document.getElementById('modal-cifra');
   _mc.classList.remove('show');
-  _mc.style.pointerEvents = 'none';
+  _mc.style.pointerEvents = '';
 }
 function voltarCifra() {
   document.getElementById('cifra-step-2').style.display = 'none';
@@ -16159,13 +16178,21 @@ document.addEventListener('visibilitychange', function() {
     _fbMarcarOnline();
     // Resume AudioContext se suspenso (browser suspende automaticamente em background)
     var actx = _getAudioCtx();
-    if (actx && actx.state === 'suspended') actx.resume();
-    // Corrigir metrônomo: só reinicia se o AudioContext estava suspenso
-    // (não reiniciar em toda troca de aba — evita loops duplicados)
-    if (isPlaying && actx && actx.state !== 'suspended') {
-      // AudioContext já estava rodando — o scheduler existente continua
-      // Apenas reseta nextNoteTime para evitar rafaga caso esteja muito atrasado
-      if (nextNoteTime < actx.currentTime - 0.5) nextNoteTime = actx.currentTime;
+    if (actx && actx.state === 'suspended') {
+      actx.resume().then(function() {
+        // Reinicia scheduler após resume — timerID pode ter sido limpo pelo browser
+        if (isPlaying && !timerID) {
+          nextNoteTime = actx.currentTime + 0.05;
+          scheduler();
+        }
+      });
+    } else if (isPlaying) {
+      // AudioContext já rodando — apenas corrige nextNoteTime se muito atrasado
+      if (actx && nextNoteTime < actx.currentTime - 0.5) {
+        nextNoteTime = actx.currentTime + 0.05;
+      }
+      // Reinicia scheduler se timerID foi perdido
+      if (!timerID) scheduler();
     }
     // Reiniciar scroll se estava ativo antes de ir ao background
     if (_scrollSpeedBefore > 0) {
@@ -16195,7 +16222,17 @@ window.addEventListener('pageshow', function(e) {
   // e.persisted = true significa que veio do bfcache (iOS)
   _fbMarcarOnline();
   var actx = _getAudioCtx();
-  if (actx && actx.state === 'suspended') actx.resume();
+  if (actx && actx.state === 'suspended') {
+    actx.resume().then(function() {
+      if (isPlaying && !timerID) {
+        nextNoteTime = actx.currentTime + 0.05;
+        scheduler();
+      }
+    });
+  } else if (isPlaying && !timerID) {
+    if (actx) nextNoteTime = actx.currentTime + 0.05;
+    scheduler();
+  }
   // Reativar WakeLock — bfcache destrói o fallback no iOS
   if (!_wakeLock && !_noSleepVideo && !_audioWakeLockCtx && !_wakeLockTimer) {
     ativarWakeLock();
@@ -16653,7 +16690,7 @@ function fecharModalAmigos() {
   var _ma = document.getElementById('modal-amigos');
   if (!_ma) return;
   _ma.classList.remove('show');
-  _ma.style.pointerEvents = 'none';
+  _ma.style.pointerEvents = '';
 }
 
 function amigoTab(tab) {
@@ -17026,10 +17063,10 @@ const _origSalvarPerfil = window.salvarPerfil;
 
 // ─── SISTEMA DE NOTIFICAÇÕES ──────────────────────────────────────────────────
 const APP_VERSION = '1.4.8';
-let notificacoes = (_lsGet('map_notifs_v1', []) || []).filter(n => !n.ts || (Date.now() - n.ts) < (1 * 60 * 60 * 1000));
+let notificacoes = (_lsGet('map_notifs_v1', []) || []).filter(n => !n.ts || (Date.now() - n.ts) < (24 * 60 * 60 * 1000));
 let notifPanelOpen = false;
 
-const NOTIF_EXPIRY_MS = 1 * 60 * 60 * 1000; // 1 hora
+const NOTIF_EXPIRY_MS = 24 * 60 * 60 * 1000; // 24 horas
 
 function salvarNotifs() {
   // Remove notificacoes com mais de 4h antes de salvar
@@ -17106,7 +17143,7 @@ function fecharNotifPanel() {
   notifPanelOpen = false;
   var _np = document.getElementById('notif-panel');
   _np.classList.remove('show');
-  _np.style.pointerEvents = 'none';
+  _np.style.pointerEvents = ''; // deixa o CSS controlar
 }
 
 function limparNotificacoes() {
@@ -17395,12 +17432,6 @@ function capturarEstado() {
     currentSongIndex,
     currentSongName: currentSongIndex >= 0 && songs[currentSongIndex] ? songs[currentSongIndex].name : null,
     songTotal: songs.length,
-    setlistNomes: (function() {
-      if (!showSetlist || !showSetlist.length) return null;
-      return showSetlist.map(function(id) { var s = songs.find(function(x){ return x.id===id; }); return s ? s.name : null; }).filter(Boolean);
-    })(),
-    setlistEventoNome: (typeof showSetlistEventoNome !== 'undefined') ? showSetlistEventoNome : null,
-    salaCode: myRoomCode || null,
     setlistNomes: (showSetlist && showSetlist.length)
       ? showSetlist.map(function(id){ var s=songs.find(function(x){return x.id===id;}); return s?s.name:''; }).filter(Boolean)
       : [],
@@ -21307,7 +21338,7 @@ async function _fbFazerBackupAgora(btn) {
       <button onclick="_adminTecla('7')" style="padding:16px;border-radius:12px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.07);color:#fff;font-size:18px;font-weight:700;cursor:pointer;font-family:inherit;touch-action:manipulation;">7</button>
       <button onclick="_adminTecla('8')" style="padding:16px;border-radius:12px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.07);color:#fff;font-size:18px;font-weight:700;cursor:pointer;font-family:inherit;touch-action:manipulation;">8</button>
       <button onclick="_adminTecla('9')" style="padding:16px;border-radius:12px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.07);color:#fff;font-size:18px;font-weight:700;cursor:pointer;font-family:inherit;touch-action:manipulation;">9</button>
-      <button onclick="_adminApagar()" style="padding:16px;border-radius:12px;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.05);color:rgba(255,255,255,0.3);font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;touch-action:manipulation;">⌫</button>
+      <button onclick="_adminApagar()" style="padding:16px;border-radius:12px;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.05);color:rgba(255,255,255,0.3);font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;touch-action:manipulation;"><svg width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'><path d='M21 4H8l-7 8 7 8h13a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2z'/><line x1='15' y1='9' x2='9' y2='15'/><line x1='9' y1='9' x2='15' y2='15'/></svg></button>
       <button onclick="_adminTecla('0')" style="padding:16px;border-radius:12px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.07);color:#fff;font-size:18px;font-weight:700;cursor:pointer;font-family:inherit;touch-action:manipulation;">0</button>
       <button onclick="_fecharAdmin()" style="padding:16px;border-radius:12px;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.05);color:rgba(255,255,255,0.2);font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;touch-action:manipulation;">&times;</button>
     </div>
@@ -23630,7 +23661,7 @@ function _confirmarAcao(titulo, desc, labelOk, corOk, callback) {
 
 // ── Notas musicais flutuantes no fundo ───────────────────────────────────
 (function _vocNotasInit() {
-  var NOTAS = ['♩','♪','♫','♬','𝄞','𝄢','♩','♪','♫','♬'];
+  var NOTAS = ['•','·','—','|','·','•','—','·','|','•'];
   var particulas = [];
   var raf = null;
   var canvas, ctx, W, H;
@@ -24102,15 +24133,31 @@ var _calNotifSel = ['dia', 'antes1d', 'antes7d'];
 
 var CAL_KEY = 'map_cal_eventos_v1';
 
+// Ícones SVG dos tipos — gerados por função para evitar problemas de escape
+function _calTipoIcon(id) {
+  var s = 'width=\'14\' height=\'14\' viewBox=\'0 0 24 24\' fill=\'none\' stroke=\'currentColor\' stroke-width=\'2.2\' stroke-linecap=\'round\' stroke-linejoin=\'round\'';
+  var icons = {
+    show:    '<svg '+s+'><path d=\'M9 18V5l12-2v13\'/><circle cx=\'6\' cy=\'18\' r=\'3\'/><circle cx=\'18\' cy=\'16\' r=\'3\'/></svg>',
+    culto:   '<svg '+s+'><line x1=\'12\' y1=\'2\' x2=\'12\' y2=\'22\'/><line x1=\'5\' y1=\'8\' x2=\'19\' y2=\'8\'/></svg>',
+    ensaio:  '<svg '+s+'><circle cx=\'12\' cy=\'12\' r=\'10\'/><circle cx=\'12\' cy=\'12\' r=\'3\'/></svg>',
+    aula:    '<svg '+s+'><path d=\'M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z\'/><path d=\'M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z\'/></svg>',
+    lazer:   '<svg '+s+'><polygon points=\'12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2\'/></svg>',
+    saude:   '<svg '+s+'><line x1=\'6\' y1=\'12\' x2=\'18\' y2=\'12\'/><line x1=\'2\' y1=\'12\' x2=\'6\' y2=\'12\'/><line x1=\'18\' y1=\'12\' x2=\'22\' y2=\'12\'/><path d=\'M6 8v8M18 8v8\'/></svg>',
+    pessoal: '<svg '+s+'><path d=\'M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2\'/><circle cx=\'12\' cy=\'7\' r=\'4\'/></svg>',
+    outro:   '<svg '+s+'><circle cx=\'12\' cy=\'12\' r=\'1\'/><circle cx=\'19\' cy=\'12\' r=\'1\'/><circle cx=\'5\' cy=\'12\' r=\'1\'/></svg>'
+  };
+  return icons[id] || icons.outro;
+}
+
 var CAL_TIPOS = [
-  { id:'show',    label:'🎸 Show',      cor:'rgba(138,92,246,0.7)'  },
-  { id:'culto',   label:'✝️ Culto',     cor:'rgba(10,158,110,0.7)'  },
-  { id:'ensaio',  label:'🥁 Ensaio',    cor:'rgba(255,165,0,0.7)'   },
-  { id:'aula',    label:'🎓 Aula',      cor:'rgba(59,130,246,0.7)'  },
-  { id:'lazer',   label:'🎉 Lazer',     cor:'rgba(236,72,153,0.7)'  },
-  { id:'saude',   label:'💪 Academia',  cor:'rgba(34,197,94,0.7)'   },
-  { id:'pessoal', label:'✂️ Pessoal',   cor:'rgba(251,191,36,0.7)'  },
-  { id:'outro',   label:'📌 Outro',     cor:'rgba(156,163,175,0.7)' }
+  { id:'show',    label:'Show',     cor:'rgba(138,92,246,0.7)' },
+  { id:'culto',   label:'Culto',    cor:'rgba(10,158,110,0.7)' },
+  { id:'ensaio',  label:'Ensaio',   cor:'rgba(255,165,0,0.7)'  },
+  { id:'aula',    label:'Aula',     cor:'rgba(59,130,246,0.7)' },
+  { id:'lazer',   label:'Lazer',    cor:'rgba(236,72,153,0.7)' },
+  { id:'saude',   label:'Academia', cor:'rgba(34,197,94,0.7)'  },
+  { id:'pessoal', label:'Pessoal',  cor:'rgba(251,191,36,0.7)' },
+  { id:'outro',   label:'Outro',    cor:'rgba(156,163,175,0.7)'}
 ];
 
 var CAL_NOTIFS = [
@@ -24244,9 +24291,9 @@ function _calFormatarData(dataStr) {
   var diff = Math.round((d - hoje) / 86400000);
   var diasSem = ['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'];
   var base = diasSem[d.getDay()] + ', ' + partes[2] + '/' + partes[1];
-  if (diff === 0) return '🔴 Hoje — ' + base;
-  if (diff === 1) return '🟡 Amanhã — ' + base;
-  if (diff <= 7)  return '🟢 Em ' + diff + 'd — ' + base;
+  if (diff === 0) return 'HOJE — ' + base;
+  if (diff === 1) return 'AMANHÃ — ' + base;
+  if (diff <= 7)  return 'EM ' + diff + 'D — ' + base;
   return base;
 }
 
@@ -24281,7 +24328,7 @@ function _renderTiposForm() {
   var cont = document.getElementById('cal-tipos');
   cont.innerHTML = CAL_TIPOS.map(function(t) {
     var sel = t.id === _calTipoSel;
-    return '<button onclick="_calSelecionarTipo(\'' + t.id + '\')" style="padding:7px 12px;border-radius:20px;border:1px solid ' + (sel ? t.cor : 'rgba(255,255,255,0.1)') + ';background:' + (sel ? t.cor.replace('0.7','0.15') : 'rgba(255,255,255,0.04)') + ';color:' + (sel ? '#fff' : 'rgba(255,255,255,0.5)') + ';font-size:11px;font-weight:' + (sel ? '900' : '600') + ';cursor:pointer;font-family:inherit;touch-action:manipulation;transition:0.15s;" id="cal-tipo-' + t.id + '">' + t.label + '</button>';
+    return '<button onclick="_calSelecionarTipo(\'' + t.id + '\')" style="display:flex;align-items:center;gap:5px;padding:7px 12px;border-radius:20px;border:1px solid ' + (sel ? t.cor : 'rgba(255,255,255,0.1)') + ';background:' + (sel ? t.cor.replace('0.7','0.15') : 'rgba(255,255,255,0.04)') + ';color:' + (sel ? t.cor.replace('0.7','1') : 'rgba(255,255,255,0.4)') + ';font-size:11px;font-weight:' + (sel ? '900' : '600') + ';cursor:pointer;font-family:inherit;touch-action:manipulation;transition:0.15s;" id="cal-tipo-' + t.id + '">' + _calTipoIcon(t.id) + t.label + '</button>';
   }).join('');
 }
 
@@ -24335,7 +24382,7 @@ function calSalvarEvento() {
   _calAgendarPushEventos();
 
   // Notif in-app
-  adicionarNotif('event', '📅 ' + nome, _calFormatarData(data) + (hora ? ' · ' + hora : ''), 'cal_' + data + '_' + nome);
+  adicionarNotif('event', nome, _calFormatarData(data) + (hora ? ' · ' + hora : ''), 'cal_' + data + '_' + nome);
   showToast('Evento salvo!', 'success');
 }
 
@@ -24366,13 +24413,13 @@ function _calAgendarPushEventos() {
         var h = ev.hora ? parseInt(ev.hora.split(':')[0]) : 8;
         var m = ev.hora ? parseInt(ev.hora.split(':')[1]) : 0;
         ts = new Date(diaEv.getFullYear(), diaEv.getMonth(), diaEv.getDate(), h > 0 ? h - 1 : 8, m, 0).getTime();
-        tag = 'cal-dia-' + ev.id; titulo = '📅 Hoje: ' + ev.nome; body = ev.hora ? 'Começa às ' + ev.hora + (ev.local ? ' · ' + ev.local : '') : (ev.local || 'Lembre-se do evento!');
+        tag = 'cal-dia-' + ev.id; titulo = 'Hoje: ' + ev.nome; body = ev.hora ? 'Começa às ' + ev.hora + (ev.local ? ' · ' + ev.local : '') : (ev.local || 'Lembre-se do evento!');
       } else if (notifId === 'antes1d' && diff === 1) {
         ts = new Date(hoje.getFullYear(), hoje.getMonth(), hoje.getDate(), 20, 0, 0).getTime();
-        tag = 'cal-ant1-' + ev.id; titulo = '⏰ Amanhã: ' + ev.nome; body = ev.hora ? 'Às ' + ev.hora + (ev.local ? ' · ' + ev.local : '') : (ev.local || '');
+        tag = 'cal-ant1-' + ev.id; titulo = 'Amanhã: ' + ev.nome; body = ev.hora ? 'Às ' + ev.hora + (ev.local ? ' · ' + ev.local : '') : (ev.local || '');
       } else if (notifId === 'antes7d' && diff === 7) {
         ts = new Date(hoje.getFullYear(), hoje.getMonth(), hoje.getDate(), 9, 0, 0).getTime();
-        tag = 'cal-ant7-' + ev.id; titulo = '📆 Em 7 dias: ' + ev.nome; body = _calFormatarData(ev.data) + (ev.local ? ' · ' + ev.local : '');
+        tag = 'cal-ant7-' + ev.id; titulo = 'Em 7 dias: ' + ev.nome; body = _calFormatarData(ev.data) + (ev.local ? ' · ' + ev.local : '');
       }
       if (ts && ts > Date.now()) _pushEnviarParaSW(titulo, body, ts, tag);
     });
@@ -24393,11 +24440,11 @@ function _calChecarNotificacoesHoje() {
     var diff   = Math.round((diaEv - hoje) / 86400000);
 
     if (ev.notifs.indexOf('dia') !== -1 && diff === 0)
-      adicionarNotif('event', '📅 Hoje: ' + ev.nome, ev.hora ? 'Às ' + ev.hora + (ev.local ? ' · ' + ev.local : '') : (ev.local || ''), 'calh_' + ev.id);
+      adicionarNotif('event', 'Hoje: ' + ev.nome, ev.hora ? 'Às ' + ev.hora + (ev.local ? ' · ' + ev.local : '') : (ev.local || ''), 'calh_' + ev.id);
     if (ev.notifs.indexOf('antes1d') !== -1 && diff === 1)
-      adicionarNotif('event', '⏰ Amanhã: ' + ev.nome, ev.hora ? 'Às ' + ev.hora : (ev.local || ''), 'cala1_' + ev.id);
+      adicionarNotif('event', 'Amanhã: ' + ev.nome, ev.hora ? 'Às ' + ev.hora : (ev.local || ''), 'cala1_' + ev.id);
     if (ev.notifs.indexOf('antes7d') !== -1 && diff === 7)
-      adicionarNotif('event', '📆 Em 7 dias: ' + ev.nome, _calFormatarData(ev.data), 'cala7_' + ev.id);
+      adicionarNotif('event', 'Em 7 dias: ' + ev.nome, _calFormatarData(ev.data), 'cala7_' + ev.id);
   });
 }
 
