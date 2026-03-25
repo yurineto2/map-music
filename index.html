@@ -6913,6 +6913,22 @@ body.auth-pending #toast {
         </div>
       </div>
 
+      <!-- Link / Rede Social -->
+      <div style="display:flex;flex-direction:column;gap:6px;">
+        <label style="font-size:9px;font-weight:800;letter-spacing:2px;color:rgba(255,255,255,0.3);text-transform:uppercase;">Link / Rede Social</label>
+        <div style="position:relative;">
+          <input id="perfil-link-input" type="url" autocomplete="off" placeholder="instagram.com/seu_perfil"
+            style="background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.09);border-radius:12px;color:#fff;font-size:14px;font-weight:600;padding:13px 16px 13px 44px;outline:none;width:100%;box-sizing:border-box;font-family:inherit;transition:border-color 0.2s,background 0.2s;"
+            onfocus="this.style.borderColor='rgba(10,158,110,0.5)';this.style.background='rgba(10,158,110,0.04)'"
+            onblur="this.style.borderColor='rgba(255,255,255,0.09)';this.style.background='rgba(255,255,255,0.04)'"
+            oninput="_perfilAtualizarIconeLink(this.value)">
+          <div id="perfil-link-icon" style="position:absolute;left:14px;top:50%;transform:translateY(-50%);color:rgba(10,158,110,0.5);">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
+          </div>
+        </div>
+        <div id="perfil-link-preview" style="display:none;font-size:10px;color:rgba(10,158,110,0.7);padding-left:4px;font-weight:600;"></div>
+      </div>
+
       <!-- Toggle PIN -->
       <div id="perfil-pin-wrap" style="display:flex;flex-direction:column;gap:8px;">
         <!-- Linha do toggle -->
@@ -8404,6 +8420,13 @@ function abrirModalPerfil() {
 
   document.getElementById('perfil-nome-input').value = nome;
   perfilFotoBase64 = perfil.foto || null;
+
+  // Carrega link salvo
+  var linkInput = document.getElementById('perfil-link-input');
+  if (linkInput) {
+    linkInput.value = perfil.link || '';
+    _perfilAtualizarIconeLink(perfil.link || '');
+  }
 
   // Mostra instrumento escolhido no cadastro (read-only)
   const instEl = document.getElementById('perfil-inst-display');
@@ -17945,6 +17968,33 @@ function perfilCarregarFoto(input) {
   reader.readAsDataURL(file);
 }
 
+function _perfilAtualizarIconeLink(val) {
+  var icon = document.getElementById('perfil-link-icon');
+  var preview = document.getElementById('perfil-link-preview');
+  if (!icon || !preview) return;
+  var v = (val || '').toLowerCase().trim();
+  var svgs = {
+    instagram: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="20" height="20" rx="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.5" cy="6.5" r="1" fill="currentColor" stroke="none"/></svg>',
+    youtube:   '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M22.54 6.42a2.78 2.78 0 0 0-1.95-1.96C18.88 4 12 4 12 4s-6.88 0-8.59.46A2.78 2.78 0 0 0 1.46 6.42 29 29 0 0 0 1 12a29 29 0 0 0 .46 5.58 2.78 2.78 0 0 0 1.95 1.96C5.12 20 12 20 12 20s6.88 0 8.59-.46a2.78 2.78 0 0 0 1.95-1.96A29 29 0 0 0 23 12a29 29 0 0 0-.46-5.58z"/><polygon points="9.75 15.02 15.5 12 9.75 8.98 9.75 15.02" fill="currentColor" stroke="none"/></svg>',
+    tiktok:    '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 12a4 4 0 1 0 4 4V4a5 5 0 0 0 5 5"/></svg>',
+    spotify:   '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M8 13.5a7 7 0 0 1 8 0M7 10a9 9 0 0 1 10 0M9.5 16.5a5 5 0 0 1 5 0"/></svg>',
+    twitter:   '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4l16 16M4 20L20 4"/></svg>',
+    facebook:  '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z"/></svg>',
+    link:      '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>'
+  };
+  var labels = { instagram:'Instagram', youtube:'YouTube', tiktok:'TikTok', spotify:'Spotify', twitter:'X / Twitter', facebook:'Facebook' };
+  var rede = 'link';
+  for (var k in labels) { if (v.indexOf(k) !== -1) { rede = k; break; } }
+  icon.innerHTML = svgs[rede] || svgs.link;
+  icon.style.color = v ? 'rgba(10,158,110,0.8)' : 'rgba(10,158,110,0.5)';
+  if (v) {
+    preview.style.display = 'block';
+    preview.textContent = (labels[rede] || 'Link') + ' detectado';
+  } else {
+    preview.style.display = 'none';
+  }
+}
+
 function salvarPerfil() {
   _salvarFontePartes();
   const nomeInput = document.getElementById('perfil-nome-input');
@@ -17953,6 +18003,9 @@ function salvarPerfil() {
 
   const perfil = _lsGet('map_perfil_v1', {});
   perfil.nome = nome;
+  // Salva link de rede social
+  var linkEl = document.getElementById('perfil-link-input');
+  if (linkEl) perfil.link = linkEl.value.trim();
   // instrumento definido no cadastro, não alterado aqui
   if (perfilFotoBase64) perfil.foto = perfilFotoBase64;
   _lsSet('map_perfil_v1', perfil);
