@@ -9039,6 +9039,8 @@ async function verPerfilUsuario(uid) {
   document.getElementById('pp-banner').style.backgroundImage = '';
   document.getElementById('pp-banner').style.background = 'linear-gradient(135deg,#0d2918,#0a1a10)';
   document.getElementById('pp-add-btn').style.display = 'none';
+  var ppLink = document.getElementById('pp-link');
+  if (ppLink) ppLink.style.display = 'none';
   modal.style.display = 'flex';
 
   try {
@@ -9077,8 +9079,28 @@ async function verPerfilUsuario(uid) {
 
     // Botao adicionar (se nao for amigo ja)
     const meuUid = localStorage.getItem('map_uid_v1');
+    const amigosUids = _amigosCache.map(a => a.uid);
+    const ehAmigo = amigosUids.includes(uid);
+
+    // Link social — só exibe para amigos
+    var ppLinkEl = document.getElementById('pp-link');
+    var ppLinkLabel = document.getElementById('pp-link-label');
+    if (ppLinkEl && u.link && ehAmigo) {
+      var link = u.link.trim();
+      if (!/^https?:\/\//i.test(link)) link = 'https://' + link;
+      ppLinkEl.href = link;
+      ppLinkEl.style.display = 'flex';
+      // Detecta a rede para o label
+      var redes = { instagram:'Instagram', youtube:'YouTube', tiktok:'TikTok', spotify:'Spotify', twitter:'X / Twitter', facebook:'Facebook' };
+      var labelRede = 'Ver perfil';
+      var vLower = u.link.toLowerCase();
+      for (var kr in redes) { if (vLower.indexOf(kr) !== -1) { labelRede = redes[kr]; break; } }
+      if (ppLinkLabel) ppLinkLabel.textContent = labelRede;
+    } else if (ppLinkEl) {
+      ppLinkEl.style.display = 'none';
+    }
+
     if (uid !== meuUid) {
-      const amigosUids = _amigosCache.map(a => a.uid);
       const solEnviadasUids = (window._solEnviadas || []).map(s => s.para);
       const addBtn = document.getElementById('pp-add-btn');
       addBtn.style.display = 'block';
@@ -18019,7 +18041,8 @@ function salvarPerfil() {
       nomeUsuario: perfil.nomeUsuario || perfil.nome,
       instrumento: perfil.instrumento || null,
       profileId: perfil.profileId || _getProfileId(),
-      criadoEm: perfil.criadoEm || Date.now()
+      criadoEm: perfil.criadoEm || Date.now(),
+      link: perfil.link || null
     };
     // Foto de perfil (já comprimida para ~40KB pela compressão no carregamento)
     if (perfil.foto) fbData.foto = perfil.foto;
@@ -22134,6 +22157,11 @@ async function _fbFazerBackupAgora(btn) {
       <div id="pp-nome" style="font-size:20px;font-weight:900;color:#fff;"></div>
       <div id="pp-inst" style="font-size:12px;color:rgba(255,255,255,0.45);font-weight:600;"></div>
       <div id="pp-id" style="font-size:11px;color:rgba(10,158,110,0.5);font-family:monospace;font-weight:700;letter-spacing:1px;margin-top:2px;"></div>
+      <!-- Link social — só aparece para amigos -->
+      <a id="pp-link" href="#" target="_blank" rel="noopener noreferrer" style="display:none;margin-top:8px;padding:10px 14px;border-radius:12px;background:rgba(10,158,110,0.07);border:1px solid rgba(10,158,110,0.2);color:#0A9E6E;font-size:12px;font-weight:800;text-decoration:none;display:none;align-items:center;gap:8px;transition:background 0.15s;" onmouseenter="this.style.background='rgba(10,158,110,0.14)'" onmouseleave="this.style.background='rgba(10,158,110,0.07)'">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
+        <span id="pp-link-label">Ver perfil</span>
+      </a>
       <button id="pp-add-btn" style="display:none;margin-top:16px;width:100%;padding:13px;border-radius:13px;font-size:13px;font-weight:900;cursor:pointer;font-family:inherit;touch-action:manipulation;border:1.5px solid;transition:all 0.2s;"></button>
       <button onclick="fecharPerfilPublico()" style="margin-top:8px;width:100%;padding:11px;border-radius:12px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.07);color:rgba(255,255,255,0.35);font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;touch-action:manipulation;">Fechar</button>
     </div>
