@@ -10603,31 +10603,79 @@ function saveSong() {
     var overlay = document.createElement('div');
     overlay.setAttribute('data-confirm-modal', '1');
     overlay.style.cssText = _overlayBg();
-    overlay.innerHTML = '<div style="' + _boxBg('padding:24px 20px;width:100%;max-width:320px;display:flex;flex-direction:column;gap:14px;') + '">'
+    // Inicializa tags temporárias para o modal de salvar
+    _tagsSelecionadas = [];
+    var _inpStyle = 'width:100%;padding:12px 14px;border-radius:12px;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.1);color:#fff;font-size:14px;font-family:inherit;outline:none;box-sizing:border-box;';
+    var _labelStyle = 'font-size:9px;font-weight:800;letter-spacing:2px;color:rgba(255,255,255,0.35);text-transform:uppercase;margin-bottom:-8px;';
+    overlay.innerHTML = '<div style="' + _boxBg('padding:24px 20px;width:100%;max-width:320px;display:flex;flex-direction:column;gap:12px;') + '">'
       + '<div style="font-size:15px;font-weight:900;color:' + _txtColor() + ';">Salvar música</div>'
+      + '<div style="' + _labelStyle + '">Nome</div>'
       + '<input id="_save-name-input" type="text" placeholder="Nome da música..." maxlength="80"'
-      +   ' style="width:100%;padding:12px 14px;border-radius:12px;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.1);color:#fff;font-size:14px;font-family:inherit;outline:none;box-sizing:border-box;"'
-      +   '>'
+      +   ' style="' + _inpStyle + '">'
+      + '<div style="' + _labelStyle + '">Artista</div>'
       + '<input id="_save-artista-input" type="text" placeholder="Nome do artista..." maxlength="80"'
-      +   ' style="width:100%;padding:12px 14px;border-radius:12px;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.1);color:#fff;font-size:14px;font-family:inherit;outline:none;box-sizing:border-box;"'
-      +   '>'
-      + '<div style="display:flex;gap:10px;">'
+      +   ' style="' + _inpStyle + '">'
+      + '<div style="' + _labelStyle + '">BPM</div>'
+      + '<input id="_save-bpm-input" type="number" placeholder="BPM" min="40" max="300" inputmode="numeric"'
+      +   ' value="' + (bpm || '') + '"'
+      +   ' style="' + _inpStyle + '">'
+      + '<div style="' + _labelStyle + 'margin-bottom:2px;">Tags</div>'
+      + '<div class="tag-editor-wrap" id="_save-tag-chips"></div>'
+      + '<div class="tag-custom-row"><input class="tag-custom-input" id="_save-tag-custom-input" placeholder="Tag personalizada..." maxlength="20" onkeydown="if(event.key===\'Enter\'){event.preventDefault();_saveTagCustomAdicionar();}">'
+      +   '<button class="tag-custom-add" onclick="_saveTagCustomAdicionar()">+ Adicionar</button></div>'
+      + '<div style="display:flex;gap:10px;margin-top:2px;">'
       + '<button id="_save-cancel" style="flex:1;padding:12px;border-radius:12px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);color:rgba(255,255,255,0.4);font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;touch-action:manipulation;">Cancelar</button>'
       + '<button id="_save-confirm" style="flex:2;padding:12px;border-radius:12px;background:#0A9E6E;border:none;color:#000;font-size:12px;font-weight:900;cursor:pointer;font-family:inherit;touch-action:manipulation;">Salvar</button>'
       + '</div></div>';
     document.body.appendChild(overlay);
     overlay.addEventListener('click', function(e){ if(e.target===overlay) overlay.remove(); });
+    // Renderiza chips de tags dentro do modal de salvar
+    function _saveTagEditorRender() {
+      var wrap = document.getElementById('_save-tag-chips');
+      if (!wrap) return;
+      var todasVisiveis = _TAG_SUGERIDAS.slice();
+      _tagsSelecionadas.forEach(function(t) { if (!todasVisiveis.includes(t)) todasVisiveis.push(t); });
+      var html = '';
+      todasVisiveis.forEach(function(t) {
+        var sel = _tagsSelecionadas.includes(t);
+        var esc = t.replace(/&/g,'&amp;').replace(/"/g,'&quot;');
+        html += '<div class="tag-editor-chip' + (sel ? ' sel' : '') + '" data-tag="' + esc + '">'
+          + (sel ? '✓ ' : '') + esc + '</div>';
+      });
+      wrap.innerHTML = html;
+      wrap.querySelectorAll('.tag-editor-chip').forEach(function(chip) {
+        chip.addEventListener('click', function() {
+          var t = chip.getAttribute('data-tag');
+          var idx = _tagsSelecionadas.indexOf(t);
+          if (idx === -1) _tagsSelecionadas.push(t); else _tagsSelecionadas.splice(idx, 1);
+          _saveTagEditorRender();
+        });
+      });
+    }
+    window._saveTagCustomAdicionar = function() {
+      var input = document.getElementById('_save-tag-custom-input');
+      var val = _tagSlug(input.value);
+      if (!val || val.length < 2) { input.focus(); return; }
+      if (!_tagsSelecionadas.includes(val)) _tagsSelecionadas.push(val);
+      input.value = '';
+      _saveTagEditorRender();
+    };
+    _saveTagEditorRender();
     var inp = document.getElementById('_save-name-input');
     var inpArtista = document.getElementById('_save-artista-input');
+    var inpBpm = document.getElementById('_save-bpm-input');
     setTimeout(function(){ inp.focus(); }, 100);
     var _doSave = function() {
       var name = inp.value.trim();
       if (!name) { inp.focus(); return; }
       var artista = inpArtista.value.trim();
+      var bpmSalvo = parseInt(inpBpm.value) || bpm;
+      var tagsSalvas = _tagsSelecionadas.slice();
       overlay.remove();
+      _tagsSelecionadas = [];
       var agora = new Date();
       var dataSalvo = agora.toLocaleDateString('pt-BR') + ' ' + agora.toLocaleTimeString('pt-BR', {hour:'2-digit',minute:'2-digit'});
-      var newSong = { name: name, artista: artista, dataSalvo: dataSalvo, bpm: bpm, parts: parts, id: Date.now(), favorite: false };
+      var newSong = { name: name, artista: artista, dataSalvo: dataSalvo, bpm: bpmSalvo, tags: tagsSalvas, parts: parts, id: Date.now(), favorite: false };
       songs.push(newSong);
       currentSongIndex = songs.length - 1;
       updateStorage();
