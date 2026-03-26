@@ -3150,6 +3150,7 @@ body { font-family: -apple-system, 'Inter', BlinkMacSystemFont, 'Segoe UI', sans
   -webkit-overflow-scrolling: touch;
   scroll-behavior: smooth;
   overscroll-behavior-y: contain;
+  touch-action: pan-y;
   background: var(--bib-bg, #030309);
 }
 
@@ -3333,6 +3334,7 @@ body { font-family: -apple-system, 'Inter', BlinkMacSystemFont, 'Segoe UI', sans
 .sala-chat-avisos {
   margin-top: 10px; display: flex; flex-direction: column;
   gap: 6px; max-height: 150px; overflow-y: auto;
+  -webkit-overflow-scrolling: touch; touch-action: pan-y;
 }
 .sala-chat-item {
   background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.07);
@@ -3763,7 +3765,7 @@ body { font-family: -apple-system, 'Inter', BlinkMacSystemFont, 'Segoe UI', sans
   padding: 0 20px 14px; border-bottom: 1px solid rgba(255,255,255,0.06);
   flex-shrink: 0;
 }
-.modal-addmusica-list { overflow-y: auto; flex: 1; padding: 10px 0; }
+.modal-addmusica-list { overflow-y: auto; flex: 1; padding: 10px 0; -webkit-overflow-scrolling: touch; touch-action: pan-y; }
 .modal-addmusica-item {
   display: flex; align-items: center; justify-content: space-between;
   padding: 12px 20px; cursor: pointer; transition: background 0.15s;
@@ -3997,6 +3999,7 @@ body { font-family: -apple-system, 'Inter', BlinkMacSystemFont, 'Segoe UI', sans
 .dc-fx-modal-body {
   overflow-y: auto; -webkit-overflow-scrolling: touch;
   padding: 14px 16px 18px; display: flex; flex-direction: column; gap: 8px;
+  touch-action: pan-y;
 }
 /* Preset chips dentro do modal */
 .dc-fx-modal-presets {
@@ -4058,6 +4061,7 @@ body { font-family: -apple-system, 'Inter', BlinkMacSystemFont, 'Segoe UI', sans
 .dc-pad-fx-body {
   overflow-y: auto; -webkit-overflow-scrolling: touch;
   padding: 14px 16px 18px; display: flex; flex-direction: column; gap: 10px;
+  touch-action: pan-y;
 }
 .dc-pad-fx-row {
   display: flex; align-items: center; justify-content: space-between;
@@ -4369,7 +4373,7 @@ body { font-family: -apple-system, 'Inter', BlinkMacSystemFont, 'Segoe UI', sans
   background: rgba(8,8,16,0.97);
   border-radius: 12px; padding: 8px;
   display: none; flex-direction: column; gap: 6px;
-  overflow-y: auto;
+  overflow-y: auto; -webkit-overflow-scrolling: touch; touch-action: pan-y;
 }
 .dc-pad-fx-modal.show { display: flex; }
 .dc-pad-fx-modal-header {
@@ -4627,7 +4631,7 @@ body { font-family: -apple-system, 'Inter', BlinkMacSystemFont, 'Segoe UI', sans
 /* SETLIST */
 .side-panel { background: var(--bg-secondary); border-radius: var(--radius-xl); border: 1px solid var(--border-color); height: fit-content; max-height: 80vh; overflow: hidden; display: flex; flex-direction: column; }
 .panel-header { padding: 15px; border-bottom: 1px solid var(--border-color); font-weight: 800; font-size: 13px; text-transform: uppercase; color: var(--accent-primary); display: flex; align-items: center; }
-.song-list { overflow-y: auto; padding: 10px; }
+.song-list { overflow-y: auto; padding: 10px; -webkit-overflow-scrolling: touch; touch-action: pan-y; }
 .song-item { background: var(--bg-tertiary); padding: 12px; border-radius: 10px; margin-bottom: 8px; cursor: pointer; border: 1px solid transparent; display: flex; justify-content: space-between; align-items: center; }
 .song-item.fav { border-color: rgba(255,215,0,0.3); }
 .fav-star { color: #888; font-size: 14px; padding: 5px; transition: 0.2s; cursor: pointer; }
@@ -4706,6 +4710,7 @@ body.performance-mode .chord-area { pointer-events: none; height: auto !importan
     max-height: calc(100vh - 56px) !important;
     overflow-y: auto !important;
     -webkit-overflow-scrolling: touch !important;
+    touch-action: pan-y !important;
   }
 
   /* Itens do menu um pouco mais compactos */
@@ -4716,6 +4721,8 @@ body.performance-mode .chord-area { pointer-events: none; height: auto !importan
     max-height: 88vh !important;
     overflow-y: auto !important;
     padding: 16px 16px !important;
+    -webkit-overflow-scrolling: touch !important;
+    touch-action: pan-y !important;
   }
 
   /* Metrônomo sem padding inferior gigante */
@@ -5167,6 +5174,7 @@ body.performance-mode #perf-font-ctrl { display: flex; }
 /* List */
 .amigos-list {
   overflow-y: auto; flex: 1; padding: 8px 0 24px;
+  -webkit-overflow-scrolling: touch; touch-action: pan-y;
 }
 .amigo-item {
   display: flex; align-items: center; gap: 14px;
@@ -5705,6 +5713,7 @@ body[data-ambiente="vocalista"] #notif-panel { display: none !important; }
 .chat-global-msgs {
   flex: 1; overflow-y: auto; -webkit-overflow-scrolling: touch;
   padding: 12px 16px; display: flex; flex-direction: column; gap: 12px;
+  touch-action: pan-y; overscroll-behavior: contain;
 }
 .chat-global-msg {
   display: flex; gap: 10px; align-items: flex-start;
@@ -5987,7 +5996,7 @@ body.viewer-mode input[type="text"] { pointer-events: none; }
 }
 .notif-clear-btn:hover { color: rgba(255,255,255,0.6); }
 
-.notif-list { overflow-y: auto; flex: 1; }
+.notif-list { overflow-y: auto; flex: 1; -webkit-overflow-scrolling: touch; touch-action: pan-y; }
 .notif-empty {
   padding: 28px 16px; text-align: center;
   font-size: 11px; color: rgba(255,255,255,0.2); font-weight: 600;
@@ -6118,6 +6127,7 @@ body.viewer-mode input[type="text"] { pointer-events: none; }
   display: flex; flex-direction: column;
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;
+  touch-action: pan-y;
   opacity: 0;
   transform: translateY(50px);
   transition: none;
@@ -6531,6 +6541,7 @@ body.auth-pending #toast {
   flex: 1;
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;
+  touch-action: pan-y;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -6887,7 +6898,7 @@ body.auth-pending #toast {
     <div style="height:1px;background:rgba(255,255,255,0.05);margin:16px 0 0;flex-shrink:0;"></div>
 
     <!-- Scrollable form area -->
-    <div style="overflow-y:auto;flex:1;padding:20px 24px 32px;display:flex;flex-direction:column;gap:20px;">
+    <div style="overflow-y:auto;flex:1;padding:20px 24px 32px;display:flex;flex-direction:column;gap:20px;-webkit-overflow-scrolling:touch;touch-action:pan-y;">
 
       <!-- ID do Perfil -->
       <!-- Nome -->
@@ -7024,7 +7035,7 @@ body.auth-pending #toast {
       </div>
     </div>
     <!-- Lista -->
-    <div id="perfil-historico-lista" style="overflow-y:auto;flex:1;padding:14px 16px 24px;display:flex;flex-direction:column;gap:8px;"></div>
+    <div id="perfil-historico-lista" style="overflow-y:auto;flex:1;padding:14px 16px 24px;display:flex;flex-direction:column;gap:8px;-webkit-overflow-scrolling:touch;touch-action:pan-y;"></div>
   </div>
 </div>
 
@@ -7127,7 +7138,7 @@ body.auth-pending #toast {
 
 <!-- GUIA AFINADOR DE BATERIA -->
 <div class="dc-addpad-overlay" id="dc-drum-guia-overlay" onclick="if(event.target===this)dcFecharAfinadorBateriaGuia()">
-  <div class="dc-addpad-box" style="max-width:420px;max-height:85vh;overflow-y:auto;">
+  <div class="dc-addpad-box" style="max-width:420px;max-height:85vh;overflow-y:auto;-webkit-overflow-scrolling:touch;touch-action:pan-y;">
     <div class="dc-addpad-header">
       <span class="dc-addpad-title">Guia de Afinação</span>
       <button class="dc-addpad-close" onclick="dcFecharAfinadorBateriaGuia()">
@@ -7171,7 +7182,7 @@ body.auth-pending #toast {
 </div>
 
 <!-- CHAT GLOBAL -->
-<div id="modal-chat-global" ontouchend="if(event.target===this){event.preventDefault();fecharChatGlobal();}" onclick="if(event.target===this)fecharChatGlobal()">
+<div id="modal-chat-global" onclick="if(event.target===this)fecharChatGlobal()">
   <div class="chat-global-sheet">
     <div class="chat-global-header">
       <div class="chat-global-title">
@@ -7250,7 +7261,7 @@ body.auth-pending #toast {
 
 <!-- SYNC BAR -->
 <!-- VIEW SETLIST PÚBLICO — somente-leitura para visitantes -->
-<div id="setlist-readonly-view" style="display:none;position:fixed;inset:0;z-index:999990;background:#03030A;overflow-y:auto;padding:32px 20px 60px;">
+<div id="setlist-readonly-view" style="display:none;position:fixed;inset:0;z-index:999990;background:#03030A;overflow-y:auto;padding:32px 20px 60px;-webkit-overflow-scrolling:touch;touch-action:pan-y;">
   <div style="max-width:480px;margin:0 auto;">
     <div style="display:flex;align-items:center;gap:10px;margin-bottom:28px;">
       <div style="font-size:10px;font-weight:900;letter-spacing:3px;color:#0A9E6E;">MAP MUSIC PRO</div>
@@ -7408,7 +7419,7 @@ body.auth-pending #toast {
 
 <!-- MODAL SALA -->
 <div class="modal-overlay" id="modal-sala" ontouchend="if(event.target===this){event.preventDefault();_bloquearFantasma();fecharModal();}" onclick="if(event.target===this)fecharModal()">
-  <div class="modal-box" style="max-width:400px; padding:0; overflow-y:auto; overflow-x:hidden; max-height:90vh;">
+  <div class="modal-box" style="max-width:400px; padding:0; overflow-y:auto; overflow-x:hidden; max-height:90vh; -webkit-overflow-scrolling:touch; touch-action:pan-y;">
 
     <!-- Cabeçalho -->
     <div style="padding:28px 28px 20px; border-bottom:1px solid var(--glass-border);">
@@ -7507,7 +7518,7 @@ body.auth-pending #toast {
       </div>
       <p style="font-size:11px;color:var(--text-secondary);margin:0;" id="setlist-pub-data"></p>
     </div>
-    <div id="setlist-pub-lista" style="overflow-y:auto;flex:1;padding:12px 20px 8px;display:flex;flex-direction:column;gap:6px;"></div>
+    <div id="setlist-pub-lista" style="overflow-y:auto;flex:1;padding:12px 20px 8px;display:flex;flex-direction:column;gap:6px;-webkit-overflow-scrolling:touch;touch-action:pan-y;"></div>
     <div style="padding:14px 20px 20px;border-top:1px solid var(--glass-border);flex-shrink:0;display:flex;flex-direction:column;gap:8px;">
       <div style="display:flex;align-items:center;gap:8px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.09);border-radius:10px;padding:10px 12px;">
         <span id="setlist-pub-link" style="font-size:11px;color:rgba(255,255,255,0.5);flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-family:monospace;"></span>
@@ -8241,7 +8252,7 @@ body.auth-pending #toast {
         <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
       </button>
     </div>
-    <div style="overflow-y:auto;padding:14px 18px 18px;display:flex;flex-direction:column;gap:8px;" id="frases-edit-lista"></div>
+    <div style="overflow-y:auto;padding:14px 18px 18px;display:flex;flex-direction:column;gap:8px;-webkit-overflow-scrolling:touch;touch-action:pan-y;" id="frases-edit-lista"></div>
     <div style="padding:0 18px 18px;display:flex;gap:8px;">
       <input id="frases-nova-input" type="text" maxlength="40" placeholder="Nova frase..."
         style="flex:1;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);border-radius:10px;padding:9px 12px;color:#fff;font-size:12px;font-weight:700;outline:none;font-family:inherit;"
@@ -10552,7 +10563,7 @@ function transposeAll(dir) {
   // Regex: [root][qualidade][/baixo]
   // Qualidade: m/maj/min/dim/aug/sus/add + numeros + alteracoes (b5, #9, etc)
   // Lookahead: so transpoe quando seguido de separador ou fim — nunca parte de palavra
-  var _tPat = /\b([A-G][#b]?)((?:(?:m(?:aj)?|M(?:aj)?|min|dim7?|aug|sus|add)(?:[0-9]*))?(?:[0-9]+)?(?:[b#][0-9]+)*(?:sus[0-9]*|add[0-9]+)?)(?:\/([A-G][#b]?))?(?=[\s|,()\[\]]|$)/g;
+  var _tPat = /\b([A-G][#b]?)((?:(?:m(?:aj)?|M(?:aj)?|min|dim7?|aug|sus|add)(?:[0-9]*))?(?:[0-9]+)?(?:[Mb#][0-9]*)*(?:M(?:aj)?[0-9]*)?(?:sus[0-9]*|add[0-9]+)?)(?:\/([A-G][#b]?))?(?=[\s|,()\[\]]|$)/g;
   document.querySelectorAll('.chord-area').forEach(function(area) {
     area.value = area.value.replace(_tPat, function(match, root, quality, bass) {
       quality = quality || '';
@@ -21485,7 +21496,7 @@ async function _fbFazerBackupAgora(btn) {
       Buscar BPM
     </button>
     <!-- Resultados -->
-    <div id="bpm-mic-results" style="display:none;flex-direction:column;gap:8px;max-height:220px;overflow-y:auto;"></div>
+    <div id="bpm-mic-results" style="display:none;flex-direction:column;gap:8px;max-height:220px;overflow-y:auto;-webkit-overflow-scrolling:touch;touch-action:pan-y;"></div>
   </div>
 </div>
 
@@ -21590,7 +21601,7 @@ async function _fbFazerBackupAgora(btn) {
 </style>
 
 <div id="modal-config-audio" style="display:none;position:fixed;inset:0;z-index:99999999;background:rgba(0,0,0,0.93);align-items:flex-end;justify-content:center;">
-<div style="background:#0c0c13;border:1px solid rgba(255,255,255,0.07);border-top:1px solid rgba(10,158,110,0.18);border-radius:24px 24px 0 0;width:100%;max-width:520px;max-height:94vh;overflow-y:auto;display:flex;flex-direction:column;">
+<div style="background:#0c0c13;border:1px solid rgba(255,255,255,0.07);border-top:1px solid rgba(10,158,110,0.18);border-radius:24px 24px 0 0;width:100%;max-width:520px;max-height:94vh;overflow-y:auto;-webkit-overflow-scrolling:touch;touch-action:pan-y;display:flex;flex-direction:column;">
 
   <!-- HANDLE -->
   <div style="padding:10px 0 0;display:flex;justify-content:center;flex-shrink:0;">
@@ -21871,7 +21882,7 @@ async function _fbFazerBackupAgora(btn) {
   </div>
 
   <!-- Lista de usuários -->
-  <div id="adm-user-list" style="flex:1;overflow-y:auto;padding:10px 14px 80px;display:flex;flex-direction:column;gap:6px;-webkit-overflow-scrolling:touch;">
+  <div id="adm-user-list" style="flex:1;overflow-y:auto;padding:10px 14px 80px;display:flex;flex-direction:column;gap:6px;-webkit-overflow-scrolling:touch;touch-action:pan-y;">
     <div style="text-align:center;padding:60px 20px;color:rgba(255,255,255,0.2);font-size:13px;">Carregando...</div>
   </div>
 
@@ -22201,7 +22212,7 @@ async function _fbFazerBackupAgora(btn) {
       </div>
     </div>
     <!-- Info -->
-    <div style="padding:14px 24px 24px;display:flex;flex-direction:column;gap:6px;overflow-y:auto;">
+    <div style="padding:14px 24px 24px;display:flex;flex-direction:column;gap:6px;overflow-y:auto;-webkit-overflow-scrolling:touch;touch-action:pan-y;">
       <div id="pp-nome" style="font-size:20px;font-weight:900;color:#fff;"></div>
       <div id="pp-inst" style="font-size:12px;color:rgba(255,255,255,0.45);font-weight:600;"></div>
       <div id="pp-id" style="font-size:11px;color:rgba(10,158,110,0.5);font-family:monospace;font-weight:700;letter-spacing:1px;margin-top:2px;"></div>
@@ -22415,7 +22426,7 @@ async function _fbFazerBackupAgora(btn) {
   </div>
 
   <!-- CONTEÚDO -->
-  <div id="voc-home" style="flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;position:relative;">
+  <div id="voc-home" style="flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;touch-action:pan-y;position:relative;">
     <!-- Notas musicais flutuantes -->
     <canvas id="voc-notas-canvas" style="position:absolute;inset:0;width:100%;height:100%;pointer-events:none;z-index:0;opacity:0.07;"></canvas>
 
@@ -22513,7 +22524,7 @@ async function _fbFazerBackupAgora(btn) {
     </div>
 
     <!-- Grid de letras -->
-    <div id="voc-bib-grid" style="flex:1;overflow-y:auto;padding:12px 16px 80px;display:grid;grid-template-columns:repeat(2,1fr);gap:12px;align-content:start;margin-top:8px;"></div>
+    <div id="voc-bib-grid" style="flex:1;overflow-y:auto;padding:12px 16px 80px;display:grid;grid-template-columns:repeat(2,1fr);gap:12px;align-content:start;margin-top:8px;-webkit-overflow-scrolling:touch;touch-action:pan-y;"></div>
 
   </div>
 
@@ -22553,7 +22564,7 @@ async function _fbFazerBackupAgora(btn) {
     </div>
 
     <!-- Conteúdo rolável -->
-    <div id="voc-perf-conteudo" style="flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none;" ontouchstart="_vocPerfTouchStart(event)" ontouchend="_vocPerfTouchEnd(event)"></div>
+    <div id="voc-perf-conteudo" style="flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;touch-action:pan-y;scrollbar-width:none;" ontouchstart="_vocPerfTouchStart(event)" ontouchend="_vocPerfTouchEnd(event)"></div>
 
     <!-- Barra inferior (auto-hide) -->
     <div id="voc-perf-footer" style="display:flex;align-items:center;justify-content:center;gap:14px;padding:12px 18px 16px;background:rgba(0,0,0,0.95);border-top:1px solid rgba(255,255,255,0.05);flex-shrink:0;transition:opacity 0.3s,transform 0.3s;z-index:2;">
@@ -22580,7 +22591,7 @@ async function _fbFazerBackupAgora(btn) {
       <span style="font-size:15px;font-weight:900;color:#fff;flex:1;">Modo Show</span>
       <button onclick="vocAbrirCriarShow()" style="background:rgba(255,165,0,0.12);border:1px solid rgba(255,165,0,0.3);color:#ffa500;padding:7px 14px;border-radius:10px;font-size:11px;font-weight:900;cursor:pointer;font-family:inherit;touch-action:manipulation;">+ Novo</button>
     </div>
-    <div id="voc-show-lista" style="flex:1;overflow-y:auto;padding:16px;display:flex;flex-direction:column;gap:10px;"></div>
+    <div id="voc-show-lista" style="flex:1;overflow-y:auto;padding:16px;display:flex;flex-direction:column;gap:10px;-webkit-overflow-scrolling:touch;touch-action:pan-y;"></div>
   </div>
 
   <!-- PAINEL CRIAR SETLIST -->
@@ -22635,7 +22646,7 @@ async function _fbFazerBackupAgora(btn) {
       <div id="voc-show-progress" style="height:100%;background:linear-gradient(90deg,#ffa500,#ff6b00);width:0%;transition:width 0.4s;"></div>
     </div>
     <!-- Conteúdo letra atual -->
-    <div id="voc-show-conteudo" style="flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none;"></div>
+    <div id="voc-show-conteudo" style="flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;touch-action:pan-y;scrollbar-width:none;"></div>
     <!-- Navegação -->
     <div id="voc-show-nav" style="display:flex;align-items:center;gap:10px;padding:12px 18px 16px;background:rgba(0,0,0,0.95);border-top:1px solid rgba(255,255,255,0.05);flex-shrink:0;">
       <button onclick="vocShowAnterior()" id="voc-show-btn-ant" style="flex:1;padding:12px;border-radius:12px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.08);color:rgba(255,255,255,0.5);cursor:pointer;font-size:12px;font-weight:700;font-family:inherit;touch-action:manipulation;display:flex;align-items:center;justify-content:center;gap:6px;">
