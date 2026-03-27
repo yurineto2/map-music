@@ -4691,7 +4691,7 @@ body.performance-mode .main-layout { grid-template-columns: 1fr; padding: 100px 
 @media (max-width: 640px) {
   body.performance-mode .main-layout { padding: 80px 4% 120px; }
 }
-body.performance-mode .chord-area { pointer-events: none; height: auto !important; }
+body.performance-mode .chord-area { pointer-events: none; overflow: hidden; }
 
 /* ── LANDSCAPE MODE (celular/tablet virado) ─────────────────────────────────
    Dispara apenas em telas com altura ≤ 500px em orientação paisagem.
@@ -10460,9 +10460,12 @@ function _perfFontAplicar(size) {
     + '@media (max-width:640px) { body.performance-mode .chord-area { font-size: ' + size + 'px !important; } }';
   var lbl = document.getElementById('perf-font-val');
   if (lbl) lbl.textContent = size + 'px';
-  // Reajusta alturas
-  document.querySelectorAll('.chord-area').forEach(function(ta) {
-    ta.style.height = ''; ta.style.height = ta.scrollHeight + 'px';
+  // Reajusta alturas após o browser aplicar o novo font-size
+  requestAnimationFrame(function() {
+    document.querySelectorAll('.chord-area').forEach(function(ta) {
+      ta.style.height = 'auto';
+      ta.style.height = ta.scrollHeight + 'px';
+    });
   });
 }
 
@@ -10992,9 +10995,11 @@ function _aplicarFontePartes(size) {
   var lbl = document.getElementById('perf-font-val');
   if (lbl) lbl.textContent = showSize + 'px';
   // Reajusta alturas de todos os textareas visíveis
-  document.querySelectorAll('.chord-area').forEach(function(ta) {
-    ta.style.height = '';
-    ta.style.height = ta.scrollHeight + 'px';
+  requestAnimationFrame(function() {
+    document.querySelectorAll('.chord-area').forEach(function(ta) {
+      ta.style.height = 'auto';
+      ta.style.height = ta.scrollHeight + 'px';
+    });
   });
 }
 
