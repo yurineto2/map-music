@@ -8311,8 +8311,8 @@ body.auth-pending #toast {
 </div>
 <!-- Botao SAIR DO SHOW separado — posicao fixa independente do teleprompter -->
 <button class="mode-show-container" id="mode-show-btn" 
-  ontouchstart="_togglePerfTouch=Date.now();togglePerf();event.preventDefault();" 
-  onclick="if(!window._togglePerfTouch||Date.now()-_togglePerfTouch>300)togglePerf();" 
+  ontouchstart="_togglePerfTouch=Date.now();togglePerf();event.preventDefault();event.stopPropagation();" 
+  onclick="if(!window._togglePerfTouch||Date.now()-_togglePerfTouch>600)togglePerf();" 
   style="touch-action:manipulation;background:none;border:none;font-family:inherit;cursor:pointer;">
   <span id="mode-text">MODO SHOW</span>
 </button>
@@ -9643,9 +9643,12 @@ function togglePerf() {
     return;
   }
 
-  // Ao SAIR do show — remove overlay anterior (evita estado preso) e cria novo
+  // Ao SAIR do show — se o modal já existe, não recria (evita fechar e reabrir em sequência)
   var _prev = document.getElementById('_confirm-sair-show');
-  if (_prev) _prev.remove();
+  if (_prev) return;
+  if (!window._togglePerfSairGuard) window._togglePerfSairGuard = 0;
+  if (Date.now() - window._togglePerfSairGuard < 600) return;
+  window._togglePerfSairGuard = Date.now();
 
   var overlay = document.createElement('div');
   overlay.id = '_confirm-sair-show';
@@ -10932,6 +10935,7 @@ function desconectar() {
     // Fecha modal e mostra toast
     try { document.getElementById('modal-sala').classList.remove('show'); } catch(e){}
     try { mostrarEscolhaSala(); } catch(e){}
+    try { atualizarSyncBar(''); } catch(e){}
     showToast('Sala encerrada.');
   } catch(e) {
     if (window._DEBUG) console.error('desconectar erro:', e);
