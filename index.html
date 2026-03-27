@@ -7672,265 +7672,256 @@ body.auth-pending #toast {
 
   </div>
 
-<!-- ── METRÔNOMO FLUTUANTE ─────────────────────────────────────────── -->
-<div id="metro-fab-wrap" style="position:fixed;bottom:calc(88px + env(safe-area-inset-bottom,0px));right:max(18px,env(safe-area-inset-right,18px));z-index:2200;display:flex;flex-direction:column;align-items:flex-end;gap:10px;">
-
-  <!-- Painel expansível -->
-  <div id="metro-fab-panel" style="display:none;background:rgba(12,12,20,0.97);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);border:1px solid rgba(10,158,110,0.25);border-radius:22px;padding:18px 16px 14px;width:220px;text-align:center;box-shadow:0 8px 40px rgba(0,0,0,0.65);animation:metroFabIn 0.22s cubic-bezier(0.34,1.4,0.64,1);position:relative;">
-
-    <!-- mic BPM -->
-    <button id="bpm-mic-btn" onclick="bpmMicSearch()" title="Pesquisar BPM da música"
-      style="position:absolute;top:12px;right:12px;width:28px;height:28px;border-radius:50%;background:rgba(10,158,110,0.1);border:1.5px solid rgba(10,158,110,0.3);color:rgba(10,158,110,0.7);cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all 0.2s;touch-action:manipulation;"
-      onmouseover="this.style.background='rgba(10,158,110,0.2)'" onmouseout="this.style.background='rgba(10,158,110,0.1)'">
-      <svg id="bpm-mic-icon" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-        <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/>
-        <path d="M19 10v2a7 7 0 0 1-14 0v-2"/>
-        <line x1="12" y1="19" x2="12" y2="23"/>
-        <line x1="8" y1="23" x2="16" y2="23"/>
-      </svg>
-    </button>
-
-    <!-- BPM display -->
-    <div class="bpm-val" id="bpm-display" style="font-size:46px;font-weight:800;color:var(--accent-primary);line-height:1;">120</div>
-    <div style="font-size:9px;font-weight:900;opacity:0.4;letter-spacing:2px;margin-bottom:10px;">BPM</div>
-
-    <!-- TAP -->
-    <button id="tap-btn"
-      style="border:2px solid var(--accent-primary);background:none;color:var(--accent-primary);width:62px;height:62px;border-radius:50%;font-weight:900;font-size:12px;margin:0 0 12px;cursor:pointer;transition:transform 0.08s cubic-bezier(0.34,1.8,0.64,1),background 0.1s;touch-action:manipulation;"
-      onmousedown="this.style.transform='scale(0.88)';this.style.background='rgba(10,158,110,0.15)'"
-      onmouseup="this.style.transform='';this.style.background='none'"
-      ontouchstart="this.style.transform='scale(0.88)';this.style.background='rgba(10,158,110,0.15)'"
-      ontouchend="this.style.transform='';this.style.background='none'">TAP</button>
-
-    <!-- +/- BPM -->
-    <div style="display:flex;gap:10px;justify-content:center;margin-bottom:12px;">
-      <button onclick="adj(-5)" style="width:30px;height:30px;border-radius:8px;border:1px solid rgba(255,255,255,0.1);background:none;color:rgba(255,255,255,0.5);cursor:pointer;font-size:10px;font-weight:800;">−5</button>
-      <button onclick="adj(-1)" style="width:30px;height:30px;border-radius:50%;border:1px solid var(--border-color);background:none;color:#fff;cursor:pointer;font-size:16px;font-weight:700;">−</button>
-      <button onclick="adj(1)"  style="width:30px;height:30px;border-radius:50%;border:1px solid var(--border-color);background:none;color:#fff;cursor:pointer;font-size:16px;font-weight:700;">+</button>
-      <button onclick="adj(5)"  style="width:30px;height:30px;border-radius:8px;border:1px solid rgba(255,255,255,0.1);background:none;color:rgba(255,255,255,0.5);cursor:pointer;font-size:10px;font-weight:800;">+5</button>
-    </div>
-
-    <!-- Divisor -->
-    <div style="height:1px;background:rgba(255,255,255,0.06);margin:0 0 12px;"></div>
-
-    <!-- COMPASSO -->
-    <div style="margin-bottom:10px;">
-      <div style="font-size:8px;font-weight:900;letter-spacing:2px;color:rgba(255,255,255,0.35);text-transform:uppercase;margin-bottom:6px;">Compasso</div>
-      <div style="display:flex;gap:5px;justify-content:center;flex-wrap:wrap;">
-        <button onclick="metroSetCompasso(2,4)" id="comp-2-4" class="metro-comp-btn">2/4</button>
-        <button onclick="metroSetCompasso(3,4)" id="comp-3-4" class="metro-comp-btn">3/4</button>
-        <button onclick="metroSetCompasso(4,4)" id="comp-4-4" class="metro-comp-btn metro-comp-ativo">4/4</button>
-        <button onclick="metroSetCompasso(5,4)" id="comp-5-4" class="metro-comp-btn">5/4</button>
-        <button onclick="metroSetCompasso(6,8)" id="comp-6-8" class="metro-comp-btn">6/8</button>
-        <button onclick="metroSetCompasso(7,8)" id="comp-7-8" class="metro-comp-btn">7/8</button>
-      </div>
-    </div>
-
-    <!-- Divisor -->
-    <div style="height:1px;background:rgba(255,255,255,0.06);margin:0 0 12px;"></div>
-
-    <!-- SUBDIVISÕES -->
-    <div style="margin-bottom:10px;">
-      <div style="font-size:8px;font-weight:900;letter-spacing:2px;color:rgba(255,255,255,0.35);text-transform:uppercase;margin-bottom:6px;">Subdivisão</div>
-      <div style="display:flex;gap:5px;justify-content:center;">
-        <button onclick="metroSetSub(1)" id="sub-1" class="metro-sub-btn metro-sub-ativo" title="Tempo">♩</button>
-        <button onclick="metroSetSub(2)" id="sub-2" class="metro-sub-btn" title="Colcheia">♪♪</button>
-        <button onclick="metroSetSub(3)" id="sub-3" class="metro-sub-btn" title="Tercina">3</button>
-        <button onclick="metroSetSub(4)" id="sub-4" class="metro-sub-btn" title="Semicolcheia">♬</button>
-      </div>
-    </div>
-
-    <!-- Divisor -->
-    <div style="height:1px;background:rgba(255,255,255,0.06);margin:0 0 12px;"></div>
-
-    <!-- FLASH VISUAL -->
-    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;padding:0 2px;">
-      <span style="font-size:9px;font-weight:900;letter-spacing:1.5px;color:rgba(255,255,255,0.35);text-transform:uppercase;">Flash no Tempo 1</span>
-      <button id="metro-flash-toggle" onclick="metroToggleFlash()"
-        style="width:38px;height:22px;border-radius:11px;background:rgba(255,255,255,0.08);border:none;cursor:pointer;position:relative;transition:background 0.22s;touch-action:manipulation;padding:0;flex-shrink:0;">
-        <span id="metro-flash-knob" style="position:absolute;top:3px;left:3px;width:16px;height:16px;border-radius:50%;background:#fff;transition:left 0.22s,background 0.22s;box-shadow:0 1px 4px rgba(0,0,0,0.4);"></span>
-      </button>
-    </div>
-
-    <!-- ACELERAÇÃO GRADUAL -->
-    <div style="background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.07);border-radius:12px;padding:10px 12px;margin-bottom:12px;">
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
-        <span style="font-size:9px;font-weight:900;letter-spacing:1.5px;color:rgba(255,255,255,0.35);text-transform:uppercase;">Aceleração</span>
-        <button id="metro-accel-toggle" onclick="metroToggleAccel()"
-          style="width:38px;height:22px;border-radius:11px;background:rgba(255,255,255,0.08);border:none;cursor:pointer;position:relative;transition:background 0.22s;touch-action:manipulation;padding:0;flex-shrink:0;">
-          <span id="metro-accel-knob" style="position:absolute;top:3px;left:3px;width:16px;height:16px;border-radius:50%;background:#fff;transition:left 0.22s,background 0.22s;box-shadow:0 1px 4px rgba(0,0,0,0.4);"></span>
-        </button>
-      </div>
-      <div id="metro-accel-cfg" style="display:none;flex-direction:column;gap:6px;">
-        <div style="display:flex;align-items:center;justify-content:space-between;">
-          <span style="font-size:9px;color:rgba(255,255,255,0.4);">Alvo (BPM)</span>
-          <div style="display:flex;align-items:center;gap:6px;">
-            <button onclick="metroAccelAdjTarget(-5)" style="background:none;border:1px solid rgba(255,255,255,0.1);color:rgba(255,255,255,0.5);width:22px;height:22px;border-radius:6px;cursor:pointer;font-size:10px;">−</button>
-            <span id="metro-accel-target-disp" style="font-size:13px;font-weight:900;color:var(--accent-primary);min-width:30px;text-align:center;">160</span>
-            <button onclick="metroAccelAdjTarget(5)"  style="background:none;border:1px solid rgba(255,255,255,0.1);color:rgba(255,255,255,0.5);width:22px;height:22px;border-radius:6px;cursor:pointer;font-size:10px;">+</button>
-          </div>
-        </div>
-        <div style="display:flex;align-items:center;justify-content:space-between;">
-          <span style="font-size:9px;color:rgba(255,255,255,0.4);">+BPM por compasso</span>
-          <div style="display:flex;align-items:center;gap:6px;">
-            <button onclick="metroAccelAdjStep(-1)" style="background:none;border:1px solid rgba(255,255,255,0.1);color:rgba(255,255,255,0.5);width:22px;height:22px;border-radius:6px;cursor:pointer;font-size:10px;">−</button>
-            <span id="metro-accel-step-disp" style="font-size:13px;font-weight:900;color:var(--accent-primary);min-width:20px;text-align:center;">5</span>
-            <button onclick="metroAccelAdjStep(1)"  style="background:none;border:1px solid rgba(255,255,255,0.1);color:rgba(255,255,255,0.5);width:22px;height:22px;border-radius:6px;cursor:pointer;font-size:10px;">+</button>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- SOM DO METRÔNOMO -->
-    <div style="margin-bottom:12px;position:relative;">
-      <div style="font-size:8px;font-weight:900;letter-spacing:2px;color:rgba(255,255,255,0.35);text-transform:uppercase;margin-bottom:6px;">Som do Click</div>
-
-      <!-- Trigger -->
-      <button id="metro-sound-trigger" onclick="metroToggleSoundMenu(event)"
-        style="width:100%;padding:8px 12px;border-radius:10px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.12);color:#fff;font-size:11px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:space-between;gap:8px;font-family:inherit;touch-action:manipulation;transition:border-color 0.15s;">
-        <span style="display:flex;align-items:center;gap:8px;">
-          <span id="metro-sound-icon" style="display:flex;align-items:center;color:var(--accent-primary);"></span>
-          <span id="metro-sound-label">Sine</span>
-        </span>
-        <!-- chevron -->
-        <svg id="metro-sound-chevron" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="opacity:0.4;transition:transform 0.2s;flex-shrink:0;"><polyline points="6 9 12 15 18 9"/></svg>
-      </button>
-
-      <!-- Dropdown list -->
-      <div id="metro-sound-menu" style="display:none;position:absolute;bottom:calc(100% + 6px);left:0;right:0;background:rgba(10,10,18,0.98);border:1px solid rgba(255,255,255,0.1);border-radius:12px;overflow:hidden;box-shadow:0 8px 32px rgba(0,0,0,0.7);z-index:100;backdrop-filter:blur(16px);">
-        <div class="metro-sound-opt" data-val="sine" onclick="metroSetSound('sine')">
-          <span class="metro-sound-opt-icon">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12 Q5 4 8 12 Q11 20 14 12 Q17 4 20 12 Q21 16 22 12"/></svg>
-          </span>
-          <span>Sine</span>
-        </div>
-        <div class="metro-sound-opt" data-val="clave" onclick="metroSetSound('clave')">
-          <span class="metro-sound-opt-icon">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="19" x2="19" y2="5"/><line x1="8" y1="19" x2="19" y2="8"/></svg>
-          </span>
-          <span>Clave</span>
-        </div>
-        <div class="metro-sound-opt" data-val="woodblock" onclick="metroSetSound('woodblock')">
-          <span class="metro-sound-opt-icon">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="8" width="18" height="8" rx="3"/><line x1="7" y1="8" x2="7" y2="16"/><line x1="12" y1="8" x2="12" y2="16"/></svg>
-          </span>
-          <span>Woodblock</span>
-        </div>
-        <div class="metro-sound-opt" data-val="baqueta" onclick="metroSetSound('baqueta')">
-          <span class="metro-sound-opt-icon">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="21" x2="17" y2="7"/><circle cx="19" cy="5" r="2"/></svg>
-          </span>
-          <span>Baqueta</span>
-        </div>
-        <div class="metro-sound-opt" data-val="mudo" onclick="metroSetSound('mudo')">
-          <span class="metro-sound-opt-icon">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="1" y1="1" x2="23" y2="23"/><path d="M9 9v3a3 3 0 0 0 5.12 2.12M15 9.34V4a3 3 0 0 0-5.94-.6"/><path d="M17 16.95A7 7 0 0 1 5 12v-2m14 0v2a7 7 0 0 1-.11 1.23"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>
-          </span>
-          <span>Mudo</span>
-        </div>
-      </div>
-    </div>
-
-    <style>
-    .metro-sound-opt {
-      display:flex;align-items:center;gap:10px;
-      padding:10px 14px;font-size:11px;font-weight:700;color:rgba(255,255,255,0.6);
-      cursor:pointer;transition:background 0.12s,color 0.12s;
-      border-bottom:1px solid rgba(255,255,255,0.05);
-    }
-    .metro-sound-opt:last-child { border-bottom:none; }
-    .metro-sound-opt:hover { background:rgba(10,158,110,0.1);color:#fff; }
-    .metro-sound-opt.metro-sound-ativo { color:var(--accent-primary)!important;background:rgba(10,158,110,0.08)!important; }
-    .metro-sound-opt-icon { display:flex;align-items:center;color:rgba(255,255,255,0.3);flex-shrink:0; }
-    .metro-sound-opt.metro-sound-ativo .metro-sound-opt-icon { color:var(--accent-primary); }
-    </style>
-
-    <div style="height:1px;background:rgba(255,255,255,0.06);margin:0 0 12px;"></div>
-
-    <!-- INICIAR/PARAR -->
-    <button onclick="togglePlay()" id="play-btn"
-      style="background:var(--accent-primary);color:#000;border:none;padding:12px;border-radius:26px;font-weight:800;font-size:12px;width:100%;cursor:pointer;transition:transform 0.15s cubic-bezier(0.34,1.6,0.64,1);touch-action:manipulation;"
-      onmousedown="this.style.transform='scale(0.96)'" onmouseup="this.style.transform=''">INICIAR</button>
-  </div>
+<!-- ── METRÔNOMO INLINE ────────────────────────────────────────────────── -->
+<div id="metro-wrap" style="width:100%;box-sizing:border-box;padding:0 0 24px;">
 
   <!-- Flash overlay (tempo 1) -->
-  <div id="metro-flash-overlay" style="position:fixed;inset:0;pointer-events:none;z-index:99999;background:rgba(10,158,110,0.18);opacity:0;transition:opacity 0.08s;border-radius:0;"></div>
+  <div id="metro-flash-overlay" style="position:fixed;inset:0;pointer-events:none;z-index:99999;background:rgba(10,158,110,0.15);opacity:0;transition:opacity 0.08s;"></div>
 
-  <style>
-  .metro-comp-btn {
-    padding:5px 8px;border-radius:8px;border:1px solid rgba(255,255,255,0.1);
-    background:rgba(255,255,255,0.04);color:rgba(255,255,255,0.5);
-    font-size:10px;font-weight:800;cursor:pointer;transition:all 0.15s;touch-action:manipulation;
-  }
-  .metro-comp-btn:hover { background:rgba(10,158,110,0.12);color:rgba(10,158,110,0.9); }
-  .metro-comp-btn.metro-comp-ativo { background:rgba(10,158,110,0.2)!important;border-color:rgba(10,158,110,0.6)!important;color:#0A9E6E!important; }
-  .metro-sub-btn {
-    width:38px;height:38px;border-radius:10px;border:1px solid rgba(255,255,255,0.1);
-    background:rgba(255,255,255,0.04);color:rgba(255,255,255,0.5);
-    font-size:14px;cursor:pointer;transition:all 0.15s;touch-action:manipulation;
-  }
-  .metro-sub-btn:hover { background:rgba(10,158,110,0.12);color:rgba(10,158,110,0.9); }
-  .metro-sub-btn.metro-sub-ativo { background:rgba(10,158,110,0.2)!important;border-color:rgba(10,158,110,0.6)!important;color:#0A9E6E!important; }
-  </style>
-
-    <!-- Botão flutuante principal -->
-  <button id="metro-fab-btn" onclick="toggleMetroFab()" title="Metrônomo"
-    style="width:52px;height:52px;border-radius:50%;background:rgba(10,158,110,0.15);border:1.5px solid rgba(10,158,110,0.4);color:rgba(10,158,110,0.9);cursor:pointer;display:flex;align-items:center;justify-content:center;box-shadow:0 4px 20px rgba(0,0,0,0.5);transition:background 0.2s,border-color 0.2s,transform 0.15s;touch-action:manipulation;"
-    onmouseover="this.style.background='rgba(10,158,110,0.28)'" onmouseout="if(!isPlaying)this.style.background='rgba(10,158,110,0.15)'">
-    <!-- ícone metrônomo (pêndulo) -->
-    <svg id="metro-fab-icon" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-      <polygon points="12 2 20 20 4 20"/>
-      <line x1="12" y1="20" x2="12" y2="10" id="metro-pendulum"/>
-    </svg>
+  <!-- Botão toggler -->
+  <button id="metro-fab-btn" onclick="toggleMetroFab()"
+    style="width:100%;padding:14px 20px;border-radius:16px;background:rgba(10,158,110,0.08);border:1.5px solid rgba(10,158,110,0.22);color:rgba(10,158,110,0.9);cursor:pointer;display:flex;align-items:center;justify-content:space-between;gap:12px;font-family:inherit;touch-action:manipulation;transition:background 0.2s,border-color 0.2s;box-sizing:border-box;">
+    <span style="display:flex;align-items:center;gap:10px;">
+      <!-- ícone metrônomo -->
+      <svg id="metro-fab-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <polygon points="12 2 20 20 4 20"/>
+        <line x1="12" y1="20" x2="12" y2="10" id="metro-pendulum"/>
+      </svg>
+      <span style="font-size:13px;font-weight:800;letter-spacing:0.5px;">Metrônomo</span>
+    </span>
+    <span style="display:flex;align-items:center;gap:10px;">
+      <span id="metro-fab-bpm-badge" style="font-size:12px;font-weight:900;color:var(--accent-primary);opacity:0.7;"></span>
+      <svg id="metro-toggler-chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="opacity:0.4;transition:transform 0.25s;"><polyline points="6 9 12 15 18 9"/></svg>
+    </span>
   </button>
+
+  <!-- Painel expansível (expande para baixo) -->
+  <div id="metro-fab-panel" style="display:none;overflow:hidden;margin-top:8px;">
+    <div style="background:var(--bg-secondary);border:1px solid var(--border-color);border-radius:18px;padding:24px 20px 20px;box-sizing:border-box;">
+
+      <!-- Linha 1: BPM grande + TAP -->
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;gap:16px;">
+        <div style="display:flex;flex-direction:column;align-items:flex-start;position:relative;">
+          <!-- mic BPM -->
+          <button id="bpm-mic-btn" onclick="bpmMicSearch()" title="Pesquisar BPM"
+            style="position:absolute;top:-4px;right:-36px;width:28px;height:28px;border-radius:50%;background:rgba(10,158,110,0.1);border:1.5px solid rgba(10,158,110,0.3);color:rgba(10,158,110,0.7);cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all 0.2s;touch-action:manipulation;"
+            onmouseover="this.style.background='rgba(10,158,110,0.22)'" onmouseout="this.style.background='rgba(10,158,110,0.1)'">
+            <svg id="bpm-mic-icon" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/>
+              <path d="M19 10v2a7 7 0 0 1-14 0v-2"/>
+              <line x1="12" y1="19" x2="12" y2="23"/>
+              <line x1="8" y1="23" x2="16" y2="23"/>
+            </svg>
+          </button>
+          <div class="bpm-val" id="bpm-display" style="font-size:64px;font-weight:800;color:var(--accent-primary);line-height:1;letter-spacing:-2px;">120</div>
+          <div style="font-size:10px;font-weight:900;opacity:0.4;letter-spacing:3px;margin-top:2px;">BPM</div>
+        </div>
+        <div style="display:flex;flex-direction:column;align-items:center;gap:10px;flex-shrink:0;">
+          <button id="tap-btn"
+            style="border:2px solid var(--accent-primary);background:none;color:var(--accent-primary);width:80px;height:80px;border-radius:50%;font-weight:900;font-size:14px;cursor:pointer;transition:transform 0.08s cubic-bezier(0.34,1.8,0.64,1),background 0.1s;touch-action:manipulation;"
+            onmousedown="this.style.transform='scale(0.88)';this.style.background='rgba(10,158,110,0.15)'"
+            onmouseup="this.style.transform='';this.style.background='none'"
+            ontouchstart="this.style.transform='scale(0.88)';this.style.background='rgba(10,158,110,0.15)'"
+            ontouchend="this.style.transform='';this.style.background='none'">TAP</button>
+        </div>
+      </div>
+
+      <!-- Linha 2: ajuste BPM -->
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:8px;margin-bottom:20px;">
+        <button onclick="adj(-5)"  class="metro-adj-btn">−5</button>
+        <button onclick="adj(-1)"  class="metro-adj-btn">−1</button>
+        <button onclick="adj(1)"   class="metro-adj-btn">+1</button>
+        <button onclick="adj(5)"   class="metro-adj-btn">+5</button>
+      </div>
+
+      <div class="metro-divider"></div>
+
+      <!-- COMPASSO -->
+      <div style="margin-bottom:18px;">
+        <div class="metro-section-label">Compasso</div>
+        <div style="display:grid;grid-template-columns:repeat(6,1fr);gap:6px;">
+          <button onclick="metroSetCompasso(2,4)" id="comp-2-4" class="metro-comp-btn">2/4</button>
+          <button onclick="metroSetCompasso(3,4)" id="comp-3-4" class="metro-comp-btn">3/4</button>
+          <button onclick="metroSetCompasso(4,4)" id="comp-4-4" class="metro-comp-btn metro-comp-ativo">4/4</button>
+          <button onclick="metroSetCompasso(5,4)" id="comp-5-4" class="metro-comp-btn">5/4</button>
+          <button onclick="metroSetCompasso(6,8)" id="comp-6-8" class="metro-comp-btn">6/8</button>
+          <button onclick="metroSetCompasso(7,8)" id="comp-7-8" class="metro-comp-btn">7/8</button>
+        </div>
+      </div>
+
+      <div class="metro-divider"></div>
+
+      <!-- SUBDIVISÃO -->
+      <div style="margin-bottom:18px;">
+        <div class="metro-section-label">Subdivisão</div>
+        <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;">
+          <button onclick="metroSetSub(1)" id="sub-1" class="metro-sub-btn metro-sub-ativo">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="12" y1="4" x2="12" y2="20"/><circle cx="12" cy="20" r="2" fill="currentColor" stroke="none"/></svg>
+            <span>1</span>
+          </button>
+          <button onclick="metroSetSub(2)" id="sub-2" class="metro-sub-btn">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="8" y1="4" x2="8" y2="16"/><circle cx="8" cy="16" r="2" fill="currentColor" stroke="none"/><line x1="16" y1="4" x2="16" y2="16"/><circle cx="16" cy="16" r="2" fill="currentColor" stroke="none"/><line x1="8" y1="4" x2="16" y2="4"/></svg>
+            <span>2</span>
+          </button>
+          <button onclick="metroSetSub(3)" id="sub-3" class="metro-sub-btn">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><text x="6" y="17" font-size="13" font-weight="900" fill="currentColor" stroke="none" font-family="sans-serif">3</text></svg>
+            <span>3</span>
+          </button>
+          <button onclick="metroSetSub(4)" id="sub-4" class="metro-sub-btn">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="6" y1="3" x2="6" y2="15"/><circle cx="6" cy="15" r="1.5" fill="currentColor" stroke="none"/><line x1="12" y1="3" x2="12" y2="15"/><circle cx="12" cy="15" r="1.5" fill="currentColor" stroke="none"/><line x1="18" y1="3" x2="18" y2="15"/><circle cx="18" cy="15" r="1.5" fill="currentColor" stroke="none"/><line x1="6" y1="3" x2="18" y2="3"/><line x1="6" y1="8" x2="18" y2="8"/></svg>
+            <span>4</span>
+          </button>
+        </div>
+      </div>
+
+      <div class="metro-divider"></div>
+
+      <!-- SOM + FLASH numa linha -->
+      <div style="display:grid;grid-template-columns:1fr auto;gap:12px;align-items:center;margin-bottom:18px;">
+        <!-- Som do click -->
+        <div style="position:relative;">
+          <div class="metro-section-label" style="margin-bottom:6px;">Som do Click</div>
+          <button id="metro-sound-trigger" onclick="metroToggleSoundMenu(event)"
+            style="width:100%;padding:10px 12px;border-radius:10px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);color:#fff;font-size:12px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:space-between;gap:8px;font-family:inherit;touch-action:manipulation;transition:border-color 0.15s;box-sizing:border-box;">
+            <span style="display:flex;align-items:center;gap:8px;">
+              <span id="metro-sound-icon" style="display:flex;align-items:center;color:var(--accent-primary);"></span>
+              <span id="metro-sound-label">Sine</span>
+            </span>
+            <svg id="metro-sound-chevron" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="opacity:0.4;transition:transform 0.2s;flex-shrink:0;"><polyline points="6 9 12 15 18 9"/></svg>
+          </button>
+          <div id="metro-sound-menu" style="display:none;position:absolute;top:calc(100% + 6px);left:0;right:0;background:rgba(10,10,18,0.98);border:1px solid rgba(255,255,255,0.1);border-radius:12px;overflow:hidden;box-shadow:0 8px 32px rgba(0,0,0,0.7);z-index:200;backdrop-filter:blur(16px);">
+            <div class="metro-sound-opt" data-val="sine"      onclick="metroSetSound('sine')"><span class="metro-sound-opt-icon"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12 Q5 4 8 12 Q11 20 14 12 Q17 4 20 12 Q21 16 22 12"/></svg></span><span>Sine</span></div>
+            <div class="metro-sound-opt" data-val="clave"     onclick="metroSetSound('clave')"><span class="metro-sound-opt-icon"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="19" x2="19" y2="5"/><line x1="8" y1="19" x2="19" y2="8"/></svg></span><span>Clave</span></div>
+            <div class="metro-sound-opt" data-val="woodblock" onclick="metroSetSound('woodblock')"><span class="metro-sound-opt-icon"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="8" width="18" height="8" rx="3"/><line x1="7" y1="8" x2="7" y2="16"/><line x1="12" y1="8" x2="12" y2="16"/></svg></span><span>Woodblock</span></div>
+            <div class="metro-sound-opt" data-val="baqueta"   onclick="metroSetSound('baqueta')"><span class="metro-sound-opt-icon"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="21" x2="17" y2="7"/><circle cx="19" cy="5" r="2"/></svg></span><span>Baqueta</span></div>
+            <div class="metro-sound-opt" data-val="mudo"      onclick="metroSetSound('mudo')"><span class="metro-sound-opt-icon"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="1" y1="1" x2="23" y2="23"/><path d="M9 9v3a3 3 0 0 0 5.12 2.12M15 9.34V4a3 3 0 0 0-5.94-.6"/><path d="M17 16.95A7 7 0 0 1 5 12v-2m14 0v2a7 7 0 0 1-.11 1.23"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg></span><span>Mudo</span></div>
+          </div>
+        </div>
+        <!-- Flash toggle -->
+        <div style="display:flex;flex-direction:column;align-items:center;gap:8px;">
+          <div class="metro-section-label" style="margin-bottom:0;">Flash</div>
+          <button id="metro-flash-toggle" onclick="metroToggleFlash()"
+            style="width:44px;height:26px;border-radius:13px;background:rgba(255,255,255,0.08);border:none;cursor:pointer;position:relative;transition:background 0.22s;touch-action:manipulation;padding:0;flex-shrink:0;">
+            <span id="metro-flash-knob" style="position:absolute;top:3px;left:3px;width:20px;height:20px;border-radius:50%;background:#fff;transition:left 0.22s,background 0.22s;box-shadow:0 1px 4px rgba(0,0,0,0.4);"></span>
+          </button>
+        </div>
+      </div>
+
+      <div class="metro-divider"></div>
+
+      <!-- ACELERAÇÃO GRADUAL -->
+      <div style="margin-bottom:20px;">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
+          <div class="metro-section-label" style="margin-bottom:0;">Aceleração Gradual</div>
+          <button id="metro-accel-toggle" onclick="metroToggleAccel()"
+            style="width:44px;height:26px;border-radius:13px;background:rgba(255,255,255,0.08);border:none;cursor:pointer;position:relative;transition:background 0.22s;touch-action:manipulation;padding:0;flex-shrink:0;">
+            <span id="metro-accel-knob" style="position:absolute;top:3px;left:3px;width:20px;height:20px;border-radius:50%;background:#fff;transition:left 0.22s,background 0.22s;box-shadow:0 1px 4px rgba(0,0,0,0.4);"></span>
+          </button>
+        </div>
+        <div id="metro-accel-cfg" style="display:none;flex-direction:column;gap:10px;">
+          <div style="display:flex;align-items:center;justify-content:space-between;">
+            <span style="font-size:12px;color:rgba(255,255,255,0.5);">BPM alvo</span>
+            <div style="display:flex;align-items:center;gap:10px;">
+              <button onclick="metroAccelAdjTarget(-5)" class="metro-accel-step-btn">−</button>
+              <span id="metro-accel-target-disp" style="font-size:16px;font-weight:900;color:var(--accent-primary);min-width:36px;text-align:center;">160</span>
+              <button onclick="metroAccelAdjTarget(5)"  class="metro-accel-step-btn">+</button>
+            </div>
+          </div>
+          <div style="display:flex;align-items:center;justify-content:space-between;">
+            <span style="font-size:12px;color:rgba(255,255,255,0.5);">+BPM por compasso</span>
+            <div style="display:flex;align-items:center;gap:10px;">
+              <button onclick="metroAccelAdjStep(-1)" class="metro-accel-step-btn">−</button>
+              <span id="metro-accel-step-disp" style="font-size:16px;font-weight:900;color:var(--accent-primary);min-width:20px;text-align:center;">5</span>
+              <button onclick="metroAccelAdjStep(1)"  class="metro-accel-step-btn">+</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- INICIAR/PARAR -->
+      <button onclick="togglePlay()" id="play-btn"
+        style="background:var(--accent-primary);color:#000;border:none;padding:16px;border-radius:14px;font-weight:900;font-size:14px;width:100%;cursor:pointer;transition:transform 0.15s cubic-bezier(0.34,1.6,0.64,1);touch-action:manipulation;letter-spacing:0.5px;"
+        onmousedown="this.style.transform='scale(0.97)'" onmouseup="this.style.transform=''">INICIAR</button>
+
+    </div>
+  </div>
 </div>
 
 <style>
-@keyframes metroFabIn {
-  from { opacity:0; transform: scale(0.88) translateY(10px); }
-  to   { opacity:1; transform: scale(1) translateY(0); }
+.metro-section-label { font-size:9px;font-weight:900;letter-spacing:2px;color:rgba(255,255,255,0.35);text-transform:uppercase;margin-bottom:8px; }
+.metro-divider       { height:1px;background:rgba(255,255,255,0.06);margin:0 0 18px; }
+.metro-adj-btn {
+  padding:10px 0;border-radius:10px;border:1px solid rgba(255,255,255,0.1);
+  background:rgba(255,255,255,0.04);color:rgba(255,255,255,0.7);
+  font-size:13px;font-weight:800;cursor:pointer;transition:all 0.15s;touch-action:manipulation;
 }
+.metro-adj-btn:hover  { background:rgba(10,158,110,0.12);border-color:rgba(10,158,110,0.4);color:#fff; }
+.metro-adj-btn:active { background:rgba(10,158,110,0.2); }
+.metro-comp-btn {
+  padding:9px 4px;border-radius:9px;border:1px solid rgba(255,255,255,0.1);
+  background:rgba(255,255,255,0.04);color:rgba(255,255,255,0.5);
+  font-size:11px;font-weight:800;cursor:pointer;transition:all 0.15s;touch-action:manipulation;
+}
+.metro-comp-btn:hover { background:rgba(10,158,110,0.12);color:rgba(10,158,110,0.9); }
+.metro-comp-btn.metro-comp-ativo { background:rgba(10,158,110,0.18)!important;border-color:rgba(10,158,110,0.55)!important;color:#0A9E6E!important; }
+.metro-sub-btn {
+  padding:10px 4px;border-radius:10px;border:1px solid rgba(255,255,255,0.1);
+  background:rgba(255,255,255,0.04);color:rgba(255,255,255,0.5);
+  font-size:11px;font-weight:800;cursor:pointer;transition:all 0.15s;touch-action:manipulation;
+  display:flex;flex-direction:column;align-items:center;gap:4px;
+}
+.metro-sub-btn:hover { background:rgba(10,158,110,0.12);color:rgba(10,158,110,0.9); }
+.metro-sub-btn.metro-sub-ativo { background:rgba(10,158,110,0.18)!important;border-color:rgba(10,158,110,0.55)!important;color:#0A9E6E!important; }
+.metro-accel-step-btn {
+  width:28px;height:28px;border-radius:8px;border:1px solid rgba(255,255,255,0.1);
+  background:rgba(255,255,255,0.04);color:rgba(255,255,255,0.6);
+  font-size:14px;font-weight:700;cursor:pointer;transition:all 0.15s;touch-action:manipulation;
+}
+.metro-accel-step-btn:hover { background:rgba(10,158,110,0.12);color:#fff; }
+.metro-sound-opt {
+  display:flex;align-items:center;gap:10px;
+  padding:12px 14px;font-size:12px;font-weight:700;color:rgba(255,255,255,0.6);
+  cursor:pointer;transition:background 0.12s,color 0.12s;
+  border-bottom:1px solid rgba(255,255,255,0.05);
+}
+.metro-sound-opt:last-child { border-bottom:none; }
+.metro-sound-opt:hover { background:rgba(10,158,110,0.1);color:#fff; }
+.metro-sound-opt.metro-sound-ativo { color:var(--accent-primary)!important;background:rgba(10,158,110,0.08)!important; }
+.metro-sound-opt-icon { display:flex;align-items:center;color:rgba(255,255,255,0.3);flex-shrink:0; }
+.metro-sound-opt.metro-sound-ativo .metro-sound-opt-icon { color:var(--accent-primary); }
 @keyframes metroPendulum {
-  0%,100% { transform-origin: 12px 20px; transform: rotate(-28deg); }
-  50%      { transform-origin: 12px 20px; transform: rotate(28deg); }
+  0%,100% { transform-origin:50% 100%; transform:rotate(-28deg); }
+  50%      { transform-origin:50% 100%; transform:rotate(28deg); }
 }
 @keyframes metroFabPulse {
-  0%,100% { box-shadow: 0 0 0 0 rgba(10,158,110,0.5), 0 4px 20px rgba(0,0,0,0.5); }
-  50%      { box-shadow: 0 0 0 10px rgba(10,158,110,0), 0 4px 20px rgba(0,0,0,0.5); }
+  0%,100% { box-shadow:0 0 0 0 rgba(10,158,110,0.4); }
+  50%      { box-shadow:0 0 0 8px rgba(10,158,110,0); }
 }
 #metro-fab-btn.metro-ativo {
-  background: rgba(10,158,110,0.3) !important;
-  border-color: rgba(10,158,110,0.8) !important;
-  animation: metroFabPulse 0.6s ease-in-out infinite;
+  background:rgba(10,158,110,0.18)!important;
+  border-color:rgba(10,158,110,0.7)!important;
+  animation:metroFabPulse 0.8s ease-in-out infinite;
 }
 #metro-fab-btn.metro-ativo #metro-pendulum {
-  animation: metroPendulum 0.5s ease-in-out infinite;
+  animation:metroPendulum 0.5s ease-in-out infinite;
 }
-#metro-fab-panel { position: relative; }
 </style>
 
 <script>
 var _metroFabOpen = false;
+
 function toggleMetroFab() {
   _metroFabOpen = !_metroFabOpen;
   var panel = document.getElementById('metro-fab-panel');
+  var chev  = document.getElementById('metro-toggler-chevron');
   panel.style.display = _metroFabOpen ? 'block' : 'none';
+  if (chev) chev.style.transform = _metroFabOpen ? 'rotate(180deg)' : '';
 }
-// Fecha painel ao clicar fora
-document.addEventListener('click', function(e) {
-  if (!_metroFabOpen) return;
-  var wrap = document.getElementById('metro-fab-wrap');
-  if (wrap && !wrap.contains(e.target)) {
-    _metroFabOpen = false;
-    document.getElementById('metro-fab-panel').style.display = 'none';
-  }
-});
 
 // ── Compasso ──
 function metroSetCompasso(num, den) {
-  metroBeatsPerBar = num;
-  metroBeatUnit    = den;
-  metroBeatIndex   = 0; metroSubIndex = 0;
+  metroBeatsPerBar = num; metroBeatUnit = den;
+  metroBeatIndex = 0; metroSubIndex = 0;
   document.querySelectorAll('.metro-comp-btn').forEach(function(b){ b.classList.remove('metro-comp-ativo'); });
   var btn = document.getElementById('comp-' + num + '-' + den);
   if (btn) btn.classList.add('metro-comp-ativo');
@@ -7938,8 +7929,7 @@ function metroSetCompasso(num, den) {
 
 // ── Subdivisão ──
 function metroSetSub(n) {
-  metroSubdivision = n;
-  metroSubIndex    = 0;
+  metroSubdivision = n; metroSubIndex = 0;
   document.querySelectorAll('.metro-sub-btn').forEach(function(b){ b.classList.remove('metro-sub-ativo'); });
   var btn = document.getElementById('sub-' + n);
   if (btn) btn.classList.add('metro-sub-ativo');
@@ -7951,13 +7941,11 @@ function metroToggleFlash() {
   var tog  = document.getElementById('metro-flash-toggle');
   var knob = document.getElementById('metro-flash-knob');
   if (metroFlashActive) {
-    tog.style.background  = 'rgba(10,158,110,0.5)';
-    knob.style.left       = '20px';
-    knob.style.background = '#0A9E6E';
+    tog.style.background = 'rgba(10,158,110,0.5)';
+    knob.style.left = '21px'; knob.style.background = '#0A9E6E';
   } else {
-    tog.style.background  = 'rgba(255,255,255,0.08)';
-    knob.style.left       = '3px';
-    knob.style.background = '#fff';
+    tog.style.background = 'rgba(255,255,255,0.08)';
+    knob.style.left = '3px'; knob.style.background = '#fff';
   }
 }
 
@@ -7968,15 +7956,13 @@ function metroToggleAccel() {
   var knob = document.getElementById('metro-accel-knob');
   var cfg  = document.getElementById('metro-accel-cfg');
   if (metroAccelActive) {
-    tog.style.background  = 'rgba(10,158,110,0.5)';
-    knob.style.left       = '20px';
-    knob.style.background = '#0A9E6E';
-    cfg.style.display     = 'flex';
+    tog.style.background = 'rgba(10,158,110,0.5)';
+    knob.style.left = '21px'; knob.style.background = '#0A9E6E';
+    cfg.style.display = 'flex';
   } else {
-    tog.style.background  = 'rgba(255,255,255,0.08)';
-    knob.style.left       = '3px';
-    knob.style.background = '#fff';
-    cfg.style.display     = 'none';
+    tog.style.background = 'rgba(255,255,255,0.08)';
+    knob.style.left = '3px'; knob.style.background = '#fff';
+    cfg.style.display = 'none';
   }
 }
 function metroAccelAdjTarget(d) {
@@ -7989,76 +7975,6 @@ function metroAccelAdjStep(d) {
   var el = document.getElementById('metro-accel-step-disp');
   if (el) el.innerText = metroAccelStep;
 }
-var _metroSoundIcons = {
-  sine:      '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12 Q5 4 8 12 Q11 20 14 12 Q17 4 20 12 Q21 16 22 12"/></svg>',
-  clave:     '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="19" x2="19" y2="5"/><line x1="8" y1="19" x2="19" y2="8"/></svg>',
-  woodblock: '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="8" width="18" height="8" rx="3"/><line x1="7" y1="8" x2="7" y2="16"/><line x1="12" y1="8" x2="12" y2="16"/></svg>',
-  baqueta:   '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="21" x2="17" y2="7"/><circle cx="19" cy="5" r="2"/></svg>',
-  mudo:      '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="1" y1="1" x2="23" y2="23"/><path d="M9 9v3a3 3 0 0 0 5.12 2.12M15 9.34V4a3 3 0 0 0-5.94-.6"/><path d="M17 16.95A7 7 0 0 1 5 12v-2m14 0v2a7 7 0 0 1-.11 1.23"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>'
-};
-var _metroSoundLabels = { sine:'Sine', clave:'Clave', woodblock:'Woodblock', baqueta:'Baqueta', mudo:'Mudo' };
-
-function metroToggleSoundMenu(e) {
-  e.stopPropagation();
-  var menu = document.getElementById('metro-sound-menu');
-  var chev = document.getElementById('metro-sound-chevron');
-  var open = menu.style.display === 'block';
-  menu.style.display = open ? 'none' : 'block';
-  if (chev) chev.style.transform = open ? '' : 'rotate(180deg)';
-}
-
-function metroSetSound(val) {
-  metroSoundPreset = val;
-  // Fecha menu
-  var menu = document.getElementById('metro-sound-menu');
-  var chev = document.getElementById('metro-sound-chevron');
-  if (menu) menu.style.display = 'none';
-  if (chev) chev.style.transform = '';
-  // Atualiza trigger
-  var iconEl  = document.getElementById('metro-sound-icon');
-  var labelEl = document.getElementById('metro-sound-label');
-  if (iconEl)  iconEl.innerHTML  = _metroSoundIcons[val]  || '';
-  if (labelEl) labelEl.innerText = _metroSoundLabels[val] || val;
-  // Marca opção ativa
-  document.querySelectorAll('.metro-sound-opt').forEach(function(o){
-    o.classList.toggle('metro-sound-ativo', o.dataset.val === val);
-  });
-  // Preview
-  try {
-    var ctx = _getAudioCtx();
-    if (ctx) {
-      if (ctx.state === 'suspended') ctx.resume();
-      var out = _getAudioChain(ctx);
-      var preset = _metroSounds[val] || _metroSounds['sine'];
-      var _mvol = (typeof window._metroVol === 'number') ? window._metroVol : 0.8;
-      preset.play(ctx, ctx.currentTime + 0.05, true, false, _mvol, out);
-    }
-  } catch(e) {}
-}
-
-// Fecha menu ao clicar fora
-document.addEventListener('click', function(e) {
-  var menu = document.getElementById('metro-sound-menu');
-  var trig = document.getElementById('metro-sound-trigger');
-  if (menu && menu.style.display === 'block') {
-    if (!menu.contains(e.target) && e.target !== trig && !trig.contains(e.target)) {
-      menu.style.display = 'none';
-      var chev = document.getElementById('metro-sound-chevron');
-      if (chev) chev.style.transform = '';
-    }
-  }
-});
-
-// Inicializa ícone do trigger com o preset padrão
-(function() {
-  var iconEl  = document.getElementById('metro-sound-icon');
-  var labelEl = document.getElementById('metro-sound-label');
-  if (iconEl)  iconEl.innerHTML  = _metroSoundIcons[metroSoundPreset]  || '';
-  if (labelEl) labelEl.innerText = _metroSoundLabels[metroSoundPreset] || metroSoundPreset;
-  var def = document.querySelector('.metro-sound-opt[data-val="' + metroSoundPreset + '"]');
-  if (def) def.classList.add('metro-sound-ativo');
-})();
-
 function _metroAccelUpdateUI() {
   var el = document.getElementById('metro-accel-target-disp');
   if (el) el.innerText = metroAccelTarget;
@@ -9539,6 +9455,7 @@ let metroAccelTarget  = 160;
 let metroAccelStep    = 5;
 let metroAccelBarCount = 0;
 let metroAccelInterval = null;
+var metroSoundPreset = 'sine';
 let scrollInterval = null;
 function _setScroll(speed) {
   clearInterval(scrollInterval);
@@ -10529,8 +10446,6 @@ if (_tapBtn) _tapBtn.addEventListener('click', function() {
 // ── Sons do metrônomo ──────────────────────────────────────────────────────
 // Cada preset define funções de síntese para accent / beat / sub
 // Tudo gerado via Web Audio API — sem arquivos externos
-var metroSoundPreset = 'sine'; // padrão
-
 var _metroSounds = {
   // ── 1. Sine (padrão anterior) ──────────────────────────────────
   sine: {
@@ -10739,10 +10654,14 @@ function togglePlay() {
     scheduler();
     btn.innerText = "PARAR"; btn.style.background = "#ff3e3e";
     if (fab) fab.classList.add('metro-ativo');
+    var badge = document.getElementById('metro-fab-bpm-badge');
+    if (badge) badge.innerText = bpm + ' BPM';
   } else {
     clearTimeout(timerID); timerID = null;
     btn.innerText = "INICIAR"; btn.style.background = "var(--accent-primary)";
-    if (fab) { fab.classList.remove('metro-ativo'); fab.style.background = 'rgba(10,158,110,0.15)'; }
+    if (fab) { fab.classList.remove('metro-ativo'); fab.style.removeProperty('background'); }
+    var badge = document.getElementById('metro-fab-bpm-badge');
+    if (badge) badge.innerText = '';
   }
   atualizarBtnMetroDC();
 }
