@@ -24799,144 +24799,111 @@ window.addEventListener('firebase-ready', function() {
 // ─── Swipe Down to Close — Amigos, Perfil, Áudio, Chat Global ─────────────────
 (function() {
 
-  var THRESHOLD = 100;   // px arrastados para fechar
-  var VELOCITY  = 0.35;  // px/ms — gesto rápido fecha mesmo sem threshold
+  var THRESHOLD = 90;
+  var VELOCITY  = 0.4;
 
-  /*
-    Cada config descreve:
-      overlayId  — id do overlay principal
-      sheetSel   — seletor do painel que desliza (filho direto ou classe)
-      closeFn    — nome da função global que fecha o modal
-      usesShow   — true: fecha removendo classe "show" | false: fecha via display:none
-  */
   var CONFIGS = [
-    { overlayId:'modal-amigos',      sheetSel:'.amigos-sheet',         closeFn:'fecharModalAmigos', usesShow:true  },
-    { overlayId:'modal-chat-global', sheetSel:'.chat-global-sheet',    closeFn:'fecharChatGlobal',  usesShow:true  },
-    { overlayId:'modal-config-audio',sheetSel:'#modal-config-audio>div',closeFn:'fecharConfigAudio',usesShow:false },
-    { overlayId:'modal-perfil',      sheetSel:'#modal-perfil>div',     closeFn:'fecharModalPerfil', usesShow:false }
+    { overlayId:'modal-amigos',       sheetSel:'.amigos-sheet',          headerSel:'.amigos-header',                          closeFn:'fecharModalAmigos', usesShow:true  },
+    { overlayId:'modal-chat-global',  sheetSel:'.chat-global-sheet',     headerSel:'.chat-global-header',                     closeFn:'fecharChatGlobal',  usesShow:true  },
+    { overlayId:'modal-config-audio', sheetSel:'#modal-config-audio>div',headerSel:'#modal-config-audio>div>div:first-child,#modal-config-audio>div>div:nth-child(2)', closeFn:'fecharConfigAudio', usesShow:false },
+    { overlayId:'modal-perfil',       sheetSel:'#modal-perfil>div',      headerSel:'#perfil-hero-banner',                     closeFn:'fecharModalPerfil', usesShow:false }
   ];
 
-  /* Verifica se o elemento alvo está dentro de um container com scroll ativo */
-  function _scrollado(el, sheetEl) {
-    var node = el;
-    while (node && node !== sheetEl) {
-      var ov = window.getComputedStyle(node).overflowY;
-      if ((ov === 'auto' || ov === 'scroll') && node.scrollTop > 4) return true;
-      node = node.parentElement;
-    }
-    return false;
+  function _visivel(cfg, overlay) {
+    if (cfg.usesShow) return overlay.classList.contains('show');
+    return overlay.style.display === 'flex';
   }
 
   function _initSwipe(cfg) {
-    // O overlay pode ainda não existir; usamos delegação via document e filtramos
-    var startY, startX, startT, sheetEl, dragging, locked;
+    var startY, startX, startT, sheetEl, dragging, ativo;
 
     function _onTouchStart(e) {
+      ativo = false; dragging = false; sheetEl = null;
       var overlay = document.getElementById(cfg.overlayId);
-      if (!overlay) return;
-      // Garante que o overlay está visível
-      if (cfg.usesShow) {
-        if (!overlay.classList.contains('show')) return;
-      } else {
-        if (overlay.style.display === 'none' || overlay.style.display === '') return;
-      }
-      // O toque precisa estar dentro do overlay
-      if (!overlay.contains(e.target)) return;
+      if (!overlay || !_visivel(cfg, overlay)) return;
 
-      sheetEl  = overlay.querySelector(cfg.sheetSel);
+      // Só ativa se o toque começar no header/handle da aba
+      var headers = overlay.querySelectorAll(cfg.headerSel);
+      var noHeader = true;
+      for (var i = 0; i < headers.length; i++) {
+        if (headers[i].contains(e.target)) { noHeader = false; break; }
+      }
+      if (noHeader) return;
+
+      sheetEl = overlay.querySelector(cfg.sheetSel);
       if (!sheetEl) return;
 
-      startY   = e.touches[0].clientY;
-      startX   = e.touches[0].clientX;
-      startT   = Date.now();
-      dragging = false;
-      locked   = false;
+      startY = e.touches[0].clientY;
+      startX = e.touches[0].clientX;
+      startT = Date.now();
+      ativo  = true;
     }
 
     function _onTouchMove(e) {
-      if (!sheetEl || locked) return;
+      if (!ativo || !sheetEl) return;
       var dy = e.touches[0].clientY - startY;
       var dx = e.touches[0].clientX - startX;
 
       if (!dragging) {
-        if (dy < 6) return;
-        if (Math.abs(dx) > Math.abs(dy)) { locked = true; return; } // horizontal — ignora
-        if (_scrollado(e.target, sheetEl)) { locked = true; return; } // scroll interno
+        if (Math.abs(dx) > Math.abs(dy) || dy < 5) return;
         dragging = true;
       }
 
-      var offset = Math.max(0, dy * 0.5); // resistência 50%
+      var offset = Math.max(0, dy * 0.55);
       sheetEl.style.transition = 'none';
       sheetEl.style.transform  = 'translateY(' + offset + 'px)';
-      sheetEl.style.opacity    = String(Math.max(0.35, 1 - offset / 320));
+      sheetEl.style.opacity    = String(Math.max(0.3, 1 - offset / 300));
     }
 
     function _onTouchEnd(e) {
-      if (!sheetEl) return;
-      if (!dragging) { sheetEl = null; return; }
+      if (!ativo || !sheetEl) { ativo = false; return; }
+      if (!dragging) { ativo = false; sheetEl = null; return; }
 
-      var dy      = e.changedTouches[0].clientY - startY;
-      var elapsed = Math.max(1, Date.now() - startT);
-      var vel     = dy / elapsed;
-      var offset  = dy * 0.5;
-      var fechar  = offset >= THRESHOLD || vel >= VELOCITY;
+      var dy     = e.changedTouches[0].clientY - startY;
+      var vel    = dy / Math.max(1, Date.now() - startT);
+      var offset = dy * 0.55;
+      var fechar = offset >= THRESHOLD || vel >= VELOCITY;
 
       if (fechar) {
-        // Anima saída e chama close
-        sheetEl.style.transition = 'transform 0.25s ease-in, opacity 0.2s ease-in';
-        sheetEl.style.transform  = 'translateY(110%)';
-        sheetEl.style.opacity    = '0';
-        var _sheet = sheetEl;
-        var _fn    = cfg.closeFn;
+        var _s = sheetEl, _fn = cfg.closeFn;
+        _s.style.transition = 'transform 0.22s ease-in, opacity 0.18s ease-in';
+        _s.style.transform  = 'translateY(110%)';
+        _s.style.opacity    = '0';
         setTimeout(function() {
-          // Limpa estilos inline antes de fechar (o modal vai esconder o sheet)
-          _sheet.style.transition = '';
-          _sheet.style.transform  = '';
-          _sheet.style.opacity    = '';
+          _s.style.transition = '';
+          _s.style.transform  = '';
+          _s.style.opacity    = '';
           if (typeof window[_fn] === 'function') window[_fn]();
-        }, 240);
+        }, 220);
       } else {
-        // Volta ao lugar
-        sheetEl.style.transition = 'transform 0.3s cubic-bezier(0.34,1.3,0.64,1), opacity 0.2s ease';
+        sheetEl.style.transition = 'transform 0.28s cubic-bezier(0.34,1.3,0.64,1), opacity 0.2s ease';
         sheetEl.style.transform  = '';
         sheetEl.style.opacity    = '';
-        setTimeout(function() {
-          if (sheetEl) { sheetEl.style.transition = ''; }
-        }, 320);
+        var _s2 = sheetEl;
+        setTimeout(function() { _s2.style.transition = ''; }, 300);
       }
-      sheetEl  = null;
-      dragging = false;
-      locked   = false;
+
+      ativo = false; dragging = false; sheetEl = null;
     }
 
     function _onTouchCancel() {
-      if (sheetEl) {
-        sheetEl.style.transition = '';
-        sheetEl.style.transform  = '';
-        sheetEl.style.opacity    = '';
-      }
-      sheetEl  = null;
-      dragging = false;
-      locked   = false;
+      if (sheetEl) { sheetEl.style.transition = ''; sheetEl.style.transform = ''; sheetEl.style.opacity = ''; }
+      ativo = false; dragging = false; sheetEl = null;
     }
 
-    // Usa listeners no document para capturar toques em qualquer elemento do overlay
     document.addEventListener('touchstart',  _onTouchStart,  { passive: true });
     document.addEventListener('touchmove',   _onTouchMove,   { passive: true });
     document.addEventListener('touchend',    _onTouchEnd,    { passive: true });
     document.addEventListener('touchcancel', _onTouchCancel, { passive: true });
   }
 
-  function _init() {
-    CONFIGS.forEach(_initSwipe);
-  }
+  function _init() { CONFIGS.forEach(_initSwipe); }
 
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', _init);
   } else {
     _init();
   }
-
 })();
 // ── Fim Swipe Down to Close ───────────────────────────────────────────────────
 </script>
