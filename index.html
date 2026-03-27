@@ -7670,31 +7670,400 @@ body.auth-pending #toast {
     <div class="section-grid" id="notes-grid"></div>
   </main>
 
-  <aside style="align-self:start;">
-    <div class="metronome-card" style="position:relative;">
-      <!-- Botão microfone BPM — canto superior direito -->
-      <button id="bpm-mic-btn" onclick="bpmMicSearch()" title="Pesquisar BPM da música"
-        style="position:absolute;top:12px;right:12px;width:34px;height:34px;border-radius:50%;background:rgba(10,158,110,0.1);border:1.5px solid rgba(10,158,110,0.3);color:rgba(10,158,110,0.7);cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all 0.2s;touch-action:manipulation;"
-        onmouseover="this.style.background='rgba(10,158,110,0.2)';this.style.borderColor='rgba(10,158,110,0.6)'"
-        onmouseout="this.style.background='rgba(10,158,110,0.1)';this.style.borderColor='rgba(10,158,110,0.3)'">
-        <svg id="bpm-mic-icon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/>
-          <path d="M19 10v2a7 7 0 0 1-14 0v-2"/>
-          <line x1="12" y1="19" x2="12" y2="23"/>
-          <line x1="8" y1="23" x2="16" y2="23"/>
-        </svg>
-      </button>
-      <div class="bpm-val" id="bpm-display">120</div>
-      <div style="font-size:10px; font-weight:900; opacity:0.5;">BPM</div>
-      <button id="tap-btn" style="border:2px solid var(--accent-primary); background:none; color:var(--accent-primary); width:70px; height:70px; border-radius:50%; font-weight:900; margin:15px 0; cursor:pointer; transition:transform 0.08s cubic-bezier(0.34,1.8,0.64,1),background 0.1s,box-shadow 0.1s; touch-action:manipulation;" onmousedown="this.style.transform='scale(0.88)';this.style.background='rgba(10,158,110,0.15)'" onmouseup="this.style.transform='';this.style.background='none'" ontouchstart="this.style.transform='scale(0.88)';this.style.background='rgba(10,158,110,0.15)'" ontouchend="this.style.transform='';this.style.background='none'">TAP</button>
-      <div style="display:flex; gap:15px; justify-content:center; margin-bottom:20px;">
-        <button onclick="adj(-1)" style="width:35px; height:35px; border-radius:50%; border:1px solid var(--border-color); background:none; color:#fff; cursor:pointer;">-</button>
-        <button onclick="adj(1)" style="width:35px; height:35px; border-radius:50%; border:1px solid var(--border-color); background:none; color:#fff; cursor:pointer;">+</button>
-      </div>
-      <button onclick="togglePlay()" id="play-btn" style="background:var(--accent-primary); color:#000; border:none; padding:14px; border-radius:30px; font-weight:800; width:100%; cursor:pointer; transition:transform 0.15s cubic-bezier(0.34,1.6,0.64,1),box-shadow 0.15s; touch-action:manipulation;" onmousedown="this.style.transform='scale(0.96)'" onmouseup="this.style.transform=''">INICIAR</button>
+  </div>
+
+<!-- ── METRÔNOMO FLUTUANTE ─────────────────────────────────────────── -->
+<div id="metro-fab-wrap" style="position:fixed;bottom:calc(88px + env(safe-area-inset-bottom,0px));right:max(18px,env(safe-area-inset-right,18px));z-index:2200;display:flex;flex-direction:column;align-items:flex-end;gap:10px;">
+
+  <!-- Painel expansível -->
+  <div id="metro-fab-panel" style="display:none;background:rgba(12,12,20,0.97);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);border:1px solid rgba(10,158,110,0.25);border-radius:22px;padding:18px 16px 14px;width:220px;text-align:center;box-shadow:0 8px 40px rgba(0,0,0,0.65);animation:metroFabIn 0.22s cubic-bezier(0.34,1.4,0.64,1);position:relative;">
+
+    <!-- mic BPM -->
+    <button id="bpm-mic-btn" onclick="bpmMicSearch()" title="Pesquisar BPM da música"
+      style="position:absolute;top:12px;right:12px;width:28px;height:28px;border-radius:50%;background:rgba(10,158,110,0.1);border:1.5px solid rgba(10,158,110,0.3);color:rgba(10,158,110,0.7);cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all 0.2s;touch-action:manipulation;"
+      onmouseover="this.style.background='rgba(10,158,110,0.2)'" onmouseout="this.style.background='rgba(10,158,110,0.1)'">
+      <svg id="bpm-mic-icon" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/>
+        <path d="M19 10v2a7 7 0 0 1-14 0v-2"/>
+        <line x1="12" y1="19" x2="12" y2="23"/>
+        <line x1="8" y1="23" x2="16" y2="23"/>
+      </svg>
+    </button>
+
+    <!-- BPM display -->
+    <div class="bpm-val" id="bpm-display" style="font-size:46px;font-weight:800;color:var(--accent-primary);line-height:1;">120</div>
+    <div style="font-size:9px;font-weight:900;opacity:0.4;letter-spacing:2px;margin-bottom:10px;">BPM</div>
+
+    <!-- TAP -->
+    <button id="tap-btn"
+      style="border:2px solid var(--accent-primary);background:none;color:var(--accent-primary);width:62px;height:62px;border-radius:50%;font-weight:900;font-size:12px;margin:0 0 12px;cursor:pointer;transition:transform 0.08s cubic-bezier(0.34,1.8,0.64,1),background 0.1s;touch-action:manipulation;"
+      onmousedown="this.style.transform='scale(0.88)';this.style.background='rgba(10,158,110,0.15)'"
+      onmouseup="this.style.transform='';this.style.background='none'"
+      ontouchstart="this.style.transform='scale(0.88)';this.style.background='rgba(10,158,110,0.15)'"
+      ontouchend="this.style.transform='';this.style.background='none'">TAP</button>
+
+    <!-- +/- BPM -->
+    <div style="display:flex;gap:10px;justify-content:center;margin-bottom:12px;">
+      <button onclick="adj(-5)" style="width:30px;height:30px;border-radius:8px;border:1px solid rgba(255,255,255,0.1);background:none;color:rgba(255,255,255,0.5);cursor:pointer;font-size:10px;font-weight:800;">−5</button>
+      <button onclick="adj(-1)" style="width:30px;height:30px;border-radius:50%;border:1px solid var(--border-color);background:none;color:#fff;cursor:pointer;font-size:16px;font-weight:700;">−</button>
+      <button onclick="adj(1)"  style="width:30px;height:30px;border-radius:50%;border:1px solid var(--border-color);background:none;color:#fff;cursor:pointer;font-size:16px;font-weight:700;">+</button>
+      <button onclick="adj(5)"  style="width:30px;height:30px;border-radius:8px;border:1px solid rgba(255,255,255,0.1);background:none;color:rgba(255,255,255,0.5);cursor:pointer;font-size:10px;font-weight:800;">+5</button>
     </div>
-  </aside>
+
+    <!-- Divisor -->
+    <div style="height:1px;background:rgba(255,255,255,0.06);margin:0 0 12px;"></div>
+
+    <!-- COMPASSO -->
+    <div style="margin-bottom:10px;">
+      <div style="font-size:8px;font-weight:900;letter-spacing:2px;color:rgba(255,255,255,0.35);text-transform:uppercase;margin-bottom:6px;">Compasso</div>
+      <div style="display:flex;gap:5px;justify-content:center;flex-wrap:wrap;">
+        <button onclick="metroSetCompasso(2,4)" id="comp-2-4" class="metro-comp-btn">2/4</button>
+        <button onclick="metroSetCompasso(3,4)" id="comp-3-4" class="metro-comp-btn">3/4</button>
+        <button onclick="metroSetCompasso(4,4)" id="comp-4-4" class="metro-comp-btn metro-comp-ativo">4/4</button>
+        <button onclick="metroSetCompasso(5,4)" id="comp-5-4" class="metro-comp-btn">5/4</button>
+        <button onclick="metroSetCompasso(6,8)" id="comp-6-8" class="metro-comp-btn">6/8</button>
+        <button onclick="metroSetCompasso(7,8)" id="comp-7-8" class="metro-comp-btn">7/8</button>
+      </div>
+    </div>
+
+    <!-- Divisor -->
+    <div style="height:1px;background:rgba(255,255,255,0.06);margin:0 0 12px;"></div>
+
+    <!-- SUBDIVISÕES -->
+    <div style="margin-bottom:10px;">
+      <div style="font-size:8px;font-weight:900;letter-spacing:2px;color:rgba(255,255,255,0.35);text-transform:uppercase;margin-bottom:6px;">Subdivisão</div>
+      <div style="display:flex;gap:5px;justify-content:center;">
+        <button onclick="metroSetSub(1)" id="sub-1" class="metro-sub-btn metro-sub-ativo" title="Tempo">♩</button>
+        <button onclick="metroSetSub(2)" id="sub-2" class="metro-sub-btn" title="Colcheia">♪♪</button>
+        <button onclick="metroSetSub(3)" id="sub-3" class="metro-sub-btn" title="Tercina">3</button>
+        <button onclick="metroSetSub(4)" id="sub-4" class="metro-sub-btn" title="Semicolcheia">♬</button>
+      </div>
+    </div>
+
+    <!-- Divisor -->
+    <div style="height:1px;background:rgba(255,255,255,0.06);margin:0 0 12px;"></div>
+
+    <!-- FLASH VISUAL -->
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;padding:0 2px;">
+      <span style="font-size:9px;font-weight:900;letter-spacing:1.5px;color:rgba(255,255,255,0.35);text-transform:uppercase;">Flash no Tempo 1</span>
+      <button id="metro-flash-toggle" onclick="metroToggleFlash()"
+        style="width:38px;height:22px;border-radius:11px;background:rgba(255,255,255,0.08);border:none;cursor:pointer;position:relative;transition:background 0.22s;touch-action:manipulation;padding:0;flex-shrink:0;">
+        <span id="metro-flash-knob" style="position:absolute;top:3px;left:3px;width:16px;height:16px;border-radius:50%;background:#fff;transition:left 0.22s,background 0.22s;box-shadow:0 1px 4px rgba(0,0,0,0.4);"></span>
+      </button>
+    </div>
+
+    <!-- ACELERAÇÃO GRADUAL -->
+    <div style="background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.07);border-radius:12px;padding:10px 12px;margin-bottom:12px;">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
+        <span style="font-size:9px;font-weight:900;letter-spacing:1.5px;color:rgba(255,255,255,0.35);text-transform:uppercase;">Aceleração</span>
+        <button id="metro-accel-toggle" onclick="metroToggleAccel()"
+          style="width:38px;height:22px;border-radius:11px;background:rgba(255,255,255,0.08);border:none;cursor:pointer;position:relative;transition:background 0.22s;touch-action:manipulation;padding:0;flex-shrink:0;">
+          <span id="metro-accel-knob" style="position:absolute;top:3px;left:3px;width:16px;height:16px;border-radius:50%;background:#fff;transition:left 0.22s,background 0.22s;box-shadow:0 1px 4px rgba(0,0,0,0.4);"></span>
+        </button>
+      </div>
+      <div id="metro-accel-cfg" style="display:none;flex-direction:column;gap:6px;">
+        <div style="display:flex;align-items:center;justify-content:space-between;">
+          <span style="font-size:9px;color:rgba(255,255,255,0.4);">Alvo (BPM)</span>
+          <div style="display:flex;align-items:center;gap:6px;">
+            <button onclick="metroAccelAdjTarget(-5)" style="background:none;border:1px solid rgba(255,255,255,0.1);color:rgba(255,255,255,0.5);width:22px;height:22px;border-radius:6px;cursor:pointer;font-size:10px;">−</button>
+            <span id="metro-accel-target-disp" style="font-size:13px;font-weight:900;color:var(--accent-primary);min-width:30px;text-align:center;">160</span>
+            <button onclick="metroAccelAdjTarget(5)"  style="background:none;border:1px solid rgba(255,255,255,0.1);color:rgba(255,255,255,0.5);width:22px;height:22px;border-radius:6px;cursor:pointer;font-size:10px;">+</button>
+          </div>
+        </div>
+        <div style="display:flex;align-items:center;justify-content:space-between;">
+          <span style="font-size:9px;color:rgba(255,255,255,0.4);">+BPM por compasso</span>
+          <div style="display:flex;align-items:center;gap:6px;">
+            <button onclick="metroAccelAdjStep(-1)" style="background:none;border:1px solid rgba(255,255,255,0.1);color:rgba(255,255,255,0.5);width:22px;height:22px;border-radius:6px;cursor:pointer;font-size:10px;">−</button>
+            <span id="metro-accel-step-disp" style="font-size:13px;font-weight:900;color:var(--accent-primary);min-width:20px;text-align:center;">5</span>
+            <button onclick="metroAccelAdjStep(1)"  style="background:none;border:1px solid rgba(255,255,255,0.1);color:rgba(255,255,255,0.5);width:22px;height:22px;border-radius:6px;cursor:pointer;font-size:10px;">+</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- SOM DO METRÔNOMO -->
+    <div style="margin-bottom:12px;position:relative;">
+      <div style="font-size:8px;font-weight:900;letter-spacing:2px;color:rgba(255,255,255,0.35);text-transform:uppercase;margin-bottom:6px;">Som do Click</div>
+
+      <!-- Trigger -->
+      <button id="metro-sound-trigger" onclick="metroToggleSoundMenu(event)"
+        style="width:100%;padding:8px 12px;border-radius:10px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.12);color:#fff;font-size:11px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:space-between;gap:8px;font-family:inherit;touch-action:manipulation;transition:border-color 0.15s;">
+        <span style="display:flex;align-items:center;gap:8px;">
+          <span id="metro-sound-icon" style="display:flex;align-items:center;color:var(--accent-primary);"></span>
+          <span id="metro-sound-label">Sine</span>
+        </span>
+        <!-- chevron -->
+        <svg id="metro-sound-chevron" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="opacity:0.4;transition:transform 0.2s;flex-shrink:0;"><polyline points="6 9 12 15 18 9"/></svg>
+      </button>
+
+      <!-- Dropdown list -->
+      <div id="metro-sound-menu" style="display:none;position:absolute;bottom:calc(100% + 6px);left:0;right:0;background:rgba(10,10,18,0.98);border:1px solid rgba(255,255,255,0.1);border-radius:12px;overflow:hidden;box-shadow:0 8px 32px rgba(0,0,0,0.7);z-index:100;backdrop-filter:blur(16px);">
+        <div class="metro-sound-opt" data-val="sine" onclick="metroSetSound('sine')">
+          <span class="metro-sound-opt-icon">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12 Q5 4 8 12 Q11 20 14 12 Q17 4 20 12 Q21 16 22 12"/></svg>
+          </span>
+          <span>Sine</span>
+        </div>
+        <div class="metro-sound-opt" data-val="clave" onclick="metroSetSound('clave')">
+          <span class="metro-sound-opt-icon">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="19" x2="19" y2="5"/><line x1="8" y1="19" x2="19" y2="8"/></svg>
+          </span>
+          <span>Clave</span>
+        </div>
+        <div class="metro-sound-opt" data-val="woodblock" onclick="metroSetSound('woodblock')">
+          <span class="metro-sound-opt-icon">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="8" width="18" height="8" rx="3"/><line x1="7" y1="8" x2="7" y2="16"/><line x1="12" y1="8" x2="12" y2="16"/></svg>
+          </span>
+          <span>Woodblock</span>
+        </div>
+        <div class="metro-sound-opt" data-val="baqueta" onclick="metroSetSound('baqueta')">
+          <span class="metro-sound-opt-icon">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="21" x2="17" y2="7"/><circle cx="19" cy="5" r="2"/></svg>
+          </span>
+          <span>Baqueta</span>
+        </div>
+        <div class="metro-sound-opt" data-val="mudo" onclick="metroSetSound('mudo')">
+          <span class="metro-sound-opt-icon">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="1" y1="1" x2="23" y2="23"/><path d="M9 9v3a3 3 0 0 0 5.12 2.12M15 9.34V4a3 3 0 0 0-5.94-.6"/><path d="M17 16.95A7 7 0 0 1 5 12v-2m14 0v2a7 7 0 0 1-.11 1.23"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>
+          </span>
+          <span>Mudo</span>
+        </div>
+      </div>
+    </div>
+
+    <style>
+    .metro-sound-opt {
+      display:flex;align-items:center;gap:10px;
+      padding:10px 14px;font-size:11px;font-weight:700;color:rgba(255,255,255,0.6);
+      cursor:pointer;transition:background 0.12s,color 0.12s;
+      border-bottom:1px solid rgba(255,255,255,0.05);
+    }
+    .metro-sound-opt:last-child { border-bottom:none; }
+    .metro-sound-opt:hover { background:rgba(10,158,110,0.1);color:#fff; }
+    .metro-sound-opt.metro-sound-ativo { color:var(--accent-primary)!important;background:rgba(10,158,110,0.08)!important; }
+    .metro-sound-opt-icon { display:flex;align-items:center;color:rgba(255,255,255,0.3);flex-shrink:0; }
+    .metro-sound-opt.metro-sound-ativo .metro-sound-opt-icon { color:var(--accent-primary); }
+    </style>
+
+    <div style="height:1px;background:rgba(255,255,255,0.06);margin:0 0 12px;"></div>
+
+    <!-- INICIAR/PARAR -->
+    <button onclick="togglePlay()" id="play-btn"
+      style="background:var(--accent-primary);color:#000;border:none;padding:12px;border-radius:26px;font-weight:800;font-size:12px;width:100%;cursor:pointer;transition:transform 0.15s cubic-bezier(0.34,1.6,0.64,1);touch-action:manipulation;"
+      onmousedown="this.style.transform='scale(0.96)'" onmouseup="this.style.transform=''">INICIAR</button>
+  </div>
+
+  <!-- Flash overlay (tempo 1) -->
+  <div id="metro-flash-overlay" style="position:fixed;inset:0;pointer-events:none;z-index:99999;background:rgba(10,158,110,0.18);opacity:0;transition:opacity 0.08s;border-radius:0;"></div>
+
+  <style>
+  .metro-comp-btn {
+    padding:5px 8px;border-radius:8px;border:1px solid rgba(255,255,255,0.1);
+    background:rgba(255,255,255,0.04);color:rgba(255,255,255,0.5);
+    font-size:10px;font-weight:800;cursor:pointer;transition:all 0.15s;touch-action:manipulation;
+  }
+  .metro-comp-btn:hover { background:rgba(10,158,110,0.12);color:rgba(10,158,110,0.9); }
+  .metro-comp-btn.metro-comp-ativo { background:rgba(10,158,110,0.2)!important;border-color:rgba(10,158,110,0.6)!important;color:#0A9E6E!important; }
+  .metro-sub-btn {
+    width:38px;height:38px;border-radius:10px;border:1px solid rgba(255,255,255,0.1);
+    background:rgba(255,255,255,0.04);color:rgba(255,255,255,0.5);
+    font-size:14px;cursor:pointer;transition:all 0.15s;touch-action:manipulation;
+  }
+  .metro-sub-btn:hover { background:rgba(10,158,110,0.12);color:rgba(10,158,110,0.9); }
+  .metro-sub-btn.metro-sub-ativo { background:rgba(10,158,110,0.2)!important;border-color:rgba(10,158,110,0.6)!important;color:#0A9E6E!important; }
+  </style>
+
+    <!-- Botão flutuante principal -->
+  <button id="metro-fab-btn" onclick="toggleMetroFab()" title="Metrônomo"
+    style="width:52px;height:52px;border-radius:50%;background:rgba(10,158,110,0.15);border:1.5px solid rgba(10,158,110,0.4);color:rgba(10,158,110,0.9);cursor:pointer;display:flex;align-items:center;justify-content:center;box-shadow:0 4px 20px rgba(0,0,0,0.5);transition:background 0.2s,border-color 0.2s,transform 0.15s;touch-action:manipulation;"
+    onmouseover="this.style.background='rgba(10,158,110,0.28)'" onmouseout="if(!isPlaying)this.style.background='rgba(10,158,110,0.15)'">
+    <!-- ícone metrônomo (pêndulo) -->
+    <svg id="metro-fab-icon" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <polygon points="12 2 20 20 4 20"/>
+      <line x1="12" y1="20" x2="12" y2="10" id="metro-pendulum"/>
+    </svg>
+  </button>
 </div>
+
+<style>
+@keyframes metroFabIn {
+  from { opacity:0; transform: scale(0.88) translateY(10px); }
+  to   { opacity:1; transform: scale(1) translateY(0); }
+}
+@keyframes metroPendulum {
+  0%,100% { transform-origin: 12px 20px; transform: rotate(-28deg); }
+  50%      { transform-origin: 12px 20px; transform: rotate(28deg); }
+}
+@keyframes metroFabPulse {
+  0%,100% { box-shadow: 0 0 0 0 rgba(10,158,110,0.5), 0 4px 20px rgba(0,0,0,0.5); }
+  50%      { box-shadow: 0 0 0 10px rgba(10,158,110,0), 0 4px 20px rgba(0,0,0,0.5); }
+}
+#metro-fab-btn.metro-ativo {
+  background: rgba(10,158,110,0.3) !important;
+  border-color: rgba(10,158,110,0.8) !important;
+  animation: metroFabPulse 0.6s ease-in-out infinite;
+}
+#metro-fab-btn.metro-ativo #metro-pendulum {
+  animation: metroPendulum 0.5s ease-in-out infinite;
+}
+#metro-fab-panel { position: relative; }
+</style>
+
+<script>
+var _metroFabOpen = false;
+function toggleMetroFab() {
+  _metroFabOpen = !_metroFabOpen;
+  var panel = document.getElementById('metro-fab-panel');
+  panel.style.display = _metroFabOpen ? 'block' : 'none';
+}
+// Fecha painel ao clicar fora
+document.addEventListener('click', function(e) {
+  if (!_metroFabOpen) return;
+  var wrap = document.getElementById('metro-fab-wrap');
+  if (wrap && !wrap.contains(e.target)) {
+    _metroFabOpen = false;
+    document.getElementById('metro-fab-panel').style.display = 'none';
+  }
+});
+
+// ── Compasso ──
+function metroSetCompasso(num, den) {
+  metroBeatsPerBar = num;
+  metroBeatUnit    = den;
+  metroBeatIndex   = 0; metroSubIndex = 0;
+  document.querySelectorAll('.metro-comp-btn').forEach(function(b){ b.classList.remove('metro-comp-ativo'); });
+  var btn = document.getElementById('comp-' + num + '-' + den);
+  if (btn) btn.classList.add('metro-comp-ativo');
+}
+
+// ── Subdivisão ──
+function metroSetSub(n) {
+  metroSubdivision = n;
+  metroSubIndex    = 0;
+  document.querySelectorAll('.metro-sub-btn').forEach(function(b){ b.classList.remove('metro-sub-ativo'); });
+  var btn = document.getElementById('sub-' + n);
+  if (btn) btn.classList.add('metro-sub-ativo');
+}
+
+// ── Flash visual ──
+function metroToggleFlash() {
+  metroFlashActive = !metroFlashActive;
+  var tog  = document.getElementById('metro-flash-toggle');
+  var knob = document.getElementById('metro-flash-knob');
+  if (metroFlashActive) {
+    tog.style.background  = 'rgba(10,158,110,0.5)';
+    knob.style.left       = '20px';
+    knob.style.background = '#0A9E6E';
+  } else {
+    tog.style.background  = 'rgba(255,255,255,0.08)';
+    knob.style.left       = '3px';
+    knob.style.background = '#fff';
+  }
+}
+
+// ── Aceleração ──
+function metroToggleAccel() {
+  metroAccelActive = !metroAccelActive;
+  var tog  = document.getElementById('metro-accel-toggle');
+  var knob = document.getElementById('metro-accel-knob');
+  var cfg  = document.getElementById('metro-accel-cfg');
+  if (metroAccelActive) {
+    tog.style.background  = 'rgba(10,158,110,0.5)';
+    knob.style.left       = '20px';
+    knob.style.background = '#0A9E6E';
+    cfg.style.display     = 'flex';
+  } else {
+    tog.style.background  = 'rgba(255,255,255,0.08)';
+    knob.style.left       = '3px';
+    knob.style.background = '#fff';
+    cfg.style.display     = 'none';
+  }
+}
+function metroAccelAdjTarget(d) {
+  metroAccelTarget = Math.min(Math.max(metroAccelTarget + d, 40), 300);
+  var el = document.getElementById('metro-accel-target-disp');
+  if (el) el.innerText = metroAccelTarget;
+}
+function metroAccelAdjStep(d) {
+  metroAccelStep = Math.min(Math.max(metroAccelStep + d, 1), 20);
+  var el = document.getElementById('metro-accel-step-disp');
+  if (el) el.innerText = metroAccelStep;
+}
+var _metroSoundIcons = {
+  sine:      '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12 Q5 4 8 12 Q11 20 14 12 Q17 4 20 12 Q21 16 22 12"/></svg>',
+  clave:     '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="19" x2="19" y2="5"/><line x1="8" y1="19" x2="19" y2="8"/></svg>',
+  woodblock: '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="8" width="18" height="8" rx="3"/><line x1="7" y1="8" x2="7" y2="16"/><line x1="12" y1="8" x2="12" y2="16"/></svg>',
+  baqueta:   '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="21" x2="17" y2="7"/><circle cx="19" cy="5" r="2"/></svg>',
+  mudo:      '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="1" y1="1" x2="23" y2="23"/><path d="M9 9v3a3 3 0 0 0 5.12 2.12M15 9.34V4a3 3 0 0 0-5.94-.6"/><path d="M17 16.95A7 7 0 0 1 5 12v-2m14 0v2a7 7 0 0 1-.11 1.23"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>'
+};
+var _metroSoundLabels = { sine:'Sine', clave:'Clave', woodblock:'Woodblock', baqueta:'Baqueta', mudo:'Mudo' };
+
+function metroToggleSoundMenu(e) {
+  e.stopPropagation();
+  var menu = document.getElementById('metro-sound-menu');
+  var chev = document.getElementById('metro-sound-chevron');
+  var open = menu.style.display === 'block';
+  menu.style.display = open ? 'none' : 'block';
+  if (chev) chev.style.transform = open ? '' : 'rotate(180deg)';
+}
+
+function metroSetSound(val) {
+  metroSoundPreset = val;
+  // Fecha menu
+  var menu = document.getElementById('metro-sound-menu');
+  var chev = document.getElementById('metro-sound-chevron');
+  if (menu) menu.style.display = 'none';
+  if (chev) chev.style.transform = '';
+  // Atualiza trigger
+  var iconEl  = document.getElementById('metro-sound-icon');
+  var labelEl = document.getElementById('metro-sound-label');
+  if (iconEl)  iconEl.innerHTML  = _metroSoundIcons[val]  || '';
+  if (labelEl) labelEl.innerText = _metroSoundLabels[val] || val;
+  // Marca opção ativa
+  document.querySelectorAll('.metro-sound-opt').forEach(function(o){
+    o.classList.toggle('metro-sound-ativo', o.dataset.val === val);
+  });
+  // Preview
+  try {
+    var ctx = _getAudioCtx();
+    if (ctx) {
+      if (ctx.state === 'suspended') ctx.resume();
+      var out = _getAudioChain(ctx);
+      var preset = _metroSounds[val] || _metroSounds['sine'];
+      var _mvol = (typeof window._metroVol === 'number') ? window._metroVol : 0.8;
+      preset.play(ctx, ctx.currentTime + 0.05, true, false, _mvol, out);
+    }
+  } catch(e) {}
+}
+
+// Fecha menu ao clicar fora
+document.addEventListener('click', function(e) {
+  var menu = document.getElementById('metro-sound-menu');
+  var trig = document.getElementById('metro-sound-trigger');
+  if (menu && menu.style.display === 'block') {
+    if (!menu.contains(e.target) && e.target !== trig && !trig.contains(e.target)) {
+      menu.style.display = 'none';
+      var chev = document.getElementById('metro-sound-chevron');
+      if (chev) chev.style.transform = '';
+    }
+  }
+});
+
+// Inicializa ícone do trigger com o preset padrão
+(function() {
+  var iconEl  = document.getElementById('metro-sound-icon');
+  var labelEl = document.getElementById('metro-sound-label');
+  if (iconEl)  iconEl.innerHTML  = _metroSoundIcons[metroSoundPreset]  || '';
+  if (labelEl) labelEl.innerText = _metroSoundLabels[metroSoundPreset] || metroSoundPreset;
+  var def = document.querySelector('.metro-sound-opt[data-val="' + metroSoundPreset + '"]');
+  if (def) def.classList.add('metro-sound-ativo');
+})();
+
+function _metroAccelUpdateUI() {
+  var el = document.getElementById('metro-accel-target-disp');
+  if (el) el.innerText = metroAccelTarget;
+}
+</script>
 <button class="btn-save-vitro" id="btn-save-vitro" onclick="saveSong()">Salvar Música</button>
 
 <!-- Controle de fonte das cifras — painel individual -->
@@ -9157,6 +9526,19 @@ let bpm = 120;
 let isPlaying = false;
 let nextNoteTime = 0.0;
 let timerID = null;
+// ── Novas vars do metrônomo ──
+let metroBeatsPerBar  = 4;
+let metroBeatUnit     = 4;
+let metroSubdivision  = 1;
+let metroBeatIndex    = 0;
+let metroSubIndex     = 0;
+let metroFlashActive  = false;
+let metroFlashTimer   = null;
+let metroAccelActive  = false;
+let metroAccelTarget  = 160;
+let metroAccelStep    = 5;
+let metroAccelBarCount = 0;
+let metroAccelInterval = null;
 let scrollInterval = null;
 function _setScroll(speed) {
   clearInterval(scrollInterval);
@@ -10144,7 +10526,131 @@ if (_tapBtn) _tapBtn.addEventListener('click', function() {
 });
 
 // ─── METRÔNOMO ───────────────────────────────────────────────────────────
-function playClick(time) {
+// ── Sons do metrônomo ──────────────────────────────────────────────────────
+// Cada preset define funções de síntese para accent / beat / sub
+// Tudo gerado via Web Audio API — sem arquivos externos
+var metroSoundPreset = 'sine'; // padrão
+
+var _metroSounds = {
+  // ── 1. Sine (padrão anterior) ──────────────────────────────────
+  sine: {
+    label: 'Sine',
+    play: function(ctx, time, isAccent, isSub, vol, out) {
+      var osc = ctx.createOscillator();
+      var env = ctx.createGain();
+      osc.type = 'sine';
+      osc.frequency.value = isAccent ? 1600 : (isSub ? 600 : 1000);
+      var v = isAccent ? vol : (isSub ? vol*0.35 : vol*0.7);
+      var dur = isAccent ? 0.10 : (isSub ? 0.04 : 0.07);
+      env.gain.setValueAtTime(v, time);
+      env.gain.exponentialRampToValueAtTime(0.001, time + dur);
+      osc.connect(env); env.connect(out);
+      osc.start(time); osc.stop(time + dur + 0.01);
+    }
+  },
+  // ── 2. Clave ───────────────────────────────────────────────────
+  // Som de clave: oscilador de alta frequência + envelope curtíssimo + pitchDrop
+  clave: {
+    label: 'Clave',
+    play: function(ctx, time, isAccent, isSub, vol, out) {
+      var freqA = isAccent ? 2500 : (isSub ? 1600 : 2000);
+      var freqB = isAccent ? 1800 : (isSub ? 1200 : 1500);
+      var v   = isAccent ? vol : (isSub ? vol*0.3 : vol*0.65);
+      var dur = isAccent ? 0.055 : (isSub ? 0.025 : 0.04);
+      // Dois osciladores para o timbre entalhado da clave
+      [freqA, freqB].forEach(function(f, i) {
+        var osc = ctx.createOscillator();
+        var env = ctx.createGain();
+        osc.type = 'square';
+        osc.frequency.setValueAtTime(f, time);
+        osc.frequency.exponentialRampToValueAtTime(f * 0.6, time + dur);
+        var gain = i === 0 ? v : v * 0.4;
+        env.gain.setValueAtTime(gain, time);
+        env.gain.exponentialRampToValueAtTime(0.001, time + dur);
+        osc.connect(env); env.connect(out);
+        osc.start(time); osc.stop(time + dur + 0.01);
+      });
+    }
+  },
+  // ── 3. Woodblock ───────────────────────────────────────────────
+  // Tom mais encorpado, oco — pitchDrop suave + noise filtrado
+  woodblock: {
+    label: 'Woodblock',
+    play: function(ctx, time, isAccent, isSub, vol, out) {
+      var freq = isAccent ? 800 : (isSub ? 400 : 600);
+      var v    = isAccent ? vol : (isSub ? vol*0.35 : vol*0.7);
+      var dur  = isAccent ? 0.14 : (isSub ? 0.055 : 0.09);
+      // Tom principal
+      var osc = ctx.createOscillator();
+      var env = ctx.createGain();
+      osc.type = 'triangle';
+      osc.frequency.setValueAtTime(freq, time);
+      osc.frequency.exponentialRampToValueAtTime(freq * 0.5, time + dur);
+      env.gain.setValueAtTime(v, time);
+      env.gain.exponentialRampToValueAtTime(0.001, time + dur);
+      osc.connect(env); env.connect(out);
+      osc.start(time); osc.stop(time + dur + 0.01);
+      // Clique de ataque (banda de ruído curta)
+      try {
+        var bufSize = Math.floor(ctx.sampleRate * 0.008);
+        var buf = ctx.createBuffer(1, bufSize, ctx.sampleRate);
+        var data = buf.getChannelData(0);
+        for (var k = 0; k < bufSize; k++) data[k] = (Math.random()*2-1);
+        var src  = ctx.createBufferSource();
+        var filt = ctx.createBiquadFilter();
+        var nenv = ctx.createGain();
+        src.buffer = buf;
+        filt.type = 'bandpass'; filt.frequency.value = freq * 1.5; filt.Q.value = 2;
+        nenv.gain.setValueAtTime(v * 0.5, time);
+        nenv.gain.exponentialRampToValueAtTime(0.001, time + 0.012);
+        src.connect(filt); filt.connect(nenv); nenv.connect(out);
+        src.start(time);
+      } catch(e) {}
+    }
+  },
+  // ── 4. Baqueta (stick) ────────────────────────────────────────
+  // Impacto mais seco e percussivo — como baqueta em aro de caixa
+  baqueta: {
+    label: 'Baqueta',
+    play: function(ctx, time, isAccent, isSub, vol, out) {
+      var v   = isAccent ? vol : (isSub ? vol*0.28 : vol*0.62);
+      var dur = isAccent ? 0.06 : (isSub ? 0.022 : 0.04);
+      // Impacto seco: ruído filtrado + tom agudo
+      try {
+        var bufSize = Math.floor(ctx.sampleRate * 0.01);
+        var buf = ctx.createBuffer(1, bufSize, ctx.sampleRate);
+        var data = buf.getChannelData(0);
+        for (var k = 0; k < bufSize; k++) data[k] = (Math.random()*2-1);
+        var src  = ctx.createBufferSource();
+        var filt = ctx.createBiquadFilter();
+        var nenv = ctx.createGain();
+        src.buffer = buf;
+        var cf = isAccent ? 3500 : (isSub ? 1800 : 2800);
+        filt.type = 'highpass'; filt.frequency.value = cf;
+        nenv.gain.setValueAtTime(v * 0.9, time);
+        nenv.gain.exponentialRampToValueAtTime(0.001, time + dur);
+        src.connect(filt); filt.connect(nenv); nenv.connect(out);
+        src.start(time);
+      } catch(e) {}
+      // Tom de corpo
+      var osc = ctx.createOscillator();
+      var env = ctx.createGain();
+      osc.type = 'sine';
+      osc.frequency.value = isAccent ? 300 : (isSub ? 180 : 240);
+      env.gain.setValueAtTime(v * 0.5, time);
+      env.gain.exponentialRampToValueAtTime(0.001, time + dur * 0.8);
+      osc.connect(env); env.connect(out);
+      osc.start(time); osc.stop(time + dur + 0.01);
+    }
+  },
+  // ── 5. Mudo ───────────────────────────────────────────────────
+  mudo: {
+    label: 'Mudo',
+    play: function(ctx, time, isAccent, isSub, vol, out) { /* silêncio */ }
+  }
+};
+
+function playClick(time, isAccent, isSub) {
   try {
     const dc = document.getElementById('drumcam-overlay');
     if (dc && dc.classList.contains('show')) {
@@ -10154,41 +10660,69 @@ function playClick(time) {
       document.getElementById('dc-song-name').textContent = s ? s.name : '—';
     }
   } catch(err) {}
+
+  // Flash visual no tempo 1
+  if (isAccent && metroFlashActive) {
+    clearTimeout(metroFlashTimer);
+    var fl = document.getElementById('metro-flash-overlay');
+    if (fl) {
+      fl.style.opacity = '1';
+      metroFlashTimer = setTimeout(function(){ fl.style.opacity = '0'; }, 80);
+    }
+  }
+
   const ctx = _getAudioCtx();
   if (!ctx) return;
-  const osc = ctx.createOscillator();
-  const env = ctx.createGain();
-  osc.frequency.value = (window._metroFreq || 1000);
   var _mvol = (typeof window._metroVol === 'number') ? window._metroVol : 0.8;
-  env.gain.setValueAtTime(_mvol, time);
-  env.gain.exponentialRampToValueAtTime(0.001, time + 0.08);
 
-  // Panner do click (L quando stereo ativo, centro quando não)
   var clickPanner = _dcStereoAtivo ? _getDcClickPanner(ctx) : null;
-  if (clickPanner) {
-    osc.connect(env);
-    env.connect(clickPanner);
-    clickPanner.connect(_getAudioChain(ctx));
-  } else {
-    osc.connect(env);
-    env.connect(_getAudioChain(ctx));
-  }
-  osc.start(time);
-  osc.stop(time + 0.08);
+  var out = clickPanner ? clickPanner : _getAudioChain(ctx);
+  if (clickPanner) clickPanner.connect(_getAudioChain(ctx));
+
+  var preset = _metroSounds[metroSoundPreset] || _metroSounds['sine'];
+  preset.play(ctx, time, isAccent, isSub, _mvol, out);
 }
+
 function scheduler() {
   const actx = _getAudioCtx(); if (!actx) return;
   if (timerID) { clearTimeout(timerID); timerID = null; }
   if (!isPlaying) return;
-  // Evita rafaga de clicks ao voltar do background
-  if (nextNoteTime < actx.currentTime - 0.5) nextNoteTime = actx.currentTime;
-  // Lookahead de 0.1s — janela menor = timing mais preciso
-  var secondsPerBeat = 60.0 / bpm;
-  while (nextNoteTime < actx.currentTime + 0.1) {
-    playClick(nextNoteTime);
-    nextNoteTime += secondsPerBeat;
+  if (nextNoteTime < actx.currentTime - 0.5) {
+    nextNoteTime = actx.currentTime;
+    metroBeatIndex = 0; metroSubIndex = 0;
   }
-  // 25ms — mais chamadas, menor chance de perder uma batida
+  var secondsPerBeat = 60.0 / bpm;
+  var secondsPerSub  = secondsPerBeat / metroSubdivision;
+  while (nextNoteTime < actx.currentTime + 0.1) {
+    var isAccent = (metroBeatIndex === 0 && metroSubIndex === 0);
+    var isSub    = (metroSubIndex > 0);
+    playClick(nextNoteTime, isAccent, isSub);
+
+    // Atualiza índices
+    metroSubIndex++;
+    if (metroSubIndex >= metroSubdivision) {
+      metroSubIndex = 0;
+      metroBeatIndex++;
+      if (metroBeatIndex >= metroBeatsPerBar) {
+        metroBeatIndex = 0;
+        // Aceleração gradual: incrementa BPM a cada compasso completo
+        if (metroAccelActive && bpm < metroAccelTarget) {
+          bpm = Math.min(bpm + metroAccelStep, metroAccelTarget);
+          secondsPerBeat = 60.0 / bpm;
+          secondsPerSub  = secondsPerBeat / metroSubdivision;
+          var bd = document.getElementById('bpm-display');
+          if (bd) bd.innerText = bpm;
+          _metroAccelUpdateUI();
+          if (bpm >= metroAccelTarget) {
+            metroAccelActive = false;
+            _metroAccelUpdateUI();
+            showToast('BPM alvo atingido: ' + metroAccelTarget, 'success');
+          }
+        }
+      }
+    }
+    nextNoteTime += secondsPerSub;
+  }
   timerID = setTimeout(scheduler, 25);
 }
 function togglePlay() {
@@ -10197,14 +10731,18 @@ function togglePlay() {
   if (actx.state === 'suspended') actx.resume();
   isPlaying = !isPlaying;
   const btn = document.getElementById('play-btn');
+  const fab = document.getElementById('metro-fab-btn');
   if (isPlaying) {
     // Pequeno buffer de 0.05s para a primeira batida não cortar
     nextNoteTime = actx.currentTime + 0.05;
+    metroBeatIndex = 0; metroSubIndex = 0;
     scheduler();
     btn.innerText = "PARAR"; btn.style.background = "#ff3e3e";
+    if (fab) fab.classList.add('metro-ativo');
   } else {
     clearTimeout(timerID); timerID = null;
     btn.innerText = "INICIAR"; btn.style.background = "var(--accent-primary)";
+    if (fab) { fab.classList.remove('metro-ativo'); fab.style.background = 'rgba(10,158,110,0.15)'; }
   }
   atualizarBtnMetroDC();
 }
