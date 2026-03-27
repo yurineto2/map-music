@@ -9554,6 +9554,13 @@ async function _sairDaSala() {
   document.getElementById('app-body').classList.remove('viewer-mode');
   atualizarSyncBar();
   atualizarLetreiroDrumCam();
+  // Recarrega música local para restaurar acordes do usuário
+  if (currentSongIndex >= 0 && songs[currentSongIndex]) {
+    var s = songs[currentSongIndex];
+    document.getElementById('notes-grid').innerHTML = '';
+    (s.parts || []).forEach(function(p) { addPart(p.title || '', p.content || ''); });
+    if (typeof _aplicarFontePartes === 'function') _aplicarFontePartes(_fontePartes);
+  }
 }
 
 // ── Encerrar sala (host) ─────────────────────────────────────────────────────
@@ -9610,7 +9617,7 @@ function atualizarSyncBar(code) {
   } else {
     bar.classList.remove('visible', 'viewer');
     guests.style.display = 'none';
-    if (btnSala) { btnSala.innerText = 'SALA'; btnSala.style.background = ''; btnSala.style.borderColor = ''; }
+    if (btnSala) { btnSala.innerText = 'SALA'; var _isLight = document.body.classList.contains('theme-light'); btnSala.style.background = _isLight ? 'rgba(10,143,98,0.08)' : 'rgba(10,158,110,0.12)'; btnSala.style.borderColor = _isLight ? 'rgba(10,143,98,0.25)' : 'rgba(10,158,110,0.3)'; btnSala.style.color = 'var(--accent-primary)'; }
   }
 }
 
