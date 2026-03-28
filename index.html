@@ -10215,6 +10215,15 @@ function _desativarModoShow() {
   if (_b) _b.style.display = 'none';
   broadcastEstado();
   _frasesAtualizarVisibilidade();
+  // Reajusta altura das textareas — no show elas ficam com height inline da fonte grande
+  requestAnimationFrame(function() {
+    setTimeout(function() {
+      document.querySelectorAll('.chord-area').forEach(function(ta) {
+        ta.style.height = 'auto';
+        ta.style.height = ta.scrollHeight + 'px';
+      });
+    }, 80); // pequeno delay para o browser aplicar o CSS antes do resize
+  });
   // Guarda timestamp de saida — impede ghost click reativar o show por 600ms
   _showReentryGuardMs = Date.now();
   // Bloqueia pointer-events no botao por 600ms como camada extra de protecao
@@ -11286,29 +11295,38 @@ function onChordInput(ta) {
 // ─── TRANSPOSIÇÃO ─────────────────────────────────────────────────────────
 function transposeAll(dir) {
   document.getElementById('trans-val').innerText = parseInt(document.getElementById('trans-val').innerText) + dir;
-  function _normNote(n) {
-    return n.replace('Db','C#').replace('Eb','D#').replace('Gb','F#').replace('Ab','G#').replace('Bb','A#');
+
+  var _SHARP = ['C','C#','D','D#','E','F','F#','G','G#','A','A#','B'];
+  var _FLAT  = ['C','Db','D','Eb','E','F','Gb','G','Ab','A','Bb','B'];
+
+  function _noteIdx(n) {
+    var i = _SHARP.indexOf(n); if (i !== -1) return i;
+    return _FLAT.indexOf(n);
   }
-  // Regex: [root][qualidade][/baixo]
-  // Qualidade: m/maj/min/dim/aug/sus/add + numeros + alteracoes (b5, #9, etc)
-  // Lookahead: so transpoe quando seguido de separador ou fim — nunca parte de palavra
-  var _tPat = /\b([A-G][#b]?)((?:(?:m(?:aj)?|M(?:aj)?|min|dim7?|aug|sus|add)(?:[0-9]*))?(?:[0-9]+)?(?:[Mb#][0-9]*)*(?:M(?:aj)?[0-9]*)?(?:sus[0-9]*|add[0-9]+)?)(?:\/([A-G][#b]?))?(?=[\s|,()\[\]]|$)/g;
+  function _transpNote(n, delta) {
+    var usesFlat = (n.length === 2 && n[1] === 'b');
+    var idx = _noteIdx(n);
+    if (idx === -1) return n;
+    var newIdx = (idx + delta + 12) % 12;
+    return (usesFlat && _FLAT[newIdx] !== _SHARP[newIdx]) ? _FLAT[newIdx] : _SHARP[newIdx];
+  }
+
+  // Regex: raiz + qualidade completa + baixo opcional
+  // Lookahead ampliado: espaço, |, ,, (, ), [, ], -, fim de linha
+  var _tPat = /\b([A-G][#b]?)((?:m(?:aj)?(?:7|9|11|13)?|M(?:aj)?(?:7|9|11|13)?|min(?:7|9)?|dim7?|aug(?:7)?|dom7?|sus[24]?|add(?:9|11|13)?|[0-9]+)?(?:[b#][0-9]+)*(?:\/[A-G][#b]?)?)(?=[\s|,()[\]\-\/]|$)/g;
+
   document.querySelectorAll('.chord-area').forEach(function(area) {
-    area.value = area.value.replace(_tPat, function(match, root, quality, bass) {
+    area.value = area.value.replace(_tPat, function(match, root, quality) {
       quality = quality || '';
-      var rNorm = _normNote(root);
-      var ri = notesArr.indexOf(rNorm);
-      if (ri === -1) return match;
-      var newRoot = notesArr[(ri + dir + 12) % 12];
-      var result = newRoot + quality;
-      if (bass != null) {
-        var bNorm = _normNote(bass);
-        var bi = notesArr.indexOf(bNorm);
-        result += '/' + (bi !== -1 ? notesArr[(bi + dir + 12) % 12] : bass);
-      }
+      var bass = null;
+      var qualClean = quality.replace(/\/([A-G][#b]?)$/, function(_, b) { bass = b; return ''; });
+      var newRoot = _transpNote(root, dir);
+      var result = newRoot + qualClean;
+      if (bass !== null) result += '/' + _transpNote(bass, dir);
       return result;
     });
-    area.style.height = ''; area.style.height = area.scrollHeight + 'px';
+    area.style.height = 'auto';
+    area.style.height = area.scrollHeight + 'px';
   });
   broadcastEstado();
 }
