@@ -1533,9 +1533,9 @@ async function obFazerLogin() {
             }
           }
           if (backup.eventos && backup.eventos.length > 0) {
-            if (localEventos.length === 0 || backupTs > localTs) {
-              _lsSet('map_pro_eventos_v1', backup.eventos);
-            }
+            // Merge: locais têm prioridade, nuvem preenche o que falta
+            var merged1 = _mergeEventos(localEventos, backup.eventos);
+            _lsSet('map_pro_eventos_v1', merged1);
           }
           if (backupTs) localStorage.setItem('map_backup_ts_v1', String(backupTs));
         }
@@ -1558,9 +1558,10 @@ async function obFazerLogin() {
                 atualizou = true;
               }
               if (backup.eventos && backup.eventos.length > 0) {
-                _lsSet('map_pro_eventos_v1', backup.eventos);
-                // Atualiza memória
-                if (typeof eventos !== 'undefined') eventos = backup.eventos;
+                var localEv2 = _lsGet('map_pro_eventos_v1', []);
+                var merged2  = _mergeEventos(localEv2, backup.eventos);
+                _lsSet('map_pro_eventos_v1', merged2);
+                if (typeof eventos !== 'undefined') eventos = merged2;
                 atualizou = true;
               }
               if (backupTs) localStorage.setItem('map_backup_ts_v1', String(backupTs));
@@ -2133,8 +2134,8 @@ body.theme-light {
 /* ── 1. APP HEADER ──────────────────────────────────────────────── */
 body.theme-light .app-header {
   background: rgba(238,236,234,0.95) !important;
-  backdrop-filter: blur(28px) saturate(1.4) !important;
-  -webkit-backdrop-filter: blur(28px) saturate(1.4) !important;
+  backdrop-filter: blur(12px) !important;
+  -webkit-backdrop-filter: blur(12px) !important;
   border-bottom: 1px solid rgba(0,0,0,0.09) !important;
   box-shadow: 0 1px 0 rgba(0,0,0,0.06), 0 2px 16px rgba(0,0,0,0.05) !important;
 }
@@ -2481,8 +2482,8 @@ body.theme-light .ev-more-item + .ev-more-item { border-top-color: rgba(0,0,0,0.
 /* ── 13. MODAIS ─────────────────────────────────────────────────── */
 body.theme-light .modal-overlay {
   background: rgba(24,24,27,0.4) !important;
-  backdrop-filter: blur(8px) saturate(1.2) !important;
-  -webkit-backdrop-filter: blur(8px) saturate(1.2) !important;
+  backdrop-filter: blur(8px) !important;
+  -webkit-backdrop-filter: blur(8px) !important;
 }
 body.theme-light .modal-box {
   background: #FFFFFF !important;
@@ -3070,10 +3071,25 @@ body.performance-mode {
   background: var(--bg-primary);
 }
 * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
-body { font-family: -apple-system, 'Inter', BlinkMacSystemFont, 'Segoe UI', sans-serif; background: var(--bg-primary); color: var(--text-primary); min-height: 100vh; min-height: -webkit-fill-available; min-height: 100dvh; transition: background 0.4s ease; overflow-x: hidden; }
+/* ── Performance: reduz blur e animações em dispositivos lentos ────── */
+@media (max-width: 1200px) and (pointer: coarse) {
+  .app-header, .dropdown-menu, .metro-fab-panel,
+  [style*="backdrop-filter"], [style*="-webkit-backdrop-filter"] {
+    backdrop-filter: blur(8px) !important;
+    -webkit-backdrop-filter: blur(8px) !important;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+body { font-family: -apple-system, 'Inter', BlinkMacSystemFont, 'Segoe UI', sans-serif; background: var(--bg-primary); color: var(--text-primary); min-height: 100vh; min-height: -webkit-fill-available; min-height: 100dvh; transition: background 0.2s ease; overflow-x: hidden; }
 
 /* HEADER */
-.app-header { background: rgba(10,10,20,0.82); backdrop-filter: blur(32px) saturate(1.8); -webkit-backdrop-filter: blur(32px) saturate(1.8); border-bottom: 1px solid rgba(138,92,246,0.12); padding: 15px 20px; position: sticky; top: 0; z-index: 1000; }
+.app-header { background: rgba(10,10,20,0.82); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); border-bottom: 1px solid rgba(138,92,246,0.12); padding: 15px 20px; position: sticky; top: 0; z-index: 1000; will-change: transform; }
 .app-header::after {
   content: '';
   position: absolute; bottom: 0; left: 0; right: 0;
@@ -3136,8 +3152,8 @@ body { font-family: -apple-system, 'Inter', BlinkMacSystemFont, 'Segoe UI', sans
 .dropdown-menu {
   position: absolute; top: 48px; right: 0;
   background: rgba(13,13,26,0.88);
-  backdrop-filter: blur(40px) saturate(1.8);
-  -webkit-backdrop-filter: blur(40px) saturate(1.8);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
   border: 1px solid rgba(138,92,246,0.25);
   border-radius: 16px; width: 220px;
   display: flex; flex-direction: column;
@@ -4836,7 +4852,7 @@ body.performance-mode .scroll-controls { display: none; } /* movido para painel 
   border-radius: var(--radius-full); cursor: pointer;
   font-weight: 900; font-size: 11px; letter-spacing: 2px;
   text-transform: uppercase;
-  backdrop-filter: blur(24px) saturate(1.6); -webkit-backdrop-filter: blur(24px) saturate(1.6);
+  backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
   transition: all 0.2s;
   box-shadow: 0 4px 20px rgba(0,0,0,0.4);
   animation: pulseGreen 1.8s ease-in-out infinite;
@@ -5027,8 +5043,8 @@ body.performance-mode #perf-font-ctrl { display: flex; }
 .modal-overlay {
   position: fixed; inset: 0;
   background: rgba(0,0,0,0.80);
-  backdrop-filter: blur(20px) saturate(1.4);
-  -webkit-backdrop-filter: blur(20px) saturate(1.4);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
   z-index: 300500; display: flex; align-items: center; justify-content: center;
   opacity: 0; pointer-events: none;
   transition: opacity 0.2s ease;
@@ -5042,7 +5058,7 @@ body.performance-mode #perf-font-ctrl { display: flex; }
   from { opacity: 0; transform: scale(0.92) translateY(12px); }
   to   { opacity: 1; transform: scale(1) translateY(0); }
 }
-.modal-box { background: rgba(13,13,26,0.90); backdrop-filter: blur(40px) saturate(1.8); -webkit-backdrop-filter: blur(40px) saturate(1.8); border: 1px solid rgba(138,92,246,0.22); border-radius: var(--radius-xl); padding: 35px; width: 90%; max-width: 420px; text-align: center; box-shadow: 0 30px 80px rgba(0,0,0,0.7), inset 0 1px 0 rgba(255,255,255,0.06); }
+.modal-box { background: rgba(13,13,26,0.90); backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px); border: 1px solid rgba(138,92,246,0.22); border-radius: var(--radius-xl); padding: 35px; width: 90%; max-width: 420px; text-align: center; box-shadow: 0 30px 80px rgba(0,0,0,0.7), inset 0 1px 0 rgba(255,255,255,0.06); }
 .modal-box h2 { font-size: 18px; font-weight: 900; margin-bottom: 6px; }
 .modal-box p { font-size: 12px; color: var(--text-secondary); margin-bottom: 24px; line-height: 1.6; }
 .modal-tabs { display: flex; gap: 8px; margin-bottom: 24px; }
@@ -5075,7 +5091,7 @@ body.performance-mode #perf-font-ctrl { display: flex; }
   background: rgba(10,10,18,0.97);
   border: 1px solid rgba(10,158,110,0.25);
   border-radius: 14px;
-  backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+  backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
   box-shadow: 0 16px 48px rgba(0,0,0,0.7), 0 0 0 1px rgba(255,255,255,0.03) inset;
   padding: 14px 16px 16px;
   width: 280px;
@@ -5420,500 +5436,222 @@ body.theme-light .toast-info .toast-icon { background: rgba(0,0,0,0.05) !importa
 /* MODAL PADS AMBIENT */
 .pads-overlay {
   position: fixed; inset: 0;
-  background: #08080e;
+  background: #07070d;
   z-index: 300500;
   display: none; flex-direction: column;
-  padding: 0;
-  overflow: hidden;
-  height: 100%;
+  overflow: hidden; height: 100%;
 }
 .pads-overlay.show { display: flex; }
 
 /* ── Header ── */
 .pads-header {
   display: flex; align-items: center; justify-content: space-between;
-  padding: 16px 20px 12px;
-  border-bottom: 1px solid rgba(255,255,255,0.05);
-  flex-shrink: 0;
+  padding: 14px 16px 12px;
+  border-bottom: 1px solid rgba(255,255,255,0.06);
+  flex-shrink: 0; gap: 12px;
 }
-@media (min-width: 641px) {
-  .pads-header { padding: 18px 28px 14px; }
-}
-.pads-header-left { display: flex; align-items: center; gap: 10px; }
-.pads-header-right { display: flex; align-items: center; gap: 12px; }
+.pads-header-left  { display: flex; align-items: center; gap: 10px; flex: 1; min-width: 0; }
+.pads-header-right { display: flex; align-items: center; gap: 10px; flex-shrink: 0; }
 .pads-title {
-  font-size: 11px; font-weight: 900; letter-spacing: 2.5px;
-  text-transform: uppercase; color: rgba(255,255,255,0.5);
+  font-size: 12px; font-weight: 900; letter-spacing: 2px;
+  text-transform: uppercase; color: rgba(255,255,255,0.6);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }
 .pads-octave-badge {
   font-size: 10px; font-weight: 800; letter-spacing: 1px;
   color: #0A9E6E; background: rgba(10,158,110,0.1);
-  border: 1px solid rgba(10,158,110,0.2);
-  padding: 3px 9px; border-radius: 20px;
+  border: 1px solid rgba(10,158,110,0.25);
+  padding: 3px 10px; border-radius: 20px; white-space: nowrap;
 }
+
+/* Volume inline no header */
 .pads-vol-row {
   display: flex; align-items: center; gap: 8px;
-  color: rgba(255,255,255,0.25);
+  color: rgba(255,255,255,0.3); flex-shrink: 0;
 }
 .pads-vol-slider {
   -webkit-appearance: none; appearance: none;
-  width: 90px; height: 3px; border-radius: 2px; outline: none;
+  width: 80px; height: 3px; border-radius: 2px; outline: none;
   background: rgba(255,255,255,0.1); cursor: pointer;
 }
 .pads-vol-slider::-webkit-slider-thumb {
-  -webkit-appearance: none; width: 14px; height: 14px;
+  -webkit-appearance: none; width: 16px; height: 16px;
   border-radius: 50%; background: #0A9E6E; cursor: pointer;
-  box-shadow: 0 0 8px rgba(10,158,110,0.4);
+  box-shadow: 0 0 8px rgba(10,158,110,0.5);
 }
 .pads-close {
-  width: 32px; height: 32px; border-radius: 8px;
-  background: rgba(255,255,255,0.04);
-  border: 1px solid rgba(255,255,255,0.08);
-  color: rgba(255,255,255,0.4); cursor: pointer;
-  display: flex; align-items: center; justify-content: center;
-  transition: all 0.15s;
-}
-.pads-close:hover { background: rgba(255,255,255,0.08); color: #fff; }
-
-/* ── Timbre tabs ── */
-.pads-timbre-tabs {
-  display: flex; gap: 0;
-  overflow-x: auto; -webkit-overflow-scrolling: touch;
-  border-bottom: 1px solid rgba(255,255,255,0.05);
-  flex-shrink: 0;
-  scrollbar-width: none;
-  padding: 0 4px;
-}
-.pads-timbre-tabs::-webkit-scrollbar { display: none; }
-.pads-timbre-tab {
-  flex-shrink: 0;
-  padding: 10px 14px;
-  background: none; border: none;
-  font-size: 10px; font-weight: 800; letter-spacing: 1px;
-  text-transform: uppercase;
-  color: rgba(255,255,255,0.3); cursor: pointer;
-  border-bottom: 2px solid transparent;
-  transition: all 0.15s; white-space: nowrap;
-  -webkit-tap-highlight-color: transparent;
-}
-.pads-timbre-tab:hover { color: rgba(255,255,255,0.6); }
-.pads-timbre-tab.active {
-  color: #0A9E6E;
-  border-bottom-color: #0A9E6E;
-}
-
-/* ── Grid ── */
-.pads-grid-wrap {
-  flex: 1; display: flex; align-items: stretch; justify-content: stretch;
-  padding: 6px; overflow: hidden; min-height: 0;
-}
-/* Desktop: pads ocupam toda a tela */
-@media (min-width: 641px) {
-  .pads-grid-wrap { padding: 8px 10px; }
-  .pads-grid {
-    width: 100%;
-    grid-template-columns: repeat(4, 1fr);
-    gap: 8px;
-  }
-  .pad-chord { font-size: clamp(14px, 1.8vw, 24px); }
-  .pad-type  { font-size: 10px; }
-}
-@media (min-width: 1025px) {
-  .pads-grid-wrap { padding: 10px 12px; }
-  .pads-grid { gap: 12px; }
-  .pad { border-radius: 16px; }
-  .pad-chord { font-size: clamp(18px, 1.6vw, 28px); }
-  .pad-type  { font-size: 11px; letter-spacing: 1px; }
-}
-.pads-grid {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  grid-auto-rows: 1fr;
-  gap: 8px; width: 100%; height: 100%;
-}
-
-/* Individual pad */
-.pad {
-  border-radius: 14px;
-  border: 1px solid rgba(255,255,255,0.07);
-  background: rgba(255,255,255,0.03);
-  display: flex; flex-direction: column;
-  align-items: center; justify-content: center; gap: 4px;
-  cursor: pointer; user-select: none; -webkit-user-select: none;
-  transition: border-color 0.2s, background 0.2s, transform 0.1s;
-  position: relative; overflow: hidden;
-  -webkit-tap-highlight-color: transparent;
-  min-height: 0;
-}
-.pad:active { transform: scale(0.95); }
-
-/* Glow layer */
-.pad::before {
-  content: ''; position: absolute; inset: 0;
-  border-radius: inherit;
-  background: radial-gradient(ellipse at 50% 80%, rgba(10,158,110,0.18) 0%, transparent 70%);
-  opacity: 0; transition: opacity 0.3s;
-  pointer-events: none;
-}
-.pad.playing::before { opacity: 1; }
-
-/* Playing state */
-.pad.playing {
-  background: rgba(10,158,110,0.08);
-  border-color: rgba(10,158,110,0.35);
-}
-
-/* Waveform pulse bar */
-.pad::after {
-  content: ''; position: absolute; bottom: 0; left: 0; right: 0;
-  height: 3px; border-radius: 0 0 14px 14px;
-  background: #0A9E6E;
-  transform: scaleX(0); transform-origin: center;
-  transition: transform 0.3s cubic-bezier(0.34,1.56,0.64,1);
-}
-.pad.playing::after { transform: scaleX(1); }
-
-/* Natural note */
-.pad-white {
-  background: rgba(255,255,255,0.03);
-  border-color: rgba(255,255,255,0.07);
-}
-/* Sharp/flat note */
-.pad-black {
-  background: rgba(0,0,0,0.3);
-  border-color: rgba(255,255,255,0.04);
-}
-.pad-black .pad-chord { color: rgba(255,255,255,0.55); }
-.pad-black .pad-type  { color: rgba(255,255,255,0.2); }
-
-/* Note label */
-.pad-chord {
-  font-size: clamp(13px, 3vw, 20px);
-  font-weight: 900; color: #fff; line-height: 1;
-  position: relative; z-index: 1;
-  transition: color 0.2s;
-}
-.pad.playing .pad-chord { color: #0A9E6E; }
-
-.pad-type {
-  font-size: 8px; font-weight: 700;
-  color: rgba(255,255,255,0.2); letter-spacing: 0.5px;
-  text-transform: uppercase; position: relative; z-index: 1;
-}
-.pad.playing .pad-type { color: rgba(10,158,110,0.6); }
-
-/* ── Afinador Rack ── */
-@keyframes tunerShock {
-  0%   { transform: translateY(-50%) translateX(0) rotate(0deg); }
-  10%  { transform: translateY(-50%) translateX(-3px) rotate(-2deg); }
-  20%  { transform: translateY(-50%) translateX(3px) rotate(2deg); }
-  30%  { transform: translateY(-50%) translateX(-4px) rotate(-1deg); }
-  40%  { transform: translateY(-50%) translateX(4px) rotate(1deg); }
-  50%  { transform: translateY(-50%) translateX(-2px) rotate(-1deg); }
-  60%  { transform: translateY(-50%) translateX(2px) rotate(0deg); }
-  70%  { transform: translateY(-50%) translateX(-1px) rotate(0deg); }
-  100% { transform: translateY(-50%) translateX(0) rotate(0deg); }
-}
-@keyframes tunerGlow {
-  0%,100% { box-shadow: 0 0 6px rgba(0,255,100,0.3); }
-  50%      { box-shadow: 0 0 14px rgba(0,255,100,0.7); }
-}
-#tuner-btn {
-  position: fixed; right: 0; top: 50%;
-  transform: translateY(-50%);
-  z-index: 3000;
-  width: 36px; height: 80px;
-  background: linear-gradient(180deg, #1a1a1a 0%, #111 50%, #1a1a1a 100%);
-  border: 1px solid rgba(255,255,255,0.12);
-  border-right: none;
-  border-radius: 10px 0 0 10px;
-  cursor: pointer;
-  display: flex; flex-direction: column;
-  align-items: center; justify-content: center; gap: 6px;
-  touch-action: manipulation;
-  box-shadow: -3px 0 12px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.08);
-}
-/* Oculta afinador no painel vocalista */
-body[data-ambiente="vocalista"] #tuner-btn { display: none !important; }
-body[data-ambiente="vocalista"] #map-notif-musica { display: none !important; }
-body[data-ambiente="vocalista"] #cifra-font-ctrl { display: none !important; }
-body[data-ambiente="vocalista"] #perf-bottom-panel { display: none !important; }
-body[data-ambiente="vocalista"] .perf-bottom-panel { display: none !important; }
-body[data-ambiente="vocalista"] .sync-bar { display: none !important; }
-body[data-ambiente="vocalista"] .harmonic-popup { display: none !important; }
-body[data-ambiente="vocalista"] #notif-panel { display: none !important; }
-#tuner-btn::before, #tuner-btn::after {
-  content: '';
-  position: absolute; left: 50%; transform: translateX(-50%);
-  width: 6px; height: 6px; border-radius: 50%;
-  background: radial-gradient(circle, #333 30%, #1a1a1a 100%);
-  border: 1px solid rgba(255,255,255,0.1);
-}
-#tuner-btn::before { top: 6px; }
-#tuner-btn::after  { bottom: 6px; }
-#tuner-btn.shock { animation: tunerShock 0.5s ease-in-out; }
-.tuner-btn-label {
-  font-size: 6px; font-weight: 900; letter-spacing: 1.5px;
-  color: rgba(0,255,100,0.7); text-transform: uppercase;
-  writing-mode: vertical-rl; line-height: 1;
-}
-.tuner-btn-led {
-  width: 7px; height: 7px; border-radius: 50%;
-  background: #00ff64;
-  animation: tunerGlow 2s ease-in-out infinite;
-}
-#tuner-panel {
-  position: fixed; right: 36px; top: 50%;
-  transform: translateY(-50%) scaleX(0);
-  transform-origin: right center;
-  z-index: 2999;
-  width: min(300px, calc(100vw - 52px));
-  background: #0a0a0a;
-  border: 1px solid rgba(255,255,255,0.1);
-  border-right: none;
-  border-radius: 12px 0 0 12px;
-  box-shadow: -8px 0 32px rgba(0,0,0,0.8), inset 0 1px 0 rgba(255,255,255,0.06);
-  overflow: hidden;
-  transition: transform 0.25s cubic-bezier(0.34,1.2,0.64,1);
-  background-image: repeating-linear-gradient(0deg,transparent,transparent 3px,rgba(255,255,255,0.01) 3px,rgba(255,255,255,0.01) 4px);
-}
-#tuner-panel.open { transform: translateY(-50%) scaleX(1); }
-.tuner-rack-top {
-  background: linear-gradient(180deg,#1c1c1c,#141414);
-  border-bottom: 1px solid rgba(255,255,255,0.08);
-  padding: 10px 14px 8px;
-  display: flex; align-items: center; justify-content: space-between;
-}
-.tuner-rack-brand { font-size: 8px; font-weight: 900; letter-spacing: 3px; color: rgba(255,255,255,0.25); text-transform: uppercase; }
-.tuner-rack-model { font-size: 7px; font-weight: 700; letter-spacing: 2px; color: rgba(0,255,100,0.4); text-transform: uppercase; }
-.tuner-display {
-  background: #000; border: 1px solid rgba(0,255,100,0.15);
-  border-radius: 6px; margin: 10px 14px 8px; padding: 10px 14px;
-  display: flex; align-items: center; justify-content: space-between;
-  box-shadow: inset 0 2px 8px rgba(0,0,0,0.8);
-}
-.tuner-note-display {
-  font-family: 'Courier New', monospace;
-  font-size: 38px; font-weight: 900; color: #00ff64;
-  text-shadow: 0 0 10px rgba(0,255,100,0.6); letter-spacing: -1px; line-height: 1;
-  min-width: 70px;
-}
-.tuner-cents-val {
-  font-family: 'Courier New', monospace; font-size: 18px; font-weight: 700;
-  color: #00ff64; text-shadow: 0 0 8px rgba(0,255,100,0.5); display: block; line-height: 1;
-}
-.tuner-cents-label { font-size: 8px; font-weight: 700; letter-spacing: 2px; color: rgba(0,255,100,0.3); text-transform: uppercase; }
-.tuner-leds { display: flex; align-items: center; justify-content: center; gap: 3px; padding: 0 14px 10px; }
-.tuner-led {
-  width: 10px; height: 16px; border-radius: 2px;
-  background: #111; border: 1px solid rgba(255,255,255,0.06); transition: background 0.08s, box-shadow 0.08s;
-}
-.tuner-led.center { width: 14px; height: 22px; border-radius: 3px; }
-.tuner-led.on-red    { background: #ff2020; box-shadow: 0 0 6px rgba(255,32,32,0.8); }
-.tuner-led.on-yellow { background: #ffcc00; box-shadow: 0 0 6px rgba(255,204,0,0.8); }
-.tuner-led.on-green  { background: #00ff64; box-shadow: 0 0 8px rgba(0,255,100,0.9); }
-.tuner-section { padding: 0 14px 10px; }
-.tuner-section-label { font-size: 7px; font-weight: 900; letter-spacing: 2px; color: rgba(255,255,255,0.2); text-transform: uppercase; margin-bottom: 6px; }
-.tuner-chips { display: flex; gap: 4px; flex-wrap: wrap; }
-.tuner-chip {
-  background: #161616; border: 1px solid rgba(255,255,255,0.1);
-  color: rgba(255,255,255,0.35); font-size: 9px; font-weight: 800;
-  padding: 5px 9px; border-radius: 4px; cursor: pointer;
-  font-family: inherit; touch-action: manipulation; transition: 0.15s;
-}
-.tuner-chip.sel { background: rgba(0,255,100,0.12); border-color: rgba(0,255,100,0.4); color: #00ff64; box-shadow: 0 0 8px rgba(0,255,100,0.2); }
-.tuner-strings { display: flex; gap: 6px; padding: 0 14px 12px; justify-content: center; flex-wrap: wrap; }
-.tuner-string { display: flex; flex-direction: column; align-items: center; gap: 4px; cursor: pointer; touch-action: manipulation; }
-.tuner-string-led {
-  width: 30px; height: 30px; border-radius: 50%;
-  background: #161616; border: 1px solid rgba(255,255,255,0.1);
-  display: flex; align-items: center; justify-content: center;
-  font-family: 'Courier New', monospace; font-size: 11px; font-weight: 900;
-  color: rgba(255,255,255,0.3); transition: 0.2s;
-}
-.tuner-string.active .tuner-string-led { background: rgba(0,255,100,0.15); border-color: rgba(0,255,100,0.5); color: #00ff64; box-shadow: 0 0 10px rgba(0,255,100,0.4); }
-.tuner-string.tuned .tuner-string-led  { background: rgba(0,255,100,0.3); border-color: #00ff64; color: #00ff64; box-shadow: 0 0 14px rgba(0,255,100,0.7); }
-.tuner-string-name { font-size: 7px; font-weight: 700; color: rgba(255,255,255,0.2); letter-spacing: 0.5px; }
-.tuner-start-btn {
-  display: block; width: calc(100% - 28px); margin: 0 14px 14px;
-  background: rgba(0,255,100,0.08); border: 1px solid rgba(0,255,100,0.25);
-  color: rgba(0,255,100,0.7); font-size: 9px; font-weight: 900;
-  letter-spacing: 2px; text-transform: uppercase; padding: 9px;
-  border-radius: 6px; cursor: pointer; font-family: inherit; touch-action: manipulation; transition: 0.18s;
-}
-.tuner-start-btn.ativo { background: rgba(0,255,100,0.18); border-color: rgba(0,255,100,0.5); color: #00ff64; box-shadow: 0 0 12px rgba(0,255,100,0.2); }
-.tuner-vents { display: flex; gap: 2px; padding: 0 14px 10px; justify-content: flex-end; }
-.tuner-vent  { width: 20px; height: 3px; border-radius: 1px; background: rgba(255,255,255,0.04); }
-
-/* ── Chat Global ── */
-#modal-chat-global {
-  position: fixed; inset: 0; z-index: 301000;
-  background: rgba(0,0,0,0.92);
-  display: flex; align-items: flex-end; justify-content: center;
-  opacity: 0; pointer-events: none;
-  transition: opacity 0.22s ease;
-}
-#modal-chat-global.show { opacity: 1; pointer-events: auto; }
-.chat-global-sheet {
-  background: #0d0d1a;
-  border-radius: 20px 20px 0 0;
-  border: 1px solid rgba(138,92,246,0.2);
-  border-bottom: none;
-  width: 100%; max-width: 600px;
-  height: 85vh;
-  display: flex; flex-direction: column;
-  overflow: hidden;
-  transform: translateY(100%);
-  transition: transform 0.3s cubic-bezier(0.34,1.2,0.64,1);
-  box-shadow: 0 -8px 40px rgba(0,0,0,0.6);
-}
-#modal-chat-global.show .chat-global-sheet { transform: translateY(0); }
-.chat-global-header {
-  display: flex; align-items: center; justify-content: space-between;
-  padding: 16px 20px 12px;
-  border-bottom: 1px solid rgba(255,255,255,0.06);
-  flex-shrink: 0;
-}
-.chat-global-title {
-  font-size: 15px; font-weight: 900; color: #fff; letter-spacing: -0.3px;
-  display: flex; align-items: center; gap: 8px;
-}
-.chat-global-online {
-  font-size: 9px; font-weight: 700; letter-spacing: 1px;
-  color: rgba(138,92,246,0.7); text-transform: uppercase;
-}
-.chat-global-close {
-  background: none; border: 1px solid rgba(255,255,255,0.1);
-  color: rgba(255,255,255,0.4); width: 30px; height: 30px;
-  border-radius: 50%; cursor: pointer; display: flex;
-  align-items: center; justify-content: center; transition: 0.18s;
-  touch-action: manipulation;
-}
-.chat-global-close:hover { color: #fff; border-color: rgba(255,255,255,0.3); }
-.chat-global-msgs {
-  flex: 1; overflow-y: auto; -webkit-overflow-scrolling: touch;
-  padding: 12px 16px; display: flex; flex-direction: column; gap: 12px;
-  touch-action: pan-y; overscroll-behavior: contain;
-}
-.chat-global-msg {
-  display: flex; gap: 10px; align-items: flex-start;
-}
-.chat-global-msg.mine { flex-direction: row-reverse; }
-.chat-msg-avatar {
-  width: 36px; height: 36px; border-radius: 10px; flex-shrink: 0;
-  background: linear-gradient(135deg, #0A9E6E, #17a349);
-  display: flex; align-items: center; justify-content: center;
-  font-size: 14px; font-weight: 900; color: #000; overflow: hidden;
-}
-.chat-msg-bubble {
-  max-width: 72%; display: flex; flex-direction: column; gap: 3px;
-}
-.chat-global-msg.mine .chat-msg-bubble { align-items: flex-end; }
-.chat-msg-meta {
-  display: flex; align-items: center; gap: 6px; flex-wrap: wrap;
-}
-.chat-global-msg.mine .chat-msg-meta { flex-direction: row-reverse; }
-.chat-msg-nome {
-  font-size: 11px; font-weight: 800; color: rgba(255,255,255,0.7);
-}
-.chat-msg-inst {
-  font-size: 9px; font-weight: 700; color: rgba(138,92,246,0.6);
-  text-transform: uppercase; letter-spacing: 0.5px;
-}
-.chat-msg-hora {
-  font-size: 9px; color: rgba(255,255,255,0.25); font-weight: 600;
-}
-.chat-msg-texto {
-  background: rgba(255,255,255,0.06);
-  border: 1px solid rgba(255,255,255,0.08);
-  border-radius: 12px 12px 12px 4px;
-  padding: 9px 12px; font-size: 13px; font-weight: 500;
-  color: rgba(255,255,255,0.88); line-height: 1.5; position: relative;
-}
-.chat-global-msg.mine .chat-msg-texto {
-  background: rgba(138,92,246,0.18);
-  border-color: rgba(138,92,246,0.3);
-  border-radius: 12px 12px 4px 12px;
-}
-.chat-msg-del {
-  position: absolute; top: 4px; right: 6px;
-  background: none; border: none; color: rgba(255,255,255,0.15);
-  cursor: pointer; font-size: 10px; padding: 2px; line-height: 1;
-  transition: 0.15s; display: none;
-}
-.chat-global-msg.mine .chat-msg-texto:hover .chat-msg-del { display: block; }
-.chat-msg-del:hover { color: rgba(248,113,113,0.8); }
-.chat-global-input-row {
-  display: flex; gap: 8px; padding: 12px 16px 20px;
-  border-top: 1px solid rgba(255,255,255,0.06);
-  flex-shrink: 0;
-  padding-bottom: max(20px, env(safe-area-inset-bottom, 20px));
-}
-.chat-global-input {
-  flex: 1; background: rgba(255,255,255,0.05);
-  border: 1px solid rgba(255,255,255,0.1);
-  border-radius: 12px; padding: 11px 14px;
-  color: #fff; font-size: 13px; font-weight: 500;
-  outline: none; font-family: inherit; transition: border-color 0.18s;
-}
-.chat-global-input:focus { border-color: rgba(138,92,246,0.5); }
-.chat-global-input::placeholder { color: rgba(255,255,255,0.25); }
-.chat-global-send {
-  background: rgba(138,92,246,0.2); border: 1px solid rgba(138,92,246,0.4);
-  color: #a78bfa; width: 44px; height: 44px; border-radius: 12px;
-  cursor: pointer; display: flex; align-items: center; justify-content: center;
-  touch-action: manipulation; transition: 0.18s; flex-shrink: 0;
-}
-.chat-global-send:hover { background: rgba(138,92,246,0.35); }
-.chat-global-empty {
-  flex: 1; display: flex; flex-direction: column;
-  align-items: center; justify-content: center; gap: 10px;
-  color: rgba(255,255,255,0.15);
-}
-/* Tema claro */
-body.theme-light #modal-chat-global { background: rgba(0,0,0,0.4); }
-body.theme-light .chat-global-sheet { background: var(--bg-primary); border-color: rgba(0,0,0,0.09); }
-body.theme-light .chat-global-header { border-bottom-color: rgba(0,0,0,0.07); }
-body.theme-light .chat-global-title { color: #1A1A1E; }
-body.theme-light .chat-msg-nome { color: rgba(26,26,30,0.7); }
-body.theme-light .chat-msg-texto { background: rgba(0,0,0,0.04); border-color: rgba(0,0,0,0.08); color: #1A1A1E; }
-body.theme-light .chat-global-msg.mine .chat-msg-texto { background: rgba(138,92,246,0.1); border-color: rgba(138,92,246,0.2); }
-body.theme-light .chat-global-input { background: var(--bg-secondary); border-color: rgba(0,0,0,0.1); color: #1A1A1E; }
-body.theme-light .chat-global-input-row { border-top-color: rgba(0,0,0,0.07); }
-  display: flex; align-items: center; gap: 12px;
-  padding: 10px 20px 14px;
-  border-top: 1px solid rgba(255,255,255,0.05);
-  flex-shrink: 0;
-}
-.pads-oct-btn {
-  width: 30px; height: 30px; border-radius: 8px;
-  background: rgba(255,255,255,0.04);
-  border: 1px solid rgba(255,255,255,0.08);
-  color: rgba(255,255,255,0.5); cursor: pointer;
+  width: 36px; height: 36px; border-radius: 10px;
+  background: rgba(255,255,255,0.05);
+  border: 1px solid rgba(255,255,255,0.09);
+  color: rgba(255,255,255,0.45); cursor: pointer;
   display: flex; align-items: center; justify-content: center;
   transition: all 0.15s; flex-shrink: 0;
   -webkit-tap-highlight-color: transparent;
 }
-.pads-oct-btn:hover { background: rgba(255,255,255,0.08); color: #fff; }
-.pads-oct-btn:active { transform: scale(0.9); }
-.pads-oct-track {
-  flex: 1; height: 4px; background: rgba(255,255,255,0.07);
-  border-radius: 2px; position: relative; max-width: 140px;
+.pads-close:hover { background: rgba(255,255,255,0.1); color: #fff; }
+.pads-close:active { transform: scale(0.92); }
+
+/* ── Timbre tabs — scroll horizontal, chips grandes ── */
+.pads-timbre-tabs {
+  display: flex; gap: 6px;
+  overflow-x: auto; -webkit-overflow-scrolling: touch;
+  border-bottom: 1px solid rgba(255,255,255,0.05);
+  flex-shrink: 0; scrollbar-width: none;
+  padding: 10px 14px;
 }
-.pads-oct-pip {
-  position: absolute; top: 50%; transform: translateY(-50%);
-  width: 14px; height: 14px; border-radius: 50%;
+.pads-timbre-tabs::-webkit-scrollbar { display: none; }
+.pads-timbre-tab {
+  flex-shrink: 0;
+  padding: 7px 16px;
+  border-radius: 20px;
+  background: rgba(255,255,255,0.04);
+  border: 1px solid rgba(255,255,255,0.08);
+  font-size: 11px; font-weight: 800; letter-spacing: 0.5px;
+  color: rgba(255,255,255,0.4); cursor: pointer;
+  transition: all 0.15s; white-space: nowrap;
+  -webkit-tap-highlight-color: transparent;
+}
+.pads-timbre-tab:hover  { background: rgba(255,255,255,0.08); color: rgba(255,255,255,0.8); }
+.pads-timbre-tab:active { transform: scale(0.95); }
+.pads-timbre-tab.active {
+  background: rgba(10,158,110,0.18);
+  border-color: rgba(10,158,110,0.5);
+  color: #0A9E6E;
+}
+
+/* ── Grid 2×4 ── */
+.pads-grid-wrap {
+  flex: 1; display: flex; align-items: stretch; justify-content: stretch;
+  padding: 12px 10px 8px; overflow: hidden; min-height: 0;
+}
+.pads-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  grid-auto-rows: 1fr;
+  gap: 10px; width: 100%; height: 100%;
+}
+@media (min-width: 641px) {
+  .pads-grid { grid-template-columns: repeat(4, 1fr); gap: 10px; }
+  .pads-grid-wrap { padding: 14px; }
+}
+@media (min-width: 1025px) {
+  .pads-grid { grid-template-columns: repeat(4, 1fr); gap: 14px; }
+  .pads-grid-wrap { padding: 16px; }
+}
+
+/* Individual pad */
+.pad {
+  border-radius: 18px;
+  border: 1px solid rgba(255,255,255,0.07);
+  background: rgba(255,255,255,0.03);
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center; gap: 6px;
+  cursor: pointer; user-select: none; -webkit-user-select: none;
+  transition: border-color 0.18s, background 0.18s, transform 0.08s;
+  position: relative; overflow: hidden;
+  -webkit-tap-highlight-color: transparent; min-height: 0;
+  will-change: transform;
+}
+.pad:active { transform: scale(0.94); }
+
+.pad::before {
+  content: ''; position: absolute; inset: 0; border-radius: inherit;
+  background: radial-gradient(ellipse at 50% 90%, rgba(10,158,110,0.22) 0%, transparent 70%);
+  opacity: 0; transition: opacity 0.25s; pointer-events: none;
+}
+.pad.playing::before { opacity: 1; }
+.pad.playing {
+  background: rgba(10,158,110,0.08);
+  border-color: rgba(10,158,110,0.4);
+}
+.pad::after {
+  content: ''; position: absolute; bottom: 0; left: 0; right: 0;
+  height: 3px; border-radius: 0 0 18px 18px;
+  background: linear-gradient(90deg, #0A9E6E, #22c55e);
+  transform: scaleX(0); transform-origin: center;
+  transition: transform 0.25s cubic-bezier(0.34,1.56,0.64,1);
+}
+.pad.playing::after { transform: scaleX(1); }
+
+.pad-white { background: rgba(255,255,255,0.03); border-color: rgba(255,255,255,0.07); }
+.pad-black { background: rgba(0,0,0,0.35); border-color: rgba(255,255,255,0.04); }
+.pad-black .pad-chord { color: rgba(255,255,255,0.5); }
+.pad-black .pad-type  { color: rgba(255,255,255,0.2); }
+.pad-black .pad-oct-info { color: rgba(255,255,255,0.18); }
+
+/* Nota principal — grande e legível */
+.pad-chord {
+  font-size: clamp(22px, 5vw, 36px);
+  font-weight: 900; color: #fff; line-height: 1;
+  position: relative; z-index: 1; transition: color 0.18s;
+  letter-spacing: -0.5px;
+}
+.pad.playing .pad-chord { color: #0A9E6E; }
+
+/* Solfejo e oitava abaixo da nota */
+.pad-type {
+  font-size: 10px; font-weight: 700;
+  color: rgba(255,255,255,0.25); letter-spacing: 0.5px;
+  text-transform: uppercase; position: relative; z-index: 1;
+  transition: color 0.18s;
+}
+.pad.playing .pad-type { color: rgba(10,158,110,0.7); }
+
+/* Oitava — canto superior direito do pad */
+.pad-oct-info {
+  position: absolute; top: 8px; right: 10px;
+  font-size: 9px; font-weight: 800;
+  color: rgba(255,255,255,0.2); letter-spacing: 0.5px;
+  z-index: 1; transition: color 0.18s;
+  line-height: 1;
+}
+.pad.playing .pad-oct-info { color: rgba(10,158,110,0.5); }
+
+/* ── Footer oitava — redesenhado, grande e claro ── */
+.pads-footer {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 10px 14px calc(10px + env(safe-area-inset-bottom, 0px));
+  border-top: 1px solid rgba(255,255,255,0.06);
+  flex-shrink: 0; gap: 10px;
+  background: rgba(255,255,255,0.02);
+}
+.pads-oct-btn {
+  width: 48px; height: 48px; border-radius: 14px;
+  background: rgba(255,255,255,0.05);
+  border: 1px solid rgba(255,255,255,0.1);
+  color: rgba(255,255,255,0.6); cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  transition: all 0.15s; flex-shrink: 0;
+  -webkit-tap-highlight-color: transparent;
+}
+.pads-oct-btn:hover  { background: rgba(10,158,110,0.15); border-color: rgba(10,158,110,0.4); color: #0A9E6E; }
+.pads-oct-btn:active { transform: scale(0.9); background: rgba(10,158,110,0.25); }
+
+/* Indicador de oitava — 5 pontos + label central */
+.pads-oct-indicator {
+  flex: 1; display: flex; flex-direction: column;
+  align-items: center; gap: 6px;
+}
+.pads-oct-dots {
+  display: flex; gap: 8px; align-items: center;
+}
+.pads-oct-dot {
+  width: 8px; height: 8px; border-radius: 50%;
+  background: rgba(255,255,255,0.1);
+  border: 1px solid rgba(255,255,255,0.12);
+  transition: all 0.2s;
+}
+.pads-oct-dot.active {
   background: #0A9E6E;
-  box-shadow: 0 0 10px rgba(10,158,110,0.5);
-  transition: left 0.2s cubic-bezier(0.34,1.56,0.64,1);
-  left: 25%; /* default oct 3 out of 2-6 range */
+  border-color: #0A9E6E;
+  box-shadow: 0 0 8px rgba(10,158,110,0.6);
+  transform: scale(1.25);
 }
 .pads-oct-label {
-  font-size: 10px; font-weight: 700;
-  color: rgba(255,255,255,0.3); letter-spacing: 0.5px;
-  margin-left: auto;
+  font-size: 11px; font-weight: 800;
+  color: rgba(255,255,255,0.35); letter-spacing: 1px;
 }
-.pads-oct-label strong { color: rgba(255,255,255,0.7); }
+.pads-oct-label strong { color: #0A9E6E; font-size: 14px; }
 
 /* MODAL IMPORTAR CIFRA */
 .cifra-textarea {
@@ -5981,7 +5719,7 @@ body.viewer-mode input[type="text"] { pointer-events: none; }
   background: rgba(10,10,18,0.97);
   border: 1px solid rgba(255,255,255,0.1);
   border-radius: 16px;
-  backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+  backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
   box-shadow: 0 16px 48px rgba(0,0,0,0.8), 0 4px 12px rgba(0,0,0,0.4);
   min-width: 190px;
   display: flex; flex-direction: column;
@@ -7675,22 +7413,22 @@ body.auth-pending #toast {
   <!-- Header -->
   <div class="pads-header">
     <div class="pads-header-left">
-      <span class="pads-title">Ambient Pads</span>
+      <span class="pads-title" id="pads-title">Ambient Pads</span>
       <span class="pads-octave-badge" id="pads-octave-badge">Oct 3</span>
     </div>
     <div class="pads-header-right">
       <div class="pads-vol-row">
-        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/></svg>
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/></svg>
         <input type="range" id="pads-vol" min="0" max="100" value="70"
           oninput="atualizarVolumePads(this.value)" class="pads-vol-slider">
       </div>
       <button class="pads-close" onclick="fecharPads()">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
       </button>
     </div>
   </div>
 
-  <!-- Timbre tabs -->
+  <!-- Timbre tabs — chips horizontais com scroll -->
   <div class="pads-timbre-tabs" id="pads-timbre-tabs">
     <button class="pads-timbre-tab active" onclick="setPadType('ambient',this)" data-type="ambient">Ambient</button>
     <button class="pads-timbre-tab" onclick="setPadType('synth',this)" data-type="synth">Synth</button>
@@ -7706,23 +7444,29 @@ body.auth-pending #toast {
     <button class="pads-timbre-tab" onclick="setPadType('sub',this)" data-type="sub">Strings</button>
   </div>
 
-  <!-- Pads grid -->
+  <!-- Pads grid 2x4 -->
   <div class="pads-grid-wrap">
     <div class="pads-grid" id="pads-grid"></div>
   </div>
 
-  <!-- Footer: oitava -->
+  <!-- Footer oitava redesenhado -->
   <div class="pads-footer">
-    <button class="pads-oct-btn" onclick="padsOitavaStep(-1)">
-      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+    <button class="pads-oct-btn" onclick="padsOitavaStep(-1)" title="Oitava abaixo">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
     </button>
-    <div class="pads-oct-track">
-      <div class="pads-oct-pip" id="pads-oct-pip"></div>
+    <div class="pads-oct-indicator">
+      <div class="pads-oct-dots" id="pads-oct-dots">
+        <div class="pads-oct-dot" data-oct="2"></div>
+        <div class="pads-oct-dot" data-oct="3"></div>
+        <div class="pads-oct-dot active" data-oct="4"></div>
+        <div class="pads-oct-dot" data-oct="5"></div>
+        <div class="pads-oct-dot" data-oct="6"></div>
+      </div>
+      <div class="pads-oct-label">Oitava <strong id="pads-octave-val">3</strong></div>
     </div>
-    <button class="pads-oct-btn" onclick="padsOitavaStep(1)">
-      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+    <button class="pads-oct-btn" onclick="padsOitavaStep(1)" title="Oitava acima">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
     </button>
-    <span class="pads-oct-label">Oitava <strong id="pads-octave-val">3</strong></span>
     <input type="range" id="pads-octave" min="2" max="6" value="3"
       oninput="padsOitavaChange(this.value)" style="display:none">
   </div>
@@ -8681,7 +8425,7 @@ document.addEventListener('DOMContentLoaded', function() {
 <!-- FRASES PRONTAS — modo show (só host) -->
 <div id="frases-prontas-btn" style="display:none;position:fixed;bottom:calc(24px + env(safe-area-inset-bottom, 0px));left:max(20px, env(safe-area-inset-left, 20px));z-index:301200;">
   <button onclick="toggleFrasesProntas()" id="frases-toggle-btn"
-    style="background:rgba(138,92,246,0.12);border:1px solid rgba(138,92,246,0.4);color:rgba(167,139,250,0.9);padding:11px 18px;border-radius:999px;font-size:11px;font-weight:900;letter-spacing:1.5px;text-transform:uppercase;cursor:pointer;font-family:inherit;touch-action:manipulation;backdrop-filter:blur(24px);-webkit-backdrop-filter:blur(24px);box-shadow:0 4px 20px rgba(0,0,0,0.4);display:flex;align-items:center;gap:8px;transition:0.2s;">
+    style="background:rgba(138,92,246,0.12);border:1px solid rgba(138,92,246,0.4);color:rgba(167,139,250,0.9);padding:11px 18px;border-radius:999px;font-size:11px;font-weight:900;letter-spacing:1.5px;text-transform:uppercase;cursor:pointer;font-family:inherit;touch-action:manipulation;backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);box-shadow:0 4px 20px rgba(0,0,0,0.4);display:flex;align-items:center;gap:8px;transition:0.2s;">
     <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
     Avisos
   </button>
@@ -8689,7 +8433,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
 <!-- PAINEL DE FRASES PRONTAS -->
 <div id="frases-prontas-painel" style="display:none;position:fixed;bottom:calc(80px + env(safe-area-inset-bottom, 0px));left:max(20px, env(safe-area-inset-left, 20px));z-index:301200;width:min(320px,calc(100vw - 40px));">
-  <div style="background:rgba(10,10,20,0.96);border:1px solid rgba(138,92,246,0.3);border-radius:16px;padding:14px;backdrop-filter:blur(24px);-webkit-backdrop-filter:blur(24px);box-shadow:0 16px 48px rgba(0,0,0,0.7);">
+  <div style="background:rgba(10,10,20,0.96);border:1px solid rgba(138,92,246,0.3);border-radius:16px;padding:14px;backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);box-shadow:0 16px 48px rgba(0,0,0,0.7);">
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
       <span style="font-size:9px;font-weight:900;letter-spacing:2px;color:rgba(167,139,250,0.7);text-transform:uppercase;">Frases Prontas</span>
       <button onclick="abrirEditarFrases()" style="background:none;border:none;color:rgba(255,255,255,0.25);font-size:10px;font-weight:700;cursor:pointer;letter-spacing:0.5px;font-family:inherit;touch-action:manipulation;padding:2px 6px;border-radius:4px;transition:0.15s;" onmouseenter="this.style.color='rgba(255,255,255,0.6)'" onmouseleave="this.style.color='rgba(255,255,255,0.25)'">Editar</button>
@@ -10870,6 +10614,7 @@ function scheduler() {
   const actx = _getAudioCtx(); if (!actx) return;
   if (timerID) { clearTimeout(timerID); timerID = null; }
   if (!isPlaying) return;
+  if (document.hidden) { timerID = setTimeout(scheduler, 200); return; }
   if (nextNoteTime < actx.currentTime - 0.5) {
     nextNoteTime = actx.currentTime;
     metroBeatIndex = 0; metroSubIndex = 0;
@@ -12038,7 +11783,161 @@ function exportarSetlistPDF() {
     +   '<div class="footer-note">Gerado em ' + new Date().toLocaleDateString('pt-BR') + ' às ' + new Date().toLocaleTimeString('pt-BR', {hour:'2-digit',minute:'2-digit'}) + '</div>'
     +   '<div class="footer-brand">MAP MUSIC PRO</div>'
     + '</div>'
-    + '</body></html>';
+    + '
+<script>
+/* ── Swipe esquerda→direita para fechar painéis ────────────────────────────
+   Detecta deslize horizontal iniciado na borda esquerda da tela (primeiros
+   40px) com deslocamento mínimo de 72px e ângulo predominantemente horizontal.
+   Chama automaticamente a função de fechar do painel visível no momento.
+   Um indicador visual aparece durante o arraste para dar feedback ao usuário.
+─────────────────────────────────────────────────────────────────────────── */
+(function() {
+  var _swX = null, _swY = null, _swActive = false, _swEl = null;
+
+  // Cria indicador visual (linha verde que cresce durante o swipe)
+  var _ind = document.createElement('div');
+  _ind.style.cssText = [
+    'position:fixed','top:0','left:0','bottom:0','width:4px',
+    'background:linear-gradient(180deg,transparent,#0A9E6E,transparent)',
+    'opacity:0','z-index:9999999','pointer-events:none',
+    'transition:opacity 0.15s','border-radius:0 4px 4px 0'
+  ].join(';');
+  document.body.appendChild(_ind);
+
+  // Retorna a função de fechar do painel ativo, ou null se nenhum aberto
+  function _getFechar() {
+    // Ordem de prioridade: modais mais acima primeiro
+    var checks = [
+      // [seletor ou teste, função de fechar]
+      [function(){ return document.getElementById('pads-overlay')?.classList.contains('show'); },
+       function(){ if(typeof fecharPads==='function') fecharPads(); }],
+
+      [function(){ return document.getElementById('biblioteca-overlay')?.classList.contains('show'); },
+       function(){ if(typeof fecharBiblioteca==='function') fecharBiblioteca(); }],
+
+      [function(){ return document.getElementById('drumcam-overlay')?.classList.contains('show'); },
+       function(){ if(typeof fecharDrumCam==='function') fecharDrumCam(); }],
+
+      [function(){
+        var m = document.getElementById('modal-perfil');
+        return m && (m.style.display === 'flex' || m.style.display === 'block');
+       }, function(){ if(typeof fecharModalPerfil==='function') fecharModalPerfil(); }],
+
+      [function(){
+        var m = document.getElementById('modal-perfil-publico');
+        return m && (m.style.display === 'flex' || m.style.display === 'block');
+       }, function(){ if(typeof fecharPerfilPublico==='function') fecharPerfilPublico(); }],
+
+      [function(){ return document.getElementById('modal-sala')?.classList.contains('show'); },
+       function(){ if(typeof fecharModal==='function') fecharModal(); }],
+
+      [function(){ return document.getElementById('modal-amigos')?.classList.contains('show'); },
+       function(){ if(typeof fecharModalAmigos==='function') fecharModalAmigos(); }],
+
+      [function(){
+        var m = document.getElementById('modal-editar-musica');
+        return m && (m.style.display === 'flex' || m.style.display === 'block' || m.classList?.contains('show'));
+       }, function(){ if(typeof fecharEditarMusica==='function') fecharEditarMusica(); }],
+
+      [function(){
+        var m = document.getElementById('modal-evento');
+        return m && (m.style.display === 'flex' || m.style.display === 'block' || m.classList?.contains('show'));
+       }, function(){ if(typeof fecharModalEvento==='function') fecharModalEvento(); }],
+
+      [function(){
+        var m = document.getElementById('modal-historico-shows');
+        return m && (m.style.display === 'flex' || m.style.display === 'block');
+       }, function(){ if(typeof fecharHistoricoShows==='function') fecharHistoricoShows(); }],
+
+      [function(){
+        var m = document.getElementById('modal-cifra');
+        return m && (m.style.display === 'flex' || m.style.display === 'block' || m.classList?.contains('show'));
+       }, function(){ if(typeof fecharModalCifra==='function') fecharModalCifra(); }],
+
+      [function(){
+        var t = document.getElementById('tuner-panel');
+        return t && t.classList.contains('open');
+       }, function(){ if(typeof toggleTuner==='function') toggleTuner(); }],
+
+      [function(){
+        var a = document.getElementById('admin-painel');
+        return a && (a.style.display === 'flex' || a.style.display === 'block');
+       }, function(){ if(typeof admSair==='function') admSair(); }],
+    ];
+
+    for (var i = 0; i < checks.length; i++) {
+      try { if (checks[i][0]()) return checks[i][1]; } catch(e) {}
+    }
+    return null;
+  }
+
+  // Verifica se o toque está dentro de um scroll horizontal (não deve virar swipe)
+  function _inHScroll(el) {
+    while (el && el !== document.body) {
+      var st = window.getComputedStyle(el);
+      var ox = st.overflowX;
+      if ((ox === 'auto' || ox === 'scroll') && el.scrollWidth > el.clientWidth + 2) return true;
+      el = el.parentElement;
+    }
+    return false;
+  }
+
+  document.addEventListener('touchstart', function(e) {
+    if (e.touches.length !== 1) return;
+    var t = e.touches[0];
+    // Só ativa se iniciar nos primeiros 40px da borda esquerda
+    if (t.clientX > 40) return;
+    // Só ativa se houver painel aberto
+    if (!_getFechar()) return;
+    _swX = t.clientX;
+    _swY = t.clientY;
+    _swActive = false;
+    _swEl = e.target;
+  }, { passive: true });
+
+  document.addEventListener('touchmove', function(e) {
+    if (_swX === null || e.touches.length !== 1) return;
+    var t  = e.touches[0];
+    var dx = t.clientX - _swX;
+    var dy = Math.abs(t.clientY - _swY);
+
+    // Ignora se movimento for mais vertical que horizontal
+    if (dy > dx * 1.2 && !_swActive) { _swX = null; return; }
+    // Ignora se estiver dentro de scroll horizontal
+    if (!_swActive && _inHScroll(_swEl)) { _swX = null; return; }
+
+    if (dx > 12) {
+      _swActive = true;
+      // Feedback visual proporcional ao arraste (máx 200px)
+      var progress = Math.min(dx / 200, 1);
+      _ind.style.opacity = String(progress * 0.85);
+      _ind.style.width   = Math.round(4 + progress * 8) + 'px';
+    }
+  }, { passive: true });
+
+  document.addEventListener('touchend', function(e) {
+    _ind.style.opacity = '0';
+    _ind.style.width   = '4px';
+    if (!_swActive || _swX === null) { _swX = null; _swActive = false; return; }
+
+    var t  = e.changedTouches[0];
+    var dx = t.clientX - _swX;
+    var dy = Math.abs(t.clientY - _swY);
+    _swX = null; _swActive = false;
+
+    // Ângulo aceitável (dx pelo menos 1.5× maior que dy) e distância mínima
+    if (dx < 72 || dy > dx * 0.8) return;
+
+    var fn = _getFechar();
+    if (fn) {
+      e.preventDefault();
+      fn();
+    }
+  }, { passive: true });
+
+})();
+</script>
+</body></html>';
 
   var janela = window.open('', '_blank', 'width=860,height=1020,noopener,noreferrer');
   if (!janela) { showToast('Permita popups para exportar o PDF.'); return; }
@@ -12183,10 +12082,12 @@ function padsOitavaChange(val) {
   document.getElementById('pads-octave-val').innerText = padsOitava;
   const badge = document.getElementById('pads-octave-badge');
   if (badge) badge.innerText = 'Oct ' + padsOitava;
-  const pip = document.getElementById('pads-oct-pip');
-  if (pip) pip.style.left = ((padsOitava - 2) / 4 * 100) + '%';
   const rng = document.getElementById('pads-octave');
   if (rng) rng.value = padsOitava;
+  // Atualiza pontos do footer
+  document.querySelectorAll('.pads-oct-dot').forEach(function(dot) {
+    dot.classList.toggle('active', parseInt(dot.dataset.oct) === padsOitava + 1);
+  });
 
   // Atualiza frequência dos pads activos sem os parar
   Object.keys(padNodes).forEach(idxStr => {
@@ -12224,39 +12125,51 @@ function padsOitavaStep(delta) {
 }
 function renderPads() {
   const grid = document.getElementById('pads-grid');
+  // 8 notas: C D E F G A B C (diatônico natural — mais musical para tocar)
+  const PAD_INDICES = [0,2,4,5,7,9,11,12]; // índices em notesArr (C D E F G A B C8va)
   const NOTA_DISPLAY = ['C','C#','D','D#','E','F','F#','G','G#','A','A#','B'];
-  const NOTA_ALT     = ['Dó','Ré','Ré','Mi','Mi','Fá','Sol','Sol','Lá','Lá','Si','Si'];
+  const NOTA_SOLFEJO = ['Dó','Ré','Mi','Fá','Sol','Lá','Si','Dó'];
   const isBlack      = [false,true,false,true,false,false,true,false,true,false,true,false];
 
   const existingPads = grid.querySelectorAll('.pad');
 
-  if (existingPads.length === 12) {
-    // Actualiza apenas data-midi — preserva classes 'playing' e referências DOM
-    existingPads.forEach((el, i) => {
-      const midi = (padsOitava + 1) * 12 + i;
+  if (existingPads.length === 8) {
+    // Atualiza apenas data-midi e oitava badge
+    existingPads.forEach((el, j) => {
+      const i    = PAD_INDICES[j] % 12;
+      const oct  = padsOitava + (PAD_INDICES[j] >= 12 ? 1 : 0);
+      const midi = (oct + 1) * 12 + i;
       el.dataset.midi = midi;
-      // Actualiza referência no padNodes
-      if (padNodes[i]) padNodes[i].el = el;
+      const octEl = el.querySelector('.pad-oct-info');
+      if (octEl) octEl.textContent = oct;
+      if (padNodes[j]) padNodes[j].el = el;
     });
   } else {
-    // Primeira renderização
-    grid.innerHTML = NOTA_DISPLAY.map((sharp, i) => {
-      const midi  = (padsOitava + 1) * 12 + i;
-      const black = isBlack[i];
-      const playing = padNodes[i] ? 'playing' : '';
+    grid.innerHTML = PAD_INDICES.map((noteIdx, j) => {
+      const i      = noteIdx % 12;
+      const oct    = padsOitava + (noteIdx >= 12 ? 1 : 0);
+      const midi   = (oct + 1) * 12 + i;
+      const sharp  = NOTA_DISPLAY[i];
+      const black  = isBlack[i];
+      const solfejo= NOTA_SOLFEJO[j];
+      const playing= padNodes[j] ? 'playing' : '';
       return '<div class="pad ' + (black ? 'pad-black' : 'pad-white') + ' ' + playing + '"' +
-        ' data-midi="' + midi + '" data-qual="" data-idx="' + i + '"' +
+        ' data-midi="' + midi + '" data-qual="" data-idx="' + j + '"' +
         ' onmousedown="iniciarPad(this)"' +
         ' ontouchstart="iniciarPad(this); event.preventDefault()">' +
+        '<span class="pad-oct-info">' + oct + '</span>' +
         '<span class="pad-chord">' + sharp + '</span>' +
-        '<span class="pad-type">' + NOTA_ALT[i] + '</span>' +
+        '<span class="pad-type">' + solfejo + '</span>' +
         '</div>';
     }).join('');
-    // Actualiza referências DOM em padNodes existentes
-    grid.querySelectorAll('.pad').forEach((el, i) => {
-      if (padNodes[i]) padNodes[i].el = el;
+    grid.querySelectorAll('.pad').forEach((el, j) => {
+      if (padNodes[j]) padNodes[j].el = el;
     });
   }
+  // Atualiza pontos do footer
+  document.querySelectorAll('.pads-oct-dot').forEach(function(dot) {
+    dot.classList.toggle('active', parseInt(dot.dataset.oct) === padsOitava + 1);
+  });
 }
 
 function iniciarPad(el) {
@@ -12558,12 +12471,33 @@ const ALBUM_PALETTES = [
   ['#042f2e','#2dd4bf'],  // turquesa
 ];
 
+
+// ── Merge inteligente de eventos: local + nuvem, sem sobrescrever locais ─
+// Une por ID: eventos locais têm prioridade sobre backup.
+// Eventos do backup que não existem localmente são adicionados.
+function _mergeEventos(local, backup) {
+  if (!backup || !backup.length) return local;
+  if (!local || !local.length) return backup;
+  var mapa = {};
+  // Índice local por ID
+  local.forEach(function(e) { if (e.id) mapa[e.id] = e; });
+  // Adiciona da nuvem apenas o que não existe localmente
+  backup.forEach(function(e) {
+    if (e.id && !mapa[e.id]) mapa[e.id] = e;
+  });
+  return Object.values(mapa).sort(function(a, b) {
+    return (a.data || '').localeCompare(b.data || '');
+  });
+}
+
 let eventos = (function(){ try { return _lsGet('map_pro_eventos_v1', []) || []; } catch(e) { return []; } })();
 let bibTabAtiva = 'eventos'; // 'eventos' | 'musicas'
 let eventoAbertoId = null;
 
 function salvarEventos() {
   _lsSet('map_pro_eventos_v1', eventos);
+  // Grava timestamp local — garante que sync futura não sobrescreve com backup antigo
+  localStorage.setItem('map_backup_ts_v1', String(Date.now()));
   _fbBackupEventos(); // auto-backup na nuvem
 }
 
@@ -16042,7 +15976,7 @@ document.addEventListener('DOMContentLoaded', function() {
     banner.style.cssText =
       'position:fixed;bottom:0;left:0;right:0;z-index:200000;' +
       'background:rgba(10,10,20,0.97);border-top:1px solid rgba(10,158,110,0.25);' +
-      'backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);' +
+      'backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);' +
       'padding:14px 16px calc(14px + env(safe-area-inset-bottom,0px));' +
       'display:flex;align-items:center;gap:12px;' +
       'transform:translateY(100%);transition:transform 0.35s cubic-bezier(0.34,1.2,0.64,1);' +
@@ -17020,8 +16954,10 @@ window.addEventListener('firebase-ready', function() {
           atualizou = true;
         }
         if (backup.eventos && backup.eventos.length > 0) {
-          _lsSet('map_pro_eventos_v1', backup.eventos);
-          if (typeof eventos !== 'undefined') eventos = backup.eventos;
+          var localEv3 = _lsGet('map_pro_eventos_v1', []);
+          var merged3  = _mergeEventos(localEv3, backup.eventos);
+          _lsSet('map_pro_eventos_v1', merged3);
+          if (typeof eventos !== 'undefined') eventos = merged3;
           atualizou = true;
         }
         localStorage.setItem('map_backup_ts_v1', String(backup.updatedAt));
@@ -21041,6 +20977,7 @@ function _audioPreset(tipo) {
 }
 
 // ─── SPECTRUM ANALYSER (barras sobre o canvas do EQ) ─────────────────
+var _eqSpecBuf = null; // buffer reutilizável — evita alocação a cada frame
 function _eqDrawSpectrum() {
   if (!_eqAnimActive) return;
   const canvas = document.getElementById('eq-spectrum-canvas');
@@ -21051,7 +20988,10 @@ function _eqDrawSpectrum() {
   ctx2.clearRect(0, 0, W, H);
 
   if (_eqAnalyser) {
-    const buf = new Uint8Array(_eqAnalyser.frequencyBinCount);
+    if (!_eqSpecBuf || _eqSpecBuf.length !== _eqAnalyser.frequencyBinCount) {
+      _eqSpecBuf = new Uint8Array(_eqAnalyser.frequencyBinCount);
+    }
+    const buf = _eqSpecBuf;
     _eqAnalyser.getByteFrequencyData(buf);
     const N = buf.length;
     const barW = Math.max(2, (W / 28));
@@ -23060,8 +23000,8 @@ async function _fbFazerBackupAgora(btn) {
   padding: 0 18px; height: 58px; flex-shrink: 0;
   background: rgba(5,5,15,0.85);
   border-bottom: 1px solid rgba(138,92,246,0.20);
-  backdrop-filter: blur(36px) saturate(1.8);
-  -webkit-backdrop-filter: blur(36px) saturate(1.8);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
   position: relative; z-index: 100;
 }
 .voc-hdr-logo { display: flex; flex-direction: column; gap: 1px; }
@@ -23084,7 +23024,7 @@ async function _fbFazerBackupAgora(btn) {
   background: rgba(10,10,20,0.95);
   border: 1px solid rgba(138,92,246,0.25);
   border-radius: 16px;
-  backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+  backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
   padding: 12px 14px;
   display: none;
   align-items: center; gap: 12px;
@@ -23549,7 +23489,7 @@ function _vocShowMenu(show, btn) {
   var menu = document.createElement('div');
   menu.id = '_voc-show-ctx';
   menu._showId = show._id;
-  menu.style.cssText = 'position:fixed;z-index:400000;background:rgba(10,10,18,0.97);border:1px solid rgba(255,255,255,0.1);border-radius:14px;backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);box-shadow:0 16px 48px rgba(0,0,0,0.8);min-width:160px;padding:4px;';
+  menu.style.cssText = 'position:fixed;z-index:400000;background:rgba(10,10,18,0.97);border:1px solid rgba(255,255,255,0.1);border-radius:14px;backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);box-shadow:0 16px 48px rgba(0,0,0,0.8);min-width:160px;padding:4px;';
   [
     { label:'Iniciar',  fn: function(){ _vocIniciarShow(show); } },
     { label:'Editar',   fn: function(){ _vocEditarShow(show); } },
@@ -24246,7 +24186,7 @@ function _vocCardMenu(letra, btn) {
   var menu = document.createElement('div');
   menu.id = '_voc-card-ctx';
   menu._vocLetraId = letra._id;
-  menu.style.cssText = 'position:fixed;z-index:301999;background:rgba(10,10,18,0.97);border:1px solid rgba(255,255,255,0.1);border-radius:16px;backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);box-shadow:0 16px 48px rgba(0,0,0,0.8);min-width:160px;padding:4px;';
+  menu.style.cssText = 'position:fixed;z-index:301999;background:rgba(10,10,18,0.97);border:1px solid rgba(255,255,255,0.1);border-radius:16px;backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);box-shadow:0 16px 48px rgba(0,0,0,0.8);min-width:160px;padding:4px;';
 
   var itens = [
     { label: 'Abrir',        danger: false, fn: function() { _vocAbrirPerf(letra); } },
