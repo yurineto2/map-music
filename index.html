@@ -61,6 +61,78 @@ window.addEventListener('unhandledrejection', function(e) {
 </script>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<style>
+/* ── Bloqueios mobile universais ───────────────────────────────────────── */
+html {
+  /* Impede bounce/elastic scroll no body em Chrome/Android */
+  overscroll-behavior: none;
+  /* Impede seleção de texto acidental em taps */
+  -webkit-user-select: none;
+  user-select: none;
+}
+body {
+  overscroll-behavior: none;
+  /* Impede pull-to-refresh no Chrome Android */
+  overscroll-behavior-y: none;
+  /* Sem bounce no iOS fora de scroll containers */
+  position: relative;
+}
+/* Inputs e áreas de texto PODEM selecionar */
+input, textarea, [contenteditable] {
+  -webkit-user-select: text;
+  user-select: text;
+}
+/* touch-action: manipulation em TODOS os elementos interativos
+   elimina o delay de 300ms e o zoom por double-tap */
+a, button, [onclick], [role="button"],
+label, select, summary {
+  touch-action: manipulation;
+}
+</style>
+<script>
+/* ── Bloqueios de gesto mobile ─────────────────────────────────────────── */
+(function() {
+  // 1. Bloqueia pinch-zoom via gesture events (Safari)
+  document.addEventListener('gesturestart',  function(e){ e.preventDefault(); }, { passive: false });
+  document.addEventListener('gesturechange', function(e){ e.preventDefault(); }, { passive: false });
+  document.addEventListener('gestureend',   function(e){ e.preventDefault(); }, { passive: false });
+
+  // 2. Bloqueia pull-to-refresh e bounce vertical no body
+  // Permite scroll apenas em elementos com overflow-y scroll/auto
+  var _lastY = 0;
+  document.addEventListener('touchstart', function(e) {
+    if (e.touches.length === 1) _lastY = e.touches[0].clientY;
+  }, { passive: true });
+  document.addEventListener('touchmove', function(e) {
+    var el = e.target;
+    // Sobe na árvore procurando scroll container
+    while (el && el !== document.body) {
+      var st = window.getComputedStyle(el);
+      var oy = st.overflowY;
+      var canScroll = (oy === 'auto' || oy === 'scroll');
+      if (canScroll && el.scrollHeight > el.clientHeight) return; // deixa rolar
+      el = el.parentElement;
+    }
+    // Nenhum scroll container — bloqueia (evita pull-to-refresh)
+    e.preventDefault();
+  }, { passive: false });
+
+  // 3. Bloqueia double-tap zoom em elementos não-input
+  // Chrome Android ignora user-scalable=no desde v32 — precisamos do JS
+  var _lastTap = 0;
+  document.addEventListener('touchend', function(e) {
+    var now = Date.now();
+    var el  = e.target;
+    var tag = el.tagName;
+    // Não interfere em inputs, selects e áreas de texto
+    if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT' || el.isContentEditable) return;
+    if (now - _lastTap < 320) {
+      e.preventDefault(); // bloqueia zoom por double-tap
+    }
+    _lastTap = now;
+  }, { passive: false });
+})();
+</script>
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="Map Music PRO">
@@ -4686,6 +4758,7 @@ body.performance-mode #cifra-font-ctrl,
 body.performance-mode .app-header,
 body.performance-mode .side-panel,
 body.performance-mode .metronome-card,
+body.performance-mode #metro-wrap,
 body.performance-mode .toolbar-central { display: none !important; }
 body.performance-mode .main-layout { grid-template-columns: 1fr; padding: 100px 10% 150px; }
 @media (max-width: 640px) {
@@ -5873,7 +5946,8 @@ body.theme-light .chat-global-input-row { border-top-color: rgba(0,0,0,0.07); }
 /* VIEWER MODE: bloqueia edição */
 body.viewer-mode .chord-area { pointer-events: none; }
 body.viewer-mode .btn-save-vitro,
-body.viewer-mode #cifra-font-ctrl { display: none; }
+body.viewer-mode #cifra-font-ctrl,
+body.viewer-mode #metro-wrap { display: none; }
 body.viewer-mode input[type="text"] { pointer-events: none; }
 
 /* ── Botão ··· menu do álbum ────────────────────────────────── */
@@ -7670,8 +7744,6 @@ body.auth-pending #toast {
     <div class="section-grid" id="notes-grid"></div>
   </main>
 
-  </div>
-
 <!-- ── METRÔNOMO INLINE ────────────────────────────────────────────────── -->
 <div id="metro-wrap" style="width:100%;box-sizing:border-box;padding:0;">
 
@@ -8069,6 +8141,8 @@ document.addEventListener('DOMContentLoaded', function() {
   if (def) def.classList.add('metro-sound-ativo');
 });
 </script>
+
+</div><!-- /main-layout -->
 <button class="btn-save-vitro" id="btn-save-vitro" onclick="saveSong()">Salvar Música</button>
 
 <!-- Controle de fonte das cifras — painel individual -->
@@ -18048,6 +18122,8 @@ let _wakeLock = null;
 let _wakeLockTimer = null;
 let _noSleepVideo = null; // fallback para Safari/iOS
 
+var _wakeLockPendente = false;
+
 function ativarWakeLock() {
   // ── Método 1: Screen Wake Lock API (Chrome, Edge, Android) ──
   if ('wakeLock' in navigator && navigator.wakeLock) {
@@ -18055,19 +18131,35 @@ function ativarWakeLock() {
       navigator.wakeLock.request('screen')
         .then(function(lock) {
           _wakeLock = lock;
-          // Quando o sistema revoga o lock (ecrã bloqueou, tab ficou inativo)
-          // re-adquire automaticamente ao voltar
-          lock.addEventListener('release', function() {
-            _wakeLock = null;
-          });
+          lock.addEventListener('release', function() { _wakeLock = null; });
         })
         .catch(function() { _ativarFallbackWakeLock(); });
     } catch(e) { _ativarFallbackWakeLock(); }
   } else {
-    // ── Método 2: Fallback via vídeo silencioso (Safari iOS, Firefox) ──
     _ativarFallbackWakeLock();
   }
+  // ── Método 3: Oscilador silencioso no AudioContext principal ──
+  // Tenta agora; se o ctx ainda não existir ou estiver suspenso,
+  // fica pendente e tenta de novo no primeiro toque do usuário.
+  var ctx = (typeof audioCtx !== 'undefined') ? audioCtx : null;
+  if (ctx && ctx.state === 'running') {
+    _ativarAudioWakeLock();
+  } else {
+    _wakeLockPendente = true;
+  }
 }
+
+// Ativa o oscilador silencioso no primeiro gesto real do usuário
+(function() {
+  function _tentarWakeLockAudio() {
+    if (!_wakeLockPendente) return;
+    _wakeLockPendente = false;
+    _ativarAudioWakeLock();
+  }
+  document.addEventListener('touchstart', _tentarWakeLockAudio, { once: true, passive: true });
+  document.addEventListener('click',      _tentarWakeLockAudio, { once: true, passive: true });
+  document.addEventListener('keydown',    _tentarWakeLockAudio, { once: true, passive: true });
+})();
 
 function _ativarFallbackWakeLock() {
   // NoSleep technique: tiny looping video keeps screen awake on iOS/Safari
@@ -18102,36 +18194,49 @@ function _ativarFallbackWakeLock() {
 
 let _audioWakeLockCtx = null;
 let _audioWakeLockSrc = null;
+let _audioWakeLockOsc = null;  // oscilador silencioso no contexto principal
 
 function _ativarAudioWakeLock() {
-  if (_audioWakeLockCtx) return;
+  // Usa o AudioContext principal do app — iOS/Safari só permitem 1 por vez.
+  // Um oscilador de volume zero em loop mantém o engine ativo sem som.
   try {
-    var AC = window.AudioContext || window.webkitAudioContext;
-    if (!AC) return;
-    _audioWakeLockCtx = new AC();
-    // Buffer silencioso de 1 sample em loop — mantém o audio engine ativo
-    // sem emitir nenhum som audível. Impede hibernação no iOS/Safari.
-    var buf = _audioWakeLockCtx.createBuffer(1, 1, 22050);
-    _audioWakeLockSrc = _audioWakeLockCtx.createBufferSource();
-    _audioWakeLockSrc.buffer = buf;
-    _audioWakeLockSrc.loop = true;
-    _audioWakeLockSrc.connect(_audioWakeLockCtx.destination);
-    _audioWakeLockSrc.start(0);
+    var ctx = (typeof _getAudioCtx === 'function') ? _getAudioCtx() : null;
+    if (!ctx) {
+      // Fallback: contexto próprio se o principal ainda não existir
+      if (_audioWakeLockCtx) return;
+      var AC = window.AudioContext || window.webkitAudioContext;
+      if (!AC) return;
+      _audioWakeLockCtx = new AC();
+      ctx = _audioWakeLockCtx;
+    }
+    if (_audioWakeLockOsc) return; // já ativo
+    if (ctx.state === 'suspended') ctx.resume();
+    // Oscilador de 1 Hz com gain zero — praticamente sem custo de CPU
+    _audioWakeLockOsc = ctx.createOscillator();
+    var silentGain = ctx.createGain();
+    silentGain.gain.value = 0.0001; // quase zero — evita corte por browser
+    _audioWakeLockOsc.frequency.value = 1;
+    _audioWakeLockOsc.connect(silentGain);
+    silentGain.connect(ctx.destination);
+    _audioWakeLockOsc.start(0);
   } catch(e) {}
 }
 
 function _ativarTimerWakeLock() {
-  // Mantido como último recurso — agora complementado pelo AudioContext
   _ativarAudioWakeLock();
   if (_wakeLockTimer) return;
   _wakeLockTimer = setInterval(function() {
     if (document.visibilityState === 'visible') {
-      // Reconecta o AudioContext se o sistema o suspendeu
-      if (_audioWakeLockCtx && _audioWakeLockCtx.state === 'suspended') {
-        _audioWakeLockCtx.resume().catch(function() {});
+      // Mantém o AudioContext principal ativo (evita suspensão pelo iOS)
+      var ctx = (typeof _getAudioCtx === 'function') ? _getAudioCtx() : _audioWakeLockCtx;
+      if (ctx && ctx.state === 'suspended') ctx.resume().catch(function() {});
+      // Recria oscilador se foi perdido (ex: após bfcache)
+      if (!_audioWakeLockOsc && ctx && ctx.state === 'running') {
+        _audioWakeLockOsc = null;
+        _ativarAudioWakeLock();
       }
     }
-  }, 15000);
+  }, 10000);
 }
 
 function liberarWakeLock() {
@@ -18139,6 +18244,7 @@ function liberarWakeLock() {
   if (_noSleepVideo) { _noSleepVideo.pause(); _noSleepVideo.remove(); _noSleepVideo = null; }
   if (_wakeLockTimer) { clearInterval(_wakeLockTimer); _wakeLockTimer = null; }
   if (_audioWakeLockSrc) { try { _audioWakeLockSrc.stop(); } catch(e) {} _audioWakeLockSrc = null; }
+  if (_audioWakeLockOsc) { try { _audioWakeLockOsc.stop(); } catch(e) {} _audioWakeLockOsc = null; }
   if (_audioWakeLockCtx) { try { _audioWakeLockCtx.close(); } catch(e) {} _audioWakeLockCtx = null; }
 }
 
