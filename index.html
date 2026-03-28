@@ -104,17 +104,24 @@ label, select, summary {
     if (e.touches.length === 1) _lastY = e.touches[0].clientY;
   }, { passive: true });
   document.addEventListener('touchmove', function(e) {
+    // Se há múltiplos toques (pinch), sempre bloqueia
+    if (e.touches.length > 1) { e.preventDefault(); return; }
     var el = e.target;
     // Sobe na árvore procurando scroll container
-    while (el && el !== document.body) {
+    while (el && el !== document.documentElement) {
       var st = window.getComputedStyle(el);
       var oy = st.overflowY;
       var canScroll = (oy === 'auto' || oy === 'scroll');
       if (canScroll && el.scrollHeight > el.clientHeight) return; // deixa rolar
       el = el.parentElement;
     }
-    // Nenhum scroll container — bloqueia (evita pull-to-refresh)
-    e.preventDefault();
+    // Permite scroll normal da página (window/document)
+    // Só bloqueia pull-to-refresh: quando já está no topo e tenta puxar para baixo
+    var dy = (e.touches[0] ? e.touches[0].clientY : 0) - _lastY;
+    if (window.scrollY <= 0 && dy > 0) {
+      e.preventDefault(); // bloqueia pull-to-refresh
+    }
+    // caso contrário, deixa o scroll da página fluir normalmente
   }, { passive: false });
 
   // 3. Bloqueia double-tap zoom em elementos não-input
