@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="pt-BR" style="background:#06060c;color:#fff;">
 <head>
+<meta charset="UTF-8">
 <style>*{margin:0;padding:0;box-sizing:border-box;}html,body{background:#06060c!important;color:#fff;min-height:100%;}body{visibility:hidden;}body.pronto{visibility:visible;}#ob-splash{position:fixed;inset:0;z-index:100010;background:#06060c;display:flex;flex-direction:column;align-items:center;justify-content:center;visibility:visible!important;}</style>
 <style>
 #ios-open-safari {
@@ -59,7 +60,6 @@ window.addEventListener('unhandledrejection', function(e) {
   }
 });
 </script>
-<meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <style>
 /* ── Bloqueios mobile universais ───────────────────────────────────────── */
@@ -11781,164 +11781,10 @@ function exportarSetlistPDF() {
     +   '<tbody>' + linhasMusicas + '</tbody>'
     + '</table>'
     + '<div class="footer">'
-    +   '<div class="footer-note">Gerado em ' + new Date().toLocaleDateString('pt-BR') + ' às ' + new Date().toLocaleTimeString('pt-BR', {hour:'2-digit',minute:'2-digit'}) + '</div>'
+    +   '<div class="footer-note">Gerado em ' + new Date().toLocaleDateString('pt-BR') + ' as ' + new Date().toLocaleTimeString('pt-BR', {hour:'2-digit',minute:'2-digit'}) + '</div>'
     +   '<div class="footer-brand">MAP MUSIC PRO</div>'
     + '</div>'
-    + '
-<script>
-/* -- Swipe esquerda->direita para fechar painéis ----------------------------
-   Detecta deslize horizontal iniciado na borda esquerda da tela (primeiros
-   40px) com deslocamento minimo de 72px e angulo predominantemente horizontal.
-   Chama automaticamente a funcao de fechar do painel visivel no momento.
-   Um indicador visual aparece durante o arraste para dar feedback ao usuario.
---------------------------------------------------------------------------- */
-(function() {
-  var _swX = null, _swY = null, _swActive = false, _swEl = null;
-
-  // Cria indicador visual (linha verde que cresce durante o swipe)
-  var _ind = document.createElement('div');
-  _ind.style.cssText = [
-    'position:fixed','top:0','left:0','bottom:0','width:4px',
-    'background:linear-gradient(180deg,transparent,#0A9E6E,transparent)',
-    'opacity:0','z-index:9999999','pointer-events:none',
-    'transition:opacity 0.15s','border-radius:0 4px 4px 0'
-  ].join(';');
-  document.body.appendChild(_ind);
-
-  // Retorna a função de fechar do painel ativo, ou null se nenhum aberto
-  function _getFechar() {
-    // Ordem de prioridade: modais mais acima primeiro
-    var checks = [
-      // [seletor ou teste, função de fechar]
-      [function(){ return document.getElementById('pads-overlay')?.classList.contains('show'); },
-       function(){ if(typeof fecharPads==='function') fecharPads(); }],
-
-      [function(){ return document.getElementById('biblioteca-overlay')?.classList.contains('show'); },
-       function(){ if(typeof fecharBiblioteca==='function') fecharBiblioteca(); }],
-
-      [function(){ return document.getElementById('drumcam-overlay')?.classList.contains('show'); },
-       function(){ if(typeof fecharDrumCam==='function') fecharDrumCam(); }],
-
-      [function(){
-        var m = document.getElementById('modal-perfil');
-        return m && (m.style.display === 'flex' || m.style.display === 'block');
-       }, function(){ if(typeof fecharModalPerfil==='function') fecharModalPerfil(); }],
-
-      [function(){
-        var m = document.getElementById('modal-perfil-publico');
-        return m && (m.style.display === 'flex' || m.style.display === 'block');
-       }, function(){ if(typeof fecharPerfilPublico==='function') fecharPerfilPublico(); }],
-
-      [function(){ return document.getElementById('modal-sala')?.classList.contains('show'); },
-       function(){ if(typeof fecharModal==='function') fecharModal(); }],
-
-      [function(){ return document.getElementById('modal-amigos')?.classList.contains('show'); },
-       function(){ if(typeof fecharModalAmigos==='function') fecharModalAmigos(); }],
-
-      [function(){
-        var m = document.getElementById('modal-editar-musica');
-        return m && (m.style.display === 'flex' || m.style.display === 'block' || m.classList?.contains('show'));
-       }, function(){ if(typeof fecharEditarMusica==='function') fecharEditarMusica(); }],
-
-      [function(){
-        var m = document.getElementById('modal-evento');
-        return m && (m.style.display === 'flex' || m.style.display === 'block' || m.classList?.contains('show'));
-       }, function(){ if(typeof fecharModalEvento==='function') fecharModalEvento(); }],
-
-      [function(){
-        var m = document.getElementById('modal-historico-shows');
-        return m && (m.style.display === 'flex' || m.style.display === 'block');
-       }, function(){ if(typeof fecharHistoricoShows==='function') fecharHistoricoShows(); }],
-
-      [function(){
-        var m = document.getElementById('modal-cifra');
-        return m && (m.style.display === 'flex' || m.style.display === 'block' || m.classList?.contains('show'));
-       }, function(){ if(typeof fecharModalCifra==='function') fecharModalCifra(); }],
-
-      [function(){
-        var t = document.getElementById('tuner-panel');
-        return t && t.classList.contains('open');
-       }, function(){ if(typeof toggleTuner==='function') toggleTuner(); }],
-
-      [function(){
-        var a = document.getElementById('admin-painel');
-        return a && (a.style.display === 'flex' || a.style.display === 'block');
-       }, function(){ if(typeof admSair==='function') admSair(); }],
-    ];
-
-    for (var i = 0; i < checks.length; i++) {
-      try { if (checks[i][0]()) return checks[i][1]; } catch(e) {}
-    }
-    return null;
-  }
-
-  // Verifica se o toque está dentro de um scroll horizontal (não deve virar swipe)
-  function _inHScroll(el) {
-    while (el && el !== document.body) {
-      var st = window.getComputedStyle(el);
-      var ox = st.overflowX;
-      if ((ox === 'auto' || ox === 'scroll') && el.scrollWidth > el.clientWidth + 2) return true;
-      el = el.parentElement;
-    }
-    return false;
-  }
-
-  document.addEventListener('touchstart', function(e) {
-    if (e.touches.length !== 1) return;
-    var t = e.touches[0];
-    // Só ativa se iniciar nos primeiros 40px da borda esquerda
-    if (t.clientX > 40) return;
-    // Só ativa se houver painel aberto
-    if (!_getFechar()) return;
-    _swX = t.clientX;
-    _swY = t.clientY;
-    _swActive = false;
-    _swEl = e.target;
-  }, { passive: true });
-
-  document.addEventListener('touchmove', function(e) {
-    if (_swX === null || e.touches.length !== 1) return;
-    var t  = e.touches[0];
-    var dx = t.clientX - _swX;
-    var dy = Math.abs(t.clientY - _swY);
-
-    // Ignora se movimento for mais vertical que horizontal
-    if (dy > dx * 1.2 && !_swActive) { _swX = null; return; }
-    // Ignora se estiver dentro de scroll horizontal
-    if (!_swActive && _inHScroll(_swEl)) { _swX = null; return; }
-
-    if (dx > 12) {
-      _swActive = true;
-      // Feedback visual proporcional ao arraste (máx 200px)
-      var progress = Math.min(dx / 200, 1);
-      _ind.style.opacity = String(progress * 0.85);
-      _ind.style.width   = Math.round(4 + progress * 8) + 'px';
-    }
-  }, { passive: true });
-
-  document.addEventListener('touchend', function(e) {
-    _ind.style.opacity = '0';
-    _ind.style.width   = '4px';
-    if (!_swActive || _swX === null) { _swX = null; _swActive = false; return; }
-
-    var t  = e.changedTouches[0];
-    var dx = t.clientX - _swX;
-    var dy = Math.abs(t.clientY - _swY);
-    _swX = null; _swActive = false;
-
-    // Ângulo aceitável (dx pelo menos 1.5x maior que dy) e distância mínima
-    if (dx < 72 || dy > dx * 0.8) return;
-
-    var fn = _getFechar();
-    if (fn) {
-      e.preventDefault();
-      fn();
-    }
-  }, { passive: true });
-
-})();
-</script>
-</body></html>';
+    + '</body></html>';
 
   var janela = window.open('', '_blank', 'width=860,height=1020,noopener,noreferrer');
   if (!janela) { showToast('Permita popups para exportar o PDF.'); return; }
@@ -25612,5 +25458,155 @@ window.addEventListener('firebase-ready', function() {
 })();
 // -- Fim Swipe Down to Close ---------------------------------------------------
 </script>
+<script>
+(function() {
+(function() {
+  var _swX = null, _swY = null, _swActive = false, _swEl = null;
+
+  // Cria indicador visual (linha verde que cresce durante o swipe)
+  var _ind = document.createElement('div');
+  _ind.style.cssText = [
+    'position:fixed','top:0','left:0','bottom:0','width:4px',
+    'background:linear-gradient(180deg,transparent,#0A9E6E,transparent)',
+    'opacity:0','z-index:9999999','pointer-events:none',
+    'transition:opacity 0.15s','border-radius:0 4px 4px 0'
+  ].join(';');
+  document.body.appendChild(_ind);
+
+  // Retorna a função de fechar do painel ativo, ou null se nenhum aberto
+  function _getFechar() {
+    // Ordem de prioridade: modais mais acima primeiro
+    var checks = [
+      // [seletor ou teste, função de fechar]
+      [function(){ return document.getElementById('pads-overlay')?.classList.contains('show'); },
+       function(){ if(typeof fecharPads==='function') fecharPads(); }],
+
+      [function(){ return document.getElementById('biblioteca-overlay')?.classList.contains('show'); },
+       function(){ if(typeof fecharBiblioteca==='function') fecharBiblioteca(); }],
+
+      [function(){ return document.getElementById('drumcam-overlay')?.classList.contains('show'); },
+       function(){ if(typeof fecharDrumCam==='function') fecharDrumCam(); }],
+
+      [function(){
+        var m = document.getElementById('modal-perfil');
+        return m && (m.style.display === 'flex' || m.style.display === 'block');
+       }, function(){ if(typeof fecharModalPerfil==='function') fecharModalPerfil(); }],
+
+      [function(){
+        var m = document.getElementById('modal-perfil-publico');
+        return m && (m.style.display === 'flex' || m.style.display === 'block');
+       }, function(){ if(typeof fecharPerfilPublico==='function') fecharPerfilPublico(); }],
+
+      [function(){ return document.getElementById('modal-sala')?.classList.contains('show'); },
+       function(){ if(typeof fecharModal==='function') fecharModal(); }],
+
+      [function(){ return document.getElementById('modal-amigos')?.classList.contains('show'); },
+       function(){ if(typeof fecharModalAmigos==='function') fecharModalAmigos(); }],
+
+      [function(){
+        var m = document.getElementById('modal-editar-musica');
+        return m && (m.style.display === 'flex' || m.style.display === 'block' || m.classList?.contains('show'));
+       }, function(){ if(typeof fecharEditarMusica==='function') fecharEditarMusica(); }],
+
+      [function(){
+        var m = document.getElementById('modal-evento');
+        return m && (m.style.display === 'flex' || m.style.display === 'block' || m.classList?.contains('show'));
+       }, function(){ if(typeof fecharModalEvento==='function') fecharModalEvento(); }],
+
+      [function(){
+        var m = document.getElementById('modal-historico-shows');
+        return m && (m.style.display === 'flex' || m.style.display === 'block');
+       }, function(){ if(typeof fecharHistoricoShows==='function') fecharHistoricoShows(); }],
+
+      [function(){
+        var m = document.getElementById('modal-cifra');
+        return m && (m.style.display === 'flex' || m.style.display === 'block' || m.classList?.contains('show'));
+       }, function(){ if(typeof fecharModalCifra==='function') fecharModalCifra(); }],
+
+      [function(){
+        var t = document.getElementById('tuner-panel');
+        return t && t.classList.contains('open');
+       }, function(){ if(typeof toggleTuner==='function') toggleTuner(); }],
+
+      [function(){
+        var a = document.getElementById('admin-painel');
+        return a && (a.style.display === 'flex' || a.style.display === 'block');
+       }, function(){ if(typeof admSair==='function') admSair(); }],
+    ];
+
+    for (var i = 0; i < checks.length; i++) {
+      try { if (checks[i][0]()) return checks[i][1]; } catch(e) {}
+    }
+    return null;
+  }
+
+  // Verifica se o toque está dentro de um scroll horizontal (não deve virar swipe)
+  function _inHScroll(el) {
+    while (el && el !== document.body) {
+      var st = window.getComputedStyle(el);
+      var ox = st.overflowX;
+      if ((ox === 'auto' || ox === 'scroll') && el.scrollWidth > el.clientWidth + 2) return true;
+      el = el.parentElement;
+    }
+    return false;
+  }
+
+  document.addEventListener('touchstart', function(e) {
+    if (e.touches.length !== 1) return;
+    var t = e.touches[0];
+    // Só ativa se iniciar nos primeiros 40px da borda esquerda
+    if (t.clientX > 40) return;
+    // Só ativa se houver painel aberto
+    if (!_getFechar()) return;
+    _swX = t.clientX;
+    _swY = t.clientY;
+    _swActive = false;
+    _swEl = e.target;
+  }, { passive: true });
+
+  document.addEventListener('touchmove', function(e) {
+    if (_swX === null || e.touches.length !== 1) return;
+    var t  = e.touches[0];
+    var dx = t.clientX - _swX;
+    var dy = Math.abs(t.clientY - _swY);
+
+    // Ignora se movimento for mais vertical que horizontal
+    if (dy > dx * 1.2 && !_swActive) { _swX = null; return; }
+    // Ignora se estiver dentro de scroll horizontal
+    if (!_swActive && _inHScroll(_swEl)) { _swX = null; return; }
+
+    if (dx > 12) {
+      _swActive = true;
+      // Feedback visual proporcional ao arraste (máx 200px)
+      var progress = Math.min(dx / 200, 1);
+      _ind.style.opacity = String(progress * 0.85);
+      _ind.style.width   = Math.round(4 + progress * 8) + 'px';
+    }
+  }, { passive: true });
+
+  document.addEventListener('touchend', function(e) {
+    _ind.style.opacity = '0';
+    _ind.style.width   = '4px';
+    if (!_swActive || _swX === null) { _swX = null; _swActive = false; return; }
+
+    var t  = e.changedTouches[0];
+    var dx = t.clientX - _swX;
+    var dy = Math.abs(t.clientY - _swY);
+    _swX = null; _swActive = false;
+
+    // Ângulo aceitável (dx pelo menos 1.5x maior que dy) e distância mínima
+    if (dx < 72 || dy > dx * 0.8) return;
+
+    var fn = _getFechar();
+    if (fn) {
+      e.preventDefault();
+      fn();
+    }
+  }, { passive: true });
+
+})();
+})();
+</script>
+
 </body>
 </html>
