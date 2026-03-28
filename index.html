@@ -30,7 +30,7 @@
   </div>
 </div>
 <script>
-// Se JS roda, esconde o banner — app vai inicializar normalmente
+// Se JS roda, esconde o banner -- app vai inicializar normalmente
 (function(){ var b = document.getElementById('ios-open-safari'); if(b) b.style.display='none'; })();
 </script>
 <script>
@@ -90,7 +90,7 @@ label, select, summary {
 }
 </style>
 <script>
-/* ── Bloqueios de gesto mobile ─────────────────────────────────────────── */
+/* -- Bloqueios de gesto mobile ------------------------------------------- */
 (function() {
   // 1. Bloqueia pinch-zoom via gesture events (Safari)
   document.addEventListener('gesturestart',  function(e){ e.preventDefault(); }, { passive: false });
@@ -104,10 +104,10 @@ label, select, summary {
     if (e.touches.length === 1) _lastY = e.touches[0].clientY;
   }, { passive: true });
   document.addEventListener('touchmove', function(e) {
-    // Se há múltiplos toques (pinch), sempre bloqueia
+    // Se ha multiplos toques (pinch), sempre bloqueia
     if (e.touches.length > 1) { e.preventDefault(); return; }
     var el = e.target;
-    // Sobe na árvore procurando scroll container
+    // Sobe na arvore procurando scroll container
     while (el && el !== document.documentElement) {
       var st = window.getComputedStyle(el);
       var oy = st.overflowY;
@@ -115,23 +115,23 @@ label, select, summary {
       if (canScroll && el.scrollHeight > el.clientHeight) return; // deixa rolar
       el = el.parentElement;
     }
-    // Permite scroll normal da página (window/document)
-    // Só bloqueia pull-to-refresh: quando já está no topo e tenta puxar para baixo
+    // Permite scroll normal da pagina (window/document)
+    // So bloqueia pull-to-refresh: quando ja esta no topo e tenta puxar para baixo
     var dy = (e.touches[0] ? e.touches[0].clientY : 0) - _lastY;
     if (window.scrollY <= 0 && dy > 0) {
       e.preventDefault(); // bloqueia pull-to-refresh
     }
-    // caso contrário, deixa o scroll da página fluir normalmente
+    // caso contrario, deixa o scroll da pagina fluir normalmente
   }, { passive: false });
 
-  // 3. Bloqueia double-tap zoom em elementos não-input
-  // Chrome Android ignora user-scalable=no desde v32 — precisamos do JS
+  // 3. Bloqueia double-tap zoom em elementos nao-input
+  // Chrome Android ignora user-scalable=no desde v32 -- precisamos do JS
   var _lastTap = 0;
   document.addEventListener('touchend', function(e) {
     var now = Date.now();
     var el  = e.target;
     var tag = el.tagName;
-    // Não interfere em inputs, selects e áreas de texto
+    // Nao interfere em inputs, selects e areas de texto
     if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT' || el.isContentEditable) return;
     if (now - _lastTap < 320) {
       e.preventDefault(); // bloqueia zoom por double-tap
@@ -165,16 +165,16 @@ label, select, summary {
 </style>
 <!-- Google Fonts removed — using system fonts -->
 <script>
-// ─── FLAG DE DEBUG — mude para true localmente para ver logs ─────────────────
+// --- FLAG DE DEBUG -- mude para true localmente para ver logs -----------------
 window._DEBUG = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
 
-// ─── FIREBASE via REST API — sem CDN, funciona em qualquer browser ────────────
+// --- FIREBASE via REST API -- sem CDN, funciona em qualquer browser ------------
 (function() {
   const _PROJECT = 'map-music-eb8aa';
   const _API_KEY = 'AIzaSyBausGqamGuEbxV8NdHfuRY0Tx21LELj-Y';
 
   // Fetch com timeout de 10s para evitar hanging no Safari iOS
-  // _ft: wrapper de fetch/XHR com fallback automático para Safari iOS
+  // _ft: wrapper de fetch/XHR com fallback automatico para Safari iOS
   // O fetch com mode:'cors' pode falhar em file:// ou Safari ITP
   // O XHR funciona em mais contextos no Safari iOS
   function _xhrFetch(url, opts) {
@@ -212,11 +212,11 @@ window._DEBUG = (window.location.hostname === 'localhost' || window.location.hos
   function _ft(url, opts) {
     var reqOpts = Object.assign({}, opts || {});
     delete reqOpts.signal;
-    delete reqOpts.mode; // Remover mode:'cors' — causa preflight que Safari bloqueia
+    delete reqOpts.mode; // Remover mode:'cors' -- causa preflight que Safari bloqueia
     // Tenta fetch primeiro; se falhar com erro de rede, usa XHR como fallback
     var timeoutMs = 15000;
     var fetchPromise = fetch(url, reqOpts).catch(function(fetchErr) {
-      // fetch falhou (Load failed, CORS, etc.) — tenta XHR
+      // fetch falhou (Load failed, CORS, etc.) -- tenta XHR
       return _xhrFetch(url, opts);
     });
     var timeoutPromise = new Promise(function(_, reject) {
@@ -227,7 +227,7 @@ window._DEBUG = (window.location.hostname === 'localhost' || window.location.hos
 
   const _BASE = 'https://firestore.googleapis.com/v1/projects/' + _PROJECT + '/databases/(default)/documents';
 
-  // ── Helpers REST ─────────────────────────────────────────────────────────────
+  // -- Helpers REST -------------------------------------------------------------
   function _url(path, extra) {
     return _BASE + '/' + path + '?key=' + _API_KEY + (extra || '');
   }
@@ -289,9 +289,9 @@ window._DEBUG = (window.location.hostname === 'localhost' || window.location.hos
         if (r.ok) return true;
         const err = await r.json().catch(() => ({}));
         const code = err.error && err.error.code;
-        // 403 = regras bloqueiam, não adianta tentar novamente
+        // 403 = regras bloqueiam, nao adianta tentar novamente
         if (code === 403 || code === 401) {
-          if (window._DEBUG) console.error('Firebase 403: Regras bloqueando. Firebase Console → Firestore → Regras → allow read, write: if true');
+          if (window._DEBUG) console.error('Firebase 403: Regras bloqueando. Firebase Console -> Firestore -> Regras -> allow read, write: if true');
           if (typeof showToast === 'function') showToast('Firestore bloqueado (403). Verifique as Regras no Firebase Console.');
           return false;
         }
@@ -356,8 +356,8 @@ window._DEBUG = (window.location.hostname === 'localhost' || window.location.hos
     } catch(e) { return []; }
   }
 
-  // ── Polling realtime (onSnapshot simulado) ───────────────────────────────────
-  // ── Pausa de background: polls ficam suspensos com app minimizado ────────────
+  // -- Polling realtime (onSnapshot simulado) -----------------------------------
+  // -- Pausa de background: polls ficam suspensos com app minimizado ------------
   window._appPaused = false;
   document.addEventListener('visibilitychange', function() {
     window._appPaused = document.visibilityState === 'hidden';
@@ -375,9 +375,9 @@ window._DEBUG = (window.location.hostname === 'localhost' || window.location.hos
     }
     async function check() {
       if (stopped) return;
-      // Pausa quando app está em background — resgenda para verificar novamente
+      // Pausa quando app esta em background -- resgenda para verificar novamente
       if (window._appPaused) { _schedule(2000); return; }
-      // Agenda próximo ciclo ANTES de esperar a resposta — elimina latência acumulada
+      // Agenda proximo ciclo ANTES de esperar a resposta -- elimina latencia acumulada
       var maxDelay = window._emSala ? 30000 : 300000;
       var nextDelay = errCount > 3 ? Math.min(intervalMs * Math.pow(2, errCount - 3), maxDelay) : intervalMs;
       _schedule(nextDelay);
@@ -401,7 +401,7 @@ window._DEBUG = (window.location.hostname === 'localhost' || window.location.hos
     let errCount = 0;
     async function check() {
       if (stopped) return;
-      // Pausa quando app está em background — resgenda para verificar novamente
+      // Pausa quando app esta em background -- resgenda para verificar novamente
       if (window._appPaused) { setTimeout(check, 2000); return; }
       try {
         const rows = await _query(col, filters);
@@ -421,7 +421,7 @@ window._DEBUG = (window.location.hostname === 'localhost' || window.location.hos
     return function() { stopped = true; };
   }
 
-  // ── API pública ──────────────────────────────────────────────────────────────
+  // -- API publica --------------------------------------------------------------
   function _authErrLocal(code) {
     const map = {
       'EMAIL_EXISTS': 'Este email já está registado.',
@@ -500,7 +500,7 @@ window._DEBUG = (window.location.hostname === 'localhost' || window.location.hos
     },
 
 
-    // ── Firebase Auth REST ──────────────────────────────────────────
+    // -- Firebase Auth REST ------------------------------------------
     async registarComEmail(email, senha) {
       try {
         const r = await _ft('https://identitytoolkit.googleapis.com/v1/accounts:signUp?key=' + _API_KEY, {
@@ -542,7 +542,7 @@ window._DEBUG = (window.location.hostname === 'localhost' || window.location.hos
         } catch(e) {
           const isTimeout = e.message === 'timeout';
           const isNetworkErr = isTimeout || /load failed|failed to fetch|networkerror|network request failed/i.test(e.message || '');
-          // Retry automático em erro de rede
+          // Retry automatico em erro de rede
           if (isNetworkErr && tentativa < MAX_TENTATIVAS) {
             await new Promise(function(r){ setTimeout(r, 2000); });
             continue;
@@ -627,9 +627,9 @@ window._DEBUG = (window.location.hostname === 'localhost' || window.location.hos
           _query('solicitacoes', [['para','==',uid],['status','==','aceito']], null, 50)
         ]);
         const amigos = [];
-        // s1: eu enviei — amigo é x.para
+        // s1: eu enviei -- amigo e x.para
         s1.forEach(x => { if (!_ADMIN.includes(x.para)) amigos.push({ solId: x.id, uid: x.para, nome: x.paraNome || '', inst: x.paraInst || '' }); });
-        // s2: recebi — amigo é x.de
+        // s2: recebi -- amigo e x.de
         s2.forEach(x => { if (!_ADMIN.includes(x.de)) amigos.push({ solId: x.id, uid: x.de, nome: x.deNome || '', inst: x.deInst || '' }); });
         // Dedup por uid
         const vistos = new Set();
@@ -641,7 +641,7 @@ window._DEBUG = (window.location.hostname === 'localhost' || window.location.hos
           return {
             solId: a.solId,
             uid: a.uid,
-            nome: (p && p.nome) ? p.nome : (a.nome || '—'),
+            nome: (p && p.nome) ? p.nome : (a.nome || '--'),
             inst: (p && p.instrumento) ? p.instrumento : (a.inst || ''),
             foto: (p && p.foto) ? p.foto : null,
             fotoOffX: p ? (p.fotoOffX || 0) : 0,
@@ -770,7 +770,7 @@ window._DEBUG = (window.location.hostname === 'localhost' || window.location.hos
       try { await _set('salas/' + codigo, { ativa: false }, true); } catch(e) {}
     },
     ouvirSala(codigo, callback) {
-      // Intervalo adaptativo: show ativo=500ms, normal=1000ms — latência reduzida
+      // Intervalo adaptativo: show ativo=500ms, normal=1000ms -- latencia reduzida
       var ms = (document.body && document.body.classList.contains('performance-mode')) ? 500 : 1000;
       var stopFn = _poll('salas/' + codigo, callback, ms);
       // Recriar poll com intervalo certo quando modo show muda
@@ -802,19 +802,19 @@ window._DEBUG = (window.location.hostname === 'localhost' || window.location.hos
         await _set('salas/' + codigo, { viewers, onlineCount }, true);
       } catch(e) {}
     },
-    _set, _get, // expostos para setlist público e outras features internas
+    _set, _get, // expostos para setlist publico e outras features internas
     async enviarMensagemSala(codigo, msg) {
       try { return await _add('salas/' + codigo + '/mensagens', msg); } catch(e) { return false; }
     },
     ouvirMensagensSala(codigo, callback) {
-      // Poll sala doc — deteta mudanças no campo 'viewers'
+      // Poll sala doc -- deteta mudancas no campo 'viewers'
       let _lastViewers = '{}';
       let _lastOnline = 1;
       return _poll('salas/' + codigo, function(data) {
         if (!data) return;
         const viewers = data.viewers || {};
         const viewersStr = JSON.stringify(viewers);
-        // Atualiza host com novo onlineCount mesmo sem mudança de viewers
+        // Atualiza host com novo onlineCount mesmo sem mudanca de viewers
         if (viewersStr === _lastViewers) {
           if ((data.onlineCount || 1) !== _lastOnline) {
             _lastOnline = data.onlineCount || 1;
@@ -822,7 +822,7 @@ window._DEBUG = (window.location.hostname === 'localhost' || window.location.hos
           }
           return;
         }
-        // Detetou mudança — descobre quem entrou/saiu
+        // Detetou mudanca -- descobre quem entrou/saiu
         const oldV = JSON.parse(_lastViewers || '{}');
         const newV = viewers;
         const msgs = [];
@@ -860,7 +860,7 @@ window._DEBUG = (window.location.hostname === 'localhost' || window.location.hos
     async amigosOnline(uids) {
       if (!uids || !uids.length) return [];
       try {
-        const TIMEOUT = 6 * 60 * 1000; // 6 minutos — heartbeat a cada 4min
+        const TIMEOUT = 6 * 60 * 1000; // 6 minutos -- heartbeat a cada 4min
         const agora = Date.now();
         const results = await Promise.all(uids.map(uid => _get('presenca/' + uid)));
         return results.filter(d => d && d.online && (agora - (d.onlineEm || 0)) < TIMEOUT).map(d => d);
@@ -946,7 +946,7 @@ window._DEBUG = (window.location.hostname === 'localhost' || window.location.hos
     }
   };
 
-  // Aviso único se aberto como ficheiro local
+  // Aviso unico se aberto como ficheiro local
   if (window.location.protocol === 'file:') {
     window.addEventListener('firebase-ready', function() {
       setTimeout(function() {
@@ -958,13 +958,13 @@ window._DEBUG = (window.location.hostname === 'localhost' || window.location.hos
   }
 
   window._fbReady = true;
-  // Usa setTimeout(0) para garantir que Script[3] já registou o listener
-  // antes do evento ser disparado (os scripts executam em ordem síncrona)
+  // Usa setTimeout(0) para garantir que Script[3] ja registou o listener
+  // antes do evento ser disparado (os scripts executam em ordem sincrona)
   setTimeout(function() {
     window.dispatchEvent(new Event('firebase-ready'));
   }, 0);
 
-  // Teste silencioso de conectividade — com retry e detecção de bloqueio Safari
+  // Teste silencioso de conectividade -- com retry e deteccao de bloqueio Safari
   let _fbOnline = navigator.onLine !== false;
   let _fbRetryCount = 0;
   const _MAX_RETRIES = 3;
@@ -987,9 +987,9 @@ window._DEBUG = (window.location.hostname === 'localhost' || window.location.hos
         // Retry exponential backoff
         setTimeout(_testarConectividade, 5000 * _fbRetryCount);
       }
-      // Detecta se está a correr via file:// (Safari bloqueia fetch nesse contexto)
+      // Detecta se esta a correr via file:// (Safari bloqueia fetch nesse contexto)
       if (window.location.protocol === 'file:') {
-        // Silencioso — esperado quando aberto como ficheiro local
+        // Silencioso -- esperado quando aberto como ficheiro local
       }
     }
   }
@@ -1008,12 +1008,12 @@ window._DEBUG = (window.location.hostname === 'localhost' || window.location.hos
 
 <!-- PeerJS removido — sala 100% Firebase -->
 <script>
-// ─── ONBOARDING & AUTH ───────────────────────────────────────────────────────
+// --- ONBOARDING & AUTH -------------------------------------------------------
 let _obNomeDisponivel   = false;
 let _obEmail            = '';
 let obInstrumentoSelecionado = null;
 
-// ── Helpers ──────────────────────────────────────────────────────────────────
+// -- Helpers ------------------------------------------------------------------
 function _obToggleSenha(inputId, iconId) {
   const el = document.getElementById(inputId);
   const ic = document.getElementById(iconId);
@@ -1030,7 +1030,7 @@ function obToggleChip(el) {
   _obValidarCta();
 }
 
-// ── Step-1: nome ─────────────────────────────────────────────────────────────
+// -- Step-1: nome -------------------------------------------------------------
 function obNomeInput() {
   const val = (document.getElementById('ob-nome')?.value || '').trim();
   _obNomeDisponivel = false;
@@ -1105,7 +1105,7 @@ function _obValidarCta() {
   const btnVerif = document.getElementById('ob-btn-verificar');
 
   if (step1Visible) {
-    // Step 1: activa botão verificar se nome >= 2 chars
+    // Step 1: activa botao verificar se nome >= 2 chars
     const nome = (document.getElementById('ob-nome')?.value || '').trim();
     if (btnVerif) btnVerif.disabled = nome.length < 2;
     return;
@@ -1128,7 +1128,7 @@ function _obValidarCta() {
   if (cta) cta.style.opacity = ok ? '1' : '0.5'; // visual only, never disabled
 }
 
-// ── Show step 2 after nome + email confirmed ─────────────────────────────────
+// -- Show step 2 after nome + email confirmed ---------------------------------
 async function obVerificarNomeEAvancar() {
   try {
 
@@ -1146,7 +1146,7 @@ function _obAvancarStep2() {
   const email = (emailEl?.value || '').trim();
   const emailOk = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
   if (!emailOk) {
-    if (emailMsg) { emailMsg.textContent = 'Email inválido — preencha o email antes de continuar'; emailMsg.style.color = '#ff4444'; }
+    if (emailMsg) { emailMsg.textContent = 'Email inválido -- preencha o email antes de continuar'; emailMsg.style.color = '#ff4444'; }
     emailEl?.focus();
     emailEl?.scrollIntoView({ behavior: 'smooth', block: 'center' });
     return;
@@ -1164,7 +1164,7 @@ function _obAvancarStep2() {
 
 window._obAvancarStep2 = _obAvancarStep2;
 
-// ── terminarOnboarding ───────────────────────────────────────────────────────
+// -- terminarOnboarding -------------------------------------------------------
 async function terminarOnboarding() {
   const nomeUsuario = (document.getElementById('ob-nome')?.value || '').trim();
   const senha       = document.getElementById('ob-senha')?.value || '';
@@ -1202,7 +1202,7 @@ async function terminarOnboarding() {
 
   const uid = authResult.uid;
 
-  // 2. Gera profileId numérico
+  // 2. Gera profileId numerico
   let profileId = '';
   for (let i = 0; i < 8; i++) profileId += Math.floor(Math.random() * 10);
 
@@ -1215,7 +1215,7 @@ async function terminarOnboarding() {
     criadoEm: Date.now(),
     uid,
     profileId,
-    pin   // PIN fica só local
+    pin   // PIN fica so local
   };
   _lsSet('map_perfil_v1', perfil);
   localStorage.setItem('map_uid_v1', uid);
@@ -1242,7 +1242,7 @@ async function terminarOnboarding() {
     return;
   }
 
-  // 5. Animação de saída (admin local pula a tela pendente)
+  // 5. Animacao de saida (admin local pula a tela pendente)
   _mostrarApp();
   const ov = document.getElementById('onboarding-overlay');
   if (ov) ov.classList.add('done');
@@ -1256,7 +1256,7 @@ async function terminarOnboarding() {
   }, 500);
 }
 
-// ── PIN lock screen ───────────────────────────────────────────────────────────
+// -- PIN lock screen -----------------------------------------------------------
 let _pinBuffer = '';
 
 function _pinGetSaved() {
@@ -1308,7 +1308,7 @@ function _pinVerificar() {
         if (uid && window._fb) {
           var perfilAtual = await window._fb.carregarPerfilPorUid(uid);
           var st = perfilAtual && perfilAtual.status ? perfilAtual.status : 'ativo';
-          // Verifica expiração
+          // Verifica expiracao
           if (st === 'ativo' && perfilAtual && perfilAtual.acessoExpiraEm && perfilAtual.acessoExpiraEm < Date.now()) {
             await window._fb.admSetStatus(uid, 'pendente');
             st = 'pendente';
@@ -1319,7 +1319,7 @@ function _pinVerificar() {
             return;
           }
           if (st === 'banido' || st === 'bloqueado') {
-            // Limpar sessão local e voltar ao onboarding
+            // Limpar sessao local e voltar ao onboarding
             localStorage.removeItem('map_perfil_v1');
             localStorage.removeItem('map_uid_v1');
             sessionStorage.setItem('map_skip_splash', '1');
@@ -1339,7 +1339,7 @@ function _pinVerificar() {
             _lsSet('map_perfil_v1', pLocal);
           }
         }
-      } catch(e) { /* sem rede — deixa entrar offline, será verificado online depois */ }
+      } catch(e) { /* sem rede -- deixa entrar offline, sera verificado online depois */ }
       _mostrarApp();
       if (screen) { screen.style.animation = 'pinShake 0s'; screen.style.opacity = '0'; screen.style.transition = 'opacity 0.3s'; setTimeout(() => { screen.style.display = 'none'; screen.style.opacity = ''; screen.style.transition = ''; }, 300); }
     })();
@@ -1356,17 +1356,17 @@ function _pinVerificar() {
   }
 }
 
-// ── Init ─────────────────────────────────────────────────────────────────────
+// -- Init ---------------------------------------------------------------------
 
   function _mostrarApp() {
     document.body.classList.remove('auth-pending');
     if (typeof admInicializar === 'function') admInicializar();
     if (!document.body.style.background) document.body.style.background = '';
-    // Ativa WakeLock imediatamente para todos os usuários — evita hibernação
+    // Ativa WakeLock imediatamente para todos os usuarios -- evita hibernacao
     if (typeof ativarWakeLock === 'function') ativarWakeLock();
     // Rotear para o ambiente correto baseado no instrumento
     _rotearAmbiente();
-    // Mostra modal de novidades se ainda não foi visto
+    // Mostra modal de novidades se ainda nao foi visto
     setTimeout(_mapNovidadesCheck, 1800);
   }
 
@@ -1397,7 +1397,7 @@ function _pinVerificar() {
         // Garante tela acesa no vocalista
         if (typeof ativarWakeLock === 'function') ativarWakeLock();
       } else {
-        // Ambiente instrumentistas (padrão)
+        // Ambiente instrumentistas (padrao)
         if (vocalApp) vocalApp.classList.remove('ativo');
         if (header)   header.style.display   = '';
         if (aside)    aside.style.display     = '';
@@ -1408,7 +1408,7 @@ function _pinVerificar() {
   }
 
 
-// ── Abas ──────────────────────────────────────────────────────────────────────
+// -- Abas ----------------------------------------------------------------------
 function obMostrarAba(aba) {
   const isLogin = aba === 'login';
   document.getElementById('tab-login').classList.toggle('active', isLogin);
@@ -1420,7 +1420,7 @@ function obMostrarAba(aba) {
   if (lm) lm.textContent = '';
 }
 
-// ── Login ─────────────────────────────────────────────────────────────────────
+// -- Login ---------------------------------------------------------------------
 function obLoginValidar() {
   const email = (document.getElementById('login-email')?.value || '').trim();
   const senha = document.getElementById('login-senha')?.value || '';
@@ -1438,7 +1438,7 @@ async function obFazerLogin() {
   if (msg) msg.textContent = '';
   if (btn) { btn.disabled = true; btn.textContent = 'Entrando...'; }
 
-  // Detectar about:/file: — Safari bloqueia fetch cross-origin nesses contextos
+  // Detectar about:/file: -- Safari bloqueia fetch cross-origin nesses contextos
   var _proto = window.location.protocol;
   if (_proto === 'file:' || _proto === 'about:' || _proto === 'blob:') {
     if (msg) msg.textContent = 'Atencao: Abra o arquivo diretamente no Safari (não em preview). Role para baixo e toque em "Abrir no Safari".';
@@ -1467,13 +1467,13 @@ async function obFazerLogin() {
     return;
   }
 
-  // Login OK — carregar perfil do Firestore
+  // Login OK -- carregar perfil do Firestore
   const uid = result.uid;
   let perfil = null;
   try { perfil = await window._fb.carregarPerfilPorUid(uid); } catch(e) {}
 
   if (perfil && perfil.nome) {
-    // ── BLOQUEIO: verificar status antes de dar acesso ──
+    // -- BLOQUEIO: verificar status antes de dar acesso --
     const statusConta = perfil.status || 'ativo';
     if (statusConta === 'pendente') {
       if (btn) { btn.disabled = false; btn.textContent = 'Entrar'; }
@@ -1497,7 +1497,7 @@ async function obFazerLogin() {
           : 'Esta conta está <b style="color:#fff;">temporariamente bloqueada</b>. Entre em contato com o suporte para restaurar o acesso.')
       + '</div>'
       + '<div style="width:100%;background:rgba(255,50,50,0.06);border:1px solid rgba(255,50,50,0.15);border-radius:10px;padding:12px;font-size:11px;color:rgba(255,150,150,0.7);line-height:1.5;">'
-      + (isBanido ? 'Banimento definitivo — sem possibilidade de recurso.' : 'Bloqueio temporário — aguarde contato do suporte.')
+      + (isBanido ? 'Banimento definitivo -- sem possibilidade de recurso.' : 'Bloqueio temporário -- aguarde contato do suporte.')
       + '</div>'
       + '<button onclick="this.closest(\'div[style]\').remove()" style="width:100%;padding:13px;border-radius:12px;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.1);color:rgba(255,255,255,0.5);font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;touch-action:manipulation;margin-top:4px;">Fechar</button>'
       + '</div>';
@@ -1515,14 +1515,14 @@ async function obFazerLogin() {
     _lsSet('map_perfil_v1', perfilCompleto);
     localStorage.setItem('map_uid_v1', uid);
 
-    // Restaurar backup da nuvem — só busca se local pode estar desatualizado
+    // Restaurar backup da nuvem -- so busca se local pode estar desatualizado
     try {
       const localTs     = parseInt(localStorage.getItem('map_backup_ts_v1') || '0');
       const localMusicas = JSON.parse(localStorage.getItem('map_pro_elite_v1') || '[]');
       const localEventos = _lsGet('map_pro_eventos_v1', []);
       const semDadosLocais = localMusicas.length === 0 && localEventos.length === 0;
-      // Só vai à nuvem se: não há dados locais, OU não há timestamp (primeira vez)
-      // Caso contrário, confia no localStorage e sincroniza em background silenciosamente
+      // So vai a nuvem se: nao ha dados locais, OU nao ha timestamp (primeira vez)
+      // Caso contrario, confia no localStorage e sincroniza em background silenciosamente
       if (semDadosLocais || localTs === 0) {
         const backup = await window._fb.restaurarMusicas(uid);
         if (backup) {
@@ -1533,7 +1533,7 @@ async function obFazerLogin() {
             }
           }
           if (backup.eventos && backup.eventos.length > 0) {
-            // Merge: locais têm prioridade, nuvem preenche o que falta
+            // Merge: locais tem prioridade, nuvem preenche o que falta
             var merged1 = _mergeEventos(localEventos, backup.eventos);
             _lsSet('map_pro_eventos_v1', merged1);
           }
@@ -1546,14 +1546,14 @@ async function obFazerLogin() {
             const backup = await window._fb.restaurarMusicas(uid);
             if (!backup) return;
             const backupTs = backup.updatedAt || 0;
-            // Compara: nuvem mais recente OU nuvem tem mais músicas que o local
+            // Compara: nuvem mais recente OU nuvem tem mais musicas que o local
             const nuvemMaisRecente = backupTs > localTs;
             const nuvemTemMais = (backup.musicas || []).length > localMusicas.length;
             if (nuvemMaisRecente || (nuvemTemMais && backupTs > 0)) {
               var atualizou = false;
               if (backup.musicas && backup.musicas.length > 0) {
                 localStorage.setItem('map_pro_elite_v1', JSON.stringify(backup.musicas));
-                // Atualiza memória
+                // Atualiza memoria
                 if (typeof songs !== 'undefined') songs = backup.musicas;
                 atualizou = true;
               }
@@ -1594,7 +1594,7 @@ async function obFazerLogin() {
       if (typeof eventos !== 'undefined') {
         try { eventos = _lsGet('map_pro_eventos_v1', []); } catch(e) {}
       }
-      // Reseta índice se necessário após reload dos dados
+      // Reseta indice se necessario apos reload dos dados
       if (typeof currentSongIndex !== 'undefined' && currentSongIndex >= 0) {
         if (!songs || currentSongIndex >= songs.length) currentSongIndex = -1;
       }
@@ -1604,7 +1604,7 @@ async function obFazerLogin() {
       if (typeof renderSetlist === 'function') renderSetlist();
     }, 600);
   } else {
-    // Conta Firebase existe mas sem perfil — vai pro cadastro
+    // Conta Firebase existe mas sem perfil -- vai pro cadastro
     if (msg) msg.textContent = 'Conta encontrada mas sem perfil. Crie sua conta.';
     if (btn) { btn.disabled = false; btn.textContent = 'Entrar'; }
     setTimeout(function() { obMostrarAba('cadastro'); }, 600);
@@ -1615,7 +1615,7 @@ async function obDiagnosticarConexao() {
   var msgEl = document.getElementById('login-msg');
   if (msgEl) { msgEl.style.color = 'rgba(138,92,246,0.9)'; msgEl.style.fontSize = '10px'; msgEl.style.lineHeight = '1.6'; msgEl.textContent = 'Testando...'; }
 
-  var API_KEY = _API_KEY; // usa a constante já definida — chave não duplicada no fonte
+  var API_KEY = _API_KEY; // usa a constante ja definida -- chave nao duplicada no fonte
   var linhas = [];
   linhas.push('Protocolo: ' + window.location.protocol);
   linhas.push('Online: ' + navigator.onLine);
@@ -1646,7 +1646,7 @@ async function obDiagnosticarConexao() {
 }
 
 function obAbrirEsqueciSenha() {
-  // Pré-preenche com email do campo de login se existir
+  // Pre-preenche com email do campo de login se existir
   const loginEmail = document.getElementById('login-email');
   const email = loginEmail ? loginEmail.value.trim() : '';
   // Limpa e reseta o modal
@@ -1661,7 +1661,7 @@ function obAbrirEsqueciSenha() {
   if (typeof _esqueciValidar === 'function') _esqueciValidar();
 }
 
-// ── Cache de perfil em memória — evita JSON.parse repetido em cada função ────
+// -- Cache de perfil em memoria -- evita JSON.parse repetido em cada funcao ----
 window._perfilCache = null;
 window._getPerfil = function() {
   if (!window._perfilCache) {
@@ -1678,18 +1678,18 @@ window._invalidarCachePerfil = function() { window._perfilCache = null; };
 
 document.addEventListener('DOMContentLoaded', function() {
 
-  // ── Link seguro de acesso — verificar antes de qualquer render ───────────────
+  // -- Link seguro de acesso -- verificar antes de qualquer render ---------------
   (function() {
     var params = new URLSearchParams(window.location.search);
     if (params.get('lseg')) {
-      // Limpa URL para não vazar token no histórico
+      // Limpa URL para nao vazar token no historico
       window.history.replaceState({}, '', window.location.href.split('?')[0]);
-      // Guarda token em sessionStorage para uso após Firebase carregar
+      // Guarda token em sessionStorage para uso apos Firebase carregar
       sessionStorage.setItem('_lseg_token', params.get('lseg'));
     }
   })();
 
-  // ── Detectar contexto sem rede (about:srcdoc, file:, blob:) ──────────────────
+  // -- Detectar contexto sem rede (about:srcdoc, file:, blob:) ------------------
   var proto = window.location.protocol;
   var href  = window.location.href;
   var isSrcdoc = (href === 'about:srcdoc' || href.indexOf('about:srcdoc') === 0);
@@ -1706,7 +1706,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
     var instrucoes = isSrcdoc
       ? '<b style="color:#fff;">1.</b> Toque no ícone <b style="color:#a78bfa;">&#x2913; Download</b> (canto superior direito desta tela)<br><b style="color:#fff;">2.</b> Toque em <b style="color:#a78bfa;">"Abrir no Safari"</b><br><b style="color:#fff;">3.</b> O app abrirá com login funcionando'
-      : '<b style="color:#fff;">1.</b> Não abra o arquivo direto do Files/Downloads<br><b style="color:#fff;">2.</b> No Safari, use <b style="color:#a78bfa;">Arquivo → Abrir</b><br><b style="color:#fff;">3.</b> Selecione o arquivo .html';
+      : '<b style="color:#fff;">1.</b> Não abra o arquivo direto do Files/Downloads<br><b style="color:#fff;">2.</b> No Safari, use <b style="color:#a78bfa;">Arquivo -> Abrir</b><br><b style="color:#fff;">3.</b> Selecione o arquivo .html';
 
     ov.innerHTML = ''
       + '<div style="width:72px;height:72px;border-radius:20px;background:rgba(138,92,246,0.15);border:2px solid rgba(138,92,246,0.35);display:flex;align-items:center;justify-content:center;margin-bottom:24px;">'
@@ -1722,14 +1722,14 @@ document.addEventListener('DOMContentLoaded', function() {
     return;
   }
 
-  // ── Failsafe Safari iOS: se auth-pending não for removido em 6s, força remoção ──
-  // Previne tela preta caso qualquer erro silencioso interrompa o fluxo de inicialização
+  // -- Failsafe Safari iOS: se auth-pending nao for removido em 6s, forca remocao --
+  // Previne tela preta caso qualquer erro silencioso interrompa o fluxo de inicializacao
   setTimeout(function() {
     if (document.body.classList.contains('auth-pending')) {
       document.body.classList.remove('auth-pending');
       var splash = document.getElementById('ob-splash');
       if (splash) splash.remove();
-      // Se onboarding não foi mostrado, mostra agora
+      // Se onboarding nao foi mostrado, mostra agora
       var ov = document.getElementById('onboarding-overlay');
       if (ov && ov.style.opacity === '0') {
         ov.style.opacity = '1';
@@ -1769,7 +1769,7 @@ document.addEventListener('DOMContentLoaded', function() {
   const splash = document.getElementById('ob-splash');
   const skipSplash = sessionStorage.getItem('map_skip_splash') === '1';
 
-  // ── Splash informativo: anima steps de loading ──────────────────────────────
+  // -- Splash informativo: anima steps de loading ------------------------------
   (function() {
     function _splashStep(msg, pct) {
       var bar = document.getElementById('ob-splash-bar');
@@ -1815,8 +1815,8 @@ document.addEventListener('DOMContentLoaded', function() {
     return;
   }
 
-  // Helper: mostrar onboarding com animação
-  // Usa classe CSS .visible em vez de inline styles — mais confiável no Safari iOS
+  // Helper: mostrar onboarding com animacao
+  // Usa classe CSS .visible em vez de inline styles -- mais confiavel no Safari iOS
   function _mostrarOnboarding() {
     const ov = document.getElementById('onboarding-overlay');
     if (!ov) return;
@@ -1834,7 +1834,7 @@ document.addEventListener('DOMContentLoaded', function() {
   }
 
   if (skipSplash) {
-    // Vem de um logout — pula splash, vai direto ao cadastro
+    // Vem de um logout -- pula splash, vai direto ao cadastro
     sessionStorage.removeItem('map_skip_splash');
     if (splash) splash.remove();
     document.body.classList.add('pronto');
@@ -1842,24 +1842,24 @@ document.addEventListener('DOMContentLoaded', function() {
     return;
   }
 
-  // Mostra nome no splash se já registado
+  // Mostra nome no splash se ja registado
   if (perfil.nome) {
     const userEl = document.getElementById('ob-splash-user');
     if (userEl) { userEl.style.display = 'block'; userEl.textContent = perfil.nome; }
   }
 
-  // Após 1.8s: inicia saída do splash E entrada do próximo ecrã em simultâneo
+  // Apos 1.8s: inicia saida do splash E entrada do proximo ecra em simultaneo
   setTimeout(function() {
     document.body.classList.add('pronto');
     if (splash) splash.classList.add('exit');
 
     if (perfil.nome && perfil.nome.trim().length >= 2) {
-      // Utilizador registado — mostra app e aguarda splash terminar antes do PIN
+      // Utilizador registado -- mostra app e aguarda splash terminar antes do PIN
       _mostrarApp();
       const ov = document.getElementById('onboarding-overlay');
       if (ov) ov.remove();
       // Atualiza badge/painel com notificacoes ja salvas no localStorage
-      // (sem esperar Firebase — corrige sino zerado ao recarregar o app)
+      // (sem esperar Firebase -- corrige sino zerado ao recarregar o app)
       setTimeout(function() {
         if (typeof atualizarBadge === 'function') atualizarBadge();
         if (typeof renderNotifPanel === 'function') renderNotifPanel();
@@ -1874,7 +1874,7 @@ document.addEventListener('DOMContentLoaded', function() {
           var pf2 = await window._fb.carregarPerfilPorUid(uid2);
           if (!pf2) return;
           var st2 = pf2.status || 'ativo';
-          // Verifica expiração do acesso
+          // Verifica expiracao do acesso
           if (st2 === 'ativo' && pf2.acessoExpiraEm && pf2.acessoExpiraEm < Date.now()) {
             await window._fb.admSetStatus(uid2, 'pendente');
             st2 = 'pendente';
@@ -1896,7 +1896,7 @@ document.addEventListener('DOMContentLoaded', function() {
         } catch(e) {}
       })();
     } else {
-      // Novo utilizador ou perfil incompleto — onboarding entra junto com saída do splash
+      // Novo utilizador ou perfil incompleto -- onboarding entra junto com saida do splash
       if (perfil.uid && !perfil.nome) {
         localStorage.removeItem('map_perfil_v1');
         localStorage.removeItem('map_uid_v1');
@@ -1904,11 +1904,11 @@ document.addEventListener('DOMContentLoaded', function() {
       _mostrarOnboarding();
     }
 
-    // Remove splash do DOM após animação terminar
+    // Remove splash do DOM apos animacao terminar
     setTimeout(function() {
       if (splash) splash.remove();
       document.body.classList.add('pronto'); // garante
-      // Aplica tamanho de fonte salvo (uma única vez no carregamento)
+      // Aplica tamanho de fonte salvo (uma unica vez no carregamento)
       try {
         if (typeof _FONTE_SHOW_KEY !== 'undefined') {
           window._fonteShow = parseInt(localStorage.getItem(_FONTE_SHOW_KEY) || '48');
@@ -1918,14 +1918,14 @@ document.addEventListener('DOMContentLoaded', function() {
         }
         if (typeof _cifraFontSincLabel === 'function') _cifraFontSincLabel();
       } catch(e) {}
-      // Verifica se URL tem ?setlist= (view pública) — apenas no carregamento
+      // Verifica se URL tem ?setlist= (view publica) -- apenas no carregamento
       if (typeof _verificarSetlistPublico === 'function') _verificarSetlistPublico();
     }, 300);
-  // Usuário já registado: splash mais curto (1800ms); novo usuário: 4000ms
+  // Usuario ja registado: splash mais curto (1800ms); novo usuario: 4000ms
   }, perfil.nome ? 1800 : 4000);
 });
 
-// ── Auto-foco no campo de busca após 5s — apenas no primeiro acesso ───────────
+// -- Auto-foco no campo de busca apos 5s -- apenas no primeiro acesso -----------
 if (!localStorage.getItem('map_autofocus_done_v1')) {
   localStorage.setItem('map_autofocus_done_v1', '1');
   setTimeout(function() {
@@ -1941,9 +1941,9 @@ if (!localStorage.getItem('map_autofocus_done_v1')) {
   }, 5000);
 }
 
-// ─── ADMIN ACCESS ─────────────────────────────────────────────────────────────
+// --- ADMIN ACCESS -------------------------------------------------------------
 var _adminBuf = '';
-// PIN ofuscado: não fica em texto puro no fonte
+// PIN ofuscado: nao fica em texto puro no fonte
 var _ADMIN_PIN = (function(){ var p=[53,48,54,49]; return p.map(function(c){return String.fromCharCode(c);}).join(''); })();
 
 function _adminTrigger() {
@@ -2058,7 +2058,7 @@ function adminEscolherModo(modo) {
     adminMostrarAba('painel');
     showToast('Painel Admin');
   } else if (modo === 'vocalista') {
-    // Força ambiente vocalista temporariamente para o admin visualizar
+    // Forca ambiente vocalista temporariamente para o admin visualizar
     var vocalApp = document.getElementById('vocal-app');
     var header   = document.querySelector('header.app-header');
     var mainEl   = document.querySelector('main.notes-section');
@@ -7735,6 +7735,7 @@ body.auth-pending #toast {
 
 <script>
 var _metroFabOpen = false;
+var metroSoundPreset = 'sine'; // declarado aqui para o inline script ter acesso
 
 function toggleMetroFab() {
   _metroFabOpen = !_metroFabOpen;
@@ -7744,7 +7745,7 @@ function toggleMetroFab() {
   if (chev) chev.style.transform = _metroFabOpen ? 'rotate(180deg)' : '';
 }
 
-// ── Compasso ──
+// -- Compasso --
 function metroSetCompasso(num, den) {
   metroBeatsPerBar = num; metroBeatUnit = den;
   metroBeatIndex = 0; metroSubIndex = 0;
@@ -7753,7 +7754,7 @@ function metroSetCompasso(num, den) {
   if (btn) btn.classList.add('metro-comp-ativo');
 }
 
-// ── Subdivisão ──
+// -- Subdivisao --
 function metroSetSub(n) {
   metroSubdivision = n; metroSubIndex = 0;
   document.querySelectorAll('.metro-sub-btn').forEach(function(b){ b.classList.remove('metro-sub-ativo'); });
@@ -7761,7 +7762,7 @@ function metroSetSub(n) {
   if (btn) btn.classList.add('metro-sub-ativo');
 }
 
-// ── Flash visual ──
+// -- Flash visual --
 function metroToggleFlash() {
   metroFlashActive = !metroFlashActive;
   var tog  = document.getElementById('metro-flash-toggle');
@@ -7775,7 +7776,7 @@ function metroToggleFlash() {
   }
 }
 
-// ── Aceleração ──
+// -- Aceleracao --
 function metroToggleAccel() {
   metroAccelActive = !metroAccelActive;
   var tog  = document.getElementById('metro-accel-toggle');
@@ -7806,7 +7807,7 @@ function _metroAccelUpdateUI() {
   if (el) el.innerText = metroAccelTarget;
 }
 
-// ── Som do metrônomo: ícones e labels ────────────────────────────────────
+// -- Som do metronomo: icones e labels ------------------------------------
 var _metroSoundIcons = {
   sine:      '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12 Q5 4 8 12 Q11 20 14 12 Q17 4 20 12 Q21 16 22 12"/></svg>',
   clave:     '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="19" x2="19" y2="5"/><line x1="8" y1="19" x2="19" y2="8"/></svg>',
@@ -7882,7 +7883,7 @@ document.addEventListener('click', function(e) {
   }
 });
 
-// Inicializa trigger com preset padrão após DOM pronto
+// Inicializa trigger com preset padrao apos DOM pronto
 document.addEventListener('DOMContentLoaded', function() {
   var iconEl  = document.getElementById('metro-sound-icon');
   var labelEl = document.getElementById('metro-sound-label');
@@ -8526,11 +8527,11 @@ document.addEventListener('DOMContentLoaded', function() {
 </div>
 
 <script>
-// ── Sanitizador HTML global (disponível em todo o bloco) ─────────────────────
+// -- Sanitizador HTML global (disponivel em todo o bloco) ---------------------
 if (typeof _ve !== 'function') {
   window._ve = function _ve(s){ return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#x27;'); };
 }
-// ── Suprimir console em produção (definir window.MAP_DEBUG=true para habilitar) ─
+// -- Suprimir console em producao (definir window.MAP_DEBUG=true para habilitar) -
 (function(){
   if (!window.MAP_DEBUG) {
     var noop = function(){};
@@ -8539,8 +8540,8 @@ if (typeof _ve !== 'function') {
     }
   }
 })();
-// ─── PERFIL ─────────────────────────────────────────────────────────────────
-// ── Helper seguro para localStorage JSON (evita crash com JSON corrompido) ──
+// --- PERFIL -----------------------------------------------------------------
+// -- Helper seguro para localStorage JSON (evita crash com JSON corrompido) --
 function _lsGet(key, fallback) {
   try { var v = localStorage.getItem(key); return v ? JSON.parse(v) : fallback; }
   catch(e) { return fallback; }
@@ -8550,7 +8551,7 @@ function _lsSet(key, val) {
   catch(e) { return false; }
 }
 
-// ── Tema claro/escuro ─────────────────────────────────────────────────────────
+// -- Tema claro/escuro ---------------------------------------------------------
 function toggleTheme() {
   var isLight = document.body.classList.toggle('theme-light');
   _lsSet('map_pro_theme', isLight ? 'light' : 'dark');
@@ -8570,21 +8571,21 @@ function toggleTheme() {
     if (iconLight) iconLight.style.display = '';
   }
 })();
-// ── Fim Tema ──────────────────────────────────────────────────────────────────
-let perfilFotoBase64 = null; // foto atual em edição
+// -- Fim Tema ------------------------------------------------------------------
+let perfilFotoBase64 = null; // foto atual em edicao
 
 
-// ── Verificação periódica de status (banimento/bloqueio em tempo real) ────────
+// -- Verificacao periodica de status (banimento/bloqueio em tempo real) --------
 (function _initStatusWatch() {
   var CHECK_MS = 5 * 60 * 1000; // 5 minutos
-  var _checarStatusEmAndamento = false; // guard de concorrência
+  var _checarStatusEmAndamento = false; // guard de concorrencia
   async function _checarStatus() {
-    if (_checarStatusEmAndamento) return; // evita chamadas simultâneas
+    if (_checarStatusEmAndamento) return; // evita chamadas simultaneas
     _checarStatusEmAndamento = true;
     try {
       var uid = localStorage.getItem('map_uid_v1');
       var perfil = _lsGet('map_perfil_v1', {});
-      if (!uid || perfil.isAdmin) return; // admin nunca é bloqueado
+      if (!uid || perfil.isAdmin) return; // admin nunca e bloqueado
       if (!window._fb) return;
       var pf = await window._fb.carregarPerfilPorUid(uid);
       if (!pf) return;
@@ -8610,11 +8611,11 @@ let perfilFotoBase64 = null; // foto atual em edição
   if (sessionStorage.getItem('_lseg_token')) {
     _verificarLinkSeguro().catch(function(){});
   }
-  // Primeira verificação após 3s (app já carregado)
+  // Primeira verificacao apos 3s (app ja carregado)
   setTimeout(_checarStatus, 3000);
-  // Verificações periódicas
+  // Verificacoes periodicas
   setInterval(_checarStatus, CHECK_MS);
-  // Verificar ao voltar à aba
+  // Verificar ao voltar a aba
   document.addEventListener('visibilitychange', function() {
     if (document.visibilityState === 'visible') _checarStatus();
   });
@@ -8622,7 +8623,7 @@ let perfilFotoBase64 = null; // foto atual em edição
 
 
 function abrirModalPerfil() {
-  // Sliders de fonte foram movidos para os painéis individuais — nada a sincronizar aqui
+  // Sliders de fonte foram movidos para os paineis individuais -- nada a sincronizar aqui
   _renderHistoricoShow();
   const perfil = _lsGet('map_perfil_v1', {});
   const nome = perfil.nome || perfil.nomeUsuario || '';
@@ -8659,11 +8660,11 @@ function abrirModalPerfil() {
   const badge = document.getElementById('perfil-google-badge');
   if (badge) badge.style.display = perfil.viaGoogle ? 'block' : 'none';
 
-  // Mostra o ID numérico do perfil
+  // Mostra o ID numerico do perfil
   const pidEl = document.getElementById('perfil-id-display');
   if (pidEl) {
     const pid = _getProfileId();
-    // Formata como XXXX XXXX para leitura fácil
+    // Formata como XXXX XXXX para leitura facil
     pidEl.textContent = pid.slice(0,4) + ' ' + pid.slice(4,8);
   }
 
@@ -8687,7 +8688,7 @@ function abrirModalPerfil() {
 }
 
 async function sairDaConta() {
-  // confirm() nativo bloqueado em iOS em contextos de overlay — usar modal próprio
+  // confirm() nativo bloqueado em iOS em contextos de overlay -- usar modal proprio
   var existing = document.querySelector('[data-confirm-modal]');
   if (existing) existing.remove();
   const overlay = document.createElement('div');
@@ -8728,7 +8729,7 @@ async function _executarSaida() {
     _fbMarcarOffline();
   }
 
-  // 2. Limpar TODOS os dados locais (incluindo músicas e eventos)
+  // 2. Limpar TODOS os dados locais (incluindo musicas e eventos)
   [
     'map_perfil_v1', 'map_uid_v1', 'map_notifs_v1', 'map_last_version',
     'map_pro_elite_v1', 'map_pro_eventos_v1'
@@ -8746,11 +8747,11 @@ async function _executarSaida() {
 }
 
 function _voltarAoCadastro() {
-  // Remove PIN lock se estiver visível
+  // Remove PIN lock se estiver visivel
   const pinScreen = document.getElementById('pin-lock-screen');
   if (pinScreen) pinScreen.style.display = 'none';
 
-  // Reconstrói onboarding overlay se foi removido
+  // Reconstroi onboarding overlay se foi removido
   let ov = document.getElementById('onboarding-overlay');
   if (!ov) {
     location.reload();
@@ -8758,7 +8759,7 @@ function _voltarAoCadastro() {
   }
   ov.style.display = 'flex';
 
-  // Reseta step-1 visível, step-2 oculto
+  // Reseta step-1 visivel, step-2 oculto
   const s1 = document.getElementById('ob-step-1');
   const s2 = document.getElementById('ob-step-2');
   if (s1) s1.style.display = 'block';
@@ -8785,14 +8786,14 @@ function _voltarAoCadastro() {
 }
 
 
-// ── Toggle visibilidade campo senha ──────────────────────────────────────────
+// -- Toggle visibilidade campo senha ------------------------------------------
 function _toggleSenhaField(id) {
   const inp = document.getElementById(id);
   if (!inp) return;
   inp.type = inp.type === 'password' ? 'text' : 'password';
 }
 
-// ── Modal Alterar Senha ───────────────────────────────────────────────────────
+// -- Modal Alterar Senha -------------------------------------------------------
 function abrirAlterarSenha() {
   fecharModalPerfil();
   const modal = document.getElementById('modal-alterar-senha');
@@ -8863,11 +8864,11 @@ async function confirmarAlterarSenha() {
 }
 
 
-// ── Formalizar Conta ──────────────────────────────────────────────────────────
+// -- Formalizar Conta ----------------------------------------------------------
 // Detecta se o utilizador tem dados locais mas sem conta Firebase real
 function _temContaFormal() {
   const perfil = _getPerfilLocal();
-  // Tem conta formal: uid Firebase real (não começa com 'u_', não é null) E tem email registado
+  // Tem conta formal: uid Firebase real (nao comeca com 'u_', nao e null) E tem email registado
   if (!perfil.uid || perfil.uid.startsWith('u_')) return false;
   if (!perfil.email) return false;
   return true;
@@ -8896,12 +8897,12 @@ function abrirFormalizarConta() {
   if (msg) { msg.textContent = ''; msg.style.color = 'rgba(255,255,255,0.35)'; }
   const btn = document.getElementById('btn-formalizar-confirmar');
   if (btn) btn.disabled = true;
-  // Pré-preenche email se existir no perfil local
+  // Pre-preenche email se existir no perfil local
   const perfil = _getPerfilLocal();
   const emailEl = document.getElementById('formalizar-email');
   if (emailEl && perfil.email) emailEl.value = perfil.email;
   modal.style.display = 'flex';
-  // Re-valida depois de pré-preencher email
+  // Re-valida depois de pre-preencher email
   setTimeout(_formalizarValidar, 50);
 }
 
@@ -8960,7 +8961,7 @@ async function confirmarFormalizarConta() {
   const oldUid = perfil.uid;
   perfil.uid   = novoUid;
   perfil.email = email;
-  // Garante que tem profileId e nome mínimo
+  // Garante que tem profileId e nome minimo
   if (!perfil.profileId) {
     let pid = '';
     for (let k = 0; k < 8; k++) pid += Math.floor(Math.random() * 10);
@@ -8971,8 +8972,8 @@ async function confirmarFormalizarConta() {
   _lsSet('map_perfil_v1', perfil);
   localStorage.setItem('map_uid_v1', novoUid);
 
-  // 3. Sincroniza músicas e eventos para o novo UID no Firebase
-  setMsg('Salvando dados na nuvem…', 'rgba(255,200,50,0.7)');
+  // 3. Sincroniza musicas e eventos para o novo UID no Firebase
+  setMsg('Salvando dados na nuvem...', 'rgba(255,200,50,0.7)');
   try {
     await window._fb.salvarPerfilCompleto(novoUid, {
       nome:        perfil.nome        || '',
@@ -9000,13 +9001,13 @@ async function confirmarFormalizarConta() {
     fecharFormalizarConta();
     if (typeof showToast === 'function') showToast('Conta formalizada com sucesso!');
     if (typeof atualizarPreviewPerfil === 'function') atualizarPreviewPerfil();
-    // Atualiza visibilidade do botão no perfil
+    // Atualiza visibilidade do botao no perfil
     _mostrarBotaoFormalizar();
   }, 1800);
 }
 
 
-// ── Modal Esqueci Senha ───────────────────────────────────────────────────────
+// -- Modal Esqueci Senha -------------------------------------------------------
 function abrirEsqueciSenha() {
   const modal = document.getElementById('modal-esqueci-senha');
   if (!modal) return;
@@ -9071,7 +9072,7 @@ function _renderHistoricoShow() {
   var hist = [];
   try { hist = JSON.parse(localStorage.getItem('map_historico_shows_v1') || '[]'); } catch(e) {}
 
-  // Atualiza contagem no botão do perfil e no header do modal
+  // Atualiza contagem no botao do perfil e no header do modal
   var countEl = document.getElementById('hist-shows-count');
   if (countEl) countEl.textContent = hist.length ? '(' + hist.length + ')' : '';
   var modalCount = document.getElementById('hist-modal-count');
@@ -9092,7 +9093,7 @@ function _renderHistoricoShow() {
     return '<div style="background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.07);border-radius:12px;padding:12px 14px;">'
       + '<div style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px;margin-bottom:6px;">'
       +   '<div style="font-size:12px;font-weight:800;color:#fff;line-height:1.3;">' + titulo + '</div>'
-      +   '<div style="font-size:9px;color:rgba(255,255,255,0.25);white-space:nowrap;flex-shrink:0;margin-top:1px;">' + h.data + ' · ' + h.hora + '</div>'
+      +   '<div style="font-size:9px;color:rgba(255,255,255,0.25);white-space:nowrap;flex-shrink:0;margin-top:1px;">' + h.data + ' . ' + h.hora + '</div>'
       + '</div>'
       + '<div style="display:flex;align-items:center;gap:6px;margin-bottom:5px;">'
       +   '<div style="font-size:10px;color:rgba(10,158,110,0.8);font-weight:800;">' + totalMusicas + ' música' + (totalMusicas !== 1 ? 's' : '') + '</div>'
@@ -9133,7 +9134,7 @@ function fecharModalPerfil() {
   if (_mp) _mp.style.display = 'none';
 }
 
-// ─── Toggle PIN ───────────────────────────────────────────────────────────────
+// --- Toggle PIN ---------------------------------------------------------------
 
 function _perfilRenderTogglePin() {
   var perfil   = _lsGet('map_perfil_v1', {});
@@ -9151,13 +9152,13 @@ function _perfilRenderTogglePin() {
     toggle.style.background = 'rgba(138,92,246,0.6)';
     knob.style.left = '21px';
     knob.style.background = '#fff';
-    if (statusTxt) statusTxt.textContent = 'Ativado — solicitado na entrada';
+    if (statusTxt) statusTxt.textContent = 'Ativado -- solicitado na entrada';
     if (ativoRow)  ativoRow.style.display = 'flex';
   } else {
     toggle.style.background = 'rgba(255,255,255,0.1)';
     knob.style.left = '3px';
     knob.style.background = 'rgba(255,255,255,0.6)';
-    if (statusTxt) statusTxt.textContent = temPin ? 'Desativado — PIN salvo mas não exigido' : 'Desativado';
+    if (statusTxt) statusTxt.textContent = temPin ? 'Desativado -- PIN salvo mas não exigido' : 'Desativado';
     if (ativoRow)  ativoRow.style.display = 'none';
   }
 }
@@ -9166,7 +9167,7 @@ function perfilTogglePin() {
   var perfil = _lsGet('map_perfil_v1', {});
   var temPin = !!(perfil.pin && perfil.pin.length === 4);
 
-  // Se não tem PIN ainda, abre modal para criar um
+  // Se nao tem PIN ainda, abre modal para criar um
   if (!temPin) {
     perfilAlterarPin(true);
     return;
@@ -9235,7 +9236,7 @@ function _pinConfirmarAlterar(ativarDepois) {
   showToast('PIN ' + (ativarDepois ? 'criado' : 'alterado') + ' com sucesso!', 'success');
 }
 
-// ─── PERFIL PUBLICO DE OUTROS USUARIOS ──────────────────────────────────────
+// --- PERFIL PUBLICO DE OUTROS USUARIOS --------------------------------------
 async function verPerfilUsuario(uid) {
   if (!uid) return;
   const modal = document.getElementById('modal-perfil-publico');
@@ -9257,7 +9258,7 @@ async function verPerfilUsuario(uid) {
     const u = await window._fb.carregarPerfilPorUid(uid);
     if (!u) { showToast('Perfil nao encontrado'); modal.style.display = 'none'; return; }
 
-    const nome = u.nome || u.nomeUsuario || '—';
+    const nome = u.nome || u.nomeUsuario || '--';
     const inicial = nome.charAt(0).toUpperCase();
 
     // Banner
@@ -9292,7 +9293,7 @@ async function verPerfilUsuario(uid) {
     const amigosUids = _amigosCache.map(a => a.uid);
     const ehAmigo = amigosUids.includes(uid);
 
-    // Link social — só exibe para amigos
+    // Link social -- so exibe para amigos
     var ppLinkEl = document.getElementById('pp-link');
     var ppLinkLabel = document.getElementById('pp-link-label');
     if (ppLinkEl && u.link && ehAmigo) {
@@ -9351,12 +9352,12 @@ function fecharPerfilPublico() {
 
 
 
-// ─── ESTADO ────────────────────────────────────────────────────────────────
+// --- ESTADO ----------------------------------------------------------------
 let bpm = 120;
 let isPlaying = false;
 let nextNoteTime = 0.0;
 let timerID = null;
-// ── Novas vars do metrônomo ──
+// -- Novas vars do metronomo --
 let metroBeatsPerBar  = 4;
 let metroBeatUnit     = 4;
 let metroSubdivision  = 1;
@@ -9369,29 +9370,29 @@ let metroAccelTarget  = 160;
 let metroAccelStep    = 5;
 let metroAccelBarCount = 0;
 let metroAccelInterval = null;
-var metroSoundPreset = 'sine';
+// metroSoundPreset declarado no script inline do metro-wrap
 let scrollInterval = null;
 function _setScroll(speed) {
   clearInterval(scrollInterval);
   scrollInterval = null;
-  // 1 = muito lento (600ms/px), 100 = rápido (50ms/px)
+  // 1 = muito lento (600ms/px), 100 = rapido (50ms/px)
   if (speed > 0) scrollInterval = setInterval(() => window.scrollBy(0, 1), Math.round(600 - (speed - 1) * 5.5));
 }
 let tapTimes = [];
 let audioCtx = null;
-// ── Master output chain: compressor → limiter → destination ─────────────────
+// -- Master output chain: compressor -> limiter -> destination -----------------
 // Criado uma vez junto com o AudioContext e reutilizado por todos os pads.
-// Evita clipping digital quando múltiplos pads soam ao mesmo tempo.
+// Evita clipping digital quando multiplos pads soam ao mesmo tempo.
 var _dcMasterNode = null;
 
 function _getDcMasterNode(ctx) {
   if (_dcMasterNode) return _dcMasterNode;
 
-  // 1. Gain master — atenuação preventiva de ~3 dB
+  // 1. Gain master -- atenuacao preventiva de ~3 dB
   var masterGain = ctx.createGain();
   masterGain.gain.value = 0.72;
 
-  // 2. Panner estéreo (pads → R quando stereo ativo, centro quando não)
+  // 2. Panner estereo (pads -> R quando stereo ativo, centro quando nao)
   var panner = _getDcPadPanner(ctx);
 
   // 3. Compressor master
@@ -9410,7 +9411,7 @@ function _getDcMasterNode(ctx) {
   limiter.attack.value    = 0.001;
   limiter.release.value   = 0.05;
 
-  // Encadeia: masterGain → [panner] → comp → limiter → destination
+  // Encadeia: masterGain -> [panner] -> comp -> limiter -> destination
   if (panner) {
     masterGain.connect(panner);
     panner.connect(comp);
@@ -9439,10 +9440,10 @@ function _getAudioCtx() {
 const notesArr = ["C","C#","D","D#","E","F","F#","G","G#","A","A#","B"];
 let songs = (function(){ try { return JSON.parse(localStorage.getItem('map_pro_elite_v1') || '[]') || []; } catch(e) { return []; } })();
 
-// ─── PEER / SALA ────────────────────────────────────────────────────────────
+// --- PEER / SALA ------------------------------------------------------------
 // peer removed (Firebase)
-// hostConn removed (Firebase)       // viewer → host
-let guestConns = []; // kept for compatibility       // host → viewers
+// hostConn removed (Firebase)       // viewer -> host
+let guestConns = []; // kept for compatibility       // host -> viewers
 let isHost = false;
 let _fbReady = false;
 let _salaListener = null;
@@ -9457,7 +9458,7 @@ let isViewer = false;
 let myRoomCode = null;
 let syncPaused = false;    // evita loop ao aplicar estado recebido
 
-// Gera ID PeerJS a partir do código de 4 dígitos
+// Gera ID PeerJS a partir do codigo de 4 digitos
 function codeToId(code) { return 'mapmusic-room-' + code; }
 
 function gerarCodigo4() {
@@ -9465,12 +9466,12 @@ function gerarCodigo4() {
 }
 
 
-// iniciarPeer removido — Firebase
+// iniciarPeer removido -- Firebase
 
 // duplicate removed
 
 
-// ── Utilitário UI ────────────────────────────────────────────────────────────
+// -- Utilitario UI ------------------------------------------------------------
 function setConnStatus(msg, type) {
   const el = document.getElementById('criar-status') 
           || document.getElementById('connect-status')
@@ -9478,18 +9479,18 @@ function setConnStatus(msg, type) {
   if (el) el.innerText = msg;
 }
 
-// ── HOST: Criar Sala ─────────────────────────────────────────────────────────
+// -- HOST: Criar Sala ---------------------------------------------------------
 async function criarSala() {
-  if (isHost) { showToast('Sala já ativa — código: ' + myRoomCode); return; }
-  // Verifica Firebase — usa window._fbReady (definido sincronamente pelo script Firebase)
+  if (isHost) { showToast('Sala já ativa -- código: ' + myRoomCode); return; }
+  // Verifica Firebase -- usa window._fbReady (definido sincronamente pelo script Firebase)
   if (!window._fb || !window._fbReady) { showToast('Firebase indisponível. Verifique a conexão.'); return; }
-  _fbReady = true; // sincroniza variável local
+  _fbReady = true; // sincroniza variavel local
   const code = gerarCodigo4();
   myRoomCode = code;
 
   const el = document.getElementById('my-room-code');
   el.classList.add('loading');
-  el.innerText = '···';
+  el.innerText = '...';
   document.getElementById('criar-status').innerText = 'Criando sala...';
 
   const perfil = _getPerfilLocal();
@@ -9509,7 +9510,7 @@ async function criarSala() {
     document.getElementById('criar-status').innerText = msg;
     showToast(msg);
     el.classList.remove('loading');
-    el.innerText = '—';
+    el.innerText = '--';
     myRoomCode = null;
     return;
   }
@@ -9530,13 +9531,13 @@ async function criarSala() {
   // Escuta mensagens dos viewers (join/leave/ping)
   _iniciarListenerMensagens(code, uid);
 
-  // Keepalive — atualiza estado a cada 15s e lê onlineCount do Firestore
+  // Keepalive -- atualiza estado a cada 15s e le onlineCount do Firestore
   _salaOnlineTimer = setInterval(async () => {
     if (!isHost || !myRoomCode) { clearInterval(_salaOnlineTimer); return; }
-    // Não envia keepalive com app em background — economiza bateria e dados
+    // Nao envia keepalive com app em background -- economiza bateria e dados
     if (window._appPaused) return;
     broadcastEstado();
-    // Lê onlineCount atual do Firestore para o host ver viewers
+    // Le onlineCount atual do Firestore para o host ver viewers
     try {
       const salaData = await window._fb.getSala(myRoomCode);
       if (salaData) {
@@ -9562,7 +9563,7 @@ function copiarCodigo() {
   navigator.clipboard.writeText(myRoomCode).then(() => showToast('Código copiado: ' + myRoomCode)).catch(function() { showToast('Não foi possível copiar automaticamente.'); });
 }
 
-// ── HOST: Broadcast de Estado ────────────────────────────────────────────────
+// -- HOST: Broadcast de Estado ------------------------------------------------
 function broadcastEstado() {
   if (!isHost || syncPaused) return;
   const estado = capturarEstado();
@@ -9572,8 +9573,8 @@ function broadcastEstado() {
   }
 }
 
-// ── CHAT DE AVISOS DA SALA ───────────────────────────────────────────────────
-var _salaAvisos = []; // histórico de avisos enviados pelo host nesta sessão
+// -- CHAT DE AVISOS DA SALA ---------------------------------------------------
+var _salaAvisos = []; // historico de avisos enviados pelo host nesta sessao
 var _avisoTimer  = null;
 
 function enviarAvisoSala() {
@@ -9585,7 +9586,7 @@ function enviarAvisoSala() {
   var uid    = _getUid();
   var hora   = new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
   var avisoObj = { tipo: 'aviso', uid, nome: perfil.nome || 'Host', texto, _t: String(Date.now()) };
-  // Persiste estado + ultimoAviso em uma única chamada atômica — sem race condition
+  // Persiste estado + ultimoAviso em uma unica chamada atomica -- sem race condition
   if (window._fb && myRoomCode) {
     var estado = capturarEstado ? capturarEstado() : {};
     var onlineUids = [uid, ...Object.keys(_viewersOnline || {})];
@@ -9631,8 +9632,8 @@ function _mostrarAvisoBanner(nomeHost, texto) {
   }, 5000);
 }
 
-// ── HOST: Escuta mensagens dos viewers ───────────────────────────────────────
-let _viewersOnline = {}; // uid → nome
+// -- HOST: Escuta mensagens dos viewers ---------------------------------------
+let _viewersOnline = {}; // uid -> nome
 
 function _iniciarListenerMensagens(code, hostUid) {
   if (_mensagensListener) { _mensagensListener(); _mensagensListener = null; }
@@ -9666,7 +9667,7 @@ function _iniciarListenerMensagens(code, hostUid) {
   });
 }
 
-// ── VIEWER: Entrar na Sala ───────────────────────────────────────────────────
+// -- VIEWER: Entrar na Sala ---------------------------------------------------
 async function entrarNaSala() {
   const code = ['d0','d1','d2','d3']
     .map(id => document.getElementById(id).value).join('').trim().toUpperCase();
@@ -9709,16 +9710,16 @@ async function entrarNaSala() {
   sessionStorage.removeItem('_sala_last_aviso_t'); // limpa para receber avisos do host
   atualizarLetreiroDrumCam();
   setConnStatus('Conectado!', 'success');
-  // Disparar evento para solicitar permissão de notificação
+  // Disparar evento para solicitar permissao de notificacao
   document.dispatchEvent(new CustomEvent('map-sala-entrou'));
   fecharModal();
   document.getElementById('app-body').classList.add('viewer-mode');
   atualizarSyncBar(code);
-  showToast('Sala ' + code + ' — modo visualização');
+  showToast('Sala ' + code + ' -- modo visualização');
 
   // Join registado pelo entrarSalaFb (campo viewers no doc da sala)
 
-  // Escuta atualizações de estado em tempo real
+  // Escuta atualizacoes de estado em tempo real
   _salaListener = window._fb.ouvirSala(code, function(data) {
     if (!isViewer) return;
     if (!data.ativa) {
@@ -9730,7 +9731,7 @@ async function entrarNaSala() {
     try {
       const estado = JSON.parse(data.estado || '{}');
       if (estado && Object.keys(estado).length > 0) aplicarEstado(estado);
-      // Atualiza contagem online (lê onlineCount do Firestore)
+      // Atualiza contagem online (le onlineCount do Firestore)
       const total = data.onlineCount || (data.online || []).length || 1;
       window._onlineCountCache = total;
       const sc = document.querySelector('#sync-guests-count');
@@ -9749,7 +9750,7 @@ async function entrarNaSala() {
   });
 }
 
-// ── Sair da sala (viewer) ────────────────────────────────────────────────────
+// -- Sair da sala (viewer) ----------------------------------------------------
 async function _sairDaSala() {
   if (!isViewer) return;
   const code = (document.getElementById('sync-code-display')?.innerText || '').trim() || myRoomCode;
@@ -9767,7 +9768,7 @@ async function _sairDaSala() {
   document.getElementById('app-body').classList.remove('viewer-mode');
   atualizarSyncBar();
   atualizarLetreiroDrumCam();
-  // Recarrega música local para restaurar acordes do usuário
+  // Recarrega musica local para restaurar acordes do usuario
   if (currentSongIndex >= 0 && songs[currentSongIndex]) {
     var s = songs[currentSongIndex];
     document.getElementById('notes-grid').innerHTML = '';
@@ -9776,7 +9777,7 @@ async function _sairDaSala() {
   }
 }
 
-// ── Encerrar sala (host) ─────────────────────────────────────────────────────
+// -- Encerrar sala (host) -----------------------------------------------------
 async function encerrarSala() {
   try {
 
@@ -9802,7 +9803,7 @@ async function encerrarSala() {
   }
 }
 
-// ── Sync Bar ─────────────────────────────────────────────────────────────────
+// -- Sync Bar -----------------------------------------------------------------
 function atualizarSyncBar(code) {
   const bar    = document.getElementById('sync-bar');
   const label  = document.getElementById('sync-label');
@@ -9834,11 +9835,11 @@ function atualizarSyncBar(code) {
   }
 }
 
-// ── Reconexão automática ao voltar ao foreground ─────────────────────────────
+// -- Reconexao automatica ao voltar ao foreground -----------------------------
 // visibilitychange handled in sala Firebase block
 document.addEventListener('visibilitychange', function() {
   if (document.visibilityState !== 'visible') return;
-  // Host: reenviar estado e atualizar onlineCount após voltar do background
+  // Host: reenviar estado e atualizar onlineCount apos voltar do background
   if (isHost && myRoomCode && _fbReady && window._fb) {
     broadcastEstado();
     window._fb.getSala(myRoomCode).then(function(salaData) {
@@ -9856,14 +9857,14 @@ function togglePerf() {
   const appBody = document.getElementById('app-body');
   const isPerf = appBody.classList.contains('performance-mode');
 
-  // Ao ENTRAR no show — bloqueia apenas se acabou de sair (evita ghost re-enter)
+  // Ao ENTRAR no show -- bloqueia apenas se acabou de sair (evita ghost re-enter)
   if (!isPerf) {
     if (Date.now() - _showReentryGuardMs < 600) return;
     _ativarModoShow();
     return;
   }
 
-  // Ao SAIR do show — se o modal já existe, não recria (evita fechar e reabrir em sequência)
+  // Ao SAIR do show -- se o modal ja existe, nao recria (evita fechar e reabrir em sequencia)
   var _prev = document.getElementById('_confirm-sair-show');
   if (_prev) return;
   if (!window._togglePerfSairGuard) window._togglePerfSairGuard = 0;
@@ -9924,7 +9925,7 @@ function _ativarModoShow() {
 
   setTimeout(atualizarLetreiroDrumCam, 50);
   document.getElementById('app-body').classList.add('performance-mode');
-  _perfFontCarregar(); // aplica fonte da música atual no show
+  _perfFontCarregar(); // aplica fonte da musica atual no show
   document.getElementById('mode-text').innerText = 'SAIR DO SHOW';
   atualizarIndicador();
   ativarWakeLock();
@@ -9944,22 +9945,22 @@ function _desativarModoShow() {
   var alerta = document.getElementById('show-proxima-alerta');
   if (alerta) alerta.classList.remove('show');
   if (_alertaProximaTimer) { clearTimeout(_alertaProximaTimer); _alertaProximaTimer = null; }
-  // Salvar histórico antes de limpar o estado do show
+  // Salvar historico antes de limpar o estado do show
   _salvarHistoricoShow();
   setTimeout(atualizarLetreiroDrumCam, 50);
   document.getElementById('app-body').classList.remove('performance-mode');
   document.getElementById('mode-text').innerText = 'MODO SHOW';
   stopScroll();
   window.scrollTo(0, 0);
-  // Libera apenas Screen Wake Lock API — mantém fallback de áudio/vídeo ativo
-  // para evitar hibernação fora do show também (iOS/Safari precisam disso)
+  // Libera apenas Screen Wake Lock API -- mantem fallback de audio/video ativo
+  // para evitar hibernacao fora do show tambem (iOS/Safari precisam disso)
   if (_wakeLock) { try { _wakeLock.release(); } catch(e) {} _wakeLock = null; }
   limparShowEvento();
   const _b = document.getElementById('perf-evento-badge');
   if (_b) _b.style.display = 'none';
   broadcastEstado();
   _frasesAtualizarVisibilidade();
-  // Reajusta altura das textareas — no show elas ficam com height inline da fonte grande
+  // Reajusta altura das textareas -- no show elas ficam com height inline da fonte grande
   requestAnimationFrame(function() {
     setTimeout(function() {
       document.querySelectorAll('.chord-area').forEach(function(ta) {
@@ -9968,7 +9969,7 @@ function _desativarModoShow() {
       });
     }, 80); // pequeno delay para o browser aplicar o CSS antes do resize
   });
-  // Guarda timestamp de saida — impede ghost click reativar o show por 600ms
+  // Guarda timestamp de saida -- impede ghost click reativar o show por 600ms
   _showReentryGuardMs = Date.now();
   // Bloqueia pointer-events no botao por 600ms como camada extra de protecao
   var _pbp = document.querySelector('.perf-bottom-panel');
@@ -9991,7 +9992,7 @@ function _salvarHistoricoShow() {
   try {
     var hist = JSON.parse(localStorage.getItem('map_historico_shows_v1') || '[]');
     hist.unshift(entrada); // mais recente primeiro
-    if (hist.length > 50) hist = hist.slice(0, 50); // máx 50 registros
+    if (hist.length > 50) hist = hist.slice(0, 50); // max 50 registros
     localStorage.setItem('map_historico_shows_v1', JSON.stringify(hist));
   } catch(e) {}
 }
@@ -10002,7 +10003,7 @@ function atualizarIndicador() {
   const posLista = currentSong ? lista.findIndex(s => s.id === currentSong.id) : -1;
 
   if (lista.length === 0 || !currentSong || posLista === -1) {
-    document.getElementById('perf-song-pos').innerText = '—';
+    document.getElementById('perf-song-pos').innerText = '--';
     document.getElementById('perf-song-name').innerText = 'Nenhuma musica';
     // Mostra/esconde badge do evento
     _atualizarBadgeEvento();
@@ -10030,9 +10031,9 @@ function _atualizarBadgeEvento() {
 }
 
 
-// ─── ATIVAR SHOW COM EVENTO ───────────────────────────────────────────────────
+// --- ATIVAR SHOW COM EVENTO ---------------------------------------------------
 function ativarShowEvento(eventoId, startSongId) {
-  // Normaliza tipos: IDs vindos de onclick HTML chegam como string, musicIds são number
+  // Normaliza tipos: IDs vindos de onclick HTML chegam como string, musicIds sao number
   var eventoIdN   = eventoId   != null ? Number(eventoId)   : null;
   var startSongN  = startSongId != null ? Number(startSongId) : null;
 
@@ -10041,7 +10042,7 @@ function ativarShowEvento(eventoId, startSongId) {
     showToast('O evento não tem músicas.');
     return;
   }
-  // Garante que todos os IDs do evento também sejam números para comparação segura
+  // Garante que todos os IDs do evento tambem sejam numeros para comparacao segura
   const idsValidos = ev.musicIds
     .map(Number)
     .filter(id => songs.find(s => s.id === id));
@@ -10054,7 +10055,7 @@ function ativarShowEvento(eventoId, startSongId) {
   showSetlistEventoId   = ev.id;
   showSetlistEventoNome = ev.nome;
 
-  // Se veio uma música específica, começa por ela; senão começa pela primeira
+  // Se veio uma musica especifica, comeca por ela; senao comeca pela primeira
   const startId = startSongN && idsValidos.includes(startSongN) ? startSongN : idsValidos[0];
   showSetlistPos = idsValidos.indexOf(startId);
 
@@ -10074,14 +10075,14 @@ function ativarShowEvento(eventoId, startSongId) {
   fecharBiblioteca();
   _antiGhostClick(); // evita ghost tap no botao SAIR DO SHOW nos primeiros 320ms
 
-  // Pequeno delay para garantir que as transições de saída da biblioteca terminem
+  // Pequeno delay para garantir que as transicoes de saida da biblioteca terminem
   setTimeout(function() {
     var isPerf = document.getElementById('app-body').classList.contains('performance-mode');
     if (!isPerf) togglePerf();
     else { atualizarIndicador(); broadcastEstado(); _mostrarAlertaProxima(); }
   }, 80);
 
-  showToast('Show: ' + (_ve(ev.nome) || 'Evento') + ' · ' + idsValidos.length + ' músicas');
+  showToast('Show: ' + (_ve(ev.nome) || 'Evento') + ' . ' + idsValidos.length + ' músicas');
 }
 
 function limparShowEvento() {
@@ -10095,7 +10096,7 @@ function limparShowEvento() {
 }
 
 function _getShowSongs() {
-  // Retorna o array de músicas ativas no show (evento ou todas)
+  // Retorna o array de musicas ativas no show (evento ou todas)
   if (showSetlist && showSetlist.length > 0) {
     return showSetlist.map(id => songs.find(s => s.id === id)).filter(Boolean);
   }
@@ -10106,7 +10107,7 @@ function navegarSetlist(dir) {
   const lista = _getShowSongs();
   if (lista.length === 0) { showToast('Setlist vazio.'); return; }
 
-  // Acha posição atual na lista ativa
+  // Acha posicao atual na lista ativa
   const currentSong = currentSongIndex >= 0 ? songs[currentSongIndex] : null;
   let posAtual = currentSong ? lista.findIndex(s => s.id === currentSong.id) : -1;
   if (posAtual === -1) posAtual = dir > 0 ? -1 : 0;
@@ -10134,7 +10135,7 @@ function navegarSetlist(dir) {
   }
   atualizarIndicador();
   flashSwipe(dir > 0 ? '>' : '<');
-  _perfFontCarregar(); // aplica fonte da nova música
+  _perfFontCarregar(); // aplica fonte da nova musica
   _markClean();
   broadcastEstado();
   _mostrarAlertaProxima();
@@ -10155,7 +10156,7 @@ function _mostrarAlertaProxima() {
   var alerta = document.getElementById('show-proxima-alerta');
   if (!alerta) return;
   if (posAtual === -1 || posAtual >= lista.length - 1) {
-    // Última ou sem posição — esconde qualquer alerta pendente
+    // Ultima ou sem posicao -- esconde qualquer alerta pendente
     alerta.classList.remove('show');
     return;
   }
@@ -10195,7 +10196,7 @@ document.addEventListener('keydown', e => {
   if (e.key === 'Escape') togglePerf();
 });
 
-// ─── MODAL ────────────────────────────────────────────────────────────────
+// --- MODAL ----------------------------------------------------------------
 function abrirModalSala() {
   _lockScroll();
   var _mso=document.getElementById('modal-sala'); _mso.style.pointerEvents=''; _mso.classList.add('show');
@@ -10212,11 +10213,11 @@ function mostrarEscolhaSala() {
   document.getElementById('sala-escolha').style.display = 'block';
   document.getElementById('tab-criar').style.display = 'none';
   document.getElementById('tab-entrar').style.display = 'none';
-  // Reset tela criar para próxima vez
+  // Reset tela criar para proxima vez
   const rc = document.getElementById('my-room-code');
   const cs = document.getElementById('criar-status');
   const bc = document.getElementById('btn-copiar-codigo');
-  if (rc) { rc.classList.add('loading'); rc.innerText = '···'; }
+  if (rc) { rc.classList.add('loading'); rc.innerText = '...'; }
   if (cs) cs.innerText = 'Criando sala...';
   if (bc) bc.disabled = true;
   // Limpa inputs da tela entrar
@@ -10229,7 +10230,7 @@ function mostrarEscolhaSala() {
 }
 
 function voltarEscolhaSala() {
-  // Se ainda não entrou em nenhuma sala, volta ao ecrã de escolha normalmente
+  // Se ainda nao entrou em nenhuma sala, volta ao ecra de escolha normalmente
   mostrarEscolhaSala();
 }
 
@@ -10244,7 +10245,7 @@ function confirmarEntrarSala() {
   ['d0','d1','d2','d3'].forEach(id => document.getElementById(id).value = '');
   document.getElementById('connect-status').innerText = '';
   document.getElementById('btn-entrar').disabled = false;
-  // Não chama .focus() para não abrir teclado virtual automaticamente no celular
+  // Nao chama .focus() para nao abrir teclado virtual automaticamente no celular
 }
 
 function mostrarTabsSala(tab) {
@@ -10258,7 +10259,7 @@ function fecharModal() {
   var _ms = document.getElementById('modal-sala');
   _ms.classList.remove('show');
   _ms.style.pointerEvents = '';
-  // Apenas fecha o modal — a sala continua ativa em background
+  // Apenas fecha o modal -- a sala continua ativa em background
   if (!isHost && !isViewer) mostrarEscolhaSala();
 }
 
@@ -10273,7 +10274,7 @@ function switchTab(tab) {
 // setConnStatus deduplicated
 
 
-// Inputs do código — navegar entre campos
+// Inputs do codigo -- navegar entre campos
 function nextDigit(el, nextIdx) {
   el.value = el.value.replace(/\D/,'');
   if (el.value && nextIdx >= 0) document.getElementById('d'+nextIdx).focus();
@@ -10282,14 +10283,14 @@ function prevDigit(e, idx) {
   if (e.key === 'Backspace' && !e.target.value && idx > 0) document.getElementById('d'+(idx-1)).focus();
 }
 
-// ─── UI ───────────────────────────────────────────────────────────────────
+// --- UI -------------------------------------------------------------------
 var _toastTimer = null;
 function showToast(msg, tipo) {
   try {
     if (!tipo) {
-      if (/erro|falhou|falha|incorret|inválid|bloqueado|banido/i.test(msg)) tipo = 'error';
+      if (/erro|falhou|falha|incorret|invalid|bloqueado|banido/i.test(msg)) tipo = 'error';
       else if (/salvo|salva|criado|backup|restaurado|aplicado|bem-vindo/i.test(msg)) tipo = 'success';
-      else if (/atenção|aviso|aguardando|reconect/i.test(msg)) tipo = 'warning';
+      else if (/atencao|aviso|aguardando|reconect/i.test(msg)) tipo = 'warning';
       else tipo = 'info';
     }
     var icons = {
@@ -10319,7 +10320,7 @@ function fecharMenu(e) {
 window.addEventListener('click', fecharMenu);
 window.addEventListener('touchend', function(e) {
   if (!e || !e.target) return;
-  // Só fecha o menu se o toque NÃO foi dentro de nenhum overlay/painel/modal
+  // So fecha o menu se o toque NAO foi dentro de nenhum overlay/painel/modal
   if (!e.target.closest('#notif-panel, #notif-btn, .menu-container, #m-drop, [id$="-overlay"], .modal, .modal-box, .amigos-sheet, .slide-panel')) {
     fecharMenu(e);
   }
@@ -10338,7 +10339,7 @@ function resetSection() {
       if (isPlaying) togglePlay();
       document.getElementById('trans-val').innerText = 0;
       document.getElementById('tom-original-badge').style.display = 'none';
-      document.getElementById('tom-original-val').innerText = '—';
+      document.getElementById('tom-original-val').innerText = '--';
       stopScroll();
       currentSongIndex = -1;
       atualizarIndicador();
@@ -10350,7 +10351,7 @@ function resetSection() {
 }
 
 
-// ─── TAP TEMPO ───────────────────────────────────────────────────────────
+// --- TAP TEMPO -----------------------------------------------------------
 var _tapBtn = document.getElementById('tap-btn');
 if (_tapBtn) _tapBtn.addEventListener('click', function() {
   const now = performance.now();
@@ -10365,12 +10366,12 @@ if (_tapBtn) _tapBtn.addEventListener('click', function() {
   }
 });
 
-// ─── METRÔNOMO ───────────────────────────────────────────────────────────
-// ── Sons do metrônomo ──────────────────────────────────────────────────────
-// Cada preset define funções de síntese para accent / beat / sub
-// Tudo gerado via Web Audio API — sem arquivos externos
+// --- METRONOMO -----------------------------------------------------------
+// -- Sons do metronomo ------------------------------------------------------
+// Cada preset define funcoes de sintese para accent / beat / sub
+// Tudo gerado via Web Audio API -- sem arquivos externos
 var _metroSounds = {
-  // ── 1. Sine (padrão anterior) ──────────────────────────────────
+  // -- 1. Sine (padrao anterior) ----------------------------------
   sine: {
     label: 'Sine',
     play: function(ctx, time, isAccent, isSub, vol, out) {
@@ -10386,8 +10387,8 @@ var _metroSounds = {
       osc.start(time); osc.stop(time + dur + 0.01);
     }
   },
-  // ── 2. Clave ───────────────────────────────────────────────────
-  // Som de clave: oscilador de alta frequência + envelope curtíssimo + pitchDrop
+  // -- 2. Clave ---------------------------------------------------
+  // Som de clave: oscilador de alta frequencia + envelope curtissimo + pitchDrop
   clave: {
     label: 'Clave',
     play: function(ctx, time, isAccent, isSub, vol, out) {
@@ -10410,8 +10411,8 @@ var _metroSounds = {
       });
     }
   },
-  // ── 3. Woodblock ───────────────────────────────────────────────
-  // Tom mais encorpado, oco — pitchDrop suave + noise filtrado
+  // -- 3. Woodblock -----------------------------------------------
+  // Tom mais encorpado, oco -- pitchDrop suave + noise filtrado
   woodblock: {
     label: 'Woodblock',
     play: function(ctx, time, isAccent, isSub, vol, out) {
@@ -10428,7 +10429,7 @@ var _metroSounds = {
       env.gain.exponentialRampToValueAtTime(0.001, time + dur);
       osc.connect(env); env.connect(out);
       osc.start(time); osc.stop(time + dur + 0.01);
-      // Clique de ataque (banda de ruído curta)
+      // Clique de ataque (banda de ruido curta)
       try {
         var bufSize = Math.floor(ctx.sampleRate * 0.008);
         var buf = ctx.createBuffer(1, bufSize, ctx.sampleRate);
@@ -10446,14 +10447,14 @@ var _metroSounds = {
       } catch(e) {}
     }
   },
-  // ── 4. Baqueta (stick) ────────────────────────────────────────
-  // Impacto mais seco e percussivo — como baqueta em aro de caixa
+  // -- 4. Baqueta (stick) ----------------------------------------
+  // Impacto mais seco e percussivo -- como baqueta em aro de caixa
   baqueta: {
     label: 'Baqueta',
     play: function(ctx, time, isAccent, isSub, vol, out) {
       var v   = isAccent ? vol : (isSub ? vol*0.28 : vol*0.62);
       var dur = isAccent ? 0.06 : (isSub ? 0.022 : 0.04);
-      // Impacto seco: ruído filtrado + tom agudo
+      // Impacto seco: ruido filtrado + tom agudo
       try {
         var bufSize = Math.floor(ctx.sampleRate * 0.01);
         var buf = ctx.createBuffer(1, bufSize, ctx.sampleRate);
@@ -10481,15 +10482,15 @@ var _metroSounds = {
       osc.start(time); osc.stop(time + dur + 0.01);
     }
   },
-  // ── 5. Rimshot ────────────────────────────────────────────────
-  // Estalo seco de baqueta no aro — transiente curto, muito presente
+  // -- 5. Rimshot ------------------------------------------------
+  // Estalo seco de baqueta no aro -- transiente curto, muito presente
   rimshot: {
     label: 'Rimshot',
     play: function(ctx, time, isAccent, isSub, vol, out) {
       var v   = isAccent ? vol : (isSub ? vol*0.25 : vol*0.6);
       var dur = isAccent ? 0.05 : (isSub ? 0.018 : 0.035);
       try {
-        // Ruído de alta frequência — impacto seco
+        // Ruido de alta frequencia -- impacto seco
         var bufSize = Math.floor(ctx.sampleRate * 0.012);
         var buf  = ctx.createBuffer(1, bufSize, ctx.sampleRate);
         var data = buf.getChannelData(0);
@@ -10504,7 +10505,7 @@ var _metroSounds = {
         src.connect(hp); hp.connect(nenv); nenv.connect(out);
         src.start(time);
       } catch(e) {}
-      // Tom metálico rápido
+      // Tom metalico rapido
       var osc  = ctx.createOscillator();
       var oenv = ctx.createGain();
       osc.type = 'square';
@@ -10516,15 +10517,15 @@ var _metroSounds = {
       osc.start(time); osc.stop(time + dur + 0.01);
     }
   },
-  // ── 6. Cowbell ────────────────────────────────────────────────
-  // Som metálico e ressonante — dois osciladores em modo FM simples
+  // -- 6. Cowbell ------------------------------------------------
+  // Som metalico e ressonante -- dois osciladores em modo FM simples
   cowbell: {
     label: 'Cowbell',
     play: function(ctx, time, isAccent, isSub, vol, out) {
       var v    = isAccent ? vol : (isSub ? vol*0.28 : vol*0.6);
       var dur  = isAccent ? 0.35 : (isSub ? 0.08 : 0.18);
       var f1   = isAccent ? 540 : (isSub ? 360 : 450);
-      var f2   = f1 * 1.46; // intervalo de terça maior — timbre de cowbell
+      var f2   = f1 * 1.46; // intervalo de terca maior -- timbre de cowbell
       [f1, f2].forEach(function(f, i) {
         var osc  = ctx.createOscillator();
         var env  = ctx.createGain();
@@ -10540,8 +10541,8 @@ var _metroSounds = {
       });
     }
   },
-  // ── 7. Shaker ─────────────────────────────────────────────────
-  // Ruído granulado e suave — como maracas ou shaker
+  // -- 7. Shaker -------------------------------------------------
+  // Ruido granulado e suave -- como maracas ou shaker
   shaker: {
     label: 'Shaker',
     play: function(ctx, time, isAccent, isSub, vol, out) {
@@ -10551,7 +10552,7 @@ var _metroSounds = {
         var bufSize = Math.floor(ctx.sampleRate * dur);
         var buf  = ctx.createBuffer(1, bufSize, ctx.sampleRate);
         var data = buf.getChannelData(0);
-        // Ruído granulado com envelope natural
+        // Ruido granulado com envelope natural
         for (var k = 0; k < bufSize; k++) {
           var env = Math.sin(Math.PI * k / bufSize); // envelope suave
           data[k] = (Math.random()*2-1) * env;
@@ -10570,10 +10571,10 @@ var _metroSounds = {
       } catch(e) {}
     }
   },
-  // ── 8. Mudo ───────────────────────────────────────────────────
+  // -- 8. Mudo ---------------------------------------------------
   mudo: {
     label: 'Mudo',
-    play: function(ctx, time, isAccent, isSub, vol, out) { /* silêncio */ }
+    play: function(ctx, time, isAccent, isSub, vol, out) { /* silencio */ }
   }
 };
 
@@ -10584,7 +10585,7 @@ function playClick(time, isAccent, isSub) {
       drumCamBeatFlash();
       document.getElementById('dc-bpm').textContent = bpm;
       const s = currentSongIndex >= 0 && songs[currentSongIndex] ? songs[currentSongIndex] : null;
-      document.getElementById('dc-song-name').textContent = s ? s.name : '—';
+      document.getElementById('dc-song-name').textContent = s ? s.name : '--';
     }
   } catch(err) {}
 
@@ -10626,14 +10627,14 @@ function scheduler() {
     var isSub    = (metroSubIndex > 0);
     playClick(nextNoteTime, isAccent, isSub);
 
-    // Atualiza índices
+    // Atualiza indices
     metroSubIndex++;
     if (metroSubIndex >= metroSubdivision) {
       metroSubIndex = 0;
       metroBeatIndex++;
       if (metroBeatIndex >= metroBeatsPerBar) {
         metroBeatIndex = 0;
-        // Aceleração gradual: incrementa BPM a cada compasso completo
+        // Aceleracao gradual: incrementa BPM a cada compasso completo
         if (metroAccelActive && bpm < metroAccelTarget) {
           bpm = Math.min(bpm + metroAccelStep, metroAccelTarget);
           secondsPerBeat = 60.0 / bpm;
@@ -10661,7 +10662,7 @@ function togglePlay() {
   const btn = document.getElementById('play-btn');
   const fab = document.getElementById('metro-fab-btn');
   if (isPlaying) {
-    // Pequeno buffer de 0.05s para a primeira batida não cortar
+    // Pequeno buffer de 0.05s para a primeira batida nao cortar
     nextNoteTime = actx.currentTime + 0.05;
     metroBeatIndex = 0; metroSubIndex = 0;
     scheduler();
@@ -10684,23 +10685,23 @@ function adj(v) {
   broadcastEstado();
 }
 
-// ─── CAMPO HARMONICO ──────────────────────────────────────────────────────
+// --- CAMPO HARMONICO ------------------------------------------------------
 
-// Escalas maiores: I  ii  iii IV  V   vi  vii°
-// ── Teoria musical: escalas e qualidades ──────────────────────────────────
-// Maior:        I    ii   iii   IV    V    vi   vii°
+// Escalas maiores: I  ii  iii IV  V   vi  vii?
+// -- Teoria musical: escalas e qualidades ----------------------------------
+// Maior:        I    ii   iii   IV    V    vi   vii?
 const MAJOR_SCALE_STEPS = [0,   2,   4,   5,   7,   9,   11];
 const MAJOR_QUALITIES   = ['',  'm', 'm', '',  '',  'm', 'dim'];
 const DEGREES           = ['I', 'ii','iii','IV','V', 'vi','vii°'];
 
-// Menor natural: i    ii°   III   iv    v    VI   VII
+// Menor natural: i    iideg   III   iv    v    VI   VII
 const MINOR_SCALE_STEPS = [0,   2,   3,   5,   7,   8,   10];
 const MINOR_QUALITIES   = ['m','dim','',  'm', 'm', '',  ''];
 const MINOR_DEGREES     = ['i','ii°','III','iv','v', 'VI','VII'];
 
 const SHARP_TO_FLAT = { 'C#':'Db','D#':'Eb','F#':'Gb','G#':'Ab','A#':'Bb' };
 
-// Pré-calcula os 24 campos (12 maior + 12 menor) para lookup O(1)
+// Pre-calcula os 24 campos (12 maior + 12 menor) para lookup O(1)
 const CAMPOS_SET = {};
 for (let i = 0; i < 12; i++) {
   const t = notesArr[i];
@@ -10722,8 +10723,8 @@ function extrairAcordes(text) {
   const matches = [];
   let m;
   while ((m = regex.exec(text)) !== null) {
-    // Normaliza para comparação interna (usa sustenidos)
-    // Mas guarda só a raiz+qualidade básica (m ou nada) para o campo harmônico
+    // Normaliza para comparacao interna (usa sustenidos)
+    // Mas guarda so a raiz+qualidade basica (m ou nada) para o campo harmonico
     const raw = m[1];
     const raiz = normalizarAcorde(raw.match(/^[A-G][#b]?/)[0]);
     const ehMenor = /m/.test(raw.replace(/^[A-G][#b]?/,'').split('')[0] || '');
@@ -10732,11 +10733,11 @@ function extrairAcordes(text) {
   return matches;
 }
 
-// ── Detecção de tonalidade — algoritmo clínico ─────────────────────────────
+// -- Deteccao de tonalidade -- algoritmo clinico -----------------------------
 function detectarTonalidade(acordes) {
   if (!acordes.length) return null;
 
-  // Conta frequência de cada acorde (acordes que aparecem mais pesam mais)
+  // Conta frequencia de cada acorde (acordes que aparecem mais pesam mais)
   const freq = {};
   acordes.forEach(a => { freq[a] = (freq[a] || 0) + 1; });
   const unicos = Object.keys(freq);
@@ -10756,7 +10757,7 @@ function detectarTonalidade(acordes) {
       const campoSet = new Set(campo);
       const chave = t + sufixo;
 
-      // Pontuação base: soma freq de cada acorde diatônico
+      // Pontuacao base: soma freq de cada acorde diatonico
       let pts = 0;
       unicos.forEach(a => {
         if (campoSet.has(a)) pts += freq[a];
@@ -10765,17 +10766,17 @@ function detectarTonalidade(acordes) {
       // Normaliza pela quantidade total de acordes (0 a 1)
       let score = pts / total;
 
-      // Bônus forte: tônica aparece na música
+      // Bonus forte: tonica aparece na musica
       if (freq[t + sufixo]) score += 0.4;
 
-      // Bônus: dominante (V maior) aparece — forte indicador tonal
+      // Bonus: dominante (V maior) aparece -- forte indicador tonal
       const dominante = campo[4]; // grau V
       if (freq[dominante]) score += 0.25;
 
-      // Bônus: primeiro acorde da música coincide com a tônica
+      // Bonus: primeiro acorde da musica coincide com a tonica
       if (acordes[0] === t + sufixo) score += 0.2;
 
-      // Penalidade: acordes fora do campo (cromatismo/modulação)
+      // Penalidade: acordes fora do campo (cromatismo/modulacao)
       const foraCount = unicos.filter(a => !campoSet.has(a)).reduce((s,a) => s + freq[a], 0);
       score -= (foraCount / total) * 0.3;
 
@@ -10789,17 +10790,17 @@ function detectarTonalidade(acordes) {
   return melhorPts > 0 ? melhor : null;
 }
 
-// Converte nota interna (C#) para exibição amigável
-// Tonalidades menores e com bemóis usam bemóis; demais usam sustenidos
+// Converte nota interna (C#) para exibicao amigavel
+// Tonalidades menores e com bemois usam bemois; demais usam sustenidos
 function notaParaExibicao(nota, usarBemol) {
   if (usarBemol && SHARP_TO_FLAT[nota]) return SHARP_TO_FLAT[nota];
   return nota;
 }
 
-// Tonalidades que preferem bemóis na exibição
+// Tonalidades que preferem bemois na exibicao
 const TONALIDADES_BEMOL = ['F','Bb','Eb','Ab','Db','Gb','Dm','Gm','Cm','Fm','Bbm','Ebm'];
 
-// Gera os 7 acordes do campo harmônico
+// Gera os 7 acordes do campo harmonico
 function gerarCampoHarmonico(tonica, menor) {
   const steps   = menor ? MINOR_SCALE_STEPS : MAJOR_SCALE_STEPS;
   const quals   = menor ? MINOR_QUALITIES   : MAJOR_QUALITIES;
@@ -10839,7 +10840,7 @@ function mostrarHarmonic(textarea, acordes) {
   activeTextarea = textarea;
 
   const posicionarPopup = function() {
-    // Usa a seção pai (.song-part) como referência — mais estável que o textarea
+    // Usa a seção pai (.song-part) como referência -- mais estável que o textarea
     var refEl = textarea.closest('.song-part') || textarea;
     const rect    = refEl.getBoundingClientRect();
     const popupH  = popup.offsetHeight || 170;
@@ -10857,7 +10858,7 @@ function mostrarHarmonic(textarea, acordes) {
       if (topAbaixo + popupH < visH * 0.6) {
         top = topAbaixo;
       } else {
-        // Não cabe nem acima nem abaixo — ancora no topo seguro
+        // Não cabe nem acima nem abaixo -- ancora no topo seguro
         top = Math.max(60, rect.top - popupH - margin);
       }
     }
@@ -10865,7 +10866,7 @@ function mostrarHarmonic(textarea, acordes) {
     // Garante limites verticais
     top = Math.max(60, Math.min(top, visH - popupH - margin));
 
-    // Posição horizontal — alinha com a seção
+    // Posição horizontal -- alinha com a seção
     var left = rect.left;
     if (left + popupW > window.innerWidth - 10) left = window.innerWidth - popupW - 10;
     left = Math.max(10, left);
@@ -10909,7 +10910,7 @@ document.addEventListener('click', e => {
   }
 });
 
-// Fecha ao deslizar o dedo (touchmove) — mas NÃO dentro de overlays ou do próprio popup
+// Fecha ao deslizar o dedo (touchmove) -- mas NÃO dentro de overlays ou do próprio popup
 document.addEventListener('touchmove', function(e) {
   if (e.target.closest('[id$="-overlay"], #notif-panel, .modal, .modal-box, .amigos-sheet, #harmonic-popup, .chord-area')) return;
   fecharHarmonic();
@@ -10920,7 +10921,7 @@ document.addEventListener('focusin', e => {
   if (!e.target.classList.contains('chord-area')) fecharHarmonic();
 });
 
-// ─── FONTE POR MÚSICA (MODO SHOW) ────────────────────────────────────────────
+// --- FONTE POR MÚSICA (MODO SHOW) --------------------------------------------
 function _perfFontAtual() {
   // Retorna fonte show da música atual, ou o padrão global
   if (currentSongIndex >= 0 && songs[currentSongIndex] && songs[currentSongIndex].fonteShow) {
@@ -10981,7 +10982,7 @@ function _perfFontCarregar() {
   _perfFontAplicar(size);
 }
 
-// ─── PARTES ───────────────────────────────────────────────────────────────
+// --- PARTES ---------------------------------------------------------------
 function addPart(title = "PARTE", content = "") {
   const div = document.createElement('div');
   div.className = 'song-part';
@@ -10989,13 +10990,13 @@ function addPart(title = "PARTE", content = "") {
   div.innerHTML =
     '<input type="text" value="' + _esc(title) + '" class="part-title-input" style="background:none;border:none;color:var(--accent-primary);font-weight:900;font-size:11px;width:calc(100% - 60px);outline:none;text-transform:uppercase;" oninput="broadcastEstado()">'
     + '<textarea class="chord-area" oninput="onChordInput(this)" placeholder="C G Am F">' + _esc(content) + '</textarea>'
-    // Seta ▲ — canto superior direito
+    // Seta ^ -- canto superior direito
     + '<button onclick="_partMover(this,\'up\')" title="Mover para cima" style="position:absolute;top:6px;right:34px;background:none;border:none;color:rgba(255,255,255,0.25);cursor:pointer;padding:5px;touch-action:manipulation;transition:color 0.15s;line-height:1;" onmouseenter="this.style.color=\'#0A9E6E\'" onmouseleave="this.style.color=\'rgba(255,255,255,0.25)\'">'
       + '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg>'
     + '</button>'
-    // × — canto superior direito
+    // x -- canto superior direito
     + '<button onclick="this.closest(\'.song-part\').remove(); broadcastEstado();" title="Remover" style="position:absolute;top:6px;right:8px;background:none;border:none;color:rgba(255,255,255,0.25);cursor:pointer;padding:5px;touch-action:manipulation;transition:color 0.15s;font-size:15px;line-height:1;" onmouseenter="this.style.color=\'rgba(255,80,80,0.8)\'" onmouseleave="this.style.color=\'rgba(255,255,255,0.25)\'">&times;</button>'
-    // Seta ▼ — canto inferior direito
+    // Seta v -- canto inferior direito
     + '<button onclick="_partMover(this,\'down\')" title="Mover para baixo" style="position:absolute;bottom:6px;right:8px;background:none;border:none;color:rgba(255,255,255,0.25);cursor:pointer;padding:5px;touch-action:manipulation;transition:color 0.15s;line-height:1;" onmouseenter="this.style.color=\'#0A9E6E\'" onmouseleave="this.style.color=\'rgba(255,255,255,0.25)\'">'
       + '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>'
     + '</button>';
@@ -11017,7 +11018,7 @@ function _partMover(btn, dir) {
   broadcastEstado();
 }
 
-// ── Fim organização das seções ────────────────────────────────────────────────
+// -- Fim organização das seções ------------------------------------------------
 
 function onChordInput(ta) {
   ta.style.height = ''; ta.style.height = ta.scrollHeight + 'px';
@@ -11037,7 +11038,7 @@ function onChordInput(ta) {
   }, 600);
 }
 
-// ─── TRANSPOSIÇÃO ─────────────────────────────────────────────────────────
+// --- TRANSPOSIÇÃO ---------------------------------------------------------
 function transposeAll(dir) {
   document.getElementById('trans-val').innerText = parseInt(document.getElementById('trans-val').innerText) + dir;
 
@@ -11100,7 +11101,7 @@ function saveSong() {
     _markClean();
     showToast('Alterações salvas!');
   } else {
-    // Nova música — usa modal customizado em vez de prompt() nativo (bloqueado no iOS)
+    // Nova música -- usa modal customizado em vez de prompt() nativo (bloqueado no iOS)
     var _prevSave = document.querySelector('[data-confirm-modal]');
     if (_prevSave) _prevSave.remove();
     var overlay = document.createElement('div');
@@ -11256,7 +11257,7 @@ function loadSong(id) {
   songs[idx].playCount++;
   updateStorage();
   currentSongIndex = idx;
-  document.getElementById('dc-song-name').textContent = songs[idx] ? songs[idx].name : '—';
+  document.getElementById('dc-song-name').textContent = songs[idx] ? songs[idx].name : '--';
   atualizarLetreiroDrumCam();
   const s = songs[idx];
   bpm = s.bpm || 120;
@@ -11286,7 +11287,7 @@ function deleteSong(id, e) {
   );
 }
 
-// ─── MODO SHOW ─────────────────────────────────────────────────────────────
+// --- MODO SHOW -------------------------------------------------------------
 let currentSongIndex = -1; // -1 = nenhuma musica do setlist carregada
 // showSetlist: array de song IDs do evento ativo no modo show. null = todas as músicas
 let showSetlist = null;
@@ -11295,7 +11296,7 @@ let showSetlistEventoNome = null; // Nome do evento ativo
 let showSetlistPos = 0;           // posição dentro do showSetlist
 
 
-// ─── MENU DE CONTEXTO DOS ÁLBUNS ─────────────────────────────────────────────
+// --- MENU DE CONTEXTO DOS ÁLBUNS ---------------------------------------------
 let ctxSongId = null;
 let ctxModo = null; // 'biblioteca' | 'evento'
 
@@ -11432,7 +11433,7 @@ function desconectar() {
   }
 }
 
-// ─── TELEPROMPTER ──────────────────────────────────────────────────────────
+// --- TELEPROMPTER ----------------------------------------------------------
 const scrollSlider = document.getElementById('scroll-speed');
 if (scrollSlider) scrollSlider.oninput = () => {
   const spd = parseInt(scrollSlider.value);
@@ -11458,7 +11459,7 @@ function stopScroll() {
   if (_ssv) _ssv.innerText = '0';
 }
 
-// ─── FONTE DAS PARTES ────────────────────────────────────────────────────────
+// --- FONTE DAS PARTES --------------------------------------------------------
 var _FONTE_KEY      = 'map_fonte_partes_v1';
 var _FONTE_SHOW_KEY = 'map_fonte_show_v1';
 var _fontePartes    = parseInt(localStorage.getItem(_FONTE_KEY) || '19');
@@ -11490,7 +11491,7 @@ function _aplicarFontePartes(size) {
 }
 
 function _previewFontePartes(val) {
-  // Mantido por compatibilidade — redireciona para o controle inline
+  // Mantido por compatibilidade -- redireciona para o controle inline
   _cifraFontAjustar(parseInt(val) - _fontePartes);
 }
 
@@ -11501,16 +11502,16 @@ function _previewFonteShow(val) {
 }
 
 function _salvarFontePartes() {
-  // Sliders do perfil foram removidos — usa os valores em memória diretamente
+  // Sliders do perfil foram removidos -- usa os valores em memória diretamente
   localStorage.setItem(_FONTE_KEY, String(_fontePartes));
   localStorage.setItem(_FONTE_SHOW_KEY, String(_fonteShow));
   _aplicarFontePartes(_fontePartes);
   _cifraFontSincLabel();
 }
 
-// ─── EXPORT / IMPORT ───────────────────────────────────────────────────────
+// --- EXPORT / IMPORT -------------------------------------------------------
 
-// ─── SETLIST PÚBLICO ─────────────────────────────────────────────────────────
+// --- SETLIST PÚBLICO ---------------------------------------------------------
 var _setlistPubSlug = null;
 
 function _gerarSlug() {
@@ -11529,19 +11530,19 @@ async function compartilharSetlist() {
     }).filter(Boolean);
     if (!lista.length) { showToast('Evento sem músicas para compartilhar.'); return; }
 
-    // ── Monta texto do setlist para share nativo ──────────────────────────────
+    // -- Monta texto do setlist para share nativo ------------------------------
     var dataStr = ev.data
       ? new Date(ev.data + 'T12:00:00').toLocaleDateString('pt-BR', {day:'2-digit',month:'long',year:'numeric'})
       : '';
     var linhas = lista.map(function(s, i) {
-      return (i + 1) + '. ' + s.name + (s.bpm ? ' — ' + s.bpm + ' BPM' : '');
+      return (i + 1) + '. ' + s.name + (s.bpm ? ' -- ' + s.bpm + ' BPM' : '');
     });
     var textoShare = 'Setlist: ' + ev.nome
       + (dataStr ? '\n ' + dataStr : '')
       + '\n\n' + linhas.join('\n')
-      + '\n\n— Map Music PRO';
+      + '\n\n-- Map Music PRO';
 
-    // ── Tenta gerar link público via Firebase (melhor opção) ──────────────────
+    // -- Tenta gerar link público via Firebase (melhor opção) ------------------
     var link = null;
     if (window._fb && window._fbReady) {
       try {
@@ -11559,35 +11560,35 @@ async function compartilharSetlist() {
           link = window.location.origin + window.location.pathname + '?setlist=' + slug;
           textoShare += (link ? '\n\n ' + link : '');
         }
-      } catch(e) { /* Firebase falhou — compartilha só o texto */ }
+      } catch(e) { /* Firebase falhou -- compartilha so o texto */ }
     }
 
-    // ── Web Share API (sheet nativa iOS/Android/desktop) ─────────────────────
+    // -- Web Share API (sheet nativa iOS/Android/desktop) ---------------------
     if (navigator.share) {
-      var shareData = { title: 'Setlist — ' + ev.nome, text: textoShare };
+      var shareData = { title: 'Setlist -- ' + ev.nome, text: textoShare };
       if (link) shareData.url = link;
       try {
         await navigator.share(shareData);
-        return; // share nativo abriu — não precisa do modal
+        return; // share nativo abriu -- não precisa do modal
       } catch(err) {
         if (err.name === 'AbortError') return; // usuário fechou o share sheet
-        // Outro erro → cai no modal abaixo
+        // Outro erro -> cai no modal abaixo
       }
     }
 
-    // ── Fallback: modal com link/texto e botões copiar + share ───────────────
+    // -- Fallback: modal com link/texto e botões copiar + share ---------------
     var modal = document.getElementById('modal-setlist-publico');
     document.getElementById('setlist-pub-titulo').innerText = ev.nome;
     document.getElementById('setlist-pub-data').innerText = dataStr;
     document.getElementById('setlist-pub-link').innerText = link || textoShare;
     document.getElementById('setlist-pub-lista').innerHTML = lista.map(function(s, i) {
       var tags = (s.tags && s.tags.length)
-        ? '<span style="font-size:9px;color:#0A9E6E;margin-left:4px;">' + s.tags.join(' · ') + '</span>' : '';
+        ? '<span style="font-size:9px;color:#0A9E6E;margin-left:4px;">' + s.tags.join(' . ') + '</span>' : '';
       return '<div style="display:flex;align-items:center;gap:10px;padding:8px 10px;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.06);border-radius:9px;">'
         + '<span style="font-size:11px;font-weight:800;color:rgba(255,255,255,0.25);min-width:18px;text-align:center;">' + (i+1) + '</span>'
         + '<div style="flex:1;min-width:0;"><div style="font-size:13px;font-weight:700;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">'
         + (s.name||'').replace(/</g,'&lt;') + tags + '</div></div>'
-        + '<span style="font-size:11px;font-weight:700;color:rgba(255,62,62,0.7);white-space:nowrap;">' + (s.bpm||'—') + ' BPM</span>'
+        + '<span style="font-size:11px;font-weight:700;color:rgba(255,62,62,0.7);white-space:nowrap;">' + (s.bpm||'--') + ' BPM</span>'
         + '</div>';
     }).join('');
     // Guarda texto para copiar (link se tiver, senão texto completo)
@@ -11639,7 +11640,7 @@ function _copiarFallback(texto) {
   } catch(e) { showToast('Não foi possível copiar.'); }
 }
 
-// ── Carrega setlist público quando URL tem ?setlist=SLUG ──────────────────
+// -- Carrega setlist público quando URL tem ?setlist=SLUG ------------------
 async function _verificarSetlistPublico() {
   try {
 
@@ -11650,7 +11651,7 @@ async function _verificarSetlistPublico() {
   var view = document.getElementById('setlist-readonly-view');
   if (!view) return false;
   view.style.display = 'block';
-  document.getElementById('srv-titulo').innerText = 'Carregando…';
+  document.getElementById('srv-titulo').innerText = 'Carregando...';
 
   // Aguarda Firebase inicializar
   var tentativas = 0;
@@ -11679,7 +11680,7 @@ async function _verificarSetlistPublico() {
       +   '<div style="font-size:15px;font-weight:800;color:#fff;">' + (m.nome||'').replace(/</g,'&lt;') + '</div>'
       +   tags
       + '</div>'
-      + '<span style="font-size:12px;font-weight:700;color:rgba(255,62,62,0.65);white-space:nowrap;">' + (m.bpm||'—') + ' BPM</span>'
+      + '<span style="font-size:12px;font-weight:700;color:rgba(255,62,62,0.65);white-space:nowrap;">' + (m.bpm||'--') + ' BPM</span>'
       + '</div>';
   }).join('');
   return true;
@@ -11711,14 +11712,14 @@ function exportarSetlistPDF() {
       +   s.name
       +   (tags ? '<br><span style="font-size:10px;font-weight:600;color:#0A9E6E;">' + tags + '</span>' : '')
       + '</td>'
-      + '<td style="padding:10px 14px;font-size:13px;color:#555;border-bottom:1px solid #e8e8e8;text-align:center;white-space:nowrap;">' + (s.bpm || '—') + ' BPM</td>'
-      + '<td style="padding:10px 14px;font-size:12px;color:#888;border-bottom:1px solid #e8e8e8;text-align:center;">' + (partes > 0 ? partes + ' parte' + (partes !== 1 ? 's' : '') : '—') + '</td>'
+      + '<td style="padding:10px 14px;font-size:13px;color:#555;border-bottom:1px solid #e8e8e8;text-align:center;white-space:nowrap;">' + (s.bpm || '--') + ' BPM</td>'
+      + '<td style="padding:10px 14px;font-size:12px;color:#888;border-bottom:1px solid #e8e8e8;text-align:center;">' + (partes > 0 ? partes + ' parte' + (partes !== 1 ? 's' : '') : '--') + '</td>'
       + '</tr>';
   }).join('');
 
   var html = '<!DOCTYPE html><html lang="pt-BR"><head>'
     + '<meta charset="UTF-8">'
-    + '<title>Setlist — ' + ev.nome.replace(/</g,'&lt;') + '</title>'
+    + '<title>Setlist -- ' + ev.nome.replace(/</g,'&lt;') + '</title>'
     + '<style>'
     + 'body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;margin:0;padding:32px 40px;color:#111;background:#fff;}'
     + '.back-bar{position:fixed;top:0;left:0;right:0;z-index:999;background:rgba(255,255,255,0.95);backdrop-filter:blur(12px);border-bottom:1px solid #e8e8e8;padding:10px 20px;display:flex;align-items:center;justify-content:space-between;gap:12px;}'
@@ -11761,7 +11762,7 @@ function exportarSetlistPDF() {
     + '</div>'
     + '<div class="header">'
     +   '<div>'
-    +     '<div class="logo">Map Music Pro · Setlist</div>'
+    +     '<div class="logo">Map Music Pro . Setlist</div>'
     +     '<div class="titulo">' + ev.nome.replace(/</g,'&lt;').replace(/>/g,'&gt;') + '</div>'
     +     (data ? '<div class="data">' + data + '</div>' : '')
     +   '</div>'
@@ -11785,12 +11786,12 @@ function exportarSetlistPDF() {
     + '</div>'
     + '
 <script>
-/* ── Swipe esquerda→direita para fechar painéis ────────────────────────────
+/* -- Swipe esquerda->direita para fechar painéis ----------------------------
    Detecta deslize horizontal iniciado na borda esquerda da tela (primeiros
-   40px) com deslocamento mínimo de 72px e ângulo predominantemente horizontal.
-   Chama automaticamente a função de fechar do painel visível no momento.
-   Um indicador visual aparece durante o arraste para dar feedback ao usuário.
-─────────────────────────────────────────────────────────────────────────── */
+   40px) com deslocamento minimo de 72px e angulo predominantemente horizontal.
+   Chama automaticamente a funcao de fechar do painel visivel no momento.
+   Um indicador visual aparece durante o arraste para dar feedback ao usuario.
+--------------------------------------------------------------------------- */
 (function() {
   var _swX = null, _swY = null, _swActive = false, _swEl = null;
 
@@ -11925,7 +11926,7 @@ function exportarSetlistPDF() {
     var dy = Math.abs(t.clientY - _swY);
     _swX = null; _swActive = false;
 
-    // Ângulo aceitável (dx pelo menos 1.5× maior que dy) e distância mínima
+    // Ângulo aceitável (dx pelo menos 1.5x maior que dy) e distância mínima
     if (dx < 72 || dy > dx * 0.8) return;
 
     var fn = _getFechar();
@@ -12472,9 +12473,7 @@ const ALBUM_PALETTES = [
 ];
 
 
-// ── Merge inteligente de eventos: local + nuvem, sem sobrescrever locais ─
-// Une por ID: eventos locais têm prioridade sobre backup.
-// Eventos do backup que não existem localmente são adicionados.
+// Merge eventos: locais têm prioridade, nuvem preenche o que falta
 function _mergeEventos(local, backup) {
   if (!backup || !backup.length) return local;
   if (!local || !local.length) return backup;
@@ -23420,9 +23419,9 @@ async function _fbFazerBackupAgora(btn) {
 </div>
 
 <script>
-// ═══════════════════════════════════════════════════════════════════════════
-// ESPAÇO VOCALISTA — em construção
-// ═══════════════════════════════════════════════════════════════════════════
+// ===========================================================================
+// ESPACO VOCALISTA -- em construcao
+// ===========================================================================
 
 var _vocBibDocs    = [];
 var _vocBibFavOnly = false;
@@ -23440,7 +23439,7 @@ function vocFecharPainelShow() {
   if (p) p.style.display = 'none';
 }
 
-// ── Lista de setlists salvos ──────────────────────────────────────────────
+// -- Lista de setlists salvos ----------------------------------------------
 function _vocShowCarregarLista() {
   var lista = document.getElementById('voc-show-lista');
   if (!lista) return;
@@ -23514,7 +23513,7 @@ function _vocShowMenu(show, btn) {
   }, 50);
 }
 
-// ── Criar / Editar setlist ────────────────────────────────────────────────
+// -- Criar / Editar setlist ------------------------------------------------
 var _vocShowEditandoId  = null;
 var _vocShowLetras      = [];  // letras selecionadas no setlist
 
@@ -23573,7 +23572,7 @@ function _vocShowCarregarBib() {
         '</div>' +
         '<div style="flex:1;min-width:0;">' +
           '<div style="font-size:12px;font-weight:800;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + _ve(letra.nome||letra.titulo||'Sem título') + '</div>' +
-          '<div style="font-size:10px;color:rgba(255,255,255,0.3);">' + _ve(letra.artista||letra.cantor||'—') + '</div>' +
+          '<div style="font-size:10px;color:rgba(255,255,255,0.3);">' + _ve(letra.artista||letra.cantor||'--') + '</div>' +
         '</div>';
       item.addEventListener('click', function(){ _vocShowToggleLetra(letra); });
       cont.appendChild(item);
@@ -23608,7 +23607,7 @@ function _vocShowRenderSelecionadas() {
     item.innerHTML =
       '<span style="font-size:10px;font-weight:900;color:rgba(255,165,0,0.6);min-width:16px;">' + (idx+1) + '</span>' +
       '<div style="flex:1;min-width:0;font-size:12px;font-weight:800;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + _ve(l.nome) + '</div>' +
-      '<button style="background:none;border:none;color:rgba(255,255,255,0.3);cursor:pointer;padding:2px;font-size:16px;line-height:1;touch-action:manipulation;">×</button>';
+      '<button style="background:none;border:none;color:rgba(255,255,255,0.3);cursor:pointer;padding:2px;font-size:16px;line-height:1;touch-action:manipulation;">x</button>';
     item.querySelector('button').addEventListener('click', function(){
       _vocShowLetras.splice(idx, 1);
       _vocShowRenderSelecionadas();
@@ -23651,7 +23650,7 @@ function _vocExcluirShow(show) {
   });
 }
 
-// ── Modo Show — performance sequencial ───────────────────────────────────
+// -- Modo Show -- performance sequencial -----------------------------------
 var _vocShowAtual       = null;
 var _vocShowIdxAtual    = 0;
 var _vocShowFontSize    = 18;
@@ -23685,14 +23684,14 @@ function _vocShowRenderLetraAtual() {
   var letra  = letras[_vocShowIdxAtual];
   var total  = letras.length;
 
-  document.getElementById('voc-show-letra-titulo').textContent = letra.nome || '—';
+  document.getElementById('voc-show-letra-titulo').textContent = letra.nome || '--';
   document.getElementById('voc-show-num').textContent = (_vocShowIdxAtual+1) + ' / ' + total;
 
   // Progresso
   var bar = document.getElementById('voc-show-progress');
   if (bar) bar.style.width = ((_vocShowIdxAtual+1)/total*100)+'%';
 
-  // Conteúdo
+  // Conteudo
   var cont = document.getElementById('voc-show-conteudo');
   cont.innerHTML = '';
   cont.scrollTop = 0;
@@ -23705,7 +23704,7 @@ function _vocShowRenderLetraAtual() {
     cont.appendChild(bloco);
   });
 
-  // Botões nav
+  // Botoes nav
   var btnAnt  = document.getElementById('voc-show-btn-ant');
   var btnProx = document.getElementById('voc-show-btn-prox');
   if (btnAnt)  btnAnt.disabled  = _vocShowIdxAtual === 0;
@@ -23831,7 +23830,7 @@ function _vocBibRenderGrid() {
         '</div>' +
         '<div style="min-width:0;">' +
           '<div style="font-size:12px;font-weight:900;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;padding-right:18px;">' + _ve(letra.nome || letra.titulo || 'Sem título') + '</div>' +
-          '<div style="font-size:10px;color:rgba(255,255,255,0.3);margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + _ve(letra.artista || letra.cantor || '—') + '</div>' +
+          '<div style="font-size:10px;color:rgba(255,255,255,0.3);margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + _ve(letra.artista || letra.cantor || '--') + '</div>' +
           (letra.recebidaDe ? '<div style="font-size:9px;font-weight:800;color:rgba(138,92,246,0.7);margin-top:4px;letter-spacing:0.5px;">de @' + _ve(letra.recebidaDe) + '</div>' : '') +
         '</div>' +
       '</div>';
@@ -23873,7 +23872,7 @@ function _vocBibAtualizarBtnOrd() {
 }
 
 
-// ── Modal Performance ──────────────────────────────────────────────────────
+// -- Modal Performance ------------------------------------------------------
 var _vocPerfFontSize    = 18;
 var _vocPerfScrolling   = false;
 var _vocPerfRepeat      = false;
@@ -23897,7 +23896,7 @@ function _vocAbrirPerf(letra) {
   _vocPerfVel        = 3;
   _vocPerfSecaoAtual = 0;
 
-  document.getElementById('voc-perf-titulo').textContent  = letra.nome || letra.titulo || '—';
+  document.getElementById('voc-perf-titulo').textContent  = letra.nome || letra.titulo || '--';
   document.getElementById('voc-perf-artista').textContent = letra.artista || letra.cantor || '';
 
   var cont = document.getElementById('voc-perf-conteudo');
@@ -23931,7 +23930,7 @@ function _vocAbrirPerf(letra) {
   _vocPerfAtivarWakeLock();
   modal.style.display = 'flex';
 
-  // Auto-hide header após 3s
+  // Auto-hide header apos 3s
   _vocPerfAgendarHide();
 }
 
@@ -23950,16 +23949,16 @@ function vocPerfFonte(dir) {
   });
 }
 
-// ── Toque simples / duplo ─────────────────────────────────────────────────
+// -- Toque simples / duplo -------------------------------------------------
 function _vocPerfTap(e) {
-  // Ignorar cliques em botões
+  // Ignorar cliques em botoes
   if (e.target.closest('button')) return;
   var agora = Date.now();
   if (agora - _vocPerfLastTap < 300) return; // vai cair no dblclick
   _vocPerfLastTap = agora;
   setTimeout(function() {
     if (Date.now() - _vocPerfLastTap >= 280) {
-      // Toque simples — pausa/retoma + mostra header
+      // Toque simples -- pausa/retoma + mostra header
       _vocPerfToggleScroll();
       _vocPerfMostrarHdr();
       _vocPerfAgendarHide();
@@ -23970,14 +23969,14 @@ function _vocPerfTap(e) {
 function _vocPerfDblTap(e) {
   if (e.target.closest('button')) return;
   _vocPerfLastTap = 0;
-  // Duplo toque — volta ao início
+  // Duplo toque -- volta ao inicio
   var cont = document.getElementById('voc-perf-conteudo');
   if (cont) cont.scrollTo({ top: 0, behavior: 'smooth' });
   _vocPerfPararScroll();
   _vocPerfMostrarHdr();
 }
 
-// ── Auto-hide header ──────────────────────────────────────────────────────
+// -- Auto-hide header ------------------------------------------------------
 function _vocPerfAgendarHide() {
   if (_vocPerfHdrTimer) clearTimeout(_vocPerfHdrTimer);
   _vocPerfHdrTimer = setTimeout(function() {
@@ -24003,7 +24002,7 @@ function _vocPerfEsconderHdr() {
   if (ftr) { ftr.style.opacity = '0'; ftr.style.transform = 'translateY(100%)'; }
 }
 
-// ── Tela cheia ────────────────────────────────────────────────────────────
+// -- Tela cheia ------------------------------------------------------------
 function _vocPerfToggleFullscreen() {
   var modal = document.getElementById('voc-perf-modal');
   if (!modal) return;
@@ -24016,7 +24015,7 @@ function _vocPerfToggleFullscreen() {
   }
 }
 
-// ── Rolagem automática ────────────────────────────────────────────────────
+// -- Rolagem automatica ----------------------------------------------------
 function _vocPerfToggleScroll() {
   if (_vocPerfScrolling) { _vocPerfPararScroll(); }
   else { _vocPerfIniciarScroll(); }
@@ -24037,7 +24036,7 @@ function _vocPerfIniciarScroll() {
         var px = Math.floor(_vocPerfAccum);
         _vocPerfAccum -= px;
         if (_vocPerfRepeat) {
-          // Repetir seção atual
+          // Repetir secao atual
           var blocos = cont.querySelectorAll('._voc-perf-bloco');
           var prox = blocos[_vocPerfSecaoAtual + 1];
           if (prox && cont.scrollTop + px >= prox.offsetTop) {
@@ -24090,7 +24089,7 @@ function _vocPerfAtualizarPlayBtn() {
   }
 }
 
-// ── Repetir seção ─────────────────────────────────────────────────────────
+// -- Repetir secao ---------------------------------------------------------
 function _vocPerfToggleRepeat() {
   _vocPerfRepeat = !_vocPerfRepeat;
   _vocPerfAtualizarRepBtn();
@@ -24103,7 +24102,7 @@ function _vocPerfAtualizarRepBtn() {
   btn.style.background  = _vocPerfRepeat ? 'rgba(138,92,246,0.1)' : 'rgba(255,255,255,0.05)';
 }
 
-// ── Dots, progresso e seção atual ─────────────────────────────────────────
+// -- Dots, progresso e secao atual -----------------------------------------
 function _vocPerfRenderDots(total) {
   var dots = document.getElementById('voc-perf-dots');
   if (!dots) return;
@@ -24152,7 +24151,7 @@ function _vocPerfAtualizarProgresso() {
   bar.style.width = pct + '%';
 }
 
-// ── Swipe para fechar ─────────────────────────────────────────────────────
+// -- Swipe para fechar -----------------------------------------------------
 function _vocPerfTouchStart(e) {
   _vocPerfTouchY = e.touches[0].clientY;
   _vocPerfMostrarHdr();
@@ -24165,7 +24164,7 @@ function _vocPerfTouchEnd(e) {
   if (dy > 80 && cont && cont.scrollTop <= 0) vocFecharPerf();
 }
 
-// ── WakeLock ──────────────────────────────────────────────────────────────
+// -- WakeLock --------------------------------------------------------------
 function _vocPerfAtivarWakeLock() {
   if ('wakeLock' in navigator) {
     navigator.wakeLock.request('screen').then(function(l) { _vocPerfWakeLock = l; }).catch(function(){});
@@ -24178,7 +24177,7 @@ function _vocPerfSoltarWakeLock() {
 
 
 
-// ── Menu ··· dos cards ────────────────────────────────────────────────────────
+// -- Menu ... dos cards --------------------------------------------------------
 function _vocCardMenu(letra, btn) {
   var old = document.getElementById('_voc-card-ctx');
   if (old) { old.remove(); if (old._vocLetraId === letra._id) return; }
@@ -24239,7 +24238,7 @@ function _vocEnviarLetra(letra) {
   box.innerHTML =
     '<div style="display:flex;align-items:center;justify-content:space-between;">' +
       '<div style="font-size:15px;font-weight:900;color:#fff;">Enviar letra</div>' +
-      '<button id="_voc-enviar-fechar" style="background:none;border:none;color:rgba(255,255,255,0.3);font-size:22px;cursor:pointer;line-height:1;padding:4px;">×</button>' +
+      '<button id="_voc-enviar-fechar" style="background:none;border:none;color:rgba(255,255,255,0.3);font-size:22px;cursor:pointer;line-height:1;padding:4px;">x</button>' +
     '</div>' +
     '<div style="font-size:12px;color:rgba(255,255,255,0.35);margin-top:-8px;">' +
       '"' + (letra.nome || 'Sem título') + '"' +
@@ -24258,7 +24257,7 @@ function _vocEnviarLetra(letra) {
 
   document.getElementById('_voc-enviar-fechar').onclick = function() { overlay.remove(); };
 
-  // Busca de usuários com debounce
+  // Busca de usuarios com debounce
   var _debTimer = null;
   var input = document.getElementById('_voc-enviar-busca');
   input.addEventListener('input', function() {
@@ -24274,7 +24273,7 @@ function _vocEnviarLetra(letra) {
       var meuUid = localStorage.getItem('map_uid_v1');
       window._fb.buscarUsuarios(q).then(function(usuarios) {
         res.innerHTML = '';
-        // Remove o próprio usuário da lista
+        // Remove o proprio usuario da lista
         var lista = (usuarios || []).filter(function(u) { return u.uid !== meuUid; });
         if (lista.length === 0) { status.textContent = 'Nenhum usuário encontrado'; return; }
         status.textContent = '';
@@ -24316,7 +24315,7 @@ function _vocConfirmarEnvio(letra, destinatario, overlay) {
   try { meuPerfil = JSON.parse(localStorage.getItem('map_perfil_v1') || '{}'); } catch(e) {}
   var meuNome = meuPerfil.nomeUsuario || meuPerfil.nome || uid;
 
-  // Cria cópia da letra no Firestore do destinatário
+  // Cria copia da letra no Firestore do destinatario
   var novoId  = Date.now() + '_' + Math.random().toString(36).slice(2, 7);
   var destKey = destinatario.uid + '_' + novoId;
   var dados   = {
@@ -24350,7 +24349,7 @@ function _vocEditarLetra(letra) {
   _vocSecoes = (letra.secoes && letra.secoes.length) ? JSON.parse(JSON.stringify(letra.secoes)) : [{ titulo: 'Verso', texto: '' }];
   _vocRenderSecoes();
   painel.style.display = 'flex';
-  // Atualiza título do painel
+  // Atualiza titulo do painel
   var titulo = painel.querySelector('span[style*="font-weight:900"]');
   if (titulo) titulo.textContent = 'Editar Letra';
   // Preenche campos do modal de salvar quando abrir
@@ -24440,7 +24439,7 @@ function _vocRenderSecoes() {
     bloco.innerHTML =
       '<div style="display:flex;align-items:center;justify-content:space-between;padding:12px 14px 8px;">' +
         '<input value="' + _ve(sec.titulo) + '" onchange="_vocSecoes[' + idx + '].titulo=this.value" style="background:none;border:none;color:#a78bfa;font-size:12px;font-weight:900;letter-spacing:1px;text-transform:uppercase;font-family:inherit;outline:none;width:100%;">' +
-        '<button onclick="_vocRemoverSecao(' + idx + ')" style="background:none;border:none;color:rgba(255,255,255,0.2);cursor:pointer;padding:2px 4px;font-size:16px;line-height:1;touch-action:manipulation;flex-shrink:0;">×</button>' +
+        '<button onclick="_vocRemoverSecao(' + idx + ')" style="background:none;border:none;color:rgba(255,255,255,0.2);cursor:pointer;padding:2px 4px;font-size:16px;line-height:1;touch-action:manipulation;flex-shrink:0;">x</button>' +
       '</div>' +
       '<textarea rows="4" placeholder="Digite a letra aqui..." onchange="_vocSecoes[' + idx + '].texto=this.value" style="width:100%;background:none;border:none;border-top:1px solid rgba(255,255,255,0.05);color:#fff;font-size:14px;line-height:1.7;padding:12px 14px;font-family:inherit;resize:none;outline:none;box-sizing:border-box;">' + _ve(sec.texto) + '</textarea>';
     cont.appendChild(bloco);
@@ -24480,7 +24479,7 @@ function vocSalvarLetra() {
   box.innerHTML =
     '<div style="display:flex;align-items:center;justify-content:space-between;">' +
       '<div style="font-size:16px;font-weight:900;color:#fff;">Salvar Letra</div>' +
-      '<button onclick="document.getElementById(\'voc-modal-salvar\').remove()" style="background:none;border:none;color:rgba(255,255,255,0.3);font-size:22px;cursor:pointer;line-height:1;padding:4px;">×</button>' +
+      '<button onclick="document.getElementById(\'voc-modal-salvar\').remove()" style="background:none;border:none;color:rgba(255,255,255,0.3);font-size:22px;cursor:pointer;line-height:1;padding:4px;">x</button>' +
     '</div>' +
     '<div style="display:flex;flex-direction:column;gap:10px;">' +
       '<div>' +
@@ -24501,7 +24500,7 @@ function vocSalvarLetra() {
   setTimeout(function() {
     var inputNome = document.getElementById('voc-salvar-nome');
     var inputArt  = document.getElementById('voc-salvar-artista');
-    // Pré-preenche se estiver editando
+    // Pre-preenche se estiver editando
     if (window._vocEditNome && inputNome) inputNome.value = window._vocEditNome;
     if (window._vocEditArtista && inputArt) inputArt.value = window._vocEditArtista;
     if (inputNome) inputNome.focus();
@@ -24529,7 +24528,7 @@ function vocConfirmarSalvarLetra() {
     return;
   }
 
-  // Se editando usa o ID existente, senão cria novo
+  // Se editando usa o ID existente, senao cria novo
   var letraId = window._vocEditandoId || (Date.now() + '_' + Math.random().toString(36).slice(2, 7));
   var dados = { nome: nome, artista: artista.trim(), secoes: _vocSecoes };
   if (!window._vocEditandoId) dados.criadoEm = Date.now();
@@ -24543,7 +24542,7 @@ function vocConfirmarSalvarLetra() {
     if (ok) {
       if (typeof showToast === 'function') showToast(window._vocEditandoId ? 'Letra atualizada!' : 'Letra salva!', 'success');
       vocFecharCriarLetra();
-      // Volta título do painel para padrão
+      // Volta titulo do painel para padrao
       var painel = document.getElementById('voc-painel-criar');
       if (painel) { var t = painel.querySelector('span[style*="font-weight:900"]'); if (t) t.textContent = 'Criar Letra'; }
       vocAbrirBiblioteca();
@@ -24558,12 +24557,12 @@ function vocConfirmarSalvarLetra() {
 }
 
 
-// ── Utilitários de overlay (usados em modais do app) ─────────────────────────
+// -- Utilitarios de overlay (usados em modais do app) -------------------------
 function _mapNotifMostrar(nome) {
   var el = document.getElementById('map-notif-musica');
   var nomeEl = document.getElementById('map-notif-nome');
   if (!el) return;
-  if (nomeEl) nomeEl.textContent = nome || '—';
+  if (nomeEl) nomeEl.textContent = nome || '--';
   el.classList.add('visivel');
   clearTimeout(el._timer);
   el._timer = setTimeout(function() { _mapNotifFechar(); }, 5000);
@@ -24615,9 +24614,9 @@ function _confirmarAcao(titulo, desc, labelOk, corOk, callback) {
   document.body.appendChild(overlay);
 }
 
-// ── Notas musicais flutuantes no fundo ───────────────────────────────────
+// -- Notas musicais flutuantes no fundo -----------------------------------
 (function _vocNotasInit() {
-  var NOTAS = ['•','·','—','|','·','•','—','·','|','•'];
+  var NOTAS = ['*','.','--','|','.','*','--','.','|','*'];
   var particulas = [];
   var raf = null;
   var canvas, ctx, W, H;
@@ -24648,10 +24647,10 @@ function _confirmarAcao(titulo, desc, labelOk, corOk, callback) {
   }
 
   function novaNota(aleatorio) {
-    // Tamanho totalmente aleatório — de bem pequeno a bem grande
+    // Tamanho totalmente aleatorio -- de bem pequeno a bem grande
     var r = Math.random();
     var tamanho = r < 0.3  ? 8  + Math.random() * 8   :   // pequenas: 8-16
-                  r < 0.65 ? 18 + Math.random() * 14  :   // médias: 18-32
+                  r < 0.65 ? 18 + Math.random() * 14  :   // medias: 18-32
                   r < 0.88 ? 36 + Math.random() * 20  :   // grandes: 36-56
                              62 + Math.random() * 30;      // gigantes: 62-92
     return {
@@ -24671,9 +24670,9 @@ function _confirmarAcao(titulo, desc, labelOk, corOk, callback) {
     if (!ctx) return;
     ctx.clearRect(0, 0, W, H);
 
-    // ── Linha de pauta com clave de sol ──────────────────────────────────
+    // -- Linha de pauta com clave de sol ----------------------------------
     var midY = H * 0.52;
-    var espaco = 10; // espaço entre linhas da pauta
+    var espaco = 10; // espaco entre linhas da pauta
     ctx.strokeStyle = 'rgba(255,255,255,0.06)';
     ctx.lineWidth = 0.8;
     for (var l = -2; l <= 2; l++) {
@@ -24683,7 +24682,7 @@ function _confirmarAcao(titulo, desc, labelOk, corOk, callback) {
       ctx.stroke();
     }
 
-    // Clave de sol desenhada com path — elegante e grande
+    // Clave de sol desenhada com path -- elegante e grande
     var cx = W * 0.15, cy = midY + espaco * 1.5, sc = espaco * 0.38;
     ctx.save();
     ctx.strokeStyle = 'rgba(138,92,246,0.18)';
@@ -24707,7 +24706,7 @@ function _confirmarAcao(titulo, desc, labelOk, corOk, callback) {
     ctx.stroke();
     ctx.restore();
 
-    // ── Notas flutuantes ─────────────────────────────────────────────────
+    // -- Notas flutuantes -------------------------------------------------
     ctx.fillStyle = '#fff';
     particulas.forEach(function(p) {
       p.x   -= p.vel;
@@ -24740,7 +24739,7 @@ function _confirmarAcao(titulo, desc, labelOk, corOk, callback) {
   setTimeout(init, 600);
 })();
 
-// ── Shine aleatório nos álbuns da home ───────────────────────────────────
+// -- Shine aleatorio nos albuns da home -----------------------------------
 (function _vocShineInit() {
   var ultimo = -1;
   function disparar() {
@@ -24750,7 +24749,7 @@ function _confirmarAcao(titulo, desc, labelOk, corOk, callback) {
     do { idx = Math.floor(Math.random() * cards.length); } while (idx === ultimo && cards.length > 1);
     ultimo = idx;
     var card = cards[idx];
-    // Injeta o div shine se não tiver
+    // Injeta o div shine se nao tiver
     var shine = card.querySelector('._voc-alb-shine');
     if (!shine) {
       shine = document.createElement('div');
@@ -24805,12 +24804,12 @@ document.addEventListener('click', function(e) {
 
 
 <script>
-// ─── HAPTIC FEEDBACK ─────────────────────────────────────────────────────────
+// --- HAPTIC FEEDBACK ---------------------------------------------------------
 (function() {
   var isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent) ||
               (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
 
-  // ── CSS para feedback visual (ambas plataformas) ──────────────────────────
+  // -- CSS para feedback visual (ambas plataformas) --------------------------
   var style = document.createElement('style');
   style.textContent = '.hap-press{transform:scale(0.94)!important;transition:transform 0.08s ease!important;filter:brightness(1.15)!important}'
     + '.hap-press-light{transform:scale(0.97)!important;transition:transform 0.06s ease!important;filter:brightness(1.1)!important}'
@@ -24818,19 +24817,19 @@ document.addEventListener('click', function(e) {
     + '.hap-release{transition:transform 0.2s cubic-bezier(0.34,1.56,0.64,1)!important,filter 0.15s ease!important}';
   document.head.appendChild(style);
 
-  // ── Vibração: Android via navigator.vibrate, iOS via AudioContext pulse ────
+  // -- Vibracao: Android via navigator.vibrate, iOS via AudioContext pulse ----
   function _hapticAudio(duracaoMs) {
     try {
       var ctx = window.audioCtx || (window.AudioContext || window.webkitAudioContext
                   ? new (window.AudioContext || window.webkitAudioContext)() : null);
       if (!ctx) return;
       if (ctx.state === 'suspended') ctx.resume();
-      // Pulso de áudio de baixíssima frequência — aciona Taptic Engine no iOS
+      // Pulso de audio de baixissima frequencia -- aciona Taptic Engine no iOS
       var osc = ctx.createOscillator();
       var gain = ctx.createGain();
       osc.type = 'sine';
       osc.frequency.setValueAtTime(200, ctx.currentTime);
-      gain.gain.setValueAtTime(0.001, ctx.currentTime); // quase inaudível
+      gain.gain.setValueAtTime(0.001, ctx.currentTime); // quase inaudivel
       gain.gain.exponentialRampToValueAtTime(0.00001, ctx.currentTime + duracaoMs / 1000);
       osc.connect(gain);
       gain.connect(ctx.destination);
@@ -24841,13 +24840,13 @@ document.addEventListener('click', function(e) {
 
   function vibrar(tipo) {
     if (isIOS) {
-      // iOS: pulso de áudio que aciona o Taptic Engine
+      // iOS: pulso de audio que aciona o Taptic Engine
       if (tipo === 'light')      _hapticAudio(8);
       else if (tipo === 'heavy') { _hapticAudio(20); setTimeout(function(){ _hapticAudio(20); }, 50); }
       else if (tipo === 'pin')   _hapticAudio(5);
       else                       _hapticAudio(12);
     } else {
-      // Android: vibração nativa
+      // Android: vibracao nativa
       if (!navigator.vibrate) return;
       if (tipo === 'light')      navigator.vibrate(8);
       else if (tipo === 'heavy') navigator.vibrate([15, 30, 15]);
@@ -24856,7 +24855,7 @@ document.addEventListener('click', function(e) {
     }
   }
 
-  // ── Feedback visual ────────────────────────────────────────────────────────
+  // -- Feedback visual --------------------------------------------------------
   function pressVisual(el, tipo) {
     var cls = tipo === 'light' ? 'hap-press-light'
             : tipo === 'heavy' ? 'hap-press-heavy'
@@ -24874,7 +24873,7 @@ document.addEventListener('click', function(e) {
     setTimeout(function() { el.classList.remove('hap-release'); }, 250);
   }
 
-  // ── Seletores completos ───────────────────────────────────────────────────
+  // -- Seletores completos ---------------------------------------------------
   var SEL_NORMAL = [
     '#btn-login', '#ob-cta', '#ob-btn-verificar',
     '.modal-evento-save', '.modal-editar-save', '.modal-addmusica-plus',
@@ -24914,7 +24913,7 @@ document.addEventListener('click', function(e) {
     '.modal-btn.danger'
   ].join(',');
 
-  // ── Listener principal ────────────────────────────────────────────────────
+  // -- Listener principal ----------------------------------------------------
   document.addEventListener('touchstart', function(e) {
     try {
       var t = e.target;
@@ -24923,7 +24922,7 @@ document.addEventListener('click', function(e) {
       var tipo = null;
       var el   = null;
 
-      // Verifica heavy primeiro (ações destrutivas)
+      // Verifica heavy primeiro (acoes destrutivas)
       var heavy = (t.matches && t.matches(SEL_HEAVY)) ? t : (t.closest ? t.closest(SEL_HEAVY) : null);
       if (heavy) { tipo = 'heavy'; el = heavy; }
 
@@ -24933,7 +24932,7 @@ document.addEventListener('click', function(e) {
         if (light) { tipo = 'light'; el = light; }
       }
 
-      // Normal (todos os outros botões)
+      // Normal (todos os outros botoes)
       if (!el) {
         var norm = (t.matches && t.matches(SEL_NORMAL)) ? t : (t.closest ? t.closest(SEL_NORMAL) : null);
         if (norm) { tipo = 'normal'; el = norm; }
@@ -24941,7 +24940,7 @@ document.addEventListener('click', function(e) {
 
       if (!el) return;
 
-      // Vibração: iOS 13+ via HTTPS + Android
+      // Vibracao: iOS 13+ via HTTPS + Android
       vibrar(tipo);
 
       // Feedback visual em todas as plataformas
@@ -24959,7 +24958,7 @@ document.addEventListener('click', function(e) {
 </script>
 
 <script>
-// Espaço Vocalista — script reservado
+// Espaco Vocalista -- script reservado
 </script>
 
 <!-- ═══════════════════════════════════════════════════════════════
@@ -25076,9 +25075,9 @@ document.addEventListener('click', function(e) {
 </div>
 
 <script>
-// ═══════════════════════════════════════════════════
-// CALENDÁRIO — lógica completa
-// ═══════════════════════════════════════════════════
+// ===================================================
+// CALENDARIO -- logica completa
+// ===================================================
 
 var _calEventos = [];
 var _calAno  = new Date().getFullYear();
@@ -25089,7 +25088,7 @@ var _calNotifSel = ['dia', 'antes1d', 'antes7d'];
 
 var CAL_KEY = 'map_cal_eventos_v1';
 
-// Ícones SVG dos tipos — gerados por função para evitar problemas de escape
+// Icones SVG dos tipos -- gerados por funcao para evitar problemas de escape
 function _calTipoIcon(id) {
   var s = 'width=\'14\' height=\'14\' viewBox=\'0 0 24 24\' fill=\'none\' stroke=\'currentColor\' stroke-width=\'2.2\' stroke-linecap=\'round\' stroke-linejoin=\'round\'';
   var icons = {
@@ -25166,7 +25165,7 @@ function _calRenderizar() {
   var hoje = new Date();
   var hojeStr = hoje.getFullYear() + '-' + String(hoje.getMonth()+1).padStart(2,'0') + '-' + String(hoje.getDate()).padStart(2,'0');
 
-  // Células vazias antes do dia 1
+  // Celulas vazias antes do dia 1
   for (var i = 0; i < primeiroDia; i++) {
     grid.appendChild(_calCelula('', false, false, null));
   }
@@ -25178,7 +25177,7 @@ function _calRenderizar() {
     grid.appendChild(_calCelula(d, evsDia.length > 0, isHoje, evsDia, dataStr));
   }
 
-  // Lista de próximos eventos
+  // Lista de proximos eventos
   _calRenderLista();
 }
 
@@ -25214,7 +25213,7 @@ function _calRenderLista() {
   var hoje = new Date();
   var hojeStr = hoje.getFullYear() + '-' + String(hoje.getMonth()+1).padStart(2,'0') + '-' + String(hoje.getDate()).padStart(2,'0');
 
-  // Eventos do mês atual em diante, ordenados por data
+  // Eventos do mes atual em diante, ordenados por data
   var proximos = _calEventos
     .filter(function(e){ return e.data >= hojeStr; })
     .sort(function(a,b){ return a.data.localeCompare(b.data) || (a.hora||'').localeCompare(b.hora||''); })
@@ -25232,7 +25231,7 @@ function _calRenderLista() {
       + '<div style="width:36px;height:36px;border-radius:10px;background:' + tipo.cor.replace('0.7','0.15') + ';border:1px solid ' + tipo.cor + ';display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0;">' + tipo.label.split(' ')[0] + '</div>'
       + '<div style="flex:1;min-width:0;">'
       + '<div style="font-size:13px;font-weight:800;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + _ve(ev.nome) + '</div>'
-      + '<div style="font-size:10px;color:rgba(255,255,255,0.35);margin-top:2px;">' + dataFmt + (ev.hora ? ' · ' + ev.hora : '') + (ev.local ? ' · ' + _ve(ev.local) : '') + '</div>'
+      + '<div style="font-size:10px;color:rgba(255,255,255,0.35);margin-top:2px;">' + dataFmt + (ev.hora ? ' . ' + ev.hora : '') + (ev.local ? ' . ' + _ve(ev.local) : '') + '</div>'
       + '</div>'
       + '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.2)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>'
       + '</div>';
@@ -25247,13 +25246,13 @@ function _calFormatarData(dataStr) {
   var diff = Math.round((d - hoje) / 86400000);
   var diasSem = ['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'];
   var base = diasSem[d.getDay()] + ', ' + partes[2] + '/' + partes[1];
-  if (diff === 0) return 'HOJE — ' + base;
-  if (diff === 1) return 'AMANHÃ — ' + base;
-  if (diff <= 7)  return 'EM ' + diff + 'D — ' + base;
+  if (diff === 0) return 'HOJE -- ' + base;
+  if (diff === 1) return 'AMANHÃ -- ' + base;
+  if (diff <= 7)  return 'EM ' + diff + 'D -- ' + base;
   return base;
 }
 
-// ── Formulário ───────────────────────────────────────────────
+// -- Formulario -----------------------------------------------
 function abrirFormEvento(id, dataPreSel) {
   _calEditId = id || null;
   var ev = id ? _calEventos.find(function(e){ return e.id === id; }) : null;
@@ -25338,7 +25337,7 @@ function calSalvarEvento() {
   _calAgendarPushEventos();
 
   // Notif in-app
-  adicionarNotif('event', nome, _calFormatarData(data) + (hora ? ' · ' + hora : ''), 'cal_' + data + '_' + nome);
+  adicionarNotif('event', nome, _calFormatarData(data) + (hora ? ' . ' + hora : ''), 'cal_' + data + '_' + nome);
   showToast('Evento salvo!', 'success');
 }
 
@@ -25351,7 +25350,7 @@ function calDeletarEvento() {
   showToast('Evento excluído');
 }
 
-// ── Push notifications para o calendário ─────────────────────
+// -- Push notifications para o calendario ---------------------
 function _calAgendarPushEventos() {
   if (!_pushSW || !navigator.serviceWorker.controller) return;
   var agora = new Date();
@@ -25369,20 +25368,20 @@ function _calAgendarPushEventos() {
         var h = ev.hora ? parseInt(ev.hora.split(':')[0]) : 8;
         var m = ev.hora ? parseInt(ev.hora.split(':')[1]) : 0;
         ts = new Date(diaEv.getFullYear(), diaEv.getMonth(), diaEv.getDate(), h > 0 ? h - 1 : 8, m, 0).getTime();
-        tag = 'cal-dia-' + ev.id; titulo = 'Hoje: ' + ev.nome; body = ev.hora ? 'Começa às ' + ev.hora + (ev.local ? ' · ' + ev.local : '') : (ev.local || 'Lembre-se do evento!');
+        tag = 'cal-dia-' + ev.id; titulo = 'Hoje: ' + ev.nome; body = ev.hora ? 'Começa às ' + ev.hora + (ev.local ? ' . ' + ev.local : '') : (ev.local || 'Lembre-se do evento!');
       } else if (notifId === 'antes1d' && diff === 1) {
         ts = new Date(hoje.getFullYear(), hoje.getMonth(), hoje.getDate(), 20, 0, 0).getTime();
-        tag = 'cal-ant1-' + ev.id; titulo = 'Amanhã: ' + ev.nome; body = ev.hora ? 'Às ' + ev.hora + (ev.local ? ' · ' + ev.local : '') : (ev.local || '');
+        tag = 'cal-ant1-' + ev.id; titulo = 'Amanhã: ' + ev.nome; body = ev.hora ? 'Às ' + ev.hora + (ev.local ? ' . ' + ev.local : '') : (ev.local || '');
       } else if (notifId === 'antes7d' && diff === 7) {
         ts = new Date(hoje.getFullYear(), hoje.getMonth(), hoje.getDate(), 9, 0, 0).getTime();
-        tag = 'cal-ant7-' + ev.id; titulo = 'Em 7 dias: ' + ev.nome; body = _calFormatarData(ev.data) + (ev.local ? ' · ' + ev.local : '');
+        tag = 'cal-ant7-' + ev.id; titulo = 'Em 7 dias: ' + ev.nome; body = _calFormatarData(ev.data) + (ev.local ? ' . ' + ev.local : '');
       }
       if (ts && ts > Date.now()) _pushEnviarParaSW(titulo, body, ts, tag);
     });
   });
 }
 
-// ── Checagem diária in-app (ao abrir o app) ──────────────────
+// -- Checagem diaria in-app (ao abrir o app) ------------------
 function _calChecarNotificacoesHoje() {
   _calCarregar();
   if (!_calEventos.length) return;
@@ -25396,7 +25395,7 @@ function _calChecarNotificacoesHoje() {
     var diff   = Math.round((diaEv - hoje) / 86400000);
 
     if (ev.notifs.indexOf('dia') !== -1 && diff === 0)
-      adicionarNotif('event', 'Hoje: ' + ev.nome, ev.hora ? 'Às ' + ev.hora + (ev.local ? ' · ' + ev.local : '') : (ev.local || ''), 'calh_' + ev.id);
+      adicionarNotif('event', 'Hoje: ' + ev.nome, ev.hora ? 'Às ' + ev.hora + (ev.local ? ' . ' + ev.local : '') : (ev.local || ''), 'calh_' + ev.id);
     if (ev.notifs.indexOf('antes1d') !== -1 && diff === 1)
       adicionarNotif('event', 'Amanhã: ' + ev.nome, ev.hora ? 'Às ' + ev.hora : (ev.local || ''), 'cala1_' + ev.id);
     if (ev.notifs.indexOf('antes7d') !== -1 && diff === 7)
@@ -25411,7 +25410,7 @@ window.addEventListener('firebase-ready', function() {
 </script>
 
 <script>
-// ─── Push Notifications — Show Agendado ──────────────────────────────────────
+// --- Push Notifications -- Show Agendado --------------------------------------
 var _PUSH_VAPID_KEY = 'BFIeEZqH5mhU7VBnttq3X0QpNcoqjj2VvbTzjt7T_uvA6--gHCES7waHnWXDlegy3tbJo7GAuXjvCzWqFV104II';
 var _pushSW = null;
 
@@ -25425,7 +25424,7 @@ function _vapidToUint8(base64String) {
   return arr;
 }
 
-// Inicializa service worker e solicita permissão
+// Inicializa service worker e solicita permissao
 async function _pushInit() {
   if (!('serviceWorker' in navigator) || !('PushManager' in window)) return;
   try {
@@ -25434,9 +25433,9 @@ async function _pushInit() {
     _pushSW = reg;
     // Aguarda SW estar ativo
     await navigator.serviceWorker.ready;
-    // Pede permissão só se ainda não decidiu
+    // Pede permissao so se ainda nao decidiu
     if (Notification.permission === 'default') {
-      // Aguarda interação do usuário para pedir permissão (melhor UX)
+      // Aguarda interacao do usuario para pedir permissao (melhor UX)
       window.addEventListener('click', function _pedirPermissao() {
         Notification.requestPermission().then(function(perm) {
           if (perm === 'granted') _pushAgendarEventos();
@@ -25451,7 +25450,7 @@ async function _pushInit() {
   }
 }
 
-// Agenda notificações para eventos próximos
+// Agenda notificacoes para eventos proximos
 function _pushAgendarEventos() {
   if (!_pushSW) return;
   var evts = [];
@@ -25469,12 +25468,12 @@ function _pushAgendarEventos() {
     var diff   = diaEv - hoje; // ms
     var dias   = Math.round(diff / 86400000);
 
-    // Notificação no dia do show — 8h da manhã
+    // Notificacao no dia do show -- 8h da manha
     if (dias === 0) {
       var ts = new Date(agora.getFullYear(), agora.getMonth(), agora.getDate(), 8, 0, 0).getTime();
       if (ts > Date.now()) _pushEnviarParaSW('Show hoje', ev.nome, ts, 'show-hoje-' + ev.id);
     }
-    // Notificação 1 dia antes — 20h da noite anterior
+    // Notificacao 1 dia antes -- 20h da noite anterior
     if (dias === 1) {
       var tsAnt = new Date(hoje.getFullYear(), hoje.getMonth(), hoje.getDate(), 20, 0, 0).getTime();
       if (tsAnt > Date.now()) _pushEnviarParaSW('Show amanhã', ev.nome, tsAnt, 'show-amanha-' + ev.id);
@@ -25482,7 +25481,7 @@ function _pushAgendarEventos() {
   });
 }
 
-// Envia mensagem para o SW agendar a notificação
+// Envia mensagem para o SW agendar a notificacao
 function _pushEnviarParaSW(title, body, timestamp, tag) {
   if (!navigator.serviceWorker.controller) return;
   navigator.serviceWorker.controller.postMessage({
@@ -25496,13 +25495,13 @@ function _pushEnviarParaSW(title, body, timestamp, tag) {
 
 // Inicia quando o app estiver pronto
 window.addEventListener('firebase-ready', function() {
-  setTimeout(_pushInit, 2000); // pequeno delay para não competir com o boot
+  setTimeout(_pushInit, 2000); // pequeno delay para nao competir com o boot
 });
-// ── Fim Push Notifications ────────────────────────────────────────────────────
+// -- Fim Push Notifications ----------------------------------------------------
 </script>
 
 <script>
-// ─── Swipe Down to Close — Amigos, Perfil, Áudio, Chat Global ─────────────────
+// --- Swipe Down to Close -- Amigos, Perfil, Audio, Chat Global -----------------
 (function() {
 
   var THRESHOLD = 90;
@@ -25528,7 +25527,7 @@ window.addEventListener('firebase-ready', function() {
       var overlay = document.getElementById(cfg.overlayId);
       if (!overlay || !_visivel(cfg, overlay)) return;
 
-      // Só ativa se o toque começar no header/handle da aba
+      // So ativa se o toque comecar no header/handle da aba
       var headers = overlay.querySelectorAll(cfg.headerSel);
       var noHeader = true;
       for (var i = 0; i < headers.length; i++) {
@@ -25611,7 +25610,7 @@ window.addEventListener('firebase-ready', function() {
     _init();
   }
 })();
-// ── Fim Swipe Down to Close ───────────────────────────────────────────────────
+// -- Fim Swipe Down to Close ---------------------------------------------------
 </script>
 </body>
 </html>
