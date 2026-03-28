@@ -7673,7 +7673,7 @@ body.auth-pending #toast {
   </div>
 
 <!-- ── METRÔNOMO INLINE ────────────────────────────────────────────────── -->
-<div id="metro-wrap" style="width:100%;box-sizing:border-box;padding:0 0 24px;">
+<div id="metro-wrap" style="width:100%;box-sizing:border-box;padding:0;">
 
   <!-- Flash overlay (tempo 1) -->
   <div id="metro-flash-overlay" style="position:fixed;inset:0;pointer-events:none;z-index:99999;background:rgba(10,158,110,0.15);opacity:0;transition:opacity 0.08s;"></div>
@@ -7794,6 +7794,9 @@ body.auth-pending #toast {
             <div class="metro-sound-opt" data-val="clave"     onclick="metroSetSound('clave')"><span class="metro-sound-opt-icon"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="19" x2="19" y2="5"/><line x1="8" y1="19" x2="19" y2="8"/></svg></span><span>Clave</span></div>
             <div class="metro-sound-opt" data-val="woodblock" onclick="metroSetSound('woodblock')"><span class="metro-sound-opt-icon"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="8" width="18" height="8" rx="3"/><line x1="7" y1="8" x2="7" y2="16"/><line x1="12" y1="8" x2="12" y2="16"/></svg></span><span>Woodblock</span></div>
             <div class="metro-sound-opt" data-val="baqueta"   onclick="metroSetSound('baqueta')"><span class="metro-sound-opt-icon"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="21" x2="17" y2="7"/><circle cx="19" cy="5" r="2"/></svg></span><span>Baqueta</span></div>
+            <div class="metro-sound-opt" data-val="rimshot"   onclick="metroSetSound('rimshot')"><span class="metro-sound-opt-icon"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="3"/><line x1="12" y1="4" x2="12" y2="2"/></svg></span><span>Rimshot</span></div>
+            <div class="metro-sound-opt" data-val="cowbell"   onclick="metroSetSound('cowbell')"><span class="metro-sound-opt-icon"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 3 L5 18 Q12 22 19 18 L17 3 Z"/><line x1="12" y1="18" x2="12" y2="21"/></svg></span><span>Cowbell</span></div>
+            <div class="metro-sound-opt" data-val="shaker"    onclick="metroSetSound('shaker')"><span class="metro-sound-opt-icon"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><ellipse cx="12" cy="10" rx="5" ry="7"/><line x1="12" y1="17" x2="12" y2="22"/><line x1="9" y1="22" x2="15" y2="22"/></svg></span><span>Shaker</span></div>
             <div class="metro-sound-opt" data-val="mudo"      onclick="metroSetSound('mudo')"><span class="metro-sound-opt-icon"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="1" y1="1" x2="23" y2="23"/><path d="M9 9v3a3 3 0 0 0 5.12 2.12M15 9.34V4a3 3 0 0 0-5.94-.6"/><path d="M17 16.95A7 7 0 0 1 5 12v-2m14 0v2a7 7 0 0 1-.11 1.23"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg></span><span>Mudo</span></div>
           </div>
         </div>
@@ -7979,6 +7982,78 @@ function _metroAccelUpdateUI() {
   var el = document.getElementById('metro-accel-target-disp');
   if (el) el.innerText = metroAccelTarget;
 }
+
+// ── Som do metrônomo: ícones e labels ────────────────────────────────────
+var _metroSoundIcons = {
+  sine:      '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12 Q5 4 8 12 Q11 20 14 12 Q17 4 20 12 Q21 16 22 12"/></svg>',
+  clave:     '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="19" x2="19" y2="5"/><line x1="8" y1="19" x2="19" y2="8"/></svg>',
+  woodblock: '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="8" width="18" height="8" rx="3"/><line x1="7" y1="8" x2="7" y2="16"/><line x1="12" y1="8" x2="12" y2="16"/></svg>',
+  baqueta:   '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="21" x2="17" y2="7"/><circle cx="19" cy="5" r="2"/></svg>',
+  rimshot:   '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="3"/><line x1="12" y1="4" x2="12" y2="2"/></svg>',
+  cowbell:   '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 3 L5 18 Q12 22 19 18 L17 3 Z"/><line x1="12" y1="18" x2="12" y2="21"/></svg>',
+  shaker:    '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><ellipse cx="12" cy="10" rx="5" ry="7"/><line x1="12" y1="17" x2="12" y2="22"/><line x1="9" y1="22" x2="15" y2="22"/></svg>',
+  mudo:      '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="1" y1="1" x2="23" y2="23"/><path d="M9 9v3a3 3 0 0 0 5.12 2.12M15 9.34V4a3 3 0 0 0-5.94-.6"/><path d="M17 16.95A7 7 0 0 1 5 12v-2m14 0v2a7 7 0 0 1-.11 1.23"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>'
+};
+var _metroSoundLabels = {
+  sine:'Sine', clave:'Clave', woodblock:'Woodblock',
+  baqueta:'Baqueta', rimshot:'Rimshot', cowbell:'Cowbell', shaker:'Shaker', mudo:'Mudo'
+};
+
+function metroToggleSoundMenu(e) {
+  e.stopPropagation();
+  var menu = document.getElementById('metro-sound-menu');
+  var chev = document.getElementById('metro-sound-chevron');
+  var open = menu.style.display === 'block';
+  menu.style.display = open ? 'none' : 'block';
+  if (chev) chev.style.transform = open ? '' : 'rotate(180deg)';
+}
+
+function metroSetSound(val) {
+  metroSoundPreset = val;
+  var menu = document.getElementById('metro-sound-menu');
+  var chev = document.getElementById('metro-sound-chevron');
+  if (menu) menu.style.display = 'none';
+  if (chev) chev.style.transform = '';
+  var iconEl  = document.getElementById('metro-sound-icon');
+  var labelEl = document.getElementById('metro-sound-label');
+  if (iconEl)  iconEl.innerHTML  = _metroSoundIcons[val]  || '';
+  if (labelEl) labelEl.innerText = _metroSoundLabels[val] || val;
+  document.querySelectorAll('.metro-sound-opt').forEach(function(o){
+    o.classList.toggle('metro-sound-ativo', o.dataset.val === val);
+  });
+  // Preview
+  try {
+    var ctx = _getAudioCtx();
+    if (ctx) {
+      if (ctx.state === 'suspended') ctx.resume();
+      var preset = _metroSounds[val] || _metroSounds['sine'];
+      var _mvol = (typeof window._metroVol === 'number') ? window._metroVol : 0.8;
+      preset.play(ctx, ctx.currentTime + 0.05, true, false, _mvol, _getAudioChain(ctx));
+    }
+  } catch(e) {}
+}
+
+// Fecha menu de som ao clicar fora
+document.addEventListener('click', function(e) {
+  var menu = document.getElementById('metro-sound-menu');
+  if (!menu || menu.style.display !== 'block') return;
+  var trig = document.getElementById('metro-sound-trigger');
+  if (trig && !trig.contains(e.target) && !menu.contains(e.target)) {
+    menu.style.display = 'none';
+    var chev = document.getElementById('metro-sound-chevron');
+    if (chev) chev.style.transform = '';
+  }
+});
+
+// Inicializa trigger com preset padrão após DOM pronto
+document.addEventListener('DOMContentLoaded', function() {
+  var iconEl  = document.getElementById('metro-sound-icon');
+  var labelEl = document.getElementById('metro-sound-label');
+  if (iconEl)  iconEl.innerHTML  = _metroSoundIcons[metroSoundPreset]  || '';
+  if (labelEl) labelEl.innerText = _metroSoundLabels[metroSoundPreset] || metroSoundPreset;
+  var def = document.querySelector('.metro-sound-opt[data-val="' + metroSoundPreset + '"]');
+  if (def) def.classList.add('metro-sound-ativo');
+});
 </script>
 <button class="btn-save-vitro" id="btn-save-vitro" onclick="saveSong()">Salvar Música</button>
 
@@ -10558,7 +10633,96 @@ var _metroSounds = {
       osc.start(time); osc.stop(time + dur + 0.01);
     }
   },
-  // ── 5. Mudo ───────────────────────────────────────────────────
+  // ── 5. Rimshot ────────────────────────────────────────────────
+  // Estalo seco de baqueta no aro — transiente curto, muito presente
+  rimshot: {
+    label: 'Rimshot',
+    play: function(ctx, time, isAccent, isSub, vol, out) {
+      var v   = isAccent ? vol : (isSub ? vol*0.25 : vol*0.6);
+      var dur = isAccent ? 0.05 : (isSub ? 0.018 : 0.035);
+      try {
+        // Ruído de alta frequência — impacto seco
+        var bufSize = Math.floor(ctx.sampleRate * 0.012);
+        var buf  = ctx.createBuffer(1, bufSize, ctx.sampleRate);
+        var data = buf.getChannelData(0);
+        for (var k = 0; k < bufSize; k++) data[k] = Math.random()*2-1;
+        var src  = ctx.createBufferSource();
+        var hp   = ctx.createBiquadFilter();
+        var nenv = ctx.createGain();
+        src.buffer = buf;
+        hp.type = 'highpass'; hp.frequency.value = isAccent ? 5000 : 3500;
+        nenv.gain.setValueAtTime(v, time);
+        nenv.gain.exponentialRampToValueAtTime(0.001, time + dur);
+        src.connect(hp); hp.connect(nenv); nenv.connect(out);
+        src.start(time);
+      } catch(e) {}
+      // Tom metálico rápido
+      var osc  = ctx.createOscillator();
+      var oenv = ctx.createGain();
+      osc.type = 'square';
+      osc.frequency.setValueAtTime(isAccent ? 450 : 300, time);
+      osc.frequency.exponentialRampToValueAtTime(50, time + dur);
+      oenv.gain.setValueAtTime(v*0.6, time);
+      oenv.gain.exponentialRampToValueAtTime(0.001, time + dur);
+      osc.connect(oenv); oenv.connect(out);
+      osc.start(time); osc.stop(time + dur + 0.01);
+    }
+  },
+  // ── 6. Cowbell ────────────────────────────────────────────────
+  // Som metálico e ressonante — dois osciladores em modo FM simples
+  cowbell: {
+    label: 'Cowbell',
+    play: function(ctx, time, isAccent, isSub, vol, out) {
+      var v    = isAccent ? vol : (isSub ? vol*0.28 : vol*0.6);
+      var dur  = isAccent ? 0.35 : (isSub ? 0.08 : 0.18);
+      var f1   = isAccent ? 540 : (isSub ? 360 : 450);
+      var f2   = f1 * 1.46; // intervalo de terça maior — timbre de cowbell
+      [f1, f2].forEach(function(f, i) {
+        var osc  = ctx.createOscillator();
+        var env  = ctx.createGain();
+        var bp   = ctx.createBiquadFilter();
+        osc.type = 'square';
+        osc.frequency.value = f;
+        bp.type = 'bandpass'; bp.frequency.value = f; bp.Q.value = 1.5;
+        var g = i === 0 ? v : v * 0.6;
+        env.gain.setValueAtTime(g, time);
+        env.gain.exponentialRampToValueAtTime(0.001, time + dur);
+        osc.connect(bp); bp.connect(env); env.connect(out);
+        osc.start(time); osc.stop(time + dur + 0.01);
+      });
+    }
+  },
+  // ── 7. Shaker ─────────────────────────────────────────────────
+  // Ruído granulado e suave — como maracas ou shaker
+  shaker: {
+    label: 'Shaker',
+    play: function(ctx, time, isAccent, isSub, vol, out) {
+      var v    = isAccent ? vol : (isSub ? vol*0.3 : vol*0.65);
+      var dur  = isAccent ? 0.12 : (isSub ? 0.04 : 0.07);
+      try {
+        var bufSize = Math.floor(ctx.sampleRate * dur);
+        var buf  = ctx.createBuffer(1, bufSize, ctx.sampleRate);
+        var data = buf.getChannelData(0);
+        // Ruído granulado com envelope natural
+        for (var k = 0; k < bufSize; k++) {
+          var env = Math.sin(Math.PI * k / bufSize); // envelope suave
+          data[k] = (Math.random()*2-1) * env;
+        }
+        var src  = ctx.createBufferSource();
+        var bp   = ctx.createBiquadFilter();
+        var gain = ctx.createGain();
+        src.buffer = buf;
+        bp.type = 'bandpass';
+        bp.frequency.value = isAccent ? 6000 : 4500;
+        bp.Q.value = 0.8;
+        gain.gain.setValueAtTime(v * 1.4, time);
+        gain.gain.exponentialRampToValueAtTime(0.001, time + dur);
+        src.connect(bp); bp.connect(gain); gain.connect(out);
+        src.start(time);
+      } catch(e) {}
+    }
+  },
+  // ── 8. Mudo ───────────────────────────────────────────────────
   mudo: {
     label: 'Mudo',
     play: function(ctx, time, isAccent, isSub, vol, out) { /* silêncio */ }
@@ -10659,7 +10823,7 @@ function togglePlay() {
   } else {
     clearTimeout(timerID); timerID = null;
     btn.innerText = "INICIAR"; btn.style.background = "var(--accent-primary)";
-    if (fab) { fab.classList.remove('metro-ativo'); fab.style.removeProperty('background'); }
+    if (fab) { fab.classList.remove('metro-ativo'); fab.style.background = 'rgba(10,158,110,0.08)'; fab.style.borderColor = 'rgba(10,158,110,0.22)'; fab.style.color = 'rgba(10,158,110,0.9)'; }
     var badge = document.getElementById('metro-fab-bpm-badge');
     if (badge) badge.innerText = '';
   }
