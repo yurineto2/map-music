@@ -714,6 +714,7 @@ window._DEBUG = (window.location.hostname === 'localhost' || window.location.hos
         if (stopped) return;
         _nextTimer = setTimeout(doCheck, delay);
       }
+      var _lastData = null;
       async function doCheck() {
         if (stopped) return;
         // Poll de sala sempre roda, independente de _appPaused
@@ -721,7 +722,12 @@ window._DEBUG = (window.location.hostname === 'localhost' || window.location.hos
         _schedule(nextDelay);
         try {
           const data = await _get('salas/' + codigo);
-          if (data) callback(data);
+          if (!data) return;
+          // Só chama callback se algo mudou (evita reprocessamento constante)
+          var dataStr = JSON.stringify(data);
+          if (dataStr === _lastData) return;
+          _lastData = dataStr;
+          callback(data);
         } catch(e) {}
       }
       doCheck();
@@ -3124,7 +3130,7 @@ body { font-family: -apple-system, 'Inter', BlinkMacSystemFont, 'Segoe UI', sans
 .menu-item.danger { color: #ff4d4d; }
 
 /* SYNC STATUS BAR */
-.sync-bar { display: none; align-items: center; gap: 10px; background: rgba(10,158,110,0.1); border-bottom: 1px solid rgba(10,158,110,0.2); padding: 8px 20px; font-size: 11px; font-weight: 700; color: var(--accent-primary); letter-spacing: 1px; }
+.sync-bar { display: none; align-items: center; gap: 10px; background: rgba(10,158,110,0.1); border-bottom: 1px solid rgba(10,158,110,0.2); padding: 8px 20px; font-size: 11px; font-weight: 700; color: var(--accent-primary); letter-spacing: 1px; width: 100%; box-sizing: border-box; }
 .sync-bar.visible { display: flex; }
 .sync-bar.viewer { background: rgba(255,215,0,0.08); border-color: rgba(255,215,0,0.2); color: #ffd700; }
 .sync-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--accent-primary); animation: pulse 1.4s infinite; }
@@ -3317,7 +3323,7 @@ body { font-family: -apple-system, 'Inter', BlinkMacSystemFont, 'Segoe UI', sans
   top: -90px;
   left: 50%;
   transform: translateX(-50%);
-  z-index: 100050;
+  z-index: 200020;
   background: #0d2918;
   border: 1.5px solid rgba(10,158,110,0.5);
   border-radius: 16px;
@@ -4528,8 +4534,8 @@ body { font-family: -apple-system, 'Inter', BlinkMacSystemFont, 'Segoe UI', sans
 .modal-overlay .modal-box { max-width: min(540px, 94vw); }
 #modal-sala .modal-box    { max-width: min(400px, 94vw); }
 
-/* Sync bar: não ultrapassar largura do header */
-.sync-bar { max-width: 640px; }
+/* Sync bar: full-width, igual ao header */
+.sync-bar { width: 100%; box-sizing: border-box; }
 
 /* Scroll controls area: não esconde em desktop quando no modo show */
 @media (min-width: 641px) {
@@ -4618,6 +4624,9 @@ body { font-family: -apple-system, 'Inter', BlinkMacSystemFont, 'Segoe UI', sans
   .metronome-card { order: 1; position: relative !important; top: 0 !important; }
   aside { height: fit-content !important; }
   .section-grid { grid-template-columns: 1fr 1fr; }
+  /* Sync bar tablet: padding alinhado com o header, fonte um pouco maior */
+  .sync-bar { padding: 9px 20px; font-size: 12px; }
+  .sync-code { font-size: 16px; letter-spacing: 5px; }
 }
 
 /* ── MOBILE (até 640px) ── */
@@ -4755,9 +4764,12 @@ body.performance-mode .side-panel,
 body.performance-mode .metronome-card,
 body.performance-mode #metro-wrap,
 body.performance-mode .toolbar-central { display: none !important; }
-body.performance-mode .main-layout { grid-template-columns: 1fr; padding: 100px 10% 150px; }
+body.performance-mode .main-layout { grid-template-columns: 1fr; padding: 110px 10% 160px; }
+/* Viewer tem sync-bar extra no topo — precisa de mais padding */
+body.performance-mode.viewer-mode .main-layout { padding-top: 145px; }
 @media (max-width: 640px) {
-  body.performance-mode .main-layout { padding: 80px 4% 120px; }
+  body.performance-mode .main-layout { padding: 90px 4% 130px; }
+  body.performance-mode.viewer-mode .main-layout { padding-top: 120px; }
 }
 body.performance-mode .chord-area { pointer-events: none; overflow: hidden; }
 
@@ -9312,11 +9324,33 @@ let metroAccelStep = 5;
 let metroAccelBarCount = 0;
 let metroAccelInterval = null;
 let scrollInterval = null;
+window._scrollRafId = null;
+let _scrollAccum = 0;
 function _setScroll(speed) {
-  clearInterval(scrollInterval);
+  // Cancela RAF anterior
+  if (window._scrollRafId) { cancelAnimationFrame(window._scrollRafId); window._scrollRafId = null; }
+  if (scrollInterval && scrollInterval !== true) { clearInterval(scrollInterval); }
   scrollInterval = null;
-  // 1 = muito lento (600ms/px), 100 = rápido (50ms/px)
-  if (speed > 0) scrollInterval = setInterval(() => window.scrollBy(0, 1), Math.round(600 - (speed - 1) * 5.5));
+  _scrollAccum = 0;
+  if (speed <= 0) return;
+  // Converte speed (1-100) para px/frame a 60fps
+  // speed=1 → ~0.1px/frame, speed=100 → ~10px/frame
+  var pxPerFrame = 0.1 + (speed - 1) * (10 - 0.1) / 99;
+  var _lastTime = null;
+  function _rafStep(ts) {
+    if (!window._scrollRafId) return;
+    if (_lastTime !== null) {
+      var dt = Math.min(ts - _lastTime, 100); // cap em 100ms para não saltar após background
+      _scrollAccum += pxPerFrame * (dt / (1000 / 60));
+      var px = Math.floor(_scrollAccum);
+      if (px >= 1) { window.scrollBy(0, px); _scrollAccum -= px; }
+    }
+    _lastTime = ts;
+    window._scrollRafId = requestAnimationFrame(_rafStep);
+  }
+  window._scrollRafId = requestAnimationFrame(_rafStep);
+  // Mantém scrollInterval como sentinela para compatibilidade com checks existentes
+  scrollInterval = true;
 }
 let tapTimes = [];
 let audioCtx = null;
@@ -16615,6 +16649,7 @@ document.addEventListener('visibilitychange', function() {
     var spd = parseInt(document.getElementById('scroll-speed').value) || 0;
     if (spd > 0 && scrollInterval) {
       _scrollSpeedBefore = spd;
+      if (window._scrollRafId) { cancelAnimationFrame(window._scrollRafId); window._scrollRafId = null; }
       clearInterval(scrollInterval);
       scrollInterval = null;
     }
@@ -16626,7 +16661,9 @@ var _scrollSpeedBefore = 0; // guarda velocidade do scroll antes do background
 // iOS Safari usa bfcache: pagehide/pageshow para garantir estado correto
 window.addEventListener('pagehide', function() {
   _fbMarcarOffline();
-  if (scrollInterval) { clearInterval(scrollInterval); scrollInterval = null; }
+  if (window._scrollRafId) { cancelAnimationFrame(window._scrollRafId); window._scrollRafId = null; }
+  if (scrollInterval && scrollInterval !== true) { clearInterval(scrollInterval); }
+  scrollInterval = null;
 });
 window.addEventListener('pageshow', function(e) {
   // e.persisted = true significa que veio do bfcache (iOS)
@@ -17846,6 +17883,12 @@ function capturarEstado() {
       ? showSetlist.map(function(id){ var s=songs.find(function(x){return x.id===id;}); return s?s.name:''; }).filter(Boolean)
       : [],
     eventoNome: showSetlistEventoNome || null,
+    nextSongName: (function() {
+      var lista = _getShowSongs();
+      var cur = currentSongIndex >= 0 ? songs[currentSongIndex] : null;
+      var pos = cur ? lista.findIndex(function(s){ return s.id === cur.id; }) : -1;
+      return (pos >= 0 && pos < lista.length - 1) ? lista[pos + 1].name : null;
+    })(),
     scrollSpeed: parseInt((document.getElementById('scroll-speed') || {value:'0'}).value),
     onlineCount: 1 + Object.keys(_viewersOnline || {}).length,
     roomCode: myRoomCode,
@@ -17945,6 +17988,26 @@ function aplicarEstado(estado) {
     // Notificar mudança de música (apenas se mudou de fato)
     if (_nomeAnterior && _nomeAnterior !== estado.currentSongName) {
       _mapNotifMostrar(estado.currentSongName);
+      // Viewer: mostrar próxima música usando nextSongName do estado
+      if (isViewer) {
+        var _proximaNome = estado.nextSongName || null;
+        // fallback para setlistNomes se nextSongName não vier
+        if (!_proximaNome && estado.setlistNomes && estado.setlistNomes.length > 1) {
+          var _posViewer = estado.currentSongIndex || 0;
+          _proximaNome = estado.setlistNomes[_posViewer + 1] || null;
+        }
+        if (_proximaNome) {
+          var alerta = document.getElementById('show-proxima-alerta');
+          if (alerta) {
+            document.getElementById('prox-nome').innerText = _proximaNome;
+            var _proxBpm = document.getElementById('prox-bpm');
+            if (_proxBpm) _proxBpm.innerText = '';
+            if (window._alertaProximaTimer) clearTimeout(window._alertaProximaTimer);
+            alerta.classList.add('show');
+            window._alertaProximaTimer = setTimeout(function() { alerta.classList.remove('show'); }, 4000);
+          }
+        }
+      }
     }
   } else {
     document.getElementById('perf-song-name').innerText = 'Nenhuma musica';
