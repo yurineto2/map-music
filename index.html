@@ -705,38 +705,36 @@ window._DEBUG = (window.location.hostname === 'localhost' || window.location.hos
       try { await _set('salas/' + codigo, { ativa: false }, true); } catch(e) {}
     },
     ouvirSala(codigo, callback) {
-      // Intervalo adaptativo: show ativo=500ms, normal=1000ms — latência reduzida
       // NOTA: poll de sala NÃO usa _appPaused — precisa manter presença mesmo em background
       var ms = (document.body && document.body.classList.contains('performance-mode')) ? 500 : 1000;
       var stopped = false;
       var _nextTimer = null;
-      function _schedule(delay) {
-        if (stopped) return;
-        _nextTimer = setTimeout(doCheck, delay);
-      }
-      var _lastData = null;
+      var _lastEstado = null; // compara só o campo estado (string JSON) para detectar mudança
       async function doCheck() {
         if (stopped) return;
-        // Poll de sala sempre roda, independente de _appPaused
-        var nextDelay = ms;
-        _schedule(nextDelay);
         try {
           const data = await _get('salas/' + codigo);
-          if (!data) return;
-          // Só chama callback se algo mudou (evita reprocessamento constante)
-          var dataStr = JSON.stringify(data);
-          if (dataStr === _lastData) return;
-          _lastData = dataStr;
-          callback(data);
+          if (stopped) return;
+          if (data) {
+            // Detecta mudança comparando campos relevantes (estado, viewers, onlineCount, ultimoAviso, ativa)
+            var sig = JSON.stringify([data.estado, data.onlineCount, data.ativa,
+              data.ultimoAviso && data.ultimoAviso._t,
+              data.viewers ? Object.keys(data.viewers).sort().join(',') : '']);
+            if (sig !== _lastEstado) {
+              _lastEstado = sig;
+              callback(data);
+            }
+          }
         } catch(e) {}
+        // Agenda próximo APÓS receber resposta (evita sobreposição com latência alta)
+        if (!stopped) {
+          var novoMs = (document.body && document.body.classList.contains('performance-mode')) ? 500 : 1000;
+          ms = novoMs;
+          _nextTimer = setTimeout(doCheck, ms);
+        }
       }
       doCheck();
-      // Recriar poll com intervalo certo quando modo show muda
-      var _obs = setInterval(function() {
-        var novoMs = (document.body && document.body.classList.contains('performance-mode')) ? 500 : 1000;
-        ms = novoMs;
-      }, 3000);
-      return function() { stopped = true; if (_nextTimer) clearTimeout(_nextTimer); clearInterval(_obs); };
+      return function() { stopped = true; if (_nextTimer) { clearTimeout(_nextTimer); _nextTimer = null; } };
     },
     async entrarSalaFb(codigo, viewerUid, viewerNome) {
       try {
@@ -773,36 +771,37 @@ window._DEBUG = (window.location.hostname === 'localhost' || window.location.hos
       let _timer = null;
       async function _check() {
         if (_stopped) return;
-        _timer = setTimeout(_check, 1000);
         try {
           const data = await _get('salas/' + codigo);
-          if (!data || _stopped) return;
-          const viewers = data.viewers || {};
-          const viewersStr = JSON.stringify(viewers);
-          // Atualiza host com novo onlineCount mesmo sem mudança de viewers
-          if (viewersStr === _lastViewers) {
-            if ((data.onlineCount || 1) !== _lastOnline) {
-              _lastOnline = data.onlineCount || 1;
-              callback([], data);
+          if (_stopped) return;
+          if (data) {
+            const viewers = data.viewers || {};
+            const viewersStr = JSON.stringify(viewers);
+            if (viewersStr === _lastViewers) {
+              if ((data.onlineCount || 1) !== _lastOnline) {
+                _lastOnline = data.onlineCount || 1;
+                callback([], data);
+              }
+            } else {
+              const oldV = JSON.parse(_lastViewers || '{}');
+              const newV = viewers;
+              const msgs = [];
+              Object.keys(newV).forEach(uid => {
+                if (!oldV[uid]) msgs.push({ tipo: 'join', uid, nome: newV[uid], _t: Date.now() });
+              });
+              Object.keys(oldV).forEach(uid => {
+                if (!newV[uid]) msgs.push({ tipo: 'leave', uid, nome: oldV[uid], _t: Date.now() });
+              });
+              _lastViewers = viewersStr;
+              if (msgs.length) callback(msgs, data);
             }
-            return;
           }
-          // Detetou mudança — descobre quem entrou/saiu
-          const oldV = JSON.parse(_lastViewers || '{}');
-          const newV = viewers;
-          const msgs = [];
-          Object.keys(newV).forEach(uid => {
-            if (!oldV[uid]) msgs.push({ tipo: 'join', uid, nome: newV[uid], _t: Date.now() });
-          });
-          Object.keys(oldV).forEach(uid => {
-            if (!newV[uid]) msgs.push({ tipo: 'leave', uid, nome: oldV[uid], _t: Date.now() });
-          });
-          _lastViewers = viewersStr;
-          if (msgs.length) callback(msgs, data);
         } catch(e) {}
+        // Agenda próximo APÓS receber resposta — evita sobreposição com latência alta
+        if (!_stopped) _timer = setTimeout(_check, 1000);
       }
       _check();
-      return function() { _stopped = true; if (_timer) clearTimeout(_timer); };
+      return function() { _stopped = true; if (_timer) { clearTimeout(_timer); _timer = null; } };
     },
 
     async salvarEstatistica(uid, dados) {
