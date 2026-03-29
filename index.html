@@ -9446,9 +9446,19 @@ function gerarCodigo4() {
 
 // ── Utilitário UI ────────────────────────────────────────────────────────────
 function setConnStatus(msg, type) {
-  const el = document.getElementById('criar-status') 
-          || document.getElementById('connect-status')
-          || document.getElementById('entrar-status');
+  // Determina qual aba está visível e usa o elemento correto
+  var tabEntrar = document.getElementById('tab-entrar');
+  var tabCriar  = document.getElementById('tab-criar');
+  var el;
+  if (tabEntrar && tabEntrar.style.display !== 'none') {
+    el = document.getElementById('connect-status') || document.getElementById('entrar-status');
+  } else if (tabCriar && tabCriar.style.display !== 'none') {
+    el = document.getElementById('criar-status');
+  } else {
+    el = document.getElementById('connect-status')
+      || document.getElementById('criar-status')
+      || document.getElementById('entrar-status');
+  }
   if (el) el.innerText = msg;
 }
 
@@ -10228,6 +10238,11 @@ function mostrarTabsSala(tab) {
   document.getElementById('sala-escolha').style.display = 'none';
   document.getElementById('tab-criar').style.display = tab === 'criar' ? 'block' : 'none';
   document.getElementById('tab-entrar').style.display = tab === 'entrar' ? 'block' : 'none';
+  // Garante que o botão nunca fica preso como disabled ao trocar de aba
+  if (tab === 'entrar') {
+    var btn = document.getElementById('btn-entrar');
+    if (btn) btn.disabled = false;
+  }
 }
 
 function fecharModal() {
