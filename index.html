@@ -34,6 +34,28 @@
 (function(){ var b = document.getElementById('ios-open-safari'); if(b) b.style.display='none'; })();
 </script>
 <script>
+// ── Bloqueia pull-to-refresh nativo do browser (iOS Safari / Chrome Android) ──
+// O CSS overscroll-behavior:none já cobre a maioria dos casos, mas o Chrome
+// Android às vezes ignora — este listener garante o bloqueio em qualquer browser.
+(function() {
+  var _startY = 0;
+  document.addEventListener('touchstart', function(e) {
+    _startY = e.touches[0].clientY;
+  }, { passive: true });
+  document.addEventListener('touchmove', function(e) {
+    var scrollEl = e.target;
+    // Sobe na árvore até encontrar um elemento com scroll próprio
+    while (scrollEl && scrollEl !== document.body) {
+      if (scrollEl.scrollTop > 0) return; // elemento interno está scrollando — deixa passar
+      scrollEl = scrollEl.parentElement;
+    }
+    // Só bloqueia se arrastou PARA BAIXO e o body está no topo
+    var dy = e.touches[0].clientY - _startY;
+    if (dy > 0 && (document.body.scrollTop <= 0 || document.documentElement.scrollTop <= 0)) {
+      e.preventDefault();
+    }
+  }, { passive: false });
+})();
 // Suprime erros cross-origin (file://, Firebase offline, Safari iOS, etc.)
 window.onerror = function(msg, src, line, col, err) {
   if (!msg || msg === 'Script error.' || msg === 'Script error') return true;
@@ -3015,7 +3037,8 @@ body.performance-mode {
   background: var(--bg-primary);
 }
 * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
-body { font-family: -apple-system, 'Inter', BlinkMacSystemFont, 'Segoe UI', sans-serif; background: var(--bg-primary); color: var(--text-primary); min-height: 100vh; min-height: -webkit-fill-available; min-height: 100dvh; transition: background 0.4s ease; overflow-x: hidden; }
+html { overscroll-behavior: none; }
+body { font-family: -apple-system, 'Inter', BlinkMacSystemFont, 'Segoe UI', sans-serif; background: var(--bg-primary); color: var(--text-primary); min-height: 100vh; min-height: -webkit-fill-available; min-height: 100dvh; transition: background 0.4s ease; overflow-x: hidden; overscroll-behavior: none; }
 
 /* HEADER */
 .app-header { background: rgba(10,10,20,0.82); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); border-bottom: 1px solid rgba(138,92,246,0.12); padding: 15px 20px; position: sticky; top: 0; z-index: 1000; }
