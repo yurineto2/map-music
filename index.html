@@ -669,10 +669,11 @@ window._DEBUG = (window.location.hostname === 'localhost' || window.location.hos
     },
     async atualizarEstadoSala(codigo, estado, online) {
       try {
+        // Não sobrescreve onlineCount aqui — é controlado exclusivamente por
+        // entrarSalaFb/sairSalaFb para evitar race condition entre viewers
         await _set('salas/' + codigo, {
           estado: JSON.stringify(estado),
-          online: online || [],
-          onlineCount: (online || []).length
+          online: online || []
         }, true);
       } catch(e) {}
     },
@@ -692,14 +693,31 @@ window._DEBUG = (window.location.hostname === 'localhost' || window.location.hos
     },
     ouvirSala(codigo, callback) {
       // Intervalo adaptativo: show ativo=500ms, normal=1000ms — latência reduzida
+      // NOTA: poll de sala NÃO usa _appPaused — precisa manter presença mesmo em background
       var ms = (document.body && document.body.classList.contains('performance-mode')) ? 500 : 1000;
-      var stopFn = _poll('salas/' + codigo, callback, ms);
+      var stopped = false;
+      var _nextTimer = null;
+      function _schedule(delay) {
+        if (stopped) return;
+        _nextTimer = setTimeout(doCheck, delay);
+      }
+      async function doCheck() {
+        if (stopped) return;
+        // Poll de sala sempre roda, independente de _appPaused
+        var nextDelay = ms;
+        _schedule(nextDelay);
+        try {
+          const data = await _get('salas/' + codigo);
+          if (data) callback(data);
+        } catch(e) {}
+      }
+      doCheck();
       // Recriar poll com intervalo certo quando modo show muda
       var _obs = setInterval(function() {
         var novoMs = (document.body && document.body.classList.contains('performance-mode')) ? 500 : 1000;
-        if (novoMs !== ms) { ms = novoMs; stopFn(); stopFn = _poll('salas/' + codigo, callback, ms); }
+        ms = novoMs;
       }, 3000);
-      return function() { stopFn(); clearInterval(_obs); };
+      return function() { stopped = true; if (_nextTimer) clearTimeout(_nextTimer); clearInterval(_obs); };
     },
     async entrarSalaFb(codigo, viewerUid, viewerNome) {
       try {
@@ -729,35 +747,43 @@ window._DEBUG = (window.location.hostname === 'localhost' || window.location.hos
     },
     ouvirMensagensSala(codigo, callback) {
       // Poll sala doc — deteta mudanças no campo 'viewers'
+      // NOTA: poll de sala NÃO pausa em background — manter presença dos viewers
       let _lastViewers = '{}';
       let _lastOnline = 1;
-      return _poll('salas/' + codigo, function(data) {
-        if (!data) return;
-        const viewers = data.viewers || {};
-        const viewersStr = JSON.stringify(viewers);
-        // Atualiza host com novo onlineCount mesmo sem mudança de viewers
-        if (viewersStr === _lastViewers) {
-          if ((data.onlineCount || 1) !== _lastOnline) {
-            _lastOnline = data.onlineCount || 1;
-            callback([], data); // sem msgs mas passa salaData para atualizar contador
+      let _stopped = false;
+      let _timer = null;
+      async function _check() {
+        if (_stopped) return;
+        _timer = setTimeout(_check, 1000);
+        try {
+          const data = await _get('salas/' + codigo);
+          if (!data || _stopped) return;
+          const viewers = data.viewers || {};
+          const viewersStr = JSON.stringify(viewers);
+          // Atualiza host com novo onlineCount mesmo sem mudança de viewers
+          if (viewersStr === _lastViewers) {
+            if ((data.onlineCount || 1) !== _lastOnline) {
+              _lastOnline = data.onlineCount || 1;
+              callback([], data);
+            }
+            return;
           }
-          return;
-        }
-        // Detetou mudança — descobre quem entrou/saiu
-        const oldV = JSON.parse(_lastViewers || '{}');
-        const newV = viewers;
-        const msgs = [];
-        // Entrou
-        Object.keys(newV).forEach(uid => {
-          if (!oldV[uid]) msgs.push({ tipo: 'join', uid, nome: newV[uid], _t: Date.now() });
-        });
-        // Saiu
-        Object.keys(oldV).forEach(uid => {
-          if (!newV[uid]) msgs.push({ tipo: 'leave', uid, nome: oldV[uid], _t: Date.now() });
-        });
-        _lastViewers = viewersStr;
-        if (msgs.length) callback(msgs, data); // passa salaData para o host atualizar onlineCount
-      }, 1000);
+          // Detetou mudança — descobre quem entrou/saiu
+          const oldV = JSON.parse(_lastViewers || '{}');
+          const newV = viewers;
+          const msgs = [];
+          Object.keys(newV).forEach(uid => {
+            if (!oldV[uid]) msgs.push({ tipo: 'join', uid, nome: newV[uid], _t: Date.now() });
+          });
+          Object.keys(oldV).forEach(uid => {
+            if (!newV[uid]) msgs.push({ tipo: 'leave', uid, nome: oldV[uid], _t: Date.now() });
+          });
+          _lastViewers = viewersStr;
+          if (msgs.length) callback(msgs, data);
+        } catch(e) {}
+      }
+      _check();
+      return function() { _stopped = true; if (_timer) clearTimeout(_timer); };
     },
 
     async salvarEstatistica(uid, dados) {
@@ -8507,9 +8533,9 @@ let perfilFotoBase64 = null; // foto atual em edição
   setTimeout(_checarStatus, 3000);
   // Verificações periódicas
   setInterval(_checarStatus, CHECK_MS);
-  // Verificar ao voltar à aba
+  // Verificar ao voltar à aba — ignora se utilizador está numa sala ativa
   document.addEventListener('visibilitychange', function() {
-    if (document.visibilityState === 'visible') _checarStatus();
+    if (document.visibilityState === 'visible' && !window._emSala) _checarStatus();
   });
 })();
 
@@ -9426,10 +9452,11 @@ async function criarSala() {
   // Keepalive — atualiza estado a cada 15s e lê onlineCount do Firestore
   _salaOnlineTimer = setInterval(async () => {
     if (!isHost || !myRoomCode) { clearInterval(_salaOnlineTimer); return; }
-    // Não envia keepalive com app em background — economiza bateria e dados
-    if (window._appPaused) return;
-    broadcastEstado();
-    // Lê onlineCount atual do Firestore para o host ver viewers
+    // Broadcast de estado: só em foreground (economiza dados)
+    if (!window._appPaused) {
+      broadcastEstado();
+    }
+    // Leitura do onlineCount: SEMPRE (garante contador correto mesmo em background)
     try {
       const salaData = await window._fb.getSala(myRoomCode);
       if (salaData) {
@@ -9485,7 +9512,7 @@ function enviarAvisoSala() {
     window._fb._set && window._fb._set('salas/' + myRoomCode, {
       estado: JSON.stringify(estado),
       online: onlineUids,
-      onlineCount: onlineUids.length,
+      // onlineCount NÃO é sobrescrito aqui — gerido por entrar/sairSalaFb
       ultimoAviso: avisoObj
     }, true).catch(function(){});
   }
@@ -14598,7 +14625,7 @@ function enviarFrasePronta(frase) {
     window._fb._set && window._fb._set('salas/' + myRoomCode, {
       estado: JSON.stringify(estado),
       online: onlineUids,
-      onlineCount: onlineUids.length,
+      // onlineCount NÃO é sobrescrito aqui — gerido por entrar/sairSalaFb
       ultimoAviso: avisoObj
     }, true).catch(function(){});
   }
