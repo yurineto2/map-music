@@ -203,10 +203,18 @@ window._DEBUG = (window.location.hostname === 'localhost' || window.location.hos
   async function _get(path) {
     try {
       const r = await _ft(_url(path));
-      if (!r.ok) return null;
+      if (r.status === 404) return null;
+      if (!r.ok) {
+        const httpErr = new Error('HTTP ' + r.status);
+        httpErr.status = r.status;
+        throw httpErr;
+      }
       const d = await r.json();
       return d.fields ? _fromFirestore(d.fields) : null;
-    } catch(e) { return null; }
+    } catch(e) {
+      if (e && e.status) throw e;
+      return null;
+    }
   }
 
   async function _set(path, data, merge, retries) {
@@ -737,16 +745,27 @@ window._DEBUG = (window.location.hostname === 'localhost' || window.location.hos
       return function() { stopped = true; if (_nextTimer) { clearTimeout(_nextTimer); _nextTimer = null; } };
     },
     async entrarSalaFb(codigo, viewerUid, viewerNome) {
-      try {
-        const data = await _get('salas/' + codigo);
-        if (!data || !data.ativa) return null;
-        // Escreve viewer no documento da sala para que o host veja
-        const viewers = Object.assign({}, data.viewers || {});
-        viewers[viewerUid] = viewerNome;
-        const onlineCount = Object.keys(viewers).length + 1; // +1 for host
-        await _set('salas/' + codigo, { viewers, onlineCount }, true);
-        return data;
-      } catch(e) { return null; }
+      // Tenta até 3 vezes para tolerar falhas transitórias de rede
+      for (let tentativa = 0; tentativa < 3; tentativa++) {
+        try {
+          const data = await _get('salas/' + codigo);
+          if (!data) return { erro: 'nao_encontrada' };
+          if (!data.ativa) return { erro: 'encerrada' };
+          // Escreve viewer no documento da sala para que o host veja
+          const viewers = Object.assign({}, data.viewers || {});
+          viewers[viewerUid] = viewerNome;
+          const onlineCount = Object.keys(viewers).length + 1; // +1 for host
+          await _set('salas/' + codigo, { viewers, onlineCount }, true);
+          return { ok: true, data };
+        } catch(e) {
+          const status = e && e.status;
+          if (status === 403 || status === 401) return { erro: 'permissao' };
+          if (status === 404) return { erro: 'nao_encontrada' };
+          // Rede/timeout — aguarda e tenta de novo
+          if (tentativa < 2) await new Promise(r => setTimeout(r, 1200 * (tentativa + 1)));
+        }
+      }
+      return { erro: 'rede' };
     },
     async sairSalaFb(codigo, viewerUid) {
       try {
@@ -9673,19 +9692,30 @@ async function entrarNaSala() {
   const uid    = _getUid();
   const nome   = perfil.nome || 'Músico';
 
-  let salaData;
+  let resultado;
   try {
-    salaData = await window._fb.entrarSalaFb(code, uid, nome);
+    resultado = await window._fb.entrarSalaFb(code, uid, nome);
   } catch(err) {
     setConnStatus('Erro de conexão. Verifique sua internet.', 'error');
     if (btn) btn.disabled = false;
     return;
   }
-  if (!salaData) {
-    setConnStatus('Sala não encontrada ou encerrada.', 'error');
+
+  // Trata erros tipados retornados por entrarSalaFb
+  if (!resultado || !resultado.ok) {
+    const tipo = resultado && resultado.erro;
+    let msg;
+    if (tipo === 'nao_encontrada') msg = 'Sala não encontrada. Verifique o código.';
+    else if (tipo === 'encerrada')  msg = 'Esta sala foi encerrada pelo host.';
+    else if (tipo === 'permissao')  msg = 'Sem permissão no Firestore (403). Verifique as Regras no Firebase Console.';
+    else                            msg = 'Erro de rede. Verifique sua internet e tente novamente.';
+    setConnStatus(msg, 'error');
+    showToast(msg);
     if (btn) btn.disabled = false;
     return;
   }
+
+  const salaData = resultado.data;
 
   // Aplica estado atual da sala
   try {
