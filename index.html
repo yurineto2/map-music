@@ -9506,6 +9506,8 @@ async function criarSala() {
   _iniciarListenerMensagens(code, uid);
 
   // Keepalive — atualiza estado a cada 15s e lê onlineCount do Firestore
+  // Bug fix: limpa timer anterior para evitar múltiplos intervals sobrepostos
+  if (_salaOnlineTimer) { clearInterval(_salaOnlineTimer); _salaOnlineTimer = null; }
   _salaOnlineTimer = setInterval(async () => {
     if (!isHost || !myRoomCode) { clearInterval(_salaOnlineTimer); return; }
     // Broadcast de estado: só em foreground (economiza dados)
@@ -16839,7 +16841,8 @@ let _reconectando = false;
 
 function _verificarConexaoSala() {
   if (!isHost && !isViewer) return;
-  if (!peer || peer.destroyed || peer.disconnected) {
+  // Sala 100% Firebase — verifica se Firebase está disponível
+  if (!window._fb || !window._fbReady) {
     _tentarReconexao();
   }
 }
@@ -16853,37 +16856,31 @@ function _tentarReconexao() {
   const eraHost = isHost;
   const eraViewer = isViewer;
 
-  // Mostra toast informativo
   showToast('Reconectando sala...');
 
-  // Destrói peer antigo
-  try { if (peer) peer.destroy(); } catch(e) {}
-  peer = null;
-
-  setTimeout(() => {
+  setTimeout(async () => {
     _reconectando = false;
+
     if (eraHost && eraSala) {
-      // Reinicia como host com o MESMO código
+      // ── Host: reativa sala no Firebase com o mesmo código ──
       isHost = false;
-      const savedCode = eraSala;
-      myRoomCode = savedCode;
+      myRoomCode = eraSala;
 
       const el = document.getElementById('my-room-code');
       const st = document.getElementById('criar-status');
       if (el) { el.classList.add('loading'); el.innerText = '···'; }
       if (st) st.innerText = 'Reconectando...';
 
-      _reconectarHostComCodigo(savedCode, el, st, 0);
+      await _reconectarHostFirebase(eraSala, el, st, 0);
 
     } else if (eraViewer && eraSala) {
-      // Viewer reconecta: preenche os dígitos e chama entrarNaSala
+      // ── Viewer: preenche dígitos e reconecta via Firebase ──
       isViewer = false;
       const digits = eraSala.split('');
       ['d0','d1','d2','d3'].forEach((id, i) => {
         const el = document.getElementById(id);
         if (el) el.value = digits[i] || '';
       });
-      // Abre o modal na aba entrar e reconecta
       mostrarTabsSala('entrar');
       abrirModalSala();
       setTimeout(() => entrarNaSala(), 200);
@@ -16891,118 +16888,64 @@ function _tentarReconexao() {
   }, 800);
 }
 
-// Reconecta host com o mesmo código, com retry se unavailable-id
-function _reconectarHostComCodigo(savedCode, el, st, tentativa) {
-  if (tentativa > 6) {
-    // Desistiu — gera novo código
-    showToast('Não foi possível reusar o código. Cria nova sala.');
+// Reconecta host via Firebase com retry (substitui lógica PeerJS)
+async function _reconectarHostFirebase(savedCode, el, st, tentativa) {
+  if (tentativa > 5) {
+    showToast('Não foi possível reconectar. Cria nova sala.');
     isHost = false; myRoomCode = null;
     if (el) { el.classList.remove('loading'); el.innerText = '—'; }
-    if (st) st.innerText = 'Erro ao reativar. Cria nova sala.';
+    if (st) st.innerText = 'Erro ao reconectar. Cria nova sala.';
     return;
   }
 
-  const delay = tentativa === 0 ? 0 : 3000;
-  if (tentativa > 0 && st) st.innerText = 'Aguardando servidor... (' + tentativa + '/6)';
+  if (tentativa > 0) {
+    if (st) st.innerText = 'Aguardando Firebase... (' + tentativa + '/5)';
+    await new Promise(r => setTimeout(r, 2000 * tentativa));
+  }
 
-  setTimeout(() => {
-    try { if (peer) peer.destroy(); } catch(e) {}
-    peer = null;
+  try {
+    if (!window._fb) throw new Error('Firebase indisponível');
+    const perfil = _getPerfilLocal();
+    const uid = _getUid();
+    const estado = capturarEstado();
 
-    try {
-      peer = new Peer(codeToId(savedCode), {
-      debug: 0,
-      config: {
-        iceServers: [
-          { urls: 'stun:stun.l.google.com:19302' },
-          { urls: 'stun:stun1.l.google.com:19302' },
-          { urls: 'stun:stun2.l.google.com:19302' },
-          { urls: 'stun:stun.cloudflare.com:3478' }
-        ]
-      }
-    });
-      peer.on('open', () => {
-        isHost = true;
-        myRoomCode = savedCode;
-        if (el) { el.classList.remove('loading'); el.innerText = savedCode; }
-        if (st) st.innerText = 'Sala reativada! Código mantido.';
-        const btn = document.getElementById('btn-copiar-codigo');
-        if (btn) btn.disabled = false;
+    // Verifica se sala ainda existe (pode ter sido apagada)
+    const salaExistente = await window._fb.getSala(savedCode);
 
-        peer.on('disconnected', () => {
-          try { if (peer && !peer.destroyed) peer.reconnect(); } catch(e) {}
-        });
-        peer.on('close', () => {
-          if (isHost || isViewer) setTimeout(_tentarReconexao, 1500);
-        });
-        peer.on('connection', _registarConexaoGuest);
-        atualizarSyncBar();
-        showToast('Sala reativada — código ' + savedCode);
-      });
-      peer.on('error', err => {
-        if (err.type === 'unavailable-id') {
-          // Servidor ainda tem o ID — tenta de novo em 3s
-          _reconectarHostComCodigo(savedCode, el, st, tentativa + 1);
-        } else {
-          showToast('Erro ao reativar sala: ' + (err.type || err.message));
-          isHost = false; myRoomCode = null;
-        }
-      });
-    } catch(e) {
-      showToast('Erro ao reconectar.');
+    let ok;
+    if (salaExistente && salaExistente.hostUid === uid) {
+      // Sala ainda existe e é nossa — reativa com merge
+      ok = await window._fb.criarSalaFb(savedCode, uid, perfil.nome || 'Host', estado);
+    } else {
+      // Sala não existe ou é de outro host — recria do zero
+      ok = await window._fb.criarSalaFb(savedCode, uid, perfil.nome || 'Host', estado);
     }
-  }, delay);
+
+    if (ok) {
+      isHost = true;
+      myRoomCode = savedCode;
+      if (el) { el.classList.remove('loading'); el.innerText = savedCode; }
+      if (st) st.innerText = 'Sala reativada! Código mantido.';
+      atualizarSyncBar(savedCode);
+      showToast('Sala reativada — código ' + savedCode);
+      _iniciarListenerMensagens(savedCode, uid);
+      // Reinicia keepalive timer (Bug 3 fix: limpa anterior antes de criar novo)
+      if (_salaOnlineTimer) { clearInterval(_salaOnlineTimer); _salaOnlineTimer = null; }
+      _salaOnlineTimer = setInterval(async () => {
+        if (!isHost || !myRoomCode) { clearInterval(_salaOnlineTimer); return; }
+        if (!window._appPaused) broadcastEstado();
+      }, 15000);
+    } else {
+      await _reconectarHostFirebase(savedCode, el, st, tentativa + 1);
+    }
+  } catch(e) {
+    await _reconectarHostFirebase(savedCode, el, st, tentativa + 1);
+  }
 }
 
-// Registar uma nova conexão de guest (reutilizável)
+// _registarConexaoGuest mantido como stub (legado PeerJS — não usado no Firebase)
 function _registarConexaoGuest(conn) {
-  // Evita duplicados — mesma peer.id já conectada
-  if (guestConns.some(c => c.peer === conn.peer)) {
-    try { conn.close(); } catch(e) {}
-    return;
-  }
-  guestConns.push(conn);
-  conn._nomePeer = 'Músico';
-  conn._joined = false;
-
-  conn.on('open', () => {
-    // Envia estado mas NÃO notifica ainda — espera o 'join' com o nome
-    conn.send({ type: 'state', payload: capturarEstado() });
-    atualizarSyncBar();
-  });
-
-  conn.on('data', dados => {
-    if (dados.type === 'join' && !conn._joined) {
-      conn._joined = true;
-      conn._nomePeer = dados.nome || 'Músico';
-      showToast((_ve(conn._nomePeer) || 'Músico') + ' entrou na sala');
-      adicionarNotif('event', (_ve(conn._nomePeer) || 'Músico') + ' entrou na sala',
-        'Código ' + myRoomCode, 'join_' + conn.peer);
-      atualizarSyncBar();
-      broadcastEstado();
-    } else if (dados.type === 'leave') {
-      conn._left = true;
-    }
-    // ignora 'ping' e joins duplicados
-  });
-
-  conn.on('close', () => {
-    const nome = conn._nomePeer || 'Músico';
-    guestConns = guestConns.filter(c => c !== conn);
-    atualizarSyncBar();
-    broadcastEstado();
-    if (!conn._left && conn._joined) {
-      showToast((_ve(nome) || 'Músico') + ' saiu da sala');
-      adicionarNotif('alert', (_ve(nome) || 'Músico') + ' saiu da sala',
-        'Código ' + myRoomCode, 'leave_' + conn.peer);
-    }
-  });
-
-  conn.on('error', () => {
-    guestConns = guestConns.filter(c => c !== conn);
-    atualizarSyncBar();
-    broadcastEstado();
-  });
+  // Stub de compatibilidade — sala usa Firebase, não PeerJS
 }
 
 
