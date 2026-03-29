@@ -4562,11 +4562,12 @@ body { font-family: -apple-system, 'Inter', BlinkMacSystemFont, 'Segoe UI', sans
 
 /* LAYOUT */
 .main-layout { display: grid; grid-template-columns: 280px 1fr 300px; gap: 20px; max-width: 1400px; margin: 0 auto; width: 100%; padding: 20px; align-items: start; }
+#metro-wrap { grid-column: 1 / -1; } /* spans all columns */
 
 /* ── TABLET (até 1100px) ── */
 @media (max-width: 1100px) {
   .main-layout { grid-template-columns: 1fr; padding: 16px; }
-  .side-panel { order: 2; max-height: 300px !important; margin-bottom: 50px; }
+  .side-panel { order: 2; max-height: 300px !important; margin-bottom: 0; }
   .metronome-card { order: 1; position: relative !important; top: 0 !important; }
   aside { height: fit-content !important; }
   .section-grid { grid-template-columns: 1fr 1fr; }
@@ -4584,7 +4585,7 @@ body { font-family: -apple-system, 'Inter', BlinkMacSystemFont, 'Segoe UI', sans
   #btn-sala { padding: 6px 12px; font-size: 9px; }
 
   /* Layout */
-  .main-layout { padding: 10px 10px 24px; gap: 14px; align-items: start; height: fit-content !important; }
+  .main-layout { padding: 10px 10px 16px; gap: 14px; align-items: start; height: fit-content !important; }
   aside { height: fit-content !important; align-self: start; position: relative !important; top: 0 !important; }
   .notes-section { height: fit-content !important; align-self: start; }
   body { min-height: fit-content !important; }
@@ -4658,7 +4659,6 @@ body { font-family: -apple-system, 'Inter', BlinkMacSystemFont, 'Segoe UI', sans
 @keyframes metroFabPulse{0%,100%{box-shadow:0 0 0 0 rgba(10,158,110,0.4);}50%{box-shadow:0 0 0 8px rgba(10,158,110,0);}}
 #metro-fab-btn.metro-ativo{background:rgba(10,158,110,0.18)!important;border-color:rgba(10,158,110,0.7)!important;animation:metroFabPulse 0.8s ease-in-out infinite;}
 #metro-fab-btn.metro-ativo #metro-pendulum{animation:metroPendulum 0.5s ease-in-out infinite;}
-body.performance-mode #metro-wrap,body.viewer-mode #metro-wrap{display:none!important;}
 @media(prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:0.01ms!important;transition-duration:0.01ms!important;}}
 .section-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 15px; }
 .song-part {
@@ -7691,14 +7691,17 @@ body.auth-pending #toast {
     <div class="section-grid" id="notes-grid"></div>
   </main>
 
-  </main>
-
 <!-- METRO -->
 <div id="metro-wrap" style="width:100%;box-sizing:border-box;padding:0;">
   <div id="metro-flash-overlay" style="position:fixed;inset:0;pointer-events:none;z-index:99999;background:rgba(10,158,110,0.15);opacity:0;transition:opacity 0.08s;"></div>
   <button id="metro-fab-btn" onclick="toggleMetroFab()" style="width:100%;padding:14px 20px;border-radius:16px;background:rgba(10,158,110,0.08);border:1.5px solid rgba(10,158,110,0.22);color:rgba(10,158,110,0.9);cursor:pointer;display:flex;align-items:center;justify-content:space-between;gap:12px;font-family:inherit;touch-action:manipulation;box-sizing:border-box;">
     <span style="display:flex;align-items:center;gap:10px;">
-      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 20 20 4 20"/><line x1="12" y1="20" x2="12" y2="10" id="metro-pendulum"/></svg>
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <rect x="3" y="20" width="18" height="2" rx="1"/>
+        <line x1="12" y1="20" x2="12" y2="4"/>
+        <line x1="12" y1="12" x2="18" y2="8" id="metro-pendulum"/>
+        <circle cx="12" cy="4" r="1.5" fill="currentColor" stroke="none"/>
+      </svg>
       <span style="font-size:13px;font-weight:800;">Metronomo</span>
     </span>
     <span style="display:flex;align-items:center;gap:10px;">
@@ -7782,7 +7785,8 @@ body.auth-pending #toast {
     </div>
   </div>
 </div>
-</div>
+
+</div><!-- /main-layout -->
 <button class="btn-save-vitro" id="btn-save-vitro" onclick="saveSong()">Salvar Música</button>
 
 <!-- Controle de fonte das cifras — painel individual -->
@@ -10175,9 +10179,9 @@ var _toastTimer = null;
 function showToast(msg, tipo) {
   try {
     if (!tipo) {
-      if (/erro|falhou|falha|incorret|inválid|bloqueado|banido/i.test(msg)) tipo = 'error';
+      if (/erro|falhou|falha|incorret|inv.lid|bloqueado|banido/i.test(msg)) tipo = 'error';
       else if (/salvo|salva|criado|backup|restaurado|aplicado|bem-vindo/i.test(msg)) tipo = 'success';
-      else if (/atenção|aviso|aguardando|reconect/i.test(msg)) tipo = 'warning';
+      else if (/aten..o|aviso|aguardando|reconect/i.test(msg)) tipo = 'warning';
       else tipo = 'info';
     }
     var icons = {
@@ -12298,7 +12302,7 @@ var _TAG_SUGERIDAS = ['lenta','animada','louvor','adoração','abertura','encerr
 var _tagAtiva = null; // tag selecionada no filtro da biblioteca
 var _tagsSelecionadas = []; // tags selecionadas no editor
 
-function _tagSlug(t) { return (t || '').toLowerCase().trim().replace(/\s+/g,'-').replace(/[^a-z0-9\-áàãâéêíóôõúç]/g,''); }
+function _tagSlug(t) { return (t || '').toLowerCase().trim().replace(/\s+/g,'-').replace(/[^a-z0-9\-\u00E1\u00E0\u00E3\u00E2\u00E9\u00EA\u00ED\u00F3\u00F4\u00F5\u00FA\u00E7]/g,''); }
 
 // ── Filtro da biblioteca ──────────────────────────────────────────────────────
 function _bibRenderTagBar() {
@@ -15964,7 +15968,7 @@ async function lerArquivoCifra(input) {
               const textoLinha = linha.tokens.map(s => s.str).join(' ').trim();
 
               // Filtra metadados e afinação
-              if (/^(Afina[çc]|Tunin|Capot|Capo|Tom[: ]|Compos)/i.test(textoLinha)) { prevY = linha.y; continue; }
+              if (/^(Afina[\u00E7c]|Tunin|Capot|Capo|Tom[: ]|Compos)/i.test(textoLinha)) { prevY = linha.y; continue; }
               if (/^[EADGB]( [EADGB]){4,}$/.test(textoLinha)) { prevY = linha.y; continue; }
 
               // Gap Y > 25px = parágrafo novo → linha vazia
@@ -16017,14 +16021,14 @@ async function lerArquivoCifra(input) {
               const ehAcordeTk = tk => /^[A-G][#b]?(m(?:aj)?7?|min7?|sus[24]?|dim7?|aug|add\d{1,2}|M7?|\d+)?(\/[A-G][#b]?)?$/.test(tk) && tk.length <= 6;
 
               // Filtra linha de afinação: só letras EADGB e símbolos de tablatura
-              const soAfinacao = tokens.every(tk => NOTAS_AFINACAO.has(tk) || /^[x×●○•\dXoª\-]+$/.test(tk));
+              const soAfinacao = tokens.every(tk => NOTAS_AFINACAO.has(tk) || /^[x\u00D7\u25CF\u25CB\u2022\dXo\u00AA\-]+$/.test(tk));
               if (soAfinacao && tokens.length <= 8) continue;
 
               // Filtra metadados do PDF
-              if (/^(Afina[çc]|Tunin|Capot|Capo|Tom:|Compos)/i.test(linha)) continue;
+              if (/^(Afina[\u00E7c]|Tunin|Capot|Capo|Tom:|Compos)/i.test(linha)) continue;
 
               const acordes = tokens.filter(ehAcordeTk);
-              const naoAcordes = tokens.filter(t => !ehAcordeTk(t) && t.length > 2 && /[aeiouáéíóú]/i.test(t));
+              const naoAcordes = tokens.filter(t => !ehAcordeTk(t) && t.length > 2 && /[aeiou\u00E1\u00E9\u00ED\u00F3\u00FA]/i.test(t));
               if (acordes.length > 0 && naoAcordes.length > 0) {
                 linhasFinal.push(acordes.join('  '));
                 linhasFinal.push(naoAcordes.join(' '));
@@ -16132,7 +16136,7 @@ function identificarSecao(linha) {
   // ( G#m D#m F# C# ) — bloco instrumental entre parênteses
   if (t.match(/^\(\s*[A-G].+\)$/)) return 'INSTRUMENTAL';
   // Linha curta terminada em ":"
-  const semPont = t.replace(/[\s:.#\-–—0-9]+$/g,'').trim();
+  const semPont = t.replace(/[\s:.#\-\u2013\u20140-9]+$/g,'').trim();
   if (semPont.length >= 2 && semPont.length <= 25) {
     const chave = normStr(semPont);
     for (const [k,v] of Object.entries(SECAO_MAP)) {
@@ -16163,7 +16167,7 @@ function ehLinhaDeAcordes(linha) {
 
   // Rejeita se tiver palavras longas com vogais (letra de música)
   const temLetra = tokens.some(tk =>
-    !ehAcorde(tk) && tk.length > 3 && /[aeiouáéíóú]/i.test(tk)
+    !ehAcorde(tk) && tk.length > 3 && /[aeiou\u00E1\u00E9\u00ED\u00F3\u00FA]/i.test(tk)
   );
   if (temLetra) return false;
 
