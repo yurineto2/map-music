@@ -8490,6 +8490,7 @@ body.auth-pending #toast {
 <div class="perf-song-indicator" id="perf-indicator">
   <span id="perf-song-pos">1/1</span>
   <span class="perf-song-name" id="perf-song-name">—</span>
+  <span id="perf-debug-btn" onclick="(function(){var e=capturarEstado?capturarEstado():{};alert('HOST Estado:\ncurrentSongName: '+e.currentSongName+'\ncurrentSongIndex: '+e.currentSongIndex+'\nsetlistPos: '+e.setlistPos+'\nsetlistNomes: '+JSON.stringify(e.setlistNomes)+'\nsongTotal: '+e.songTotal+'\nviewerNome: '+(window._viewerUltimoNomeMusica||'null')+'\nisHost: '+isHost+'\nisViewer: '+isViewer);})()" style="cursor:pointer;font-size:9px;background:rgba(255,0,0,0.3);padding:2px 6px;border-radius:4px;margin-left:6px;">DBG</span>
 </div>
 
 <!-- Controle de fonte por música no modo show -->
@@ -9626,7 +9627,15 @@ function copiarCodigo() {
 function broadcastEstado() {
   if (!isHost || syncPaused) return;
   const estado = capturarEstado();
-  if (window._DEBUG) console.log('[MAP] broadcastEstado currentSongName=', estado.currentSongName, 'currentSongIndex=', currentSongIndex, 'songs.length=', songs.length, 'songName=', currentSongIndex>=0&&songs[currentSongIndex]?songs[currentSongIndex].name:'N/A');
+  // LOG SEMPRE para diagnóstico
+  console.log('[MAP HOST] broadcastEstado:', JSON.stringify({
+    currentSongName: estado.currentSongName,
+    currentSongIndex: estado.currentSongIndex,
+    setlistPos: estado.setlistPos,
+    songTotal: estado.songTotal,
+    setlistNomes: estado.setlistNomes,
+    perfMode: estado.perfMode
+  }));
   if (_fbReady && window._fb && myRoomCode) {
     const onlineUids = Object.keys(_viewersOnline || {});
     // FIX: inclui ultimoAviso no payload principal para que viewers recebam aviso via ouvirSala
@@ -9927,6 +9936,15 @@ async function entrarNaSala() {
     }
     try {
       const estado = JSON.parse(data.estado || '{}');
+      // LOG SEMPRE (não só em _DEBUG) para diagnóstico
+      console.log('[MAP VIEWER] estado recebido:', JSON.stringify({
+        currentSongName: estado.currentSongName,
+        currentSongIndex: estado.currentSongIndex,
+        setlistPos: estado.setlistPos,
+        setlistNomes: estado.setlistNomes,
+        songTotal: estado.songTotal,
+        perfMode: estado.perfMode
+      }));
       if (estado && Object.keys(estado).length > 0) aplicarEstado(estado);
       // Atualiza contagem online (lê onlineCount do Firestore)
       const total = data.onlineCount || (data.online || []).length || 1;
