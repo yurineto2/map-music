@@ -10059,6 +10059,20 @@ function togglePerf() {
 }
 
 function _ativarModoShow() {
+  // Restaura evento anterior se o usuário re-entrar no show sem ter escolhido um novo evento
+  if (window._lastShowEventoId != null && showSetlist == null) {
+    var _ev = eventos.find(function(e) { return e.id === window._lastShowEventoId; });
+    if (_ev && _ev.musicIds && _ev.musicIds.length > 0) {
+      var _ids = _ev.musicIds.map(Number).filter(function(id) { return songs.find(function(s) { return s.id === id; }); });
+      if (_ids.length > 0) {
+        showSetlist = _ids;
+        showSetlistEventoId = _ev.id;
+        showSetlistEventoNome = _ev.nome;
+        var _cur = currentSongIndex >= 0 ? songs[currentSongIndex] : null;
+        showSetlistPos = (_cur && _ids.includes(_cur.id)) ? _ids.indexOf(_cur.id) : 0;
+      }
+    }
+  }
   // Garante que a biblioteca e outros overlays estejam fechados antes de entrar no show
   var bib = document.getElementById('biblioteca-overlay');
   if (bib && bib.classList.contains('show')) bib.classList.remove('show');
@@ -10089,6 +10103,10 @@ function _desativarModoShow() {
   if (_alertaProximaTimer) { clearTimeout(_alertaProximaTimer); _alertaProximaTimer = null; }
   // Salvar histórico antes de limpar o estado do show
   _salvarHistoricoShow();
+  // Persiste o ID do evento para restaurar ao re-entrar no show
+  if (showSetlistEventoId != null) {
+    window._lastShowEventoId = showSetlistEventoId;
+  }
   setTimeout(atualizarLetreiroDrumCam, 50);
   document.getElementById('app-body').classList.remove('performance-mode');
   document.getElementById('mode-text').innerText = 'MODO SHOW';
@@ -10194,6 +10212,7 @@ function ativarShowEvento(eventoId, startSongId) {
   showSetlist = idsValidos;
   showSetlistEventoId   = ev.id;
   showSetlistEventoNome = ev.nome;
+  window._lastShowEventoId = null; // novo evento ativo — descarta restauração automática
 
   // Se veio uma música específica, começa por ela; senão começa pela primeira
   const startId = startSongN && idsValidos.includes(startSongN) ? startSongN : idsValidos[0];
@@ -13206,8 +13225,19 @@ function adicionarAoEvento(songId) {
     salvarEventos();
     renderEventoDetalhe();
     showToast('Adicionada ao evento!');
+    // Atualiza o item no modal sem fechar — marca como "Já adicionada"
+    const lista = document.getElementById('modal-addmusica-list');
+    if (lista) {
+      const item = lista.querySelector(`[onclick="adicionarAoEvento(${songId})"]`);
+      if (item) {
+        item.classList.add('added');
+        item.innerHTML = item.innerHTML
+          .replace(/<button class="modal-addmusica-plus">\+<\/button>/, '<small style="color:rgba(255,255,255,0.25)">Já adicionada</small>');
+        item.onclick = null;
+      }
+    }
   }
-  fecharAddMusica();
+  // Modal permanece aberto para continuar adicionando músicas
 }
 
 // ─── DRUM CAM — Electronic Drum Pad ──────────────────────────────────────────
