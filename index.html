@@ -213,7 +213,10 @@ window._DEBUG = (window.location.hostname === 'localhost' || window.location.hos
       return d.fields ? _fromFirestore(d.fields) : null;
     } catch(e) {
       if (e && e.status) throw e;
-      return null;
+      // Erro de rede (sem status HTTP) — relança para que o chamador possa retentar
+      const netErr = new Error(e && e.message ? e.message : 'network');
+      netErr.status = 0; // 0 = falha de rede, diferente de null (não encontrado)
+      throw netErr;
     }
   }
 
@@ -699,7 +702,18 @@ window._DEBUG = (window.location.hostname === 'localhost' || window.location.hos
       } catch(e) {}
     },
     async getSala(codigo) {
-      try { return await _get('salas/' + codigo); } catch(e) { return null; }
+      // Tenta até 3 vezes — erros de rede não devem ser confundidos com "sala não existe"
+      for (let t = 0; t < 3; t++) {
+        try {
+          return await _get('salas/' + codigo);
+        } catch(e) {
+          const status = e && e.status;
+          if (status === 404) return null; // sala definitivamente não existe
+          if (status === 403 || status === 401) return null;
+          if (t < 2) await new Promise(r => setTimeout(r, 1000 * (t + 1)));
+        }
+      }
+      return null;
     },
 
     async buscarPorProfileId(profileId) {
@@ -749,6 +763,7 @@ window._DEBUG = (window.location.hostname === 'localhost' || window.location.hos
       for (let tentativa = 0; tentativa < 3; tentativa++) {
         try {
           const data = await _get('salas/' + codigo);
+          // null aqui significa 404 legítimo do Firestore (sala nunca existiu)
           if (!data) return { erro: 'nao_encontrada' };
           if (!data.ativa) return { erro: 'encerrada' };
           // Escreve viewer no documento da sala para que o host veja
@@ -761,8 +776,8 @@ window._DEBUG = (window.location.hostname === 'localhost' || window.location.hos
           const status = e && e.status;
           if (status === 403 || status === 401) return { erro: 'permissao' };
           if (status === 404) return { erro: 'nao_encontrada' };
-          // Rede/timeout — aguarda e tenta de novo
-          if (tentativa < 2) await new Promise(r => setTimeout(r, 1200 * (tentativa + 1)));
+          // status === 0 = falha de rede transitória — aguarda e tenta de novo
+          if (tentativa < 2) await new Promise(r => setTimeout(r, 1500 * (tentativa + 1)));
         }
       }
       return { erro: 'rede' };
