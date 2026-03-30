@@ -742,7 +742,7 @@ window._DEBUG = (window.location.hostname === 'localhost' || window.location.hos
     },
     ouvirSala(codigo, callback) {
       // NOTA: poll de sala NÃO usa _appPaused — precisa manter presença mesmo em background
-      var ms = (document.body && document.body.classList.contains('performance-mode')) ? 500 : 1000;
+      var ms = (document.body && document.body.classList.contains('performance-mode')) ? 400 : 800;
       var stopped = false;
       var _nextTimer = null;
       var _lastEstado = null; // compara só o campo estado (string JSON) para detectar mudança
@@ -764,7 +764,7 @@ window._DEBUG = (window.location.hostname === 'localhost' || window.location.hos
         } catch(e) {}
         // Agenda próximo APÓS receber resposta (evita sobreposição com latência alta)
         if (!stopped) {
-          var novoMs = (document.body && document.body.classList.contains('performance-mode')) ? 500 : 1000;
+          var novoMs = (document.body && document.body.classList.contains('performance-mode')) ? 400 : 800;
           ms = novoMs;
           _nextTimer = setTimeout(doCheck, ms);
         }
@@ -9617,6 +9617,8 @@ function enviarAvisoSala() {
   var uid    = _getUid();
   var hora   = new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
   var avisoObj = { tipo: 'aviso', uid, nome: perfil.nome || 'Host', texto, _t: String(Date.now()) };
+  // Guarda globalmente para que capturarEstado() o inclua no próximo broadcast
+  window._ultimoAvisoHost = avisoObj;
   // Persiste estado + ultimoAviso em uma única chamada atômica — sem race condition
   if (window._fb && myRoomCode) {
     var estado = capturarEstado ? capturarEstado() : {};
@@ -9624,7 +9626,6 @@ function enviarAvisoSala() {
     window._fb._set && window._fb._set('salas/' + myRoomCode, {
       estado: JSON.stringify(estado),
       online: onlineUids,
-      // onlineCount NÃO é sobrescrito aqui — gerido por entrar/sairSalaFb
       ultimoAviso: avisoObj
     }, true).catch(function(){});
   }
@@ -9850,13 +9851,22 @@ async function entrarNaSala() {
       const sc = document.querySelector('#sync-guests-count');
       if (sc) sc.innerText = total + ' online';
       atualizarSyncBar();
-      // Verifica aviso mais recente do host
+      // Verifica aviso mais recente do host — via campo ultimoAviso do Firestore
       if (data.ultimoAviso && data.ultimoAviso._t) {
         const avisoT = Number(data.ultimoAviso._t);
         const lastT  = Number(sessionStorage.getItem('_sala_last_aviso_t') || '0');
         if (avisoT > lastT) {
           sessionStorage.setItem('_sala_last_aviso_t', String(avisoT));
           _mostrarAvisoBanner(data.ultimoAviso.nome || 'Host', data.ultimoAviso.texto || '');
+        }
+      }
+      // Fallback: aviso também pode vir dentro do estado JSON (broadcastEstado)
+      if (estado && estado._ultimoAviso && estado._ultimoAviso._t) {
+        const avisoT2 = Number(estado._ultimoAviso._t);
+        const lastT2  = Number(sessionStorage.getItem('_sala_last_aviso_t') || '0');
+        if (avisoT2 > lastT2) {
+          sessionStorage.setItem('_sala_last_aviso_t', String(avisoT2));
+          _mostrarAvisoBanner(estado._ultimoAviso.nome || 'Host', estado._ultimoAviso.texto || '');
         }
       }
     } catch(e) {}
@@ -17979,6 +17989,10 @@ function capturarEstado() {
       var lista = _dcCarregarListaPresets();
       var p = lista.find(function(x) { return x.nome === _dcPresetAtivo; });
       return p ? { nome: p.nome, dados: JSON.stringify(p.dados) } : null;
+    })(),
+    _ultimoAviso: (function() {
+      // Inclui o último aviso no estado para que o broadcastEstado o entregue ao viewer
+      return window._ultimoAvisoHost || null;
     })()
   };
 }
@@ -18060,13 +18074,17 @@ function aplicarEstado(estado) {
 
   // Nome e posição da música
   if (estado.currentSongName) {
-    var _nomeAnterior = currentSongIndex >= 0 && songs[currentSongIndex] ? songs[currentSongIndex].name : null;
+    // Para o viewer (sem songs locais), usa a variável de controle própria
+    var _nomeAnterior = isViewer
+      ? (window._viewerUltimoNomeMusica || null)
+      : (currentSongIndex >= 0 && songs[currentSongIndex] ? songs[currentSongIndex].name : null);
     currentSongIndex = estado.currentSongIndex;
     if (window._vocSetlistRecebido) window._vocSetlistRecebido.pos = estado.currentSongIndex || 0;
     document.getElementById('perf-song-name').innerText = estado.currentSongName;
     document.getElementById('perf-song-pos').innerText =
       (estado.currentSongIndex + 1) + '/' + estado.songTotal;
     document.getElementById('dc-song-name').textContent = estado.currentSongName;
+    if (isViewer) window._viewerUltimoNomeMusica = estado.currentSongName;
     // Notificar mudança de música (apenas se mudou de fato)
     if (_nomeAnterior && _nomeAnterior !== estado.currentSongName) {
       _mapNotifMostrar(estado.currentSongName);
