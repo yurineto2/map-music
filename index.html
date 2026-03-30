@@ -9883,6 +9883,12 @@ async function entrarNaSala() {
     }
     document.getElementById('perf-song-name').innerText = window._viewerUltimoNomeMusica;
   }
+  // FIX Bug contador: usa onlineCount do Firestore (fonte de verdade) ao entrar,
+  // não o valor do estado JSON que pode estar desatualizado (só conta host=1).
+  var _joinOnlineCount = salaData.onlineCount || 1;
+  window._onlineCountCache = _joinOnlineCount;
+  var _scJoin = document.getElementById('sync-guests-count');
+  if (_scJoin) _scJoin.innerText = _joinOnlineCount + ' online';
   atualizarLetreiroDrumCam();
   setConnStatus('Conectado!', 'success');
   // Disparar evento para solicitar permissão de notificação
@@ -18264,7 +18270,13 @@ function aplicarEstado(estado) {
   }
 
   // Nome e posição da música
-  if (estado.currentSongName) {
+  // FIX: fallback para setlistNomes se currentSongName não vier no estado
+  var _resolvedSongName = estado.currentSongName ||
+    (estado.setlistNomes && estado.currentSongIndex >= 0
+      ? (estado.setlistNomes[estado.currentSongIndex] || null)
+      : null);
+  if (_resolvedSongName) {
+    estado.currentSongName = _resolvedSongName; // normaliza para o restante do bloco
     // Para o viewer (sem songs locais), usa a variável de controle própria
     var _nomeAnterior = isViewer
       ? (window._viewerUltimoNomeMusica || null)
@@ -18326,9 +18338,13 @@ function aplicarEstado(estado) {
   }
 
   // Presença online — atualiza sync bar do viewer
+  // FIX Bug contador: o onlineCount do estado JSON pode estar desatualizado
+  // (calculado pelo host antes do viewer entrar). Só usa se não tiver valor
+  // mais recente do Firestore em _onlineCountCache.
   if (estado.onlineCount !== undefined) {
+    const _countFinal = window._onlineCountCache || estado.onlineCount;
     const sc = document.getElementById('sync-guests-count');
-    if (sc) sc.innerText = estado.onlineCount + ' online';
+    if (sc) sc.innerText = _countFinal + ' online';
     if (estado.roomCode) {
       const codeEl = document.getElementById('sync-code-display');
       if (codeEl && !codeEl.innerText) codeEl.innerText = estado.roomCode;
