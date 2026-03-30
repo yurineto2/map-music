@@ -9626,6 +9626,7 @@ function copiarCodigo() {
 function broadcastEstado() {
   if (!isHost || syncPaused) return;
   const estado = capturarEstado();
+  if (window._DEBUG) console.log('[MAP] broadcastEstado currentSongName=', estado.currentSongName, 'currentSongIndex=', currentSongIndex, 'songs.length=', songs.length, 'songName=', currentSongIndex>=0&&songs[currentSongIndex]?songs[currentSongIndex].name:'N/A');
   if (_fbReady && window._fb && myRoomCode) {
     const onlineUids = Object.keys(_viewersOnline || {});
     // FIX: inclui ultimoAviso no payload principal para que viewers recebam aviso via ouvirSala
@@ -9871,6 +9872,21 @@ async function entrarNaSala() {
     const estadoAtual = JSON.parse(salaData.estado || '{}');
     if (estadoAtual && Object.keys(estadoAtual).length > 0) aplicarEstado(estadoAtual);
   } catch(e) {}
+  // FIX extra: re-lê o estado mais recente da sala após 500ms
+  // porque entrarSalaFb pode ter lido um estado desatualizado (criado antes da música ser selecionada)
+  setTimeout(async function() {
+    if (!isViewer || !window._fb) return;
+    try {
+      var _freshData = await window._fb._get('salas/' + code);
+      if (_freshData && _freshData.estado) {
+        var _freshEstado = JSON.parse(_freshData.estado);
+        if (_freshEstado && _freshEstado.currentSongName && !window._viewerUltimoNomeMusica) {
+          aplicarEstado(_freshEstado);
+        }
+      }
+    } catch(e) {}
+  }, 600);
+
   // FIX: garante que o nome da música apareça imediatamente ao entrar na sala.
   // aplicarEstado() já setou _viewerUltimoNomeMusica e escreveu perf-song-name,
   // mas viewer-mode ainda não foi adicionado (o badge fica display:none).
@@ -18166,13 +18182,23 @@ function capturarEstado() {
     parts,
     perfMode: document.getElementById('app-body').classList.contains('performance-mode'),
     currentSongIndex,
-    currentSongName: currentSongIndex >= 0 && songs[currentSongIndex]
-      ? songs[currentSongIndex].name
-      : (function() {
-          var _el = document.getElementById('perf-song-name');
-          var _n = _el ? _el.innerText : '';
-          return (_n && _n !== 'Nenhuma musica' && _n !== '—') ? _n : null;
-        })(),
+    currentSongName: (function() {
+      // 1. Tenta pelo índice direto no array songs[]
+      if (currentSongIndex >= 0 && songs[currentSongIndex] && songs[currentSongIndex].name) {
+        return songs[currentSongIndex].name;
+      }
+      // 2. Fallback: varre todo o songs[] para achar pelo indicador dc-song-name
+      var _dcName = document.getElementById('dc-song-name');
+      var _dcN = _dcName ? (_dcName.textContent || _dcName.innerText || '') : '';
+      if (_dcN && _dcN !== '—' && _dcN !== '-') {
+        var _found = songs.find(function(s){ return s.name === _dcN; });
+        if (_found) return _found.name;
+      }
+      // 3. Fallback final: lê do elemento visual do indicador
+      var _el = document.getElementById('perf-song-name');
+      var _n = _el ? _el.innerText : '';
+      return (_n && _n !== 'Nenhuma musica' && _n !== '—' && _n !== '-') ? _n : null;
+    })(),
     setlistPos: (function() {
       var lista = _getShowSongs();
       var cur = currentSongIndex >= 0 ? songs[currentSongIndex] : null;
@@ -18282,6 +18308,7 @@ function aplicarEstado(estado) {
   }
 
   // Nome e posição da música
+  if (window._DEBUG && isViewer) console.log('[MAP] aplicarEstado currentSongName=', estado.currentSongName, 'setlistPos=', estado.setlistPos, 'setlistNomes=', estado.setlistNomes, 'currentSongIndex=', estado.currentSongIndex);
   // FIX: usa setlistPos (posição na setlist ativa) para fallback, não currentSongIndex (índice no songs[] do host)
   var _setlistPosViewer = (estado.setlistPos !== undefined && estado.setlistPos >= 0)
     ? estado.setlistPos
