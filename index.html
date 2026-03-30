@@ -9871,6 +9871,18 @@ async function entrarNaSala() {
     const estadoAtual = JSON.parse(salaData.estado || '{}');
     if (estadoAtual && Object.keys(estadoAtual).length > 0) aplicarEstado(estadoAtual);
   } catch(e) {}
+  // FIX: garante que o nome da música apareça imediatamente ao entrar na sala.
+  // aplicarEstado() já setou _viewerUltimoNomeMusica e escreveu perf-song-name,
+  // mas viewer-mode ainda não foi adicionado (o badge fica display:none).
+  // Forçamos a atualização da sync-bar e do indicador antes de adicionar a classe.
+  if (window._viewerUltimoNomeMusica) {
+    var _sbSongJoin = document.getElementById('sync-bar-song-name');
+    if (_sbSongJoin) {
+      _sbSongJoin.innerText = '♪ ' + window._viewerUltimoNomeMusica;
+      _sbSongJoin.style.display = 'inline-block';
+    }
+    document.getElementById('perf-song-name').innerText = window._viewerUltimoNomeMusica;
+  }
   atualizarLetreiroDrumCam();
   setConnStatus('Conectado!', 'success');
   // Disparar evento para solicitar permissão de notificação
