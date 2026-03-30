@@ -4990,6 +4990,7 @@ body.performance-mode .teleprompter-panel { display: block; }
   gap: 10px; align-items: center;
 }
 body.performance-mode .perf-song-indicator { display: flex; }
+body.viewer-mode .perf-song-indicator { display: flex; } /* viewer sempre vê o nome da musica */
 .perf-song-name { color: #fff; font-size: 13px; font-weight: 900; max-width: 180px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
 /* Controle de fonte por música no modo show */
@@ -7410,6 +7411,7 @@ body.auth-pending #toast {
   <div class="sync-dot"></div>
   <span id="sync-label">SINCRONIZADO</span>
   <span class="sync-code" id="sync-code-display"></span>
+  <span id="sync-bar-song-name" style="display:none; font-size:11px; font-weight:900; color:#fff; opacity:0.85; max-width:160px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; margin-left:8px;"></span>
   <span id="sync-guests" style="margin-left:auto; font-size:10px; font-weight:800; opacity:0.8; display:flex; align-items:center; gap:5px;">
     <span style="display:inline-block; width:6px; height:6px; border-radius:50%; background:currentColor; animation:pulse 1.4s infinite;"></span>
     <span id="sync-guests-count"></span>
@@ -9964,6 +9966,9 @@ function atualizarSyncBar(code) {
     const total = window._onlineCountCache || 1;
     guests.style.display = 'flex';
     guests.querySelector('#sync-guests-count').innerText = total + ' online';
+    // Mostra nome da musica atual na sync-bar do viewer
+    var _sbSong = document.getElementById('sync-bar-song-name');
+    if (_sbSong) { var _nomeAtual = window._viewerUltimoNomeMusica || null; if (_nomeAtual) { _sbSong.innerText = '♪ ' + _nomeAtual; _sbSong.style.display = 'inline-block'; } else { _sbSong.style.display = 'none'; } }
     if (btnSala) { btnSala.innerText = 'AO VIVO'; btnSala.style.background = 'rgba(138,92,246,0.2)'; btnSala.style.borderColor = 'rgba(138,92,246,0.6)'; }
   } else {
     bar.classList.remove('visible', 'viewer');
@@ -18098,7 +18103,7 @@ function aplicarEstado(estado) {
     document.getElementById('perf-song-pos').innerText =
       (estado.currentSongIndex + 1) + '/' + estado.songTotal;
     document.getElementById('dc-song-name').textContent = estado.currentSongName;
-    if (isViewer) window._viewerUltimoNomeMusica = estado.currentSongName;
+    if (isViewer) { window._viewerUltimoNomeMusica = estado.currentSongName; atualizarSyncBar(); } // atualiza nome na sync-bar do viewer
     // Notificar mudança de música (apenas se mudou de fato)
     if (_nomeAnterior && _nomeAnterior !== estado.currentSongName) {
       _mapNotifMostrar(estado.currentSongName);
