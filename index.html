@@ -7633,7 +7633,7 @@ body.auth-pending #toast {
       <div class="connect-status" id="connect-status"></div>
       <button class="modal-btn primary" id="btn-entrar" onclick="entrarNaSala()">Entrar na Sala</button>
       <button class="modal-btn secondary" style="margin-top:10px;" onclick="voltarEscolhaSala()">Voltar</button>
-      <button class="modal-btn secondary" style="margin-top:6px;font-size:10px;opacity:0.6;" onclick="diagnosticarSala()">🔍 Verificar sala</button>
+      <button class="modal-btn secondary" style="margin-top:6px;font-size:10px;opacity:0.6;" onclick="diagnosticarSala()"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-1px;margin-right:4px;"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>Verificar sala</button>
     </div>
 
   </div>
@@ -9716,7 +9716,7 @@ async function diagnosticarSala() {
   const API_KEY = 'AIzaSyBausGqamGuEbxV8NdHfuRY0Tx21LELj-Y';
   const BASE    = 'https://firestore.googleapis.com/v1/projects/' + PROJECT + '/databases/(default)/documents';
 
-  setConnStatus('🔍 Passo 1/3 — Testando conectividade com Firestore...', 'loading');
+  setConnStatus('Passo 1/3 — Testando conectividade com Firestore...', 'loading');
 
   // PASSO 1: teste de leitura básica (lista de documentos)
   let pingOk = false, pingStatus = 0, pingMsg = '';
@@ -9734,7 +9734,7 @@ async function diagnosticarSala() {
 
   if (!pingOk) {
     setConnStatus(
-      '❌ Sem acesso ao Firestore.
+      'Sem acesso ao Firestore.
 ' +
       'Erro: ' + pingMsg + '
 
@@ -9751,7 +9751,7 @@ async function diagnosticarSala() {
     return;
   }
 
-  setConnStatus('✅ Firestore acessível (HTTP ' + pingStatus + '). Passo 2/3 — A verificar sala ' + code + '...', 'loading');
+  setConnStatus('Firestore acessível (HTTP ' + pingStatus + '). Passo 2/3 — A verificar sala ' + code + '...', 'loading');
 
   // PASSO 2: leitura direta do documento da sala
   let salaStatus = 0, salaBody = null;
@@ -9763,13 +9763,13 @@ async function diagnosticarSala() {
     salaStatus = r2.status;
     salaBody   = await r2.json().catch(() => null);
   } catch(e) {
-    setConnStatus('❌ Erro ao ler sala: ' + (e.message || 'timeout'), 'error');
+    setConnStatus('Erro ao ler sala: ' + (e.message || 'timeout'), 'error');
     return;
   }
 
   if (salaStatus === 403 || salaStatus === 401) {
     setConnStatus(
-      '⛔ REGRAS DO FIRESTORE BLOQUEIAM LEITURA (HTTP ' + salaStatus + ')
+      'REGRAS DO FIRESTORE BLOQUEIAM LEITURA (HTTP ' + salaStatus + ')
 
 ' +
       'Solução:
@@ -9798,7 +9798,7 @@ service cloud.firestore {
 
   if (salaStatus === 404 || (salaBody && salaBody.error && salaBody.error.code === 404)) {
     setConnStatus(
-      '❌ Sala "' + code + '" não existe no Firestore.
+      'Sala "' + code + '" não existe no Firestore.
 
 ' +
       'O host ainda não criou a sala, ou o código está errado.
@@ -9810,16 +9810,16 @@ service cloud.firestore {
   }
 
   if (salaStatus !== 200 || !salaBody) {
-    setConnStatus('❌ Resposta inesperada (HTTP ' + salaStatus + '). Tente novamente.', 'error');
+    setConnStatus('Resposta inesperada (HTTP ' + salaStatus + '). Tente novamente.', 'error');
     return;
   }
 
-  setConnStatus('✅ Sala encontrada. Passo 3/3 — A verificar campos...', 'loading');
+  setConnStatus('Sala encontrada. Passo 3/3 — A verificar campos...', 'loading');
 
   // PASSO 3: verificar campos da sala
   const fields = salaBody.fields;
   if (!fields) {
-    setConnStatus('⚠️ Sala existe mas sem campos. O host deve recriar a sala.', 'error');
+    setConnStatus('Sala existe mas sem campos. O host deve recriar a sala.', 'error');
     return;
   }
   const ativa     = fields.ativa     && fields.ativa.booleanValue;
@@ -9828,12 +9828,12 @@ service cloud.firestore {
   const codigo    = fields.codigo    && fields.codigo.stringValue    || code;
 
   if (ativa === false) {
-    setConnStatus('⚠️ Sala "' + codigo + '" existe mas está ENCERRADA.
+    setConnStatus('Sala "' + codigo + '" existe mas está ENCERRADA.
 O host precisa criar nova sala.', 'error');
     return;
   }
 
-  setConnStatus('✅ Sala "' + codigo + '" OK! Host: ' + hostNome + ' | Online: ' + onlineCount + '
+  setConnStatus('Sala "' + codigo + '" OK! Host: ' + hostNome + ' | Online: ' + onlineCount + '
 A entrar automaticamente...', 'success');
   setTimeout(entrarNaSala, 600);
 }
@@ -9874,7 +9874,7 @@ async function entrarNaSala() {
     if (tipo === 'nao_encontrada') msg = 'Sala não encontrada. Verifique o código.';
     else if (tipo === 'encerrada')  msg = 'Esta sala foi encerrada pelo host.';
     else if (tipo === 'permissao')  msg = 'Sem permissão no Firestore (403). Verifique as Regras no Firebase Console.';
-    else msg = 'Erro de rede ao aceder ao Firestore. Use o botão "🔍 Verificar sala" para diagnóstico detalhado.';
+    else msg = 'Erro de rede ao aceder ao Firestore. Use o botão "<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-1px;margin-right:4px;"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>Verificar sala" para diagnóstico detalhado.';
     setConnStatus(msg, 'error');
     showToast(msg);
     if (btn) btn.disabled = false;
