@@ -18166,7 +18166,19 @@ function capturarEstado() {
     parts,
     perfMode: document.getElementById('app-body').classList.contains('performance-mode'),
     currentSongIndex,
-    currentSongName: currentSongIndex >= 0 && songs[currentSongIndex] ? songs[currentSongIndex].name : null,
+    currentSongName: currentSongIndex >= 0 && songs[currentSongIndex]
+      ? songs[currentSongIndex].name
+      : (function() {
+          var _el = document.getElementById('perf-song-name');
+          var _n = _el ? _el.innerText : '';
+          return (_n && _n !== 'Nenhuma musica' && _n !== '—') ? _n : null;
+        })(),
+    setlistPos: (function() {
+      var lista = _getShowSongs();
+      var cur = currentSongIndex >= 0 ? songs[currentSongIndex] : null;
+      if (!cur || !lista.length) return -1;
+      return lista.findIndex(function(s) { return s.id === cur.id; });
+    })(),
     songTotal: songs.length,
     setlistNomes: (showSetlist && showSetlist.length)
       ? showSetlist.map(function(id){ var s=songs.find(function(x){return x.id===id;}); return s?s.name:''; }).filter(Boolean)
@@ -18270,10 +18282,13 @@ function aplicarEstado(estado) {
   }
 
   // Nome e posição da música
-  // FIX: fallback para setlistNomes se currentSongName não vier no estado
+  // FIX: usa setlistPos (posição na setlist ativa) para fallback, não currentSongIndex (índice no songs[] do host)
+  var _setlistPosViewer = (estado.setlistPos !== undefined && estado.setlistPos >= 0)
+    ? estado.setlistPos
+    : (estado.currentSongIndex >= 0 ? estado.currentSongIndex : -1);
   var _resolvedSongName = estado.currentSongName ||
-    (estado.setlistNomes && estado.currentSongIndex >= 0
-      ? (estado.setlistNomes[estado.currentSongIndex] || null)
+    (estado.setlistNomes && _setlistPosViewer >= 0
+      ? (estado.setlistNomes[_setlistPosViewer] || null)
       : null);
   if (_resolvedSongName) {
     estado.currentSongName = _resolvedSongName; // normaliza para o restante do bloco
@@ -18284,8 +18299,13 @@ function aplicarEstado(estado) {
     currentSongIndex = estado.currentSongIndex;
     if (window._vocSetlistRecebido) window._vocSetlistRecebido.pos = estado.currentSongIndex || 0;
     document.getElementById('perf-song-name').innerText = estado.currentSongName;
+    // FIX: usa setlistPos para exibir posição correta na setlist (ex: 2/5), não o índice do songs[]
+    var _posDisplay = _setlistPosViewer >= 0 ? _setlistPosViewer : estado.currentSongIndex;
+    var _totalDisplay = (estado.setlistNomes && estado.setlistNomes.length > 0)
+      ? estado.setlistNomes.length
+      : estado.songTotal;
     document.getElementById('perf-song-pos').innerText =
-      (estado.currentSongIndex + 1) + '/' + estado.songTotal;
+      (_posDisplay + 1) + '/' + _totalDisplay;
     document.getElementById('dc-song-name').textContent = estado.currentSongName;
     if (isViewer) { window._viewerUltimoNomeMusica = estado.currentSongName; atualizarSyncBar(); } // atualiza nome na sync-bar do viewer
     // Notificar mudança de música (apenas se mudou de fato)
