@@ -3443,25 +3443,51 @@ body { font-family: -apple-system, 'Inter', BlinkMacSystemFont, 'Segoe UI', sans
 .album-card[draggable] { cursor: grab; }
 .album-card[draggable]:active { cursor: grabbing; }
 .album-card.drag-over {
-  outline: 2px solid rgba(10,158,110,0.7);
-  outline-offset: 2px;
-  opacity: 0.85;
+  outline: 2px solid rgba(10,158,110,0.85);
+  outline-offset: 3px;
+  background: rgba(10,158,110,0.07);
+  transform: scale(1.02);
+  transition: transform 0.15s ease, outline 0.15s ease, background 0.15s ease;
 }
 .album-card.dragging {
-  opacity: 0.35;
-  transform: scale(0.97);
+  opacity: 0.25;
+  transform: scale(0.96);
+  transition: opacity 0.2s ease, transform 0.2s ease;
+}
+.album-card.drag-ready {
+  outline: 2px solid rgba(10,158,110,0.5);
+  outline-offset: 3px;
+  transform: scale(0.985);
+  transition: transform 0.15s ease, outline 0.15s ease;
 }
 .drag-handle {
   position: absolute;
   top: 6px; left: 6px;
-  width: 20px; height: 20px;
+  width: 22px; height: 22px;
   display: flex; align-items: center; justify-content: center;
-  color: rgba(255,255,255,0.25);
+  color: rgba(255,255,255,0.2);
   z-index: 2;
   touch-action: none;
   cursor: grab;
+  transition: color 0.2s ease, transform 0.2s ease;
+}
+.album-card.drag-ready .drag-handle {
+  color: rgba(10,158,110,0.9);
+  transform: scale(1.2);
 }
 .drag-handle:active { cursor: grabbing; color: rgba(255,255,255,0.6); }
+/* Clone flutuante do touch drag */
+.touch-drag-clone {
+  position: fixed;
+  pointer-events: none;
+  z-index: 99999;
+  border-radius: 14px;
+  box-shadow: 0 16px 48px rgba(0,0,0,0.55), 0 0 0 2px rgba(10,158,110,0.6);
+  transform: scale(1.06) rotate(1.5deg);
+  transition: transform 0.18s cubic-bezier(0.34,1.56,0.64,1);
+  opacity: 0.92;
+  will-change: transform, left, top;
+}
 .album-cover { position: relative; }
 @keyframes acFadeIn {
   from { opacity:0; transform:translateY(8px) scale(0.97); }
@@ -3655,7 +3681,7 @@ body { font-family: -apple-system, 'Inter', BlinkMacSystemFont, 'Segoe UI', sans
   background: var(--glass-bg);
   border: 1px solid var(--border-color);
   border-radius: 14px; overflow: hidden; cursor: pointer;
-  transition: border-color 0.15s;
+  transition: border-color 0.2s, transform 0.2s;
   display: flex; flex-direction: row; align-items: stretch;
   height: 72px;
 }
@@ -12787,103 +12813,51 @@ function renderEventos(filtro = '') {
   const termo = (filtro || '').toLowerCase();
   const lista = eventos.filter(e => (e.nome || '').toLowerCase().includes(termo));
 
-  // Signature check — evita re-render desnecessário
-  const sig = filtro + '||' + lista.map(e => e.id + '|' + (e.nome||'') + '|' + (e.data||'') + '|' + (e.musicIds?e.musicIds.length:0)).join(',');
+  const sig = filtro + '||' + lista.map(e => e.id + '|' + (e.nome || '') + '|' + (e.data || '') + '|' + (e.musicas ? e.musicas.length : 0)).join(',');
   if (sig === _evLastSig) return;
   _evLastSig = sig;
 
-  grid.classList.toggle('eventos-mode', lista.length > 0);
+  // Botão criar evento sempre no topo
+  const btnCriar = `<div style="grid-column:1/-1;margin-bottom:4px;">
+    <button onclick="abrirModalEvento()" style="width:100%;padding:14px;border-radius:12px;
+      background:rgba(10,158,110,0.1);border:1px dashed rgba(10,158,110,0.3);
+      color:var(--accent-primary);font-size:12px;font-weight:800;letter-spacing:1px;
+      cursor:pointer;text-transform:uppercase;">
+      + Criar Evento
+    </button>
+  </div>`;
 
-  // ── Garante o botão "Criar Evento" fixo no topo ──
-  var btnWrapper = grid.querySelector('[data-ev-criar]');
-  if (!btnWrapper) {
-    btnWrapper = document.createElement('div');
-    btnWrapper.setAttribute('data-ev-criar', '1');
-    btnWrapper.style.cssText = 'grid-column:1/-1;margin-bottom:4px;';
-    btnWrapper.innerHTML = '<button onclick="abrirModalEvento()" style="width:100%;padding:14px;border-radius:12px;background:rgba(10,158,110,0.1);border:1px dashed rgba(10,158,110,0.3);color:var(--accent-primary);font-size:12px;font-weight:800;letter-spacing:1px;cursor:pointer;text-transform:uppercase;">+ Criar Evento</button>';
-    grid.insertBefore(btnWrapper, grid.firstChild);
-  }
-
-  // ── Estado vazio ──
-  var vazioEl = grid.querySelector('[data-ev-vazio]');
   if (!lista.length) {
-    // Remove todos os cards existentes
-    grid.querySelectorAll('[data-ev-id]').forEach(function(el) { el.remove(); });
-    if (!vazioEl) {
-      vazioEl = document.createElement('div');
-      vazioEl.setAttribute('data-ev-vazio', '1');
-      vazioEl.className = 'biblioteca-vazia';
-      vazioEl.style.gridColumn = '1/-1';
-      vazioEl.innerHTML = '<div class="biblioteca-vazia-icon"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg></div><div>Nenhum evento</div><div style="font-size:10px;opacity:0.6;font-weight:500;">Crie eventos para organizar repertórios</div>';
-      grid.appendChild(vazioEl);
-    }
+    grid.classList.remove('eventos-mode');
+    grid.innerHTML = btnCriar + `<div class="biblioteca-vazia" style="grid-column:1/-1">
+      <div class="biblioteca-vazia-icon"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg></div>
+      <div>Nenhum evento</div>
+      <div style="font-size:10px;opacity:0.6;font-weight:500;">Crie eventos para organizar repertórios</div>
+    </div>`;
     return;
   }
-  if (vazioEl) vazioEl.remove();
 
-  // ── Reconciliação com chave (data-ev-id) — sem destruir DOM existente ──
-  // Mapeia cards existentes por ID
-  var existing = {};
-  grid.querySelectorAll('[data-ev-id]').forEach(function(el) {
-    existing[el.getAttribute('data-ev-id')] = el;
-  });
-
-  // Garante que cada evento tenha um card atualizado, na ordem correta
-  var after = btnWrapper; // referência para insertBefore
-  lista.forEach(function(ev) {
-    var key = String(ev.id);
-    var cor = albumColor(ev.id);
-    var qtd = (ev.musicIds || []).length;
-    var dataFmt = ev.data ? new Date(ev.data + 'T12:00').toLocaleDateString('pt-BR', { day:'2-digit', month:'short', year:'numeric' }) : '';
-    var label = qtd + ' música' + (qtd !== 1 ? 's' : '');
-
-    var card = existing[key];
-    if (!card) {
-      // Cria novo card
-      card = document.createElement('div');
-      card.className = 'evento-card';
-      card.setAttribute('data-ev-id', key);
-      card.onclick = function() { abrirEventoDetalhe(ev.id); };
-      card.innerHTML =
-        '<div class="evento-cover" style="--ac1:' + cor.ac1 + ';--ac2:' + cor.ac2 + '">' +
-          '<div class="evento-cover-bg"></div>' +
-          '<div class="evento-cover-nome" data-field="nome"></div>' +
-          '<div class="evento-cover-count" data-field="count"></div>' +
-        '</div>' +
-        '<div class="evento-info">' +
-          '<div class="evento-nome" data-field="nomeInfo"></div>' +
-          '<div class="evento-meta" data-field="meta"></div>' +
-        '</div>' +
-        '<button class="evento-menu-btn" title="Opções">' +
-          '<svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="12" cy="19" r="1.5"/></svg>' +
-        '</button>';
-      card.querySelector('.evento-menu-btn').onclick = function(e) { abrirMenuEvento(ev.id, e); };
-      delete existing[key]; // marca como processado
-    } else {
-      delete existing[key];
-      // Atualiza cor se mudou
-      var coverEl = card.querySelector('.evento-cover');
-      if (coverEl) { coverEl.style.setProperty('--ac1', cor.ac1); coverEl.style.setProperty('--ac2', cor.ac2); }
-    }
-
-    // Atualiza campos de texto (sem destruir o nó)
-    var nEl = card.querySelector('[data-field="nome"]');       if (nEl && nEl.textContent !== ev.nome) nEl.textContent = ev.nome;
-    var cEl = card.querySelector('[data-field="count"]');      if (cEl && cEl.textContent !== label)   cEl.textContent = label;
-    var niEl = card.querySelector('[data-field="nomeInfo"]');  if (niEl && niEl.textContent !== ev.nome) niEl.textContent = ev.nome;
-    var mEl = card.querySelector('[data-field="meta"]');
-    var metaTxt = (dataFmt || 'Sem data') + ' · ' + label;
-    if (mEl && mEl.textContent !== metaTxt) mEl.textContent = metaTxt;
-
-    // Reordena sem animação: só move se não estiver na posição certa
-    var expectedNext = after.nextSibling;
-    if (card !== expectedNext) {
-      grid.insertBefore(card, expectedNext);
-    }
-    after = card;
-  });
-
-  // Remove cards que não estão mais na lista filtrada
-  Object.values(existing).forEach(function(el) { el.remove(); });
+  grid.classList.add('eventos-mode');
+  grid.innerHTML = btnCriar + lista.map(ev => {
+    const cor = albumColor(ev.id);
+    const dataFmt = ev.data ? new Date(ev.data + 'T12:00').toLocaleDateString('pt-BR', { day:'2-digit', month:'short', year:'numeric' }) : '';
+    const qtd = (ev.musicIds || []).length;
+    return `
+    <div class="evento-card" onclick="abrirEventoDetalhe(${ev.id})">
+      <div class="evento-cover" style="--ac1:${cor.ac1};--ac2:${cor.ac2}">
+        <div class="evento-cover-bg"></div>
+        <div class="evento-cover-nome">${ev.nome}</div>
+        <div class="evento-cover-count">${qtd} música${qtd !== 1 ? 's' : ''}</div>
+      </div>
+      <div class="evento-info">
+        <div class="evento-nome">${ev.nome}</div>
+        <div class="evento-meta">${dataFmt || 'Sem data'} · ${qtd} música${qtd !== 1 ? 's' : ''}</div>
+      </div>
+      <button class="evento-menu-btn" onclick="abrirMenuEvento(${ev.id}, event)" title="Opções">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="12" cy="19" r="1.5"/></svg>
+      </button>
+    </div>`;
+  }).join('');
 }
 
 // ── Menu contextual de evento ─────────────────────────────────────────────
@@ -13148,14 +13122,16 @@ function removerDoEvento(songId, e) {
 function _initEventoDragDrop(grid) {
   var dragSrcId = null;
 
+  // ── Desktop drag & drop ──────────────────────────────────────────────────
   function onDragStart(e) {
     dragSrcId = parseInt(this.dataset.id);
-    this.classList.add('dragging');
+    var card = this;
+    setTimeout(function() { card.classList.add('dragging'); }, 0);
     if (e.dataTransfer) { e.dataTransfer.effectAllowed = 'move'; e.dataTransfer.setData('text/plain', dragSrcId); }
   }
   function onDragEnd() {
     grid.querySelectorAll('.album-card').forEach(function(c) {
-      c.classList.remove('dragging', 'drag-over');
+      c.classList.remove('dragging', 'drag-over', 'drag-ready');
     });
   }
   function onDragOver(e) {
@@ -13182,34 +13158,115 @@ function _initEventoDragDrop(grid) {
     renderEventoDetalhe();
   }
 
-  // Touch drag (mobile)
-  var _touchDragId = null;
-  var _touchClone  = null;
-  function onTouchStart(e) {
-    _touchDragId = parseInt(this.dataset.id);
-    var t = e.touches[0];
-    var rect = this.getBoundingClientRect();
-    _touchClone = this.cloneNode(true);
-    _touchClone.style.cssText = 'position:fixed;left:' + rect.left + 'px;top:' + rect.top + 'px;width:' + rect.width + 'px;opacity:0.75;pointer-events:none;z-index:99999;transition:none;border-radius:12px;';
-    document.body.appendChild(_touchClone);
-    this.classList.add('dragging');
+  // ── Touch drag com long press de 1 segundo ───────────────────────────────
+  var _touchDragId   = null;
+  var _touchClone    = null;
+  var _touchCard     = null;
+  var _longPressTimer = null;
+  var _longPressActive = false;
+  var _touchStartX   = 0;
+  var _touchStartY   = 0;
+  var _LONG_PRESS_MS = 1000; // 1 segundo
+
+  function _cancelLongPress() {
+    if (_longPressTimer) { clearTimeout(_longPressTimer); _longPressTimer = null; }
+    if (_touchCard) { _touchCard.classList.remove('drag-ready'); }
+    _longPressActive = false;
   }
-  function onTouchMove(e) {
-    if (_touchDragId === null || !_touchClone) return;
-    e.preventDefault();
+
+  function _spawnClone(card, touchX, touchY) {
+    var rect = card.getBoundingClientRect();
+    var clone = card.cloneNode(true);
+    clone.className = 'album-card touch-drag-clone';
+    clone.style.width  = rect.width  + 'px';
+    clone.style.height = rect.height + 'px';
+    clone.style.left   = rect.left   + 'px';
+    clone.style.top    = rect.top    + 'px';
+    document.body.appendChild(clone);
+    // Trigger transition para o efeito de "levantamento"
+    requestAnimationFrame(function() {
+      clone.style.transition = 'transform 0.18s cubic-bezier(0.34,1.56,0.64,1), box-shadow 0.18s ease';
+    });
+    return clone;
+  }
+
+  function onTouchStart(e) {
+    if (e.touches.length !== 1) return;
+    var card = this;
     var t = e.touches[0];
+    _touchStartX = t.clientX;
+    _touchStartY = t.clientY;
+    _touchCard   = card;
+    _longPressActive = false;
+
+    // Feedback visual enquanto aguarda o long press
+    _longPressTimer = setTimeout(function() {
+      _longPressActive = true;
+      _touchDragId = parseInt(card.dataset.id);
+      card.classList.remove('drag-ready');
+      // Vibração háptica (dispositivos que suportam)
+      if (navigator.vibrate) navigator.vibrate(30);
+      // Cria clone flutuante
+      _touchClone = _spawnClone(card, _touchStartX, _touchStartY);
+      card.classList.add('dragging');
+    }, _LONG_PRESS_MS);
+
+    // Inicia feedback visual após 200ms (anel verde pulsando)
+    setTimeout(function() {
+      if (_longPressTimer !== null) card.classList.add('drag-ready');
+    }, 200);
+  }
+
+  function onTouchMove(e) {
+    if (e.touches.length !== 1) return;
+    var t = e.touches[0];
+    var dx = Math.abs(t.clientX - _touchStartX);
+    var dy = Math.abs(t.clientY - _touchStartY);
+
+    // Se o dedo moveu muito antes do long press ativar, cancela
+    if (!_longPressActive) {
+      if (dx > 10 || dy > 10) _cancelLongPress();
+      return;
+    }
+
+    // Long press ativo — move o clone
+    e.preventDefault();
+    if (!_touchClone) return;
     var w = _touchClone.offsetWidth;
     var h = _touchClone.offsetHeight;
+    _touchClone.style.transition = 'none';
     _touchClone.style.left = (t.clientX - w / 2) + 'px';
     _touchClone.style.top  = (t.clientY - h / 2) + 'px';
+
+    // Destaca o card alvo
     grid.querySelectorAll('.album-card').forEach(function(c) { c.classList.remove('drag-over'); });
     var el = document.elementFromPoint(t.clientX, t.clientY);
     var over = el && el.closest ? el.closest('.album-card[draggable]') : null;
     if (over && parseInt(over.dataset.id) !== _touchDragId) over.classList.add('drag-over');
   }
+
   function onTouchEnd(e) {
-    if (_touchClone) { _touchClone.remove(); _touchClone = null; }
-    grid.querySelectorAll('.album-card').forEach(function(c) { c.classList.remove('dragging', 'drag-over'); });
+    _cancelLongPress();
+
+    if (!_longPressActive) {
+      _touchDragId = null;
+      return;
+    }
+
+    // Anima clone de volta / saindo antes de remover
+    if (_touchClone) {
+      var cl = _touchClone;
+      cl.style.transition = 'transform 0.18s ease-in, opacity 0.18s ease-in';
+      cl.style.transform  = 'scale(0.9) rotate(0deg)';
+      cl.style.opacity    = '0';
+      setTimeout(function() { cl.remove(); }, 200);
+      _touchClone = null;
+    }
+
+    grid.querySelectorAll('.album-card').forEach(function(c) {
+      c.classList.remove('dragging', 'drag-over', 'drag-ready');
+    });
+
     if (_touchDragId === null) return;
     var t = e.changedTouches[0];
     var el = document.elementFromPoint(t.clientX, t.clientY);
@@ -13231,17 +13288,31 @@ function _initEventoDragDrop(grid) {
         }
       }
     }
-    _touchDragId = null;
+    _touchDragId    = null;
+    _touchCard      = null;
+    _longPressActive = false;
+  }
+
+  function onTouchCancel() {
+    _cancelLongPress();
+    if (_touchClone) { _touchClone.remove(); _touchClone = null; }
+    grid.querySelectorAll('.album-card').forEach(function(c) {
+      c.classList.remove('dragging', 'drag-over', 'drag-ready');
+    });
+    _touchDragId    = null;
+    _touchCard      = null;
+    _longPressActive = false;
   }
 
   grid.querySelectorAll('.album-card[draggable]').forEach(function(card) {
-    card.addEventListener('dragstart',  onDragStart);
-    card.addEventListener('dragend',    onDragEnd);
-    card.addEventListener('dragover',   onDragOver);
-    card.addEventListener('drop',       onDrop);
-    card.addEventListener('touchstart', onTouchStart, { passive: true });
-    card.addEventListener('touchmove',  onTouchMove,  { passive: false });
-    card.addEventListener('touchend',   onTouchEnd,   { passive: true });
+    card.addEventListener('dragstart',   onDragStart);
+    card.addEventListener('dragend',     onDragEnd);
+    card.addEventListener('dragover',    onDragOver);
+    card.addEventListener('drop',        onDrop);
+    card.addEventListener('touchstart',  onTouchStart,  { passive: true });
+    card.addEventListener('touchmove',   onTouchMove,   { passive: false });
+    card.addEventListener('touchend',    onTouchEnd,    { passive: true });
+    card.addEventListener('touchcancel', onTouchCancel, { passive: true });
   });
 }
 
