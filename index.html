@@ -9628,7 +9628,14 @@ function broadcastEstado() {
   const estado = capturarEstado();
   if (_fbReady && window._fb && myRoomCode) {
     const onlineUids = Object.keys(_viewersOnline || {});
-    window._fb.atualizarEstadoSala(myRoomCode, estado, [_getUid(), ...onlineUids]).catch(() => {});
+    // FIX: inclui ultimoAviso no payload principal para que viewers recebam aviso via ouvirSala
+    var _bPayload = { estado: JSON.stringify(estado), online: [_getUid(), ...onlineUids] };
+    if (window._ultimoAvisoHost) _bPayload.ultimoAviso = window._ultimoAvisoHost;
+    if (window._fb._set) {
+      window._fb._set('salas/' + myRoomCode, _bPayload, true).catch(function(){});
+    } else {
+      window._fb.atualizarEstadoSala(myRoomCode, estado, [_getUid(), ...onlineUids]).catch(() => {});
+    }
   }
 }
 
@@ -18203,7 +18210,7 @@ function aplicarEstado(estado) {
   if (estado.perfMode && !eraPerf) {
     body.classList.add('performance-mode');
     document.getElementById('mode-text').innerText = 'SAIR DO SHOW';
-    atualizarIndicador();
+    if (!isViewer) atualizarIndicador(); // viewer não tem songs[] locais — nome vem de estado.currentSongName abaixo
     // Baterista viewer: abre DrumCam imediatamente, sem mostrar cifra antes
     if (_isBaterista) {
       if (!document.getElementById('drumcam-overlay').classList.contains('show')) {
@@ -18258,26 +18265,30 @@ function aplicarEstado(estado) {
     document.getElementById('dc-song-name').textContent = estado.currentSongName;
     if (isViewer) { window._viewerUltimoNomeMusica = estado.currentSongName; atualizarSyncBar(); } // atualiza nome na sync-bar do viewer
     // Notificar mudança de música (apenas se mudou de fato)
+    // FIX: _nomeAnterior pode ser null na primeira recepção do viewer — ainda assim notifica
+    var _musicaMudou = _nomeAnterior !== null && _nomeAnterior !== undefined
+      ? _nomeAnterior !== estado.currentSongName
+      : false; // primeira vez — não dispara notif sonora, mas mostra modal se no show
     if (_nomeAnterior && _nomeAnterior !== estado.currentSongName) {
       _mapNotifMostrar(estado.currentSongName);
-      // Viewer: mostrar próxima música usando nextSongName do estado
-      if (isViewer) {
-        var _proximaNome = estado.nextSongName || null;
-        // fallback para setlistNomes se nextSongName não vier
-        if (!_proximaNome && estado.setlistNomes && estado.setlistNomes.length > 1) {
-          var _posViewer = estado.currentSongIndex || 0;
-          _proximaNome = estado.setlistNomes[_posViewer + 1] || null;
-        }
-        if (_proximaNome) {
-          var alerta = document.getElementById('show-proxima-alerta');
-          if (alerta) {
-            document.getElementById('prox-nome').innerText = _proximaNome;
-            var _proxBpm = document.getElementById('prox-bpm');
-            if (_proxBpm) _proxBpm.innerText = '';
-            if (window._alertaProximaTimer) clearTimeout(window._alertaProximaTimer);
-            alerta.classList.add('show');
-            window._alertaProximaTimer = setTimeout(function() { alerta.classList.remove('show'); }, 4000);
-          }
+    }
+    // Viewer: mostrar modal de próxima música ao mudar OU ao entrar já no show
+    if (isViewer && estado.perfMode && (_musicaMudou || !_nomeAnterior)) {
+      var _proximaNome = estado.nextSongName || null;
+      // fallback para setlistNomes se nextSongName não vier
+      if (!_proximaNome && estado.setlistNomes && estado.setlistNomes.length > 1) {
+        var _posViewer = estado.currentSongIndex || 0;
+        _proximaNome = estado.setlistNomes[_posViewer + 1] || null;
+      }
+      if (_proximaNome) {
+        var alerta = document.getElementById('show-proxima-alerta');
+        if (alerta) {
+          document.getElementById('prox-nome').innerText = _proximaNome;
+          var _proxBpm = document.getElementById('prox-bpm');
+          if (_proxBpm) _proxBpm.innerText = '';
+          if (window._alertaProximaTimer) clearTimeout(window._alertaProximaTimer);
+          alerta.classList.add('show');
+          window._alertaProximaTimer = setTimeout(function() { alerta.classList.remove('show'); }, 4000);
         }
       }
     }
