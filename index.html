@@ -10146,6 +10146,26 @@ function _ativarModoShow() {
   var padsOverlay = document.getElementById('pads-overlay');
   if (padsOverlay && padsOverlay.classList.contains('show')) padsOverlay.classList.remove('show');
 
+  // FIX: se o host entra no show sem música selecionada, carrega automaticamente a primeira da setlist
+  if (currentSongIndex < 0 || !songs[currentSongIndex]) {
+    var _lista = _getShowSongs();
+    if (_lista && _lista.length > 0) {
+      var _primeiraMusica = _lista[0];
+      var _primeiroIdx = songs.findIndex(function(s) { return s.id === _primeiraMusica.id; });
+      if (_primeiroIdx >= 0) {
+        currentSongIndex = _primeiroIdx;
+        var _s = songs[_primeiroIdx];
+        bpm = _s.bpm || 120;
+        document.getElementById('bpm-display').innerText = bpm;
+        var _grid = document.getElementById('notes-grid');
+        if (_grid) {
+          _grid.innerHTML = '';
+          (_s.parts || []).forEach(function(p) { addPart(p.title || '', p.content || ''); });
+          _grid.dataset.lastParts = JSON.stringify(_s.parts || []);
+        }
+      }
+    }
+  }
   setTimeout(atualizarLetreiroDrumCam, 50);
   document.getElementById('app-body').classList.add('performance-mode');
   _perfFontCarregar(); // aplica fonte da música atual no show
