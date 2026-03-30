@@ -9813,15 +9813,29 @@ async function entrarNaSala() {
 
   const salaData = resultado.data;
 
-  // Aplica estado atual da sala
+  // FIX: isViewer deve ser true ANTES de aplicarEstado para que toda lógica
+  // condicional if(isViewer) dentro da função seja executada corretamente.
+  isViewer = true;
+  window._emSala = true;
+
+  // FIX Bug aviso: inicializa lastT com o _t do aviso já existente na sala,
+  // evitando que o aviso antigo apareça ao entrar. Avisos NOVOS (com _t maior)
+  // continuarão aparecendo normalmente.
+  try {
+    const _avisoAtual = salaData.ultimoAviso;
+    if (_avisoAtual && _avisoAtual._t) {
+      sessionStorage.setItem('_sala_last_aviso_t', String(_avisoAtual._t));
+    } else {
+      sessionStorage.removeItem('_sala_last_aviso_t');
+    }
+  } catch(e) { sessionStorage.removeItem('_sala_last_aviso_t'); }
+
+  // Aplica estado atual da sala (agora com isViewer=true, todos os blocos
+  // if(isViewer) dentro de aplicarEstado serão executados corretamente)
   try {
     const estadoAtual = JSON.parse(salaData.estado || '{}');
     if (estadoAtual && Object.keys(estadoAtual).length > 0) aplicarEstado(estadoAtual);
   } catch(e) {}
-
-  isViewer = true;
-  window._emSala = true;
-  sessionStorage.removeItem('_sala_last_aviso_t'); // limpa para receber avisos do host
   atualizarLetreiroDrumCam();
   setConnStatus('Conectado!', 'success');
   // Disparar evento para solicitar permissão de notificação
