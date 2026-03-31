@@ -1266,6 +1266,8 @@ async function terminarOnboarding() {
 
 // ── PIN lock screen ───────────────────────────────────────────────────────────
 let _pinBuffer = '';
+let _pinTentativas = 0;
+let _pinBloqueadoAte = 0;
 
 function _pinGetSaved() {
   try { return _lsGet('map_perfil_v1', {}).pin || ''; } catch(e) { return ''; }
@@ -1308,7 +1310,15 @@ function _pinVerificar() {
   const saved = _pinGetSaved();
   const screen = document.getElementById('pin-lock-screen');
   const errEl  = document.getElementById('pin-lock-error');
+  // Verificar bloqueio por excesso de tentativas
+  if (_pinBloqueadoAte > Date.now()) {
+    var _segs = Math.ceil((_pinBloqueadoAte - Date.now()) / 1000);
+    if (errEl) { errEl.textContent = 'Bloqueado. Aguarde ' + _segs + 's'; errEl.style.visibility = 'visible'; }
+    _pinBuffer = ''; _pinAtualizarDots();
+    return;
+  }
   if (_pinBuffer === saved) {
+    _pinTentativas = 0;
     // Verificar status no Firestore antes de mostrar o app
     (async function() {
       try {
@@ -1352,14 +1362,21 @@ function _pinVerificar() {
       if (screen) { screen.style.animation = 'pinShake 0s'; screen.style.opacity = '0'; screen.style.transition = 'opacity 0.3s'; setTimeout(() => { screen.style.display = 'none'; screen.style.opacity = ''; screen.style.transition = ''; }, 300); }
     })();
   } else {
-    if (errEl) { errEl.textContent = 'PIN incorreto'; errEl.style.display = 'block'; }
-    if (screen) { screen.classList.add('shake'); setTimeout(() => screen.classList.remove('shake'), 500); }
+    _pinTentativas++;
+    if (_pinTentativas >= 5) {
+      _pinBloqueadoAte = Date.now() + 30000; // 30s bloqueio
+      _pinTentativas = 0;
+      if (errEl) { errEl.textContent = 'Muitas tentativas. Aguarde 30s'; errEl.style.visibility = 'visible'; }
+    } else {
+      if (errEl) { errEl.textContent = 'PIN incorreto (' + _pinTentativas + '/5)'; errEl.style.visibility = 'visible'; }
+    }
+    if (screen) { screen.classList.add('pin-shake'); setTimeout(() => screen.classList.remove('pin-shake'), 400); }
     // vermelho nos dots
     for (let i = 0; i < 4; i++) { const d = document.getElementById('pin-dot-' + i); if (d) d.classList.add('error'); }
     setTimeout(() => {
       _pinBuffer = ''; _pinAtualizarDots();
       for (let i = 0; i < 4; i++) { const d = document.getElementById('pin-dot-' + i); if (d) d.classList.remove('error'); }
-      if (errEl) errEl.style.display = 'none';
+      if (errEl) { errEl.style.visibility = 'hidden'; errEl.textContent = ''; }
     }, 800);
   }
 }
@@ -1663,19 +1680,8 @@ async function obDiagnosticarConexao() {
 }
 
 function obAbrirEsqueciSenha() {
-  // Pré-preenche com email do campo de login se existir
-  const loginEmail = document.getElementById('login-email');
-  const email = loginEmail ? loginEmail.value.trim() : '';
-  // Limpa e reseta o modal
-  const modalEmail = document.getElementById('esqueci-email-input');
-  if (modalEmail) modalEmail.value = email;
-  const msg = document.getElementById('esqueci-msg');
-  if (msg) { msg.textContent = ''; msg.style.color = 'rgba(255,255,255,0.4)'; }
-  const btn = document.getElementById('btn-enviar-recuperacao');
-  if (btn) { btn.disabled = false; btn.textContent = 'Enviar email'; }
-  const modal = document.getElementById('modal-esqueci-senha');
-  if (modal) modal.style.display = 'flex';
-  if (typeof _esqueciValidar === 'function') _esqueciValidar();
+  // Delega para abrirEsqueciSenha que já faz tudo
+  if (typeof abrirEsqueciSenha === 'function') abrirEsqueciSenha();
 }
 
 // ── Cache de perfil em memória — evita JSON.parse repetido em cada função ────
@@ -9060,16 +9066,20 @@ function abrirEsqueciSenha() {
   const modal = document.getElementById('modal-esqueci-senha');
   if (!modal) return;
   const emailEl = document.getElementById('esqueci-email-input');
-  if (emailEl) emailEl.value = '';
+  // Pré-preenche com email do login se existir
+  const loginEmail = (document.getElementById('login-email')?.value || '').trim();
+  if (emailEl) emailEl.value = loginEmail || '';
   const msg = document.getElementById('esqueci-msg');
   if (msg) { msg.textContent = ''; msg.style.color = 'rgba(255,255,255,0.4)'; }
   const btn = document.getElementById('btn-enviar-recuperacao');
-  if (btn) { btn.disabled = false; btn.textContent = 'Enviar email'; }
+  if (btn) { btn.disabled = false; btn.textContent = 'Enviar email'; btn.style.opacity = loginEmail ? '1' : '0.4'; }
   // Fecha pin-lock-screen se estiver aberto
   const pinScreen = document.getElementById('pin-lock-screen');
   if (pinScreen) pinScreen.style.display = 'none';
   modal.style.display = 'flex';
   _esqueciValidar();
+  // Foca no campo após animação
+  setTimeout(function() { if (emailEl) emailEl.focus(); }, 200);
 }
 
 function fecharEsqueciSenha() {
@@ -9105,12 +9115,22 @@ async function enviarRecuperacaoSenha() {
   let result;
   try { result = await window._fb.enviarEmailRecuperacao(email); } catch(e) { result = null; }
   if (result && result.ok) {
-    setMsg('Email enviado! Verifique sua caixa de entrada.', '#0A9E6E');
-    if (btn) btn.textContent = 'Enviado';
-    setTimeout(fecharEsqueciSenha, 2500);
+    setMsg('✓ Email enviado! Verifique sua caixa de entrada (e o spam).', '#0A9E6E');
+    if (btn) { btn.textContent = 'Reenviar'; btn.disabled = false; btn.style.opacity = '0.6'; }
+    setTimeout(fecharEsqueciSenha, 3500);
   } else {
-    setMsg((result && result.msg) || 'Erro ao enviar. Verifique o email.', '#ff5555');
-    if (btn) { btn.disabled = false; btn.textContent = 'Enviar email'; }
+    var _errMsg = (result && result.msg) || '';
+    if (_errMsg.includes('EMAIL_NOT_FOUND') || _errMsg.includes('user-not-found')) {
+      _errMsg = 'Nenhuma conta encontrada com este email.';
+    } else if (_errMsg.includes('TOO_MANY_ATTEMPTS') || _errMsg.includes('too-many-requests')) {
+      _errMsg = 'Muitas tentativas. Aguarde alguns minutos.';
+    } else if (_errMsg.includes('INVALID_EMAIL')) {
+      _errMsg = 'Email inválido.';
+    } else {
+      _errMsg = 'Erro ao enviar. Verifique o email e tente novamente.';
+    }
+    setMsg(_errMsg, '#ff5555');
+    if (btn) { btn.disabled = false; btn.textContent = 'Tentar novamente'; btn.style.opacity = '1'; }
   }
 }
 
@@ -22135,7 +22155,7 @@ async function _fbFazerBackupAgora(btn) {
         <span style="font-size:28px;font-weight:900;color:#000;font-family:-apple-system,'Inter',sans-serif;">M</span>
       </div>
       <div id="pin-lock-nome" style="font-size:18px;font-weight:900;color:#fff;letter-spacing:0.3px;"></div>
-      <div style="font-size:11px;color:rgba(255,255,255,0.3);margin-top:4px;font-weight:500;">Digite sua senha para entrar</div>
+      <div style="font-size:11px;color:rgba(255,255,255,0.3);margin-top:4px;font-weight:500;">Digite seu PIN de 4 dígitos</div>
     </div>
     <!-- PIN dots display -->
     <div style="display:flex;gap:16px;align-items:center;justify-content:center;" id="pin-dots">
@@ -22145,7 +22165,7 @@ async function _fbFazerBackupAgora(btn) {
       <div class="pin-dot" id="pin-dot-3"></div>
     </div>
     <!-- Error msg -->
-    <div id="pin-lock-error" style="font-size:11px;color:#ff6b6b;font-weight:700;min-height:16px;text-align:center;opacity:0;transition:opacity 0.2s;"></div>
+    <div id="pin-lock-error" style="font-size:11px;color:#ff6b6b;font-weight:700;min-height:16px;text-align:center;visibility:hidden;transition:opacity 0.2s;"></div>
     <!-- Teclado numérico -->
     <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;width:100%;">
       <button class="pin-key" onclick="pinTecla('1')">1</button>
@@ -22163,15 +22183,20 @@ async function _fbFazerBackupAgora(btn) {
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 4H8l-7 8 7 8h13a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2z"/><line x1="18" y1="9" x2="12" y2="15"/><line x1="12" y1="9" x2="18" y2="15"/></svg>
       </button>
     </div>
-    <!-- Esqueci a senha -->
-    <button onclick="abrirEsqueciSenha()" style="background:none;border:none;color:rgba(255,255,255,0.25);font-size:11px;font-weight:600;cursor:pointer;margin-top:8px;padding:8px 16px;font-family:inherit;letter-spacing:0.5px;">
-      Esqueci a senha
-    </button>
+    <!-- Ações secundárias -->
+    <div style="display:flex;flex-direction:column;align-items:center;gap:4px;margin-top:4px;">
+      <button onclick="abrirEsqueciSenha()" style="background:none;border:none;color:rgba(255,255,255,0.25);font-size:11px;font-weight:600;cursor:pointer;padding:8px 16px;font-family:inherit;letter-spacing:0.5px;touch-action:manipulation;">
+        Esqueci a senha
+      </button>
+      <button onclick="(function(){ var s=document.getElementById('pin-lock-screen'); if(s)s.style.display='none'; var ov=document.getElementById('onboarding-overlay'); if(ov){ov.style.display='flex';}else{location.reload();} })()" style="background:none;border:none;color:rgba(255,255,255,0.15);font-size:10px;cursor:pointer;padding:6px 16px;font-family:inherit;touch-action:manipulation;">
+        Entrar com email e senha
+      </button>
+    </div>
   </div>
 </div>
 
 <!-- MODAL ESQUECI A SENHA ────────────────────────────────────── -->
-<div id="modal-esqueci-senha" style="display:none;position:fixed;inset:0;z-index:99999999;background:rgba(0,0,0,0.85);align-items:center;justify-content:center;">
+<div id="modal-esqueci-senha" style="display:none;position:fixed;inset:0;z-index:99999999;background:rgba(0,0,0,0.85);align-items:center;justify-content:center;" onclick="if(event.target===this)fecharEsqueciSenha()">
   <div style="background:#111118;border:1px solid rgba(255,255,255,0.1);border-radius:20px;padding:32px 24px;width:calc(100% - 48px);max-width:360px;display:flex;flex-direction:column;gap:20px;">
     <h3 style="margin:0;font-size:18px;font-weight:800;color:#fff;">Recuperar senha</h3>
     <p style="margin:0;font-size:13px;color:rgba(255,255,255,0.5);line-height:1.5;">Digite o email da tua conta. Vais receber um link para criar uma nova senha.</p>
