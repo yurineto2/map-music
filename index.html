@@ -8970,8 +8970,18 @@ function _formalizarValidar() {
   const senha  =  document.getElementById('formalizar-senha')?.value  || '';
   const senha2 =  document.getElementById('formalizar-senha2')?.value || '';
   const btn    = document.getElementById('btn-formalizar-confirmar');
+  const msg    = document.getElementById('formalizar-msg');
   const emailOk = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
-  if (btn) btn.disabled = !(emailOk && senha.length >= 6 && senha === senha2);
+  const ok = emailOk && senha.length >= 6 && senha === senha2;
+  if (btn) { btn.disabled = !ok; btn.style.opacity = ok ? '1' : '0.45'; }
+  // Feedback inline de senha
+  if (msg && senha.length > 0 && senha.length < 6) {
+    msg.textContent = 'Senha deve ter pelo menos 6 caracteres'; msg.style.color = '#ff8855';
+  } else if (msg && senha2.length > 0 && senha !== senha2) {
+    msg.textContent = 'As senhas não coincidem'; msg.style.color = '#ff8855';
+  } else if (msg && msg.style.color === 'rgb(255, 136, 85)') {
+    msg.textContent = ''; // limpa só se era mensagem de validação
+  }
 }
 
 async function confirmarFormalizarConta() {
@@ -9003,8 +9013,18 @@ async function confirmarFormalizarConta() {
     return;
   }
   if (!authResult || !authResult.ok) {
-    setMsg((authResult && authResult.msg) || 'Erro ao criar conta.', '#ff5555');
-    if (btn) { btn.disabled = false; btn.textContent = 'Criar conta e salvar dados'; }
+    var _errMsg = (authResult && authResult.msg) || '';
+    if (_errMsg.includes('EMAIL_EXISTS') || _errMsg.includes('email-already-in-use')) {
+      _errMsg = 'Este email já está em uso. Tenta fazer login ou usa outro email.';
+    } else if (_errMsg.includes('INVALID_EMAIL')) {
+      _errMsg = 'Email inválido. Verifica o formato.';
+    } else if (_errMsg.includes('WEAK_PASSWORD') || _errMsg.includes('weak-password')) {
+      _errMsg = 'Senha fraca. Usa pelo menos 6 caracteres.';
+    } else if (!_errMsg) {
+      _errMsg = 'Erro ao criar conta. Tenta novamente.';
+    }
+    setMsg(_errMsg, '#ff5555');
+    if (btn) { btn.disabled = false; btn.textContent = 'Criar conta e salvar dados'; btn.style.opacity = '1'; }
     return;
   }
 
@@ -9035,21 +9055,29 @@ async function confirmarFormalizarConta() {
       email:       email,
       instrumento: perfil.instrumento || null,
       profileId:   perfil.profileId   || '',
-      criadoEm:    perfil.criadoEm    || Date.now()
+      criadoEm:    perfil.criadoEm    || Date.now(),
+      status:      'ativo'
     });
   } catch(e) {}
 
   try {
+    setMsg('Salvando músicas…', 'rgba(255,200,50,0.7)');
     const _musParaBackup = typeof songs !== 'undefined' ? songs : JSON.parse(localStorage.getItem('map_pro_elite_v1') || '[]');
     await window._fb.backupMusicas(novoUid, _musParaBackup);
   } catch(e) {}
   try {
+    setMsg('Salvando eventos…', 'rgba(255,200,50,0.7)');
     const _evParaBackup = _lsGet('map_pro_eventos_v1', []);
     await window._fb.backupEventos(novoUid, _evParaBackup);
   } catch(e) {}
 
-  setMsg('Conta criada! Os teus dados estão seguros.', '#0A9E6E');
-  if (btn) { btn.textContent = 'Conta criada'; }
+  // Atualiza status local
+  const _perfilAtualizado = _getPerfilLocal();
+  _perfilAtualizado.status = 'ativo';
+  _lsSet('map_perfil_v1', _perfilAtualizado);
+
+  setMsg('✓ Conta criada! Dados salvos na nuvem.', '#0A9E6E');
+  if (btn) { btn.textContent = '✓ Conta criada'; btn.style.opacity = '0.7'; }
 
   setTimeout(function() {
     fecharFormalizarConta();
@@ -22254,7 +22282,7 @@ async function _fbFazerBackupAgora(btn) {
 </div>
 
 <!-- ══ Modal Formalizar Conta ════════════════════════════════════════════════ -->
-<div id="modal-formalizar-conta" style="display:none;position:fixed;inset:0;z-index:99999999;background:rgba(0,0,0,0.88);align-items:center;justify-content:center;padding:24px;box-sizing:border-box;">
+<div id="modal-formalizar-conta" style="display:none;position:fixed;inset:0;z-index:99999999;background:rgba(0,0,0,0.88);align-items:center;justify-content:center;padding:24px;box-sizing:border-box;" onclick="if(event.target===this)fecharFormalizarConta()">
   <div style="background:#111118;border:1px solid rgba(255,200,50,0.18);border-radius:20px;padding:28px 24px;width:100%;max-width:360px;display:flex;flex-direction:column;gap:18px;">
     <div style="display:flex;align-items:center;gap:10px;">
       <div style="width:36px;height:36px;border-radius:10px;background:rgba(255,200,50,0.1);border:1px solid rgba(255,200,50,0.2);display:flex;align-items:center;justify-content:center;flex-shrink:0;">
@@ -22272,7 +22300,7 @@ async function _fbFazerBackupAgora(btn) {
       <input id="formalizar-email" type="email" inputmode="email" placeholder="Seu email" autocomplete="email"
         style="background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.1);border-radius:12px;color:#fff;font-size:14px;padding:12px 16px;outline:none;font-family:inherit;width:100%;box-sizing:border-box;"
         onfocus="this.style.borderColor='rgba(255,200,50,0.4)'" onblur="this.style.borderColor='rgba(255,255,255,0.1)'"
-        oninput="_formalizarValidar()">
+        oninput="_formalizarValidar()" onkeydown="if(event.key==='Enter')document.getElementById('formalizar-senha').focus()">
       <div style="position:relative;">
         <input id="formalizar-senha" type="password" placeholder="Criar senha (mín. 6)" autocomplete="new-password"
           style="background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.1);border-radius:12px;color:#fff;font-size:14px;padding:12px 44px 12px 16px;outline:none;font-family:inherit;width:100%;box-sizing:border-box;"
@@ -22287,7 +22315,7 @@ async function _fbFazerBackupAgora(btn) {
         <input id="formalizar-senha2" type="password" placeholder="Confirmar senha" autocomplete="new-password"
           style="background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.1);border-radius:12px;color:#fff;font-size:14px;padding:12px 44px 12px 16px;outline:none;font-family:inherit;width:100%;box-sizing:border-box;"
           onfocus="this.style.borderColor='rgba(255,200,50,0.4)'" onblur="this.style.borderColor='rgba(255,255,255,0.1)'"
-          oninput="_formalizarValidar()">
+          oninput="_formalizarValidar()" onkeydown="if(event.key==='Enter'&&!document.getElementById('btn-formalizar-confirmar').disabled)confirmarFormalizarConta()">
         <button type="button" onclick="_toggleSenhaField('formalizar-senha2')"
           style="position:absolute;right:12px;top:50%;transform:translateY(-50%);background:none;border:none;color:rgba(255,255,255,0.3);cursor:pointer;padding:4px;">
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
