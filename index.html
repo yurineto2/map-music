@@ -1068,8 +1068,8 @@ async function obVerificarNome() {
   }
   const disponivel = await window._fb.verificarNomeDisponivel(val);
   _obNomeDisponivel = disponivel;
-  if (st) st.textContent = disponivel ? 'ok' : 'x';
-  if (msg) msg.textContent = disponivel ? 'Nome disponível!' : 'Nome já em uso. Escolhe outro.';
+  if (st) { st.textContent = disponivel ? '✓' : '✗'; st.style.color = disponivel ? '#0A9E6E' : '#ff5555'; }
+  if (msg) { msg.textContent = disponivel ? 'Nome disponível!' : 'Nome já em uso. Escolhe outro.'; msg.style.color = disponivel ? '#0A9E6E' : '#ff5555'; }
   if (btn) { btn.disabled = false; btn.textContent = 'Verificar disponibilidade'; }
   if (disponivel) {
     const tag = document.getElementById('ob-nome-tag');
@@ -1125,7 +1125,7 @@ function _obValidarCta() {
   const pin    = _obGetPin();
   const senhaMsg = document.getElementById('ob-senha-msg');
 
-  let ok = _obNomeDisponivel && senha.length >= 6 && senha === senha2 && pin.length === 4;
+  let ok = _obNomeDisponivel && senha.length >= 6 && senha === senha2; // PIN é opcional
 
   if (senhaMsg) {
     if (senha.length > 0 && senha.length < 6) senhaMsg.textContent = 'Mínimo 6 caracteres';
@@ -1182,7 +1182,7 @@ async function terminarOnboarding() {
 
   if (!_obNomeDisponivel || nomeUsuario.length < 2) return;
   if (senha.length < 6 || senha !== senha2) return;
-  if (pin.length < 4) return;
+  // PIN é opcional — só salva se preenchido
   if (!_obEmail) return;
 
   if (cta) { cta.disabled = true; cta.textContent = 'Criando conta...'; }
@@ -1223,7 +1223,7 @@ async function terminarOnboarding() {
     criadoEm: Date.now(),
     uid,
     profileId,
-    pin   // PIN fica só local
+    pin: pin.length === 4 ? pin : null   // PIN fica só local, só salva se completo
   };
   _lsSet('map_perfil_v1', perfil);
   localStorage.setItem('map_uid_v1', uid);
@@ -3443,22 +3443,20 @@ body { font-family: -apple-system, 'Inter', BlinkMacSystemFont, 'Segoe UI', sans
 .album-card[draggable] { cursor: grab; }
 .album-card[draggable]:active { cursor: grabbing; }
 .album-card.drag-over {
-  outline: 2px solid rgba(10,158,110,0.85);
-  outline-offset: 3px;
-  background: rgba(10,158,110,0.07);
-  transform: scale(1.02);
-  transition: transform 0.15s ease, outline 0.15s ease, background 0.15s ease;
+  background: rgba(10,158,110,0.10);
+  transform: scale(1.03);
+  transition: transform 0.12s ease, background 0.12s ease;
+  box-shadow: inset 0 0 0 2px rgba(10,158,110,0.5);
 }
 .album-card.dragging {
-  opacity: 0.25;
-  transform: scale(0.96);
-  transition: opacity 0.2s ease, transform 0.2s ease;
+  opacity: 0.18;
+  transform: scale(0.94);
+  transition: opacity 0.15s ease, transform 0.15s ease;
 }
 .album-card.drag-ready {
-  outline: 2px solid rgba(10,158,110,0.5);
-  outline-offset: 3px;
-  transform: scale(0.985);
-  transition: transform 0.15s ease, outline 0.15s ease;
+  transform: scale(0.97);
+  transition: transform 0.12s ease;
+  opacity: 0.85;
 }
 .drag-handle {
   position: absolute;
@@ -3472,8 +3470,8 @@ body { font-family: -apple-system, 'Inter', BlinkMacSystemFont, 'Segoe UI', sans
   transition: color 0.2s ease, transform 0.2s ease;
 }
 .album-card.drag-ready .drag-handle {
-  color: rgba(10,158,110,0.9);
-  transform: scale(1.2);
+  color: rgba(255,255,255,0.5);
+  transform: scale(1.1);
 }
 .drag-handle:active { cursor: grabbing; color: rgba(255,255,255,0.6); }
 /* Clone flutuante do touch drag */
@@ -3482,10 +3480,10 @@ body { font-family: -apple-system, 'Inter', BlinkMacSystemFont, 'Segoe UI', sans
   pointer-events: none;
   z-index: 99999;
   border-radius: 14px;
-  box-shadow: 0 16px 48px rgba(0,0,0,0.55), 0 0 0 2px rgba(10,158,110,0.6);
-  transform: scale(1.06) rotate(1.5deg);
-  transition: transform 0.18s cubic-bezier(0.34,1.56,0.64,1);
-  opacity: 0.92;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.7), 0 4px 16px rgba(0,0,0,0.4);
+  transform: scale(1.08) rotate(2deg);
+  transition: transform 0.15s cubic-bezier(0.34,1.56,0.64,1);
+  opacity: 0.95;
   will-change: transform, left, top;
 }
 .album-cover { position: relative; }
@@ -6932,17 +6930,17 @@ body.auth-pending #toast {
           </div>
         </div>
         <div class="ob-field">
-          <label class="ob-label">PIN de acesso rápido (4 dígitos)</label>
+          <label class="ob-label">PIN de acesso rápido <span style="font-weight:400;opacity:0.4;font-size:10px;">(opcional)</span></label>
           <div style="display:flex;gap:12px;justify-content:center;margin-top:4px;">
             <input id="ob-pin-0" type="tel" maxlength="1" class="ob-pin-input" oninput="obPinNext(0)" onkeydown="obPinKey(event,0)">
             <input id="ob-pin-1" type="tel" maxlength="1" class="ob-pin-input" oninput="obPinNext(1)" onkeydown="obPinKey(event,1)">
             <input id="ob-pin-2" type="tel" maxlength="1" class="ob-pin-input" oninput="obPinNext(2)" onkeydown="obPinKey(event,2)">
             <input id="ob-pin-3" type="tel" maxlength="1" class="ob-pin-input" oninput="obPinNext(3)" onkeydown="obPinKey(event,3)">
           </div>
-          <div style="font-size:9px;color:rgba(255,255,255,0.2);text-align:center;margin-top:6px;">O PIN desbloqueia o app rapidamente</div>
+          <div style="font-size:9px;color:rgba(255,255,255,0.2);text-align:center;margin-top:6px;">Se deixar em branco, pode ativar depois no perfil</div>
         </div>
         <div class="ob-field">
-          <label class="ob-label">O que você vai usar</label>
+          <label class="ob-label">O que você vai usar <span style="font-weight:400;opacity:0.4;font-size:10px;">(opcional)</span></label>
           <div class="ob-chips" id="ob-chips">
             <button class="ob-chip" data-val="guitarra" onclick="obToggleChip(this)" style="touch-action:manipulation;">Guitarra</button>
             <button class="ob-chip" data-val="baixo" onclick="obToggleChip(this)" style="touch-action:manipulation;">Baixo</button>
@@ -6954,7 +6952,10 @@ body.auth-pending #toast {
             <button class="ob-chip" data-val="outro" onclick="obToggleChip(this)" style="touch-action:manipulation;">Outro</button>
           </div>
         </div>
-        <button class="ob-cta" id="ob-cta" style="opacity:1!important;pointer-events:auto!important;cursor:pointer!important;" onclick="terminarOnboarding()">Criar conta</button>
+        <div style="display:flex;gap:10px;margin-top:4px;">
+          <button onclick="document.getElementById('ob-step-1').style.display='block';document.getElementById('ob-step-2').style.display='none';" style="flex:0 0 auto;padding:14px 20px;border-radius:12px;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.1);color:rgba(255,255,255,0.6);font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;touch-action:manipulation;">← Voltar</button>
+          <button class="ob-cta" id="ob-cta" style="flex:1;opacity:0.5;transition:opacity 0.2s;margin-top:0;" onclick="terminarOnboarding()">Criar conta</button>
+        </div>
         <p class="ob-terms">Os seus dados ficam seguros. A senha é gerida pelo Firebase.</p>
       </div><!-- /ob-step-2 -->
 
@@ -13325,26 +13326,28 @@ function _initEventoDragDrop(grid) {
   }
 
   function onTouchEnd(e) {
+    var wasActive = _longPressActive;
     _cancelLongPress();
 
-    if (!_longPressActive) {
+    // Limpeza forçada do clone — sempre, independente do estado
+    if (_touchClone) {
+      var cl = _touchClone;
+      _touchClone = null;
+      cl.style.transition = 'transform 0.15s ease-in, opacity 0.15s ease-in';
+      cl.style.transform  = 'scale(0.85)';
+      cl.style.opacity    = '0';
+      setTimeout(function() { if (cl.parentNode) cl.parentNode.removeChild(cl); }, 180);
+    }
+
+    // Limpeza forçada de todas as classes de drag em TODOS os cards do documento
+    document.querySelectorAll('.album-card').forEach(function(c) {
+      c.classList.remove('dragging', 'drag-over', 'drag-ready');
+    });
+
+    if (!wasActive) {
       _touchDragId = null;
       return;
     }
-
-    // Anima clone de volta / saindo antes de remover
-    if (_touchClone) {
-      var cl = _touchClone;
-      cl.style.transition = 'transform 0.18s ease-in, opacity 0.18s ease-in';
-      cl.style.transform  = 'scale(0.9) rotate(0deg)';
-      cl.style.opacity    = '0';
-      setTimeout(function() { cl.remove(); }, 200);
-      _touchClone = null;
-    }
-
-    grid.querySelectorAll('.album-card').forEach(function(c) {
-      c.classList.remove('dragging', 'drag-over', 'drag-ready');
-    });
 
     if (_touchDragId === null) return;
     var t = e.changedTouches[0];
@@ -13374,8 +13377,11 @@ function _initEventoDragDrop(grid) {
 
   function onTouchCancel() {
     _cancelLongPress();
-    if (_touchClone) { _touchClone.remove(); _touchClone = null; }
-    grid.querySelectorAll('.album-card').forEach(function(c) {
+    if (_touchClone) {
+      var cl = _touchClone; _touchClone = null;
+      if (cl.parentNode) cl.parentNode.removeChild(cl);
+    }
+    document.querySelectorAll('.album-card').forEach(function(c) {
       c.classList.remove('dragging', 'drag-over', 'drag-ready');
     });
     _touchDragId    = null;
@@ -18232,7 +18238,44 @@ function capturarEstado() {
         var _found = songs.find(function(s){ return s.name === _dcN; });
         if (_found) return _found.name;
       }
-      // 3. Fallback final: lê do elemento visual do indicador
+      // 3. Fallback: identifica a música comparando títulos e conteúdo das parts na tela
+      var _partsEls = document.querySelectorAll('.song-part');
+      if (_partsEls.length > 0) {
+        // Coleta títulos das parts visíveis (ex: "INTRO", "VERSO", "REFRÃO")
+        var _titulosNaTela = Array.from(_partsEls).map(function(p) {
+          return ((p.querySelector('input') || {}).value || '').trim().toUpperCase();
+        }).filter(Boolean);
+        // Coleta conteúdo das parts (primeiros 20 chars de cada)
+        var _conteudoNaTela = Array.from(_partsEls).map(function(p) {
+          return ((p.querySelector('textarea') || {}).value || '').trim().substring(0, 20);
+        });
+        var _melhorScore = 0;
+        var _melhorMusica = null;
+        songs.forEach(function(s) {
+          if (!s.parts || s.parts.length === 0) return;
+          var score = 0;
+          // Pontos por número de parts igual
+          if (s.parts.length === _partsEls.length) score += 3;
+          // Pontos por títulos matching
+          s.parts.forEach(function(p, i) {
+            var titulo = (p.title || '').trim().toUpperCase();
+            if (_titulosNaTela.includes(titulo)) score += 2;
+            // Pontos por conteúdo matching
+            var conteudo = (p.content || '').trim().substring(0, 20);
+            if (conteudo && _conteudoNaTela[i] && conteudo === _conteudoNaTela[i]) score += 3;
+          });
+          if (score > _melhorScore) {
+            _melhorScore = score;
+            _melhorMusica = s;
+          }
+        });
+        if (_melhorMusica && _melhorScore >= 4) {
+          var _idx = songs.indexOf(_melhorMusica);
+          if (_idx >= 0) currentSongIndex = _idx;
+          return _melhorMusica.name;
+        }
+      }
+      // 4. Fallback final: lê do elemento visual do indicador
       var _el = document.getElementById('perf-song-name');
       var _n = _el ? _el.innerText : '';
       return (_n && _n !== 'Nenhuma musica' && _n !== '—' && _n !== '-') ? _n : null;
@@ -22034,7 +22077,7 @@ async function _fbFazerBackupAgora(btn) {
 
 
 <!-- MODAL EDITOR DE FOTO (drag to reposition, Twitter/Facebook style) -->
-<div id="foto-editor-modal" style="display:none;position:fixed;inset:0;z-index:999999;background:rgba(0,0,0,0.95);flex-direction:column;align-items:center;justify-content:flex-start;">
+<div id="foto-editor-modal" style="display:none;position:fixed;inset:0;z-index:999999999;background:rgba(0,0,0,0.95);flex-direction:column;align-items:center;justify-content:flex-start;">
   <div style="width:100%;max-width:480px;display:flex;flex-direction:column;height:100%;">
     <!-- Header -->
     <div style="display:flex;align-items:center;justify-content:space-between;padding:16px 20px;flex-shrink:0;">
