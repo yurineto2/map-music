@@ -1444,19 +1444,19 @@ async function obFazerLogin() {
   const msg   = document.getElementById('login-msg');
 
   if (msg) msg.textContent = '';
-  if (btn) { btn.disabled = true; btn.textContent = 'Entrando...'; }
+  if (btn) { btn.disabled = true; btn.textContent = 'Entrando...'; btn.style.opacity = '0.7'; }
 
   // Detectar about:/file: — Safari bloqueia fetch cross-origin nesses contextos
   var _proto = window.location.protocol;
   if (_proto === 'file:' || _proto === 'about:' || _proto === 'blob:') {
     if (msg) msg.textContent = 'Atencao: Abra o arquivo diretamente no Safari (não em preview). Role para baixo e toque em "Abrir no Safari".';
-    if (btn) { btn.disabled = false; btn.textContent = 'Entrar'; }
+    if (btn) { btn.disabled = false; btn.textContent = 'Entrar'; btn.style.opacity = '1'; }
     return;
   }
 
   if (!window._fb) {
     if (msg) msg.textContent = 'Firebase não carregado. Tenta novamente.';
-    if (btn) { btn.disabled = false; btn.textContent = 'Entrar'; }
+    if (btn) { btn.disabled = false; btn.textContent = 'Entrar'; btn.style.opacity = '1'; }
     return;
   }
 
@@ -1466,12 +1466,24 @@ async function obFazerLogin() {
     result = await window._fb.loginComEmail(email, senha);
   } catch(err) {
     if (msg) msg.textContent = 'Erro de conexão. Verifique sua internet e tente novamente.';
-    if (btn) { btn.disabled = false; btn.textContent = 'Entrar'; }
+    if (btn) { btn.disabled = false; btn.textContent = 'Entrar'; btn.style.opacity = '1'; }
     return;
   }
   if (!result || !result.ok) {
-    if (msg) msg.textContent = (result && result.msg) || 'Email ou senha incorretos.';
-    if (btn) { btn.disabled = false; btn.textContent = 'Entrar'; }
+    var _errMsg = (result && result.msg) || '';
+    if (_errMsg.includes('INVALID_PASSWORD') || _errMsg.includes('INVALID_LOGIN_CREDENTIALS') || _errMsg.includes('wrong-password')) {
+      _errMsg = 'Senha incorreta. Verifique e tente novamente.';
+    } else if (_errMsg.includes('EMAIL_NOT_FOUND') || _errMsg.includes('user-not-found')) {
+      _errMsg = 'Email não encontrado. Verifique ou crie uma conta.';
+    } else if (_errMsg.includes('TOO_MANY_ATTEMPTS') || _errMsg.includes('too-many-requests')) {
+      _errMsg = 'Muitas tentativas. Aguarde alguns minutos ou redefina a senha.';
+    } else if (_errMsg.includes('USER_DISABLED')) {
+      _errMsg = 'Esta conta foi desativada.';
+    } else if (!_errMsg) {
+      _errMsg = 'Email ou senha incorretos.';
+    }
+    if (msg) msg.textContent = _errMsg;
+    if (btn) { btn.disabled = false; btn.textContent = 'Entrar'; btn.style.opacity = '1'; }
     return;
   }
 
@@ -6846,12 +6858,12 @@ body.auth-pending #toast {
     <div id="ob-painel-login">
       <div class="ob-field">
         <label class="ob-label">Email</label>
-        <input id="login-email" type="email" class="ob-input" placeholder="seu@email.com" autocomplete="email" inputmode="email" oninput="obLoginValidar()">
+        <input id="login-email" type="email" class="ob-input" placeholder="seu@email.com" autocomplete="email" inputmode="email" oninput="obLoginValidar()" onkeydown="if(event.key==='Enter')document.getElementById('login-senha').focus()">
       </div>
       <div class="ob-field">
         <label class="ob-label">Senha</label>
         <div style="position:relative;">
-          <input id="login-senha" type="password" class="ob-input" placeholder="••••••••" autocomplete="current-password" oninput="obLoginValidar()" style="padding-right:44px;">
+          <input id="login-senha" type="password" class="ob-input" placeholder="••••••••" autocomplete="current-password" oninput="obLoginValidar()" onkeydown="if(event.key==='Enter'&&!document.getElementById('btn-login').disabled)obFazerLogin()" style="padding-right:44px;">
           <button type="button" onclick="_obToggleSenha('login-senha','login-olho')"
             style="position:absolute;right:12px;top:50%;transform:translateY(-50%);background:none;border:none;color:rgba(255,255,255,0.3);cursor:pointer;padding:4px;">
             <svg id="login-olho" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
@@ -8758,8 +8770,18 @@ async function _executarSaida() {
   // 2. Limpar TODOS os dados locais (incluindo músicas e eventos)
   [
     'map_perfil_v1', 'map_uid_v1', 'map_notifs_v1', 'map_last_version',
-    'map_pro_elite_v1', 'map_pro_eventos_v1'
+    'map_pro_elite_v1', 'map_pro_eventos_v1', 'map_backup_ts_v1',
+    'map_historico_shows_v1', 'map_pro_elite_fonte_v1'
   ].forEach(function(k) { localStorage.removeItem(k); });
+  sessionStorage.removeItem('_sala_last_aviso_t');
+
+  // Encerra sala se estiver ativa como host
+  if (typeof isHost !== 'undefined' && isHost && typeof encerrarSala === 'function') {
+    try { encerrarSala(); } catch(e) {}
+  }
+  if (typeof isViewer !== 'undefined' && isViewer && typeof _sairDaSala === 'function') {
+    try { _sairDaSala(); } catch(e) {}
+  }
 
   // 3. Cancelar intervalos antes de sair
   if (window._eventosProximosInterval) {
