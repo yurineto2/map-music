@@ -942,6 +942,27 @@ window._DEBUG = (window.location.hostname === 'localhost' || window.location.hos
       try { await _delete('usuarios/' + uid); return true; }
       catch(e) { return false; }
     },
+
+    // Deleta conta do Firebase Auth usando reautenticação (para o próprio usuário)
+    async deletarContaAuth(email, senha) {
+      try {
+        // 1. Reautenticar para obter idToken fresco
+        const r1 = await _ft('https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key=' + _API_KEY, {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email, password: senha, returnSecureToken: true })
+        });
+        const d1 = await r1.json();
+        if (!r1.ok || d1.error) return { ok: false, msg: 'Senha incorreta. Tente novamente.' };
+        // 2. Deletar conta Auth com o idToken fresco
+        const r2 = await _ft('https://identitytoolkit.googleapis.com/v1/accounts:delete?key=' + _API_KEY, {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ idToken: d1.idToken })
+        });
+        const d2 = await r2.json();
+        if (!r2.ok || d2.error) return { ok: false, msg: 'Erro ao deletar conta.' };
+        return { ok: true };
+      } catch(e) { return { ok: false, msg: 'Erro de rede.' }; }
+    },
     async admBuscarPorEmail(email) {
       try {
         var todos = await this.listarTodosUsuarios(500);
@@ -8852,14 +8873,19 @@ function abrirAlterarSenha() {
   fecharModalPerfil();
   const modal = document.getElementById('modal-alterar-senha');
   if (!modal) return;
-  // Limpa campos
   ['alterar-senha-atual','alterar-senha-nova','alterar-senha-conf'].forEach(function(id) {
     const el = document.getElementById(id);
     if (el) { el.value = ''; el.type = 'password'; }
   });
   const msg = document.getElementById('alterar-senha-msg');
   if (msg) { msg.textContent = ''; msg.style.color = 'rgba(255,255,255,0.4)'; }
+  const btn = document.getElementById('btn-alterar-senha-confirmar');
+  if (btn) { btn.disabled = true; btn.style.opacity = '0.5'; btn.textContent = 'Alterar senha'; }
   modal.style.display = 'flex';
+  setTimeout(function() {
+    const f = document.getElementById('alterar-senha-atual');
+    if (f) f.focus();
+  }, 200);
 }
 
 function fecharAlterarSenha() {
@@ -8867,14 +8893,37 @@ function fecharAlterarSenha() {
   if (modal) modal.style.display = 'none';
 }
 
+function _alterarSenhaValidar() {
+  const senhaAtual = document.getElementById('alterar-senha-atual')?.value || '';
+  const senhaNova  = document.getElementById('alterar-senha-nova')?.value  || '';
+  const senhaConf  = document.getElementById('alterar-senha-conf')?.value  || '';
+  const btn = document.getElementById('btn-alterar-senha-confirmar');
+  const msg = document.getElementById('alterar-senha-msg');
+  const ok = senhaAtual.length >= 1 && senhaNova.length >= 6 && senhaNova === senhaConf && senhaAtual !== senhaNova;
+  if (btn) { btn.disabled = !ok; btn.style.opacity = ok ? '1' : '0.5'; }
+  if (!msg) return;
+  // Só mostra feedback de validação inline — nunca sobreescreve mensagens de erro do servidor
+  const isServerMsg = msg.dataset.source === 'server';
+  if (isServerMsg) { msg.dataset.source = ''; msg.textContent = ''; msg.style.color = 'rgba(255,255,255,0.4)'; }
+  if (senhaNova.length > 0 && senhaNova.length < 6) {
+    msg.textContent = 'Nova senha deve ter pelo menos 6 caracteres'; msg.style.color = '#ff8855';
+  } else if (senhaConf.length > 0 && senhaNova !== senhaConf) {
+    msg.textContent = 'As senhas não coincidem'; msg.style.color = '#ff8855';
+  } else if (senhaNova.length >= 6 && senhaAtual === senhaNova) {
+    msg.textContent = 'A nova senha deve ser diferente da atual'; msg.style.color = '#ff8855';
+  } else {
+    msg.textContent = ''; msg.style.color = 'rgba(255,255,255,0.4)';
+  }
+}
+
 async function confirmarAlterarSenha() {
   try {
 
-  const senhaAtual = (document.getElementById('alterar-senha-atual')?.value || '').trim();
-  const senhaNova  = (document.getElementById('alterar-senha-nova')?.value  || '').trim();
-  const senhaConf  = (document.getElementById('alterar-senha-conf')?.value  || '').trim();
+  const senhaAtual = document.getElementById('alterar-senha-atual')?.value || '';
+  const senhaNova  = document.getElementById('alterar-senha-nova')?.value  || '';
+  const senhaConf  = document.getElementById('alterar-senha-conf')?.value  || '';
   const msg        = document.getElementById('alterar-senha-msg');
-  const btn        = document.querySelector('#modal-alterar-senha button:last-child');
+  const btn        = document.getElementById('btn-alterar-senha-confirmar');
 
   function setMsg(txt, cor) {
     if (msg) { msg.textContent = txt; msg.style.color = cor || 'rgba(255,255,255,0.4)'; }
@@ -8883,34 +8932,57 @@ async function confirmarAlterarSenha() {
   if (!senhaAtual) { setMsg('Preencha a senha atual.', '#ff5555'); return; }
   if (senhaNova.length < 6) { setMsg('Nova senha deve ter mínimo 6 caracteres.', '#ff5555'); return; }
   if (senhaNova !== senhaConf) { setMsg('As senhas não coincidem.', '#ff5555'); return; }
-
-  if (btn) { btn.disabled = true; btn.textContent = 'A alterar...'; }
+  if (senhaAtual === senhaNova) { setMsg('A nova senha deve ser diferente da atual.', '#ff8855'); return; }
   setMsg('', null);
 
-  if (!window._fb) { setMsg('Firebase não disponível.', '#ff5555'); if (btn) { btn.disabled = false; btn.textContent = 'Alterar senha'; } return; }
+  if (btn) { btn.disabled = true; btn.textContent = 'Alterando...'; btn.style.opacity = '0.7'; }
+  setMsg('', null);
 
-  // Re-autentica com a senha actual para obter idToken fresco
+  if (!window._fb) {
+    setMsg('Firebase não disponível. Tente novamente.', '#ff5555');
+    if (btn) { btn.disabled = false; btn.textContent = 'Alterar senha'; btn.style.opacity = '1'; }
+    return;
+  }
+
   const perfil = _getPerfilLocal();
   const email = perfil.email || '';
-  if (!email) { setMsg('Email não encontrado no perfil.', '#ff5555'); if (btn) { btn.disabled = false; btn.textContent = 'Alterar senha'; } return; }
+  if (!email) {
+    setMsg('Email não encontrado no perfil. Faça login novamente.', '#ff5555');
+    if (btn) { btn.disabled = false; btn.textContent = 'Alterar senha'; btn.style.opacity = '1'; }
+    return;
+  }
 
+  // Reautentica para verificar senha atual e obter idToken fresco
   const loginResult = await window._fb.loginComEmail(email, senhaAtual);
   if (!loginResult.ok) {
-    setMsg('Senha atual incorreta.', '#ff5555');
-    if (btn) { btn.disabled = false; btn.textContent = 'Alterar senha'; }
+    const _errMsg = (loginResult.msg || '').includes('TOO_MANY')
+      ? 'Muitas tentativas. Aguarde alguns minutos.'
+      : 'Senha atual incorreta.';
+    setMsg(_errMsg, '#ff5555');
+    if (msg) msg.dataset.source = 'server';
+    if (btn) { btn.disabled = false; btn.textContent = 'Alterar senha'; btn.style.opacity = '1'; }
+    const f = document.getElementById('alterar-senha-atual');
+    if (f) { f.focus(); f.select(); }
     return;
   }
 
   const result = await window._fb.alterarSenha(loginResult.idToken, senhaNova);
   if (!result || !result.ok) {
-    setMsg((result && result.msg) || 'Erro ao alterar senha.', '#ff5555');
-    if (btn) { btn.disabled = false; btn.textContent = 'Alterar senha'; }
+    var _altErrMsg = (result && result.msg) || '';
+    if (_altErrMsg.includes('WEAK_PASSWORD') || _altErrMsg.includes('weak-password')) {
+      _altErrMsg = 'Senha muito fraca. Use pelo menos 6 caracteres variados.';
+    } else {
+      _altErrMsg = 'Erro ao alterar senha. Tente novamente.';
+    }
+    setMsg(_altErrMsg, '#ff5555');
+    if (msg) msg.dataset.source = 'server';
+    if (btn) { btn.disabled = false; btn.textContent = 'Alterar senha'; btn.style.opacity = '1'; }
     return;
   }
 
-  setMsg('Senha alterada com sucesso!', '#0A9E6E');
-  if (btn) { btn.disabled = false; btn.textContent = 'Alterar senha'; }
-  setTimeout(fecharAlterarSenha, 1500);
+  setMsg('✓ Senha alterada com sucesso!', '#0A9E6E');
+  if (btn) { btn.disabled = true; btn.textContent = '✓ Alterada'; btn.style.opacity = '0.7'; }
+  setTimeout(fecharAlterarSenha, 1600);
 
   } catch(e) {
     showToast('Erro ao alterar senha. Tente novamente.');
@@ -22008,12 +22080,17 @@ async function admReativarEmail() {
 
 // ─── EXCLUIR CONTA ────────────────────────────────────────────────────────────
 function excluirConta() {
-  // Limpa o input e abre o modal de confirmação
   const inp = document.getElementById('excluir-confirma-input');
   if (inp) inp.value = '';
+  const senhaInp = document.getElementById('excluir-senha-input');
+  if (senhaInp) senhaInp.value = '';
+  const senhaWrap = document.getElementById('excluir-senha-wrap');
+  if (senhaWrap) senhaWrap.style.display = 'none';
+  const msgEl = document.getElementById('excluir-msg');
+  if (msgEl) msgEl.style.display = 'none';
   const btn = document.getElementById('btn-confirmar-exclusao');
   if (btn) {
-    btn.disabled = true;
+    btn.disabled = true; btn.textContent = 'Excluir permanentemente';
     btn.style.cursor = 'not-allowed';
     btn.style.color = 'rgba(255,80,80,0.4)';
     btn.style.borderColor = 'rgba(255,50,50,0.15)';
@@ -22021,6 +22098,7 @@ function excluirConta() {
   }
   const m = document.getElementById('modal-excluir-conta');
   if (m) m.style.display = 'flex';
+  setTimeout(function() { if (inp) inp.focus(); }, 200);
 }
 
 function _fecharExcluirConta() {
@@ -22030,9 +22108,16 @@ function _fecharExcluirConta() {
 
 function _excluirValidar() {
   const val = (document.getElementById('excluir-confirma-input')?.value || '').trim().toUpperCase();
+  const senhaWrap = document.getElementById('excluir-senha-wrap');
+  const senhaInp = document.getElementById('excluir-senha-input');
   const btn = document.getElementById('btn-confirmar-exclusao');
   if (!btn) return;
-  const ok = val === 'EXCLUIR';
+  const perfil = _getPerfilLocal();
+  const temContaFormal = _temContaFormal();
+  // Mostra campo senha só para contas Firebase reais
+  if (senhaWrap) senhaWrap.style.display = (val === 'EXCLUIR' && temContaFormal) ? 'block' : 'none';
+  const senha = senhaInp ? senhaInp.value : '';
+  const ok = val === 'EXCLUIR' && (!temContaFormal || senha.length >= 6);
   btn.disabled = !ok;
   btn.style.cursor = ok ? 'pointer' : 'not-allowed';
   btn.style.color = ok ? '#ff4444' : 'rgba(255,80,80,0.4)';
@@ -22041,35 +22126,54 @@ function _excluirValidar() {
 }
 
 async function _excluirConfirmar() {
-  _fecharExcluirConta();
-  fecharModalPerfil();
-
   const perfil = _lsGet('map_perfil_v1', {});
   const uid = perfil.uid;
+  const email = perfil.email || '';
+  const senhaInp = document.getElementById('excluir-senha-input');
+  const senha = senhaInp ? senhaInp.value : '';
+  const msgEl = document.getElementById('excluir-msg');
+  const btn = document.getElementById('btn-confirmar-exclusao');
 
-  // Apagar do Firestore se tiver conta na nuvem
-  if (uid && uid !== 'local' && uid !== 'admin_local' && window._fb) {
+  // Loading state
+  if (btn) { btn.disabled = true; btn.textContent = 'Excluindo...'; }
+
+  // 1. Deletar conta Firebase Auth (requer senha para reautenticar)
+  if (uid && !uid.startsWith('u_') && uid !== 'local' && uid !== 'admin_local' && window._fb) {
+    if (email && senha) {
+      const authResult = await window._fb.deletarContaAuth(email, senha);
+      if (!authResult.ok) {
+        if (msgEl) { msgEl.textContent = authResult.msg || 'Senha incorreta.'; msgEl.style.display = 'block'; }
+        if (btn) { btn.disabled = false; btn.textContent = 'Excluir permanentemente'; }
+        return; // não prossegue se senha errada
+      }
+    }
+    // 2. Deletar dados do Firestore (perfil + backup)
     try { await window._fb.admRemoverConta(uid); } catch(e) {}
+    try { await window._fb._delete('backups/' + uid); } catch(e) {}
   }
+
+  _fecharExcluirConta();
+  fecharModalPerfil();
 
   // Marcar offline
   if (typeof _fbMarcarOffline === 'function') _fbMarcarOffline();
 
-  // Limpar todo o localStorage
+  // 3. Limpar TODO o localStorage
   const keysParaLimpar = [
     'map_perfil_v1', 'map_uid_v1', 'map_pro_elite_v1',
     'map_pro_eventos_v1', 'map_notifs_v1', 'map_last_version',
-    'map_backup_ts_v1'  // timestamp de backup — deve ser limpo junto com a conta
+    'map_backup_ts_v1', 'map_historico_shows_v1', 'map_pro_elite_fonte_v1'
   ];
   keysParaLimpar.forEach(function(k) { localStorage.removeItem(k); });
 
-  // Limpar chaves de áudio
+  // 4. Limpar chaves de áudio
   ['audio_vol','audio_pan','audio_eq_low','audio_eq_mid','audio_eq_hi',
    'audio_comp_on','audio_comp_thr','audio_comp_ratio','audio_metro_freq'
   ].forEach(function(k) { localStorage.removeItem(k); });
 
-  showToast('Conta excluída');
-  sessionStorage.setItem('map_skip_splash', '1');
+  sessionStorage.clear();
+
+  showToast('Conta excluída com sucesso');
   setTimeout(function() { location.reload(); }, 1200);
 }
 async function _fbFazerBackupAgora(btn) {
@@ -22244,29 +22348,35 @@ async function _fbFazerBackupAgora(btn) {
 </div>
 
 <!-- MODAL ALTERAR SENHA ─────────────────────────────────────── -->
-<div id="modal-alterar-senha" style="display:none;position:fixed;inset:0;z-index:99999999;background:rgba(0,0,0,0.85);align-items:center;justify-content:center;">
+<div id="modal-alterar-senha" style="display:none;position:fixed;inset:0;z-index:99999999;background:rgba(0,0,0,0.85);align-items:center;justify-content:center;" onclick="if(event.target===this)fecharAlterarSenha()">
   <div style="background:#111118;border:1px solid rgba(255,255,255,0.1);border-radius:20px;padding:32px 24px;width:calc(100% - 48px);max-width:360px;display:flex;flex-direction:column;gap:20px;">
     <h3 style="margin:0;font-size:18px;font-weight:800;color:#fff;">Alterar senha</h3>
     <div style="display:flex;flex-direction:column;gap:12px;">
       <div style="position:relative;">
-        <input id="alterar-senha-atual" type="password" placeholder="Senha atual"
+        <input id="alterar-senha-atual" type="password" placeholder="Senha atual" autocomplete="current-password"
           style="width:100%;box-sizing:border-box;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.1);border-radius:12px;color:#fff;font-size:14px;padding:13px 44px 13px 16px;outline:none;font-family:inherit;"
+          oninput="_alterarSenhaValidar()"
+          onkeydown="if(event.key==='Enter')document.getElementById('alterar-senha-nova').focus()"
           onfocus="this.style.borderColor='rgba(10,158,110,0.5)'" onblur="this.style.borderColor='rgba(255,255,255,0.1)'">
         <button type="button" onclick="_toggleSenhaField('alterar-senha-atual')" style="position:absolute;right:12px;top:50%;transform:translateY(-50%);background:none;border:none;color:rgba(255,255,255,0.3);cursor:pointer;">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
         </button>
       </div>
       <div style="position:relative;">
-        <input id="alterar-senha-nova" type="password" placeholder="Nova senha (mín. 6)"
+        <input id="alterar-senha-nova" type="password" placeholder="Nova senha (mín. 6)" autocomplete="new-password"
           style="width:100%;box-sizing:border-box;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.1);border-radius:12px;color:#fff;font-size:14px;padding:13px 44px 13px 16px;outline:none;font-family:inherit;"
+          oninput="_alterarSenhaValidar()"
+          onkeydown="if(event.key==='Enter')document.getElementById('alterar-senha-conf').focus()"
           onfocus="this.style.borderColor='rgba(10,158,110,0.5)'" onblur="this.style.borderColor='rgba(255,255,255,0.1)'">
         <button type="button" onclick="_toggleSenhaField('alterar-senha-nova')" style="position:absolute;right:12px;top:50%;transform:translateY(-50%);background:none;border:none;color:rgba(255,255,255,0.3);cursor:pointer;">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
         </button>
       </div>
       <div style="position:relative;">
-        <input id="alterar-senha-conf" type="password" placeholder="Confirmar nova senha"
+        <input id="alterar-senha-conf" type="password" placeholder="Confirmar nova senha" autocomplete="new-password"
           style="width:100%;box-sizing:border-box;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.1);border-radius:12px;color:#fff;font-size:14px;padding:13px 44px 13px 16px;outline:none;font-family:inherit;"
+          oninput="_alterarSenhaValidar()"
+          onkeydown="if(event.key==='Enter'&&!document.getElementById('btn-alterar-senha-confirmar').disabled)confirmarAlterarSenha()"
           onfocus="this.style.borderColor='rgba(10,158,110,0.5)'" onblur="this.style.borderColor='rgba(255,255,255,0.1)'">
         <button type="button" onclick="_toggleSenhaField('alterar-senha-conf')" style="position:absolute;right:12px;top:50%;transform:translateY(-50%);background:none;border:none;color:rgba(255,255,255,0.3);cursor:pointer;">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
@@ -22275,8 +22385,9 @@ async function _fbFazerBackupAgora(btn) {
     </div>
     <div id="alterar-senha-msg" style="font-size:12px;color:rgba(255,255,255,0.4);min-height:16px;text-align:center;"></div>
     <div style="display:flex;gap:10px;">
-      <button onclick="fecharAlterarSenha()" style="flex:1;padding:13px;border-radius:12px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);color:rgba(255,255,255,0.4);font-size:11px;font-weight:700;cursor:pointer;font-family:inherit;">Cancelar</button>
-      <button onclick="confirmarAlterarSenha()" style="flex:2;padding:13px;border-radius:12px;background:#0A9E6E;border:none;color:#000;font-size:12px;font-weight:900;cursor:pointer;font-family:inherit;">Alterar senha</button>
+      <button onclick="fecharAlterarSenha()" style="flex:1;padding:13px;border-radius:12px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);color:rgba(255,255,255,0.4);font-size:11px;font-weight:700;cursor:pointer;font-family:inherit;touch-action:manipulation;">Cancelar</button>
+      <button id="btn-alterar-senha-confirmar" onclick="confirmarAlterarSenha()" disabled
+        style="flex:2;padding:13px;border-radius:12px;background:#0A9E6E;border:none;color:#000;font-size:12px;font-weight:900;cursor:pointer;font-family:inherit;touch-action:manipulation;opacity:0.5;transition:opacity 0.2s;">Alterar senha</button>
     </div>
   </div>
 </div>
@@ -23097,7 +23208,7 @@ async function _fbFazerBackupAgora(btn) {
 </div>
 
 <!-- MODAL EXCLUIR CONTA -->
-<div id="modal-excluir-conta" style="display:none;position:fixed;inset:0;z-index:99999999;background:rgba(0,0,0,0.92);align-items:center;justify-content:center;padding:24px;">
+<div id="modal-excluir-conta" style="display:none;position:fixed;inset:0;z-index:99999999;background:rgba(0,0,0,0.92);align-items:center;justify-content:center;padding:24px;" onclick="if(event.target===this)_fecharExcluirConta()">
   <div style="background:#111118;border:1px solid rgba(255,50,50,0.2);border-radius:20px;padding:28px 24px;width:100%;max-width:340px;display:flex;flex-direction:column;gap:16px;">
     <div style="text-align:center;">
       <div style="width:48px;height:48px;border-radius:50%;background:rgba(255,50,50,0.1);border:1px solid rgba(255,50,50,0.2);display:flex;align-items:center;justify-content:center;margin:0 auto 12px;">
@@ -23106,15 +23217,26 @@ async function _fbFazerBackupAgora(btn) {
       <div style="font-size:16px;font-weight:900;color:#fff;margin-bottom:8px;">Excluir Conta</div>
       <div style="font-size:13px;color:rgba(255,255,255,0.45);line-height:1.5;">Todos os seus dados serão apagados permanentemente. Esta ação não pode ser desfeita.</div>
     </div>
-    <div style="background:rgba(255,50,50,0.06);border:1px solid rgba(255,50,50,0.12);border-radius:12px;padding:12px 14px;">
-      <div style="font-size:11px;color:rgba(255,100,100,0.7);font-weight:700;margin-bottom:4px;">Para confirmar, escreva:</div>
-      <div style="font-size:13px;font-weight:900;color:#ff4444;letter-spacing:1px;margin-bottom:10px;">EXCLUIR</div>
-      <input id="excluir-confirma-input" type="text" placeholder="Digite EXCLUIR"
-        oninput="_excluirValidar()"
-        style="width:100%;box-sizing:border-box;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.1);border-radius:8px;color:#fff;font-size:13px;font-weight:700;padding:10px 12px;outline:none;font-family:inherit;letter-spacing:1px;"
-        onfocus="this.style.borderColor='rgba(255,80,80,0.4)'"
-        onblur="this.style.borderColor='rgba(255,255,255,0.1)'">
+    <div style="background:rgba(255,50,50,0.06);border:1px solid rgba(255,50,50,0.12);border-radius:12px;padding:12px 14px;display:flex;flex-direction:column;gap:10px;">
+      <div>
+        <div style="font-size:11px;color:rgba(255,100,100,0.7);font-weight:700;margin-bottom:4px;">Para confirmar, escreva:</div>
+        <div style="font-size:13px;font-weight:900;color:#ff4444;letter-spacing:1px;margin-bottom:8px;">EXCLUIR</div>
+        <input id="excluir-confirma-input" type="text" placeholder="Digite EXCLUIR"
+          oninput="_excluirValidar()" autocomplete="off"
+          style="width:100%;box-sizing:border-box;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.1);border-radius:8px;color:#fff;font-size:13px;font-weight:700;padding:10px 12px;outline:none;font-family:inherit;letter-spacing:1px;"
+          onfocus="this.style.borderColor='rgba(255,80,80,0.4)'"
+          onblur="this.style.borderColor='rgba(255,255,255,0.1)'">
+      </div>
+      <div id="excluir-senha-wrap" style="display:none;">
+        <div style="font-size:11px;color:rgba(255,100,100,0.7);font-weight:700;margin-bottom:6px;">Confirme sua senha:</div>
+        <input id="excluir-senha-input" type="password" placeholder="Sua senha atual"
+          oninput="_excluirValidar()" autocomplete="current-password"
+          style="width:100%;box-sizing:border-box;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.1);border-radius:8px;color:#fff;font-size:13px;padding:10px 12px;outline:none;font-family:inherit;"
+          onfocus="this.style.borderColor='rgba(255,80,80,0.4)'"
+          onblur="this.style.borderColor='rgba(255,255,255,0.1)'">
+      </div>
     </div>
+    <div id="excluir-msg" style="font-size:12px;color:rgba(255,100,100,0.7);min-height:16px;text-align:center;display:none;"></div>
     <button id="btn-confirmar-exclusao" onclick="_excluirConfirmar()" disabled
       style="width:100%;padding:13px;border-radius:12px;background:rgba(255,50,50,0.08);border:1.5px solid rgba(255,50,50,0.15);color:rgba(255,80,80,0.4);font-size:13px;font-weight:900;cursor:not-allowed;font-family:inherit;touch-action:manipulation;letter-spacing:0.5px;transition:all 0.2s;">
       Excluir permanentemente
