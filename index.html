@@ -12734,14 +12734,11 @@ function renderBiblioteca(filtro) {
   }
   var termo = filtro.toLowerCase();
   var lista = songs.filter(function(s) {
-    if (!s || !s.name) return false; // filtra corrompidas
-    var nome = (s.name || '').toLowerCase();
-    var artista = (s.artista || '').toLowerCase();
-    var tags = (s.tags || []).join(' ').toLowerCase();
-    // FIX: busca por nome, artista e tags
-    var termoOk = !termo || nome.includes(termo) || artista.includes(termo) || tags.includes(termo);
-    var tagOk   = !_tagAtiva || (s.tags && s.tags.includes(_tagAtiva));
-    return termoOk && tagOk;
+    // s.name pode ser undefined em músicas corrompidas — protege contra TypeError
+    var nome = (s.name || '');
+    var nomeOk = nome.toLowerCase().includes(termo);
+    var tagOk  = !_tagAtiva || (s.tags && s.tags.includes(_tagAtiva));
+    return nomeOk && tagOk;
   });
 
   var sig = _bibSig(lista, filtro) + '|tag:' + (_tagAtiva || '') + '|ord:' + _bibOrdem + (_bibOrdemDesc ? 'd' : 'a');
@@ -12757,9 +12754,7 @@ function renderBiblioteca(filtro) {
     return;
   }
 
-  // FIX: filtra músicas corrompidas (sem nome)
-  var sorted = lista.filter(function(s) { return s && s.name; }).slice().sort(_bibSortFn);
-  var _e = function(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); };
+  var sorted = lista.slice().sort(_bibSortFn);
 
   grid.innerHTML = sorted.map(function(s) {
     var cor = albumColor(s.id || 0);
@@ -12767,15 +12762,14 @@ function renderBiblioteca(filtro) {
     var ini  = words[0] ? words[0].charAt(0).toUpperCase() : '?';
     var ini2 = words.length > 1 ? words[words.length - 1].charAt(0).toUpperCase() : '';
     var partes = s.parts ? s.parts.length : 0;
-    // FIX: sBpm local para não sobrescrever variável global bpm
-    var sBpm = s.bpm || '—';
+    var bpm = s.bpm || '—';
     return '<div class="album-card' + (s.favorite ? ' fav' : '') + '" data-id="' + s.id + '">'
       + '<div class="album-cover" style="--ac1:' + cor.ac1 + ';--ac2:' + cor.ac2 + '" onclick="loadSongBiblioteca(' + s.id + ')">'
       +   '<div class="album-cover-bg"></div>'
       +   '<div class="album-cover-shine"></div>'
       +   '<div class="album-cover-body">'
       +     '<div class="album-cover-initials">' + ini + '<span class="album-cover-initial2">' + ini2 + '</span></div>'
-      +     '<div class="album-cover-bpm">' + sBpm + ' <span>BPM</span></div>'
+      +     '<div class="album-cover-bpm">' + bpm + ' <span>BPM</span></div>'
       +   '</div>'
       +   (s.favorite ? '<div class="album-cover-fav"><svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor" stroke="none"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg></div>' : '')
       +   '<button class="album-menu-btn" data-sid="' + s.id + '" data-modo="biblioteca" onclick="event.stopPropagation();abrirCtxMenu(event,this.dataset.sid,this.dataset.modo)" title="Opcoes">'
@@ -12783,10 +12777,10 @@ function renderBiblioteca(filtro) {
       +   '</button>'
       + '</div>'
       + '<div class="album-info">'
-      +   '<div class="album-name" title="' + _e(s.name) + '">' + _e(s.name) + '</div>'
-      +   (s.artista ? '<div class="album-meta" style="color:rgba(255,255,255,0.6);font-weight:600;">' + _e(s.artista) + '</div>' : '')
-      +   '<div class="album-meta">' + (partes > 0 ? partes + ' parte' + (partes !== 1 ? 's' : '') : 'sem partes') + ' · ' + sBpm + ' BPM' + (s.dataSalvo ? ' · ' + _e(s.dataSalvo) : '') + '</div>'
-      +   (s.tags && s.tags.length ? '<div class="album-tags">' + s.tags.map(function(t){ return '<span class="album-tag">' + _e(t) + '</span>'; }).join('') + '</div>' : '')
+      +   '<div class="album-name" title="' + (s.name||'').replace(/"/g,'&quot;') + '">' + (s.name||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;') + '</div>'
+      +   (s.artista ? '<div class="album-meta" style="color:rgba(255,255,255,0.6);font-weight:600;">' + s.artista.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;') + '</div>' : '')
+      +   '<div class="album-meta">' + (partes > 0 ? partes + ' parte' + (partes !== 1 ? 's' : '') : 'sem partes') + ' · ' + bpm + ' BPM' + (s.dataSalvo ? ' · ' + s.dataSalvo : '') + '</div>'
+      +   (s.tags && s.tags.length ? '<div class="album-tags">' + s.tags.map(function(t){ return '<span class="album-tag">' + t + '</span>'; }).join('') + '</div>' : '')
       + '</div>'
       + '</div>';
   }).join('');
