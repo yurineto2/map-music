@@ -9243,6 +9243,10 @@ function _renderHistoricoShow() {
   try { hist = JSON.parse(localStorage.getItem('map_historico_shows_v1') || '[]'); } catch(e) {}
 
   // Atualiza contagem no botão do perfil e no header do modal
+  // Atualiza todos os elementos com contagem (podem existir ou não)
+  document.querySelectorAll('[id="hist-shows-count"]').forEach(function(el) {
+    el.textContent = hist.length ? '(' + hist.length + ')' : '';
+  });
   var countEl = document.getElementById('hist-shows-count');
   if (countEl) countEl.textContent = hist.length ? '(' + hist.length + ')' : '';
   var modalCount = document.getElementById('hist-modal-count');
@@ -9256,21 +9260,49 @@ function _renderHistoricoShow() {
       + '</div>';
     return;
   }
-  lista.innerHTML = hist.map(function(h) {
-    var nomes = h.musicas.map(function(m) { return m.nome; }).join(', ');
-    var titulo = h.eventoNome ? h.eventoNome : 'Show livre';
-    var totalMusicas = h.musicas.length;
+  // Guarda nomes completos para expansão (evita aspas aninhadas no onclick)
+  window._histNomesCache = {};
+  lista.innerHTML = hist.map(function(h, idx) {
+    var _v = function(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); };
+    var titulo = _v(h.eventoNome ? h.eventoNome : 'Show livre');
+    var totalMusicas = h.musicas ? h.musicas.length : 0;
+    var nomesArr = (h.musicas || []).map(function(m) { return _v(m.nome || ''); });
+    var nomesPreview = nomesArr.slice(0, 4).join(', ') + (nomesArr.length > 4 ? ' +' + (nomesArr.length - 4) + ' mais' : '');
+    var durStr = h.duracao ? ' &middot; ' + Math.round(h.duracao / 60) + 'min' : '';
+    // Armazena lista completa no cache para o botão expandir usar sem aspas no onclick
+    window._histNomesCache[idx] = { preview: nomesPreview, full: nomesArr.join(', ') };
     return '<div style="background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.07);border-radius:12px;padding:12px 14px;">'
       + '<div style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px;margin-bottom:6px;">'
       +   '<div style="font-size:12px;font-weight:800;color:#fff;line-height:1.3;">' + titulo + '</div>'
-      +   '<div style="font-size:9px;color:rgba(255,255,255,0.25);white-space:nowrap;flex-shrink:0;margin-top:1px;">' + h.data + ' · ' + h.hora + '</div>'
+      +   '<div style="font-size:9px;color:rgba(255,255,255,0.25);white-space:nowrap;flex-shrink:0;margin-top:1px;">' + _v(h.data || '') + ' &middot; ' + _v(h.hora || '') + '</div>'
       + '</div>'
-      + '<div style="display:flex;align-items:center;gap:6px;margin-bottom:5px;">'
-      +   '<div style="font-size:10px;color:rgba(10,158,110,0.8);font-weight:800;">' + totalMusicas + ' música' + (totalMusicas !== 1 ? 's' : '') + '</div>'
+      + '<div style="display:flex;align-items:center;gap:6px;margin-bottom:6px;">'
+      +   '<div style="font-size:10px;color:rgba(10,158,110,0.8);font-weight:800;">' + totalMusicas + ' música' + (totalMusicas !== 1 ? 's' : '') + durStr + '</div>'
       + '</div>'
-      + '<div style="font-size:10px;color:rgba(255,255,255,0.22);overflow:hidden;text-overflow:ellipsis;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;line-height:1.5;">' + nomes + '</div>'
+      + '<div id="hist-nomes-' + idx + '" style="font-size:10px;color:rgba(255,255,255,0.22);line-height:1.6;">' + nomesPreview + '</div>'
+      + (nomesArr.length > 4
+          ? '<button data-hidx="' + idx + '" onclick="_histToggleNomes(this)" style="margin-top:4px;background:none;border:none;color:rgba(10,158,110,0.6);font-size:9px;font-weight:700;cursor:pointer;padding:2px 0;font-family:inherit;touch-action:manipulation;">Ver todas</button>'
+          : '')
       + '</div>';
   }).join('');
+}
+
+function _histToggleNomes(btn) {
+  var idx = btn.getAttribute('data-hidx');
+  var el = document.getElementById('hist-nomes-' + idx);
+  var cache = window._histNomesCache && window._histNomesCache[idx];
+  if (!el || !cache) return;
+  if (el.dataset.exp) {
+    el.textContent = cache.preview;
+    el.style.whiteSpace = '';
+    delete el.dataset.exp;
+    btn.textContent = 'Ver todas';
+  } else {
+    el.textContent = cache.full;
+    el.style.whiteSpace = 'normal';
+    el.dataset.exp = '1';
+    btn.textContent = 'Recolher';
+  }
 }
 
 function abrirHistoricoShows() {
@@ -10329,6 +10361,7 @@ function _ativarModoShow() {
       }
     }
   }
+  _showIniciadoEm = Date.now(); // marca início para calcular duração
   setTimeout(atualizarLetreiroDrumCam, 50);
   document.getElementById('app-body').classList.add('performance-mode');
   _perfFontCarregar(); // aplica fonte da música atual no show
@@ -10387,22 +10420,40 @@ function _desativarModoShow() {
   }
 }
 
+// Marca o início do show para calcular duração
+var _showIniciadoEm = 0;
+
 function _salvarHistoricoShow() {
   var lista = _getShowSongs();
   if (!lista || lista.length === 0) return;
+  // Duração mínima: 30 segundos para evitar registros acidentais
+  var duracao = _showIniciadoEm ? Math.round((Date.now() - _showIniciadoEm) / 1000) : 0;
+  if (duracao < 30) { _showIniciadoEm = 0; return; }
+  var agora = Date.now();
   var entrada = {
-    id: Date.now(),
+    id: agora,
     data: new Date().toLocaleDateString('pt-BR'),
     hora: new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }),
     eventoNome: showSetlistEventoNome || null,
+    duracao: duracao,
     musicas: lista.map(function(s) { return { id: s.id, nome: s.name, bpm: s.bpm || null }; })
   };
   try {
     var hist = JSON.parse(localStorage.getItem('map_historico_shows_v1') || '[]');
-    hist.unshift(entrada); // mais recente primeiro
-    if (hist.length > 50) hist = hist.slice(0, 50); // máx 50 registros
+    // FIX: previne duplicatas — não salva se última entrada foi há menos de 5 minutos com as mesmas músicas
+    if (hist.length > 0) {
+      var ultimo = hist[0];
+      var mesmosIds = ultimo.musicas && lista.length === ultimo.musicas.length &&
+        lista.every(function(s, i) { return ultimo.musicas[i] && ultimo.musicas[i].id === s.id; });
+      if (mesmosIds && (agora - ultimo.id) < 5 * 60 * 1000) {
+        _showIniciadoEm = 0; return; // duplicata ignorada
+      }
+    }
+    hist.unshift(entrada);
+    if (hist.length > 50) hist = hist.slice(0, 50);
     localStorage.setItem('map_historico_shows_v1', JSON.stringify(hist));
   } catch(e) {}
+  _showIniciadoEm = 0;
 }
 
 function atualizarIndicador() {
@@ -11431,7 +11482,8 @@ function saveSong() {
       var name = inp.value.trim();
       if (!name) { inp.focus(); return; }
       var artista = inpArtista.value.trim();
-      var bpmSalvo = parseInt(inpBpm.value) || bpm;
+      var _bpmRaw = parseInt(inpBpm.value);
+      var bpmSalvo = (!isNaN(_bpmRaw) && _bpmRaw >= 40 && _bpmRaw <= 300) ? _bpmRaw : (bpm || 120);
       var tagsSalvas = _tagsSelecionadas.slice();
       overlay.remove();
       _tagsSelecionadas = [];
@@ -11447,7 +11499,9 @@ function saveSong() {
     };
     document.getElementById('_save-cancel').onclick  = function(){ overlay.remove(); };
     document.getElementById('_save-confirm').onclick = _doSave;
-    inp.addEventListener('keydown', function(e){ if (e.key === 'Enter') _doSave(); });
+    inp.addEventListener('keydown', function(e){ if (e.key === 'Enter') { e.preventDefault(); inpArtista.focus(); } });
+    inpArtista.addEventListener('keydown', function(e){ if (e.key === 'Enter') { e.preventDefault(); inpBpm.focus(); } });
+    inpBpm.addEventListener('keydown', function(e){ if (e.key === 'Enter') { e.preventDefault(); _doSave(); } });
   }
 }
 
@@ -11538,7 +11592,17 @@ function deleteSong(id, e) {
     '<b style="color:' + _txtColor() + ';">' + nome.replace(/&/g,'&amp;').replace(/</g,'&lt;') + '</b> será removida permanentemente.',
     'Excluir', 'rgba(255,60,60,0.85)',
     function() {
+      var deletedIdx = songs.findIndex(function(s){ return s.id === id; });
       songs = songs.filter(function(s){ return s.id !== id; });
+      // FIX: se a música deletada estava carregada, resetar índice
+      if (currentSongIndex === deletedIdx) {
+        currentSongIndex = -1;
+        document.getElementById('notes-grid').innerHTML = '';
+        document.getElementById('dc-song-name').textContent = '—';
+        if (typeof atualizarBtnSalvar === 'function') atualizarBtnSalvar();
+      } else if (currentSongIndex > deletedIdx) {
+        currentSongIndex--; // ajusta índice se a deletada era anterior
+      }
       updateStorage();
       showToast('Removida.', 'warning');
     }
@@ -12691,11 +12755,14 @@ function renderBiblioteca(filtro) {
   }
   var termo = filtro.toLowerCase();
   var lista = songs.filter(function(s) {
-    // s.name pode ser undefined em músicas corrompidas — protege contra TypeError
-    var nome = (s.name || '');
-    var nomeOk = nome.toLowerCase().includes(termo);
-    var tagOk  = !_tagAtiva || (s.tags && s.tags.includes(_tagAtiva));
-    return nomeOk && tagOk;
+    if (!s || !s.name) return false; // filtra corrompidas
+    var nome = (s.name || '').toLowerCase();
+    var artista = (s.artista || '').toLowerCase();
+    var tags = (s.tags || []).join(' ').toLowerCase();
+    // FIX: busca por nome, artista e tags
+    var termoOk = !termo || nome.includes(termo) || artista.includes(termo) || tags.includes(termo);
+    var tagOk   = !_tagAtiva || (s.tags && s.tags.includes(_tagAtiva));
+    return termoOk && tagOk;
   });
 
   var sig = _bibSig(lista, filtro) + '|tag:' + (_tagAtiva || '') + '|ord:' + _bibOrdem + (_bibOrdemDesc ? 'd' : 'a');
@@ -12711,7 +12778,9 @@ function renderBiblioteca(filtro) {
     return;
   }
 
-  var sorted = lista.slice().sort(_bibSortFn);
+  // FIX: filtra músicas corrompidas (sem nome)
+  var sorted = lista.filter(function(s) { return s && s.name; }).slice().sort(_bibSortFn);
+  var _e = function(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); };
 
   grid.innerHTML = sorted.map(function(s) {
     var cor = albumColor(s.id || 0);
@@ -12719,14 +12788,15 @@ function renderBiblioteca(filtro) {
     var ini  = words[0] ? words[0].charAt(0).toUpperCase() : '?';
     var ini2 = words.length > 1 ? words[words.length - 1].charAt(0).toUpperCase() : '';
     var partes = s.parts ? s.parts.length : 0;
-    var bpm = s.bpm || '—';
+    // FIX: sBpm local para não sobrescrever variável global bpm
+    var sBpm = s.bpm || '—';
     return '<div class="album-card' + (s.favorite ? ' fav' : '') + '" data-id="' + s.id + '">'
       + '<div class="album-cover" style="--ac1:' + cor.ac1 + ';--ac2:' + cor.ac2 + '" onclick="loadSongBiblioteca(' + s.id + ')">'
       +   '<div class="album-cover-bg"></div>'
       +   '<div class="album-cover-shine"></div>'
       +   '<div class="album-cover-body">'
       +     '<div class="album-cover-initials">' + ini + '<span class="album-cover-initial2">' + ini2 + '</span></div>'
-      +     '<div class="album-cover-bpm">' + bpm + ' <span>BPM</span></div>'
+      +     '<div class="album-cover-bpm">' + sBpm + ' <span>BPM</span></div>'
       +   '</div>'
       +   (s.favorite ? '<div class="album-cover-fav"><svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor" stroke="none"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg></div>' : '')
       +   '<button class="album-menu-btn" data-sid="' + s.id + '" data-modo="biblioteca" onclick="event.stopPropagation();abrirCtxMenu(event,this.dataset.sid,this.dataset.modo)" title="Opcoes">'
@@ -12734,10 +12804,10 @@ function renderBiblioteca(filtro) {
       +   '</button>'
       + '</div>'
       + '<div class="album-info">'
-      +   '<div class="album-name" title="' + (s.name||'').replace(/"/g,'&quot;') + '">' + (s.name||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;') + '</div>'
-      +   (s.artista ? '<div class="album-meta" style="color:rgba(255,255,255,0.6);font-weight:600;">' + s.artista.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;') + '</div>' : '')
-      +   '<div class="album-meta">' + (partes > 0 ? partes + ' parte' + (partes !== 1 ? 's' : '') : 'sem partes') + ' · ' + bpm + ' BPM' + (s.dataSalvo ? ' · ' + s.dataSalvo : '') + '</div>'
-      +   (s.tags && s.tags.length ? '<div class="album-tags">' + s.tags.map(function(t){ return '<span class="album-tag">' + t + '</span>'; }).join('') + '</div>' : '')
+      +   '<div class="album-name" title="' + _e(s.name) + '">' + _e(s.name) + '</div>'
+      +   (s.artista ? '<div class="album-meta" style="color:rgba(255,255,255,0.6);font-weight:600;">' + _e(s.artista) + '</div>' : '')
+      +   '<div class="album-meta">' + (partes > 0 ? partes + ' parte' + (partes !== 1 ? 's' : '') : 'sem partes') + ' · ' + sBpm + ' BPM' + (s.dataSalvo ? ' · ' + _e(s.dataSalvo) : '') + '</div>'
+      +   (s.tags && s.tags.length ? '<div class="album-tags">' + s.tags.map(function(t){ return '<span class="album-tag">' + _e(t) + '</span>'; }).join('') + '</div>' : '')
       + '</div>'
       + '</div>';
   }).join('');
@@ -12914,7 +12984,18 @@ function abrirEditarMusica(id, e) {
   _tagsSelecionadas = (s.tags || []).slice();
   _tagEditorRender();
   document.getElementById('modal-editar-musica').classList.add('show');
-  setTimeout(() => document.getElementById('editar-musica-nome').focus(), 100);
+  setTimeout(function() {
+    var nomeFld = document.getElementById('editar-musica-nome');
+    if (nomeFld) {
+      nomeFld.focus();
+      // FIX: Enter no nome avança para artista; Enter no BPM salva
+      nomeFld.onkeydown = function(e) { if (e.key === 'Enter') { e.preventDefault(); document.getElementById('editar-musica-artista').focus(); } };
+    }
+    var bpmFld = document.getElementById('editar-musica-bpm');
+    if (bpmFld) bpmFld.onkeydown = function(e) { if (e.key === 'Enter') { e.preventDefault(); salvarEditarMusica(); } };
+    var artistaFld = document.getElementById('editar-musica-artista');
+    if (artistaFld) artistaFld.onkeydown = function(e) { if (e.key === 'Enter') { e.preventDefault(); salvarEditarMusica(); } };
+  }, 100);
 }
 
 function fecharEditarMusica() {
@@ -12931,10 +13012,21 @@ function salvarEditarMusica() {
   const s = songs.find(x => x.id === editarMusicaId);
   if (s) {
     s.name = nome;
-    if (!isNaN(bpmVal) && bpmVal >= 40 && bpmVal <= 860) s.bpm = bpmVal;
+    // FIX: range check correto (40-300)
+    if (!isNaN(bpmVal) && bpmVal >= 40 && bpmVal <= 300) {
+      s.bpm = bpmVal;
+      // FIX: atualizar BPM global e display se for a música carregada
+      if (currentSongIndex >= 0 && songs[currentSongIndex] && songs[currentSongIndex].id === s.id) {
+        bpm = bpmVal;
+        document.getElementById('bpm-display').innerText = bpmVal;
+        var dcBpm = document.getElementById('dc-bpm');
+        if (dcBpm) dcBpm.textContent = bpmVal;
+      }
+    }
     s.tags = _tagsSelecionadas.slice();
     s.artista = artistaVal || s.artista || '';
     updateStorage();
+    _fbBackupMusicas();
     showToast('Música atualizada!');
   }
   fecharEditarMusica();
