@@ -11461,8 +11461,7 @@ function saveSong() {
       var name = inp.value.trim();
       if (!name) { inp.focus(); return; }
       var artista = inpArtista.value.trim();
-      var _bpmRaw = parseInt(inpBpm.value);
-      var bpmSalvo = (!isNaN(_bpmRaw) && _bpmRaw >= 40 && _bpmRaw <= 300) ? _bpmRaw : (bpm || 120);
+      var bpmSalvo = parseInt(inpBpm.value) || bpm;
       var tagsSalvas = _tagsSelecionadas.slice();
       overlay.remove();
       _tagsSelecionadas = [];
@@ -11478,9 +11477,7 @@ function saveSong() {
     };
     document.getElementById('_save-cancel').onclick  = function(){ overlay.remove(); };
     document.getElementById('_save-confirm').onclick = _doSave;
-    inp.addEventListener('keydown', function(e){ if (e.key === 'Enter') { e.preventDefault(); inpArtista.focus(); } });
-    inpArtista.addEventListener('keydown', function(e){ if (e.key === 'Enter') { e.preventDefault(); inpBpm.focus(); } });
-    inpBpm.addEventListener('keydown', function(e){ if (e.key === 'Enter') { e.preventDefault(); _doSave(); } });
+    inp.addEventListener('keydown', function(e){ if (e.key === 'Enter') _doSave(); });
   }
 }
 
@@ -11571,17 +11568,7 @@ function deleteSong(id, e) {
     '<b style="color:' + _txtColor() + ';">' + nome.replace(/&/g,'&amp;').replace(/</g,'&lt;') + '</b> será removida permanentemente.',
     'Excluir', 'rgba(255,60,60,0.85)',
     function() {
-      var deletedIdx = songs.findIndex(function(s){ return s.id === id; });
       songs = songs.filter(function(s){ return s.id !== id; });
-      // FIX: se a música deletada estava carregada, resetar índice
-      if (currentSongIndex === deletedIdx) {
-        currentSongIndex = -1;
-        document.getElementById('notes-grid').innerHTML = '';
-        document.getElementById('dc-song-name').textContent = '—';
-        if (typeof atualizarBtnSalvar === 'function') atualizarBtnSalvar();
-      } else if (currentSongIndex > deletedIdx) {
-        currentSongIndex--; // ajusta índice se a deletada era anterior
-      }
       updateStorage();
       showToast('Removida.', 'warning');
     }
@@ -12957,18 +12944,7 @@ function abrirEditarMusica(id, e) {
   _tagsSelecionadas = (s.tags || []).slice();
   _tagEditorRender();
   document.getElementById('modal-editar-musica').classList.add('show');
-  setTimeout(function() {
-    var nomeFld = document.getElementById('editar-musica-nome');
-    if (nomeFld) {
-      nomeFld.focus();
-      // FIX: Enter no nome avança para artista; Enter no BPM salva
-      nomeFld.onkeydown = function(e) { if (e.key === 'Enter') { e.preventDefault(); document.getElementById('editar-musica-artista').focus(); } };
-    }
-    var bpmFld = document.getElementById('editar-musica-bpm');
-    if (bpmFld) bpmFld.onkeydown = function(e) { if (e.key === 'Enter') { e.preventDefault(); salvarEditarMusica(); } };
-    var artistaFld = document.getElementById('editar-musica-artista');
-    if (artistaFld) artistaFld.onkeydown = function(e) { if (e.key === 'Enter') { e.preventDefault(); salvarEditarMusica(); } };
-  }, 100);
+  setTimeout(() => document.getElementById('editar-musica-nome').focus(), 100);
 }
 
 function fecharEditarMusica() {
@@ -12985,21 +12961,10 @@ function salvarEditarMusica() {
   const s = songs.find(x => x.id === editarMusicaId);
   if (s) {
     s.name = nome;
-    // FIX: range check correto (40-300)
-    if (!isNaN(bpmVal) && bpmVal >= 40 && bpmVal <= 300) {
-      s.bpm = bpmVal;
-      // FIX: atualizar BPM global e display se for a música carregada
-      if (currentSongIndex >= 0 && songs[currentSongIndex] && songs[currentSongIndex].id === s.id) {
-        bpm = bpmVal;
-        document.getElementById('bpm-display').innerText = bpmVal;
-        var dcBpm = document.getElementById('dc-bpm');
-        if (dcBpm) dcBpm.textContent = bpmVal;
-      }
-    }
+    if (!isNaN(bpmVal) && bpmVal >= 40 && bpmVal <= 860) s.bpm = bpmVal;
     s.tags = _tagsSelecionadas.slice();
     s.artista = artistaVal || s.artista || '';
     updateStorage();
-    _fbBackupMusicas();
     showToast('Música atualizada!');
   }
   fecharEditarMusica();
