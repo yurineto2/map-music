@@ -9243,10 +9243,6 @@ function _renderHistoricoShow() {
   try { hist = JSON.parse(localStorage.getItem('map_historico_shows_v1') || '[]'); } catch(e) {}
 
   // Atualiza contagem no botão do perfil e no header do modal
-  // Atualiza todos os elementos com contagem (podem existir ou não)
-  document.querySelectorAll('[id="hist-shows-count"]').forEach(function(el) {
-    el.textContent = hist.length ? '(' + hist.length + ')' : '';
-  });
   var countEl = document.getElementById('hist-shows-count');
   if (countEl) countEl.textContent = hist.length ? '(' + hist.length + ')' : '';
   var modalCount = document.getElementById('hist-modal-count');
@@ -9260,26 +9256,19 @@ function _renderHistoricoShow() {
       + '</div>';
     return;
   }
-  lista.innerHTML = hist.map(function(h, idx) {
-    var _v = function(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); };
-    var titulo = _v(h.eventoNome ? h.eventoNome : 'Show livre');
-    var totalMusicas = h.musicas ? h.musicas.length : 0;
-    var nomesArr = (h.musicas || []).map(function(m) { return _v(m.nome || ''); });
-    var nomesPreview = nomesArr.slice(0, 4).join(', ') + (nomesArr.length > 4 ? ' +' + (nomesArr.length - 4) + ' mais' : '');
-    var durStr = h.duracao ? ' &middot; ' + Math.round(h.duracao / 60) + 'min' : '';
-    var idNomes = 'hist-nomes-' + idx;
+  lista.innerHTML = hist.map(function(h) {
+    var nomes = h.musicas.map(function(m) { return m.nome; }).join(', ');
+    var titulo = h.eventoNome ? h.eventoNome : 'Show livre';
+    var totalMusicas = h.musicas.length;
     return '<div style="background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.07);border-radius:12px;padding:12px 14px;">'
       + '<div style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px;margin-bottom:6px;">'
       +   '<div style="font-size:12px;font-weight:800;color:#fff;line-height:1.3;">' + titulo + '</div>'
-      +   '<div style="font-size:9px;color:rgba(255,255,255,0.25);white-space:nowrap;flex-shrink:0;margin-top:1px;">' + _v(h.data || '') + ' &middot; ' + _v(h.hora || '') + '</div>'
+      +   '<div style="font-size:9px;color:rgba(255,255,255,0.25);white-space:nowrap;flex-shrink:0;margin-top:1px;">' + h.data + ' · ' + h.hora + '</div>'
       + '</div>'
-      + '<div style="display:flex;align-items:center;gap:6px;margin-bottom:6px;">'
-      +   '<div style="font-size:10px;color:rgba(10,158,110,0.8);font-weight:800;">' + totalMusicas + ' música' + (totalMusicas !== 1 ? 's' : '') + durStr + '</div>'
+      + '<div style="display:flex;align-items:center;gap:6px;margin-bottom:5px;">'
+      +   '<div style="font-size:10px;color:rgba(10,158,110,0.8);font-weight:800;">' + totalMusicas + ' música' + (totalMusicas !== 1 ? 's' : '') + '</div>'
       + '</div>'
-      + '<div id="' + idNomes + '" style="font-size:10px;color:rgba(255,255,255,0.22);line-height:1.6;">' + nomesPreview + '</div>'
-      + (nomesArr.length > 4
-          ? '<button onclick="var el=document.getElementById('' + idNomes + '');if(el.dataset.exp){el.innerHTML='' + nomesArr.slice(0,4).join(', ').replace(/'/g,"\'") + ' +' + (nomesArr.length-4) + ' mais';delete el.dataset.exp;this.textContent='Ver todas';}else{el.innerHTML='' + nomesArr.join(', ').replace(/'/g,"\'") + '';el.dataset.exp=1;this.textContent='Recolher';}" style="margin-top:4px;background:none;border:none;color:rgba(10,158,110,0.6);font-size:9px;font-weight:700;cursor:pointer;padding:2px 0;font-family:inherit;touch-action:manipulation;">Ver todas</button>'
-          : '')
+      + '<div style="font-size:10px;color:rgba(255,255,255,0.22);overflow:hidden;text-overflow:ellipsis;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;line-height:1.5;">' + nomes + '</div>'
       + '</div>';
   }).join('');
 }
@@ -10340,7 +10329,6 @@ function _ativarModoShow() {
       }
     }
   }
-  _showIniciadoEm = Date.now(); // marca início para calcular duração
   setTimeout(atualizarLetreiroDrumCam, 50);
   document.getElementById('app-body').classList.add('performance-mode');
   _perfFontCarregar(); // aplica fonte da música atual no show
@@ -10399,40 +10387,22 @@ function _desativarModoShow() {
   }
 }
 
-// Marca o início do show para calcular duração
-var _showIniciadoEm = 0;
-
 function _salvarHistoricoShow() {
   var lista = _getShowSongs();
   if (!lista || lista.length === 0) return;
-  // Duração mínima: 30 segundos para evitar registros acidentais
-  var duracao = _showIniciadoEm ? Math.round((Date.now() - _showIniciadoEm) / 1000) : 0;
-  if (duracao < 30) { _showIniciadoEm = 0; return; }
-  var agora = Date.now();
   var entrada = {
-    id: agora,
+    id: Date.now(),
     data: new Date().toLocaleDateString('pt-BR'),
     hora: new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }),
     eventoNome: showSetlistEventoNome || null,
-    duracao: duracao,
     musicas: lista.map(function(s) { return { id: s.id, nome: s.name, bpm: s.bpm || null }; })
   };
   try {
     var hist = JSON.parse(localStorage.getItem('map_historico_shows_v1') || '[]');
-    // FIX: previne duplicatas — não salva se última entrada foi há menos de 5 minutos com as mesmas músicas
-    if (hist.length > 0) {
-      var ultimo = hist[0];
-      var mesmosIds = ultimo.musicas && lista.length === ultimo.musicas.length &&
-        lista.every(function(s, i) { return ultimo.musicas[i] && ultimo.musicas[i].id === s.id; });
-      if (mesmosIds && (agora - ultimo.id) < 5 * 60 * 1000) {
-        _showIniciadoEm = 0; return; // duplicata ignorada
-      }
-    }
-    hist.unshift(entrada);
-    if (hist.length > 50) hist = hist.slice(0, 50);
+    hist.unshift(entrada); // mais recente primeiro
+    if (hist.length > 50) hist = hist.slice(0, 50); // máx 50 registros
     localStorage.setItem('map_historico_shows_v1', JSON.stringify(hist));
   } catch(e) {}
-  _showIniciadoEm = 0;
 }
 
 function atualizarIndicador() {
