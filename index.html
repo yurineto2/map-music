@@ -773,23 +773,29 @@ window._DEBUG = (window.location.hostname === 'localhost' || window.location.hos
       return function() { stopped = true; if (_nextTimer) { clearTimeout(_nextTimer); _nextTimer = null; } };
     },
     async entrarSalaFb(codigo, viewerUid, viewerNome) {
-      try {
-        var res = await _getComRetry('salas/' + codigo, 4);
-        if (!res.encontrado) return { erro: 'nao_encontrada' };
-        var data = res.data;
-        if (!data || Object.keys(data).length === 0) return { erro: 'nao_encontrada' };
-        if (data.ativa === false) return { erro: 'encerrada' };
-        var viewers = Object.assign({}, data.viewers || {});
-        viewers[viewerUid] = viewerNome;
-        var onlineCount = Object.keys(viewers).length + 1;
-        await _set('salas/' + codigo, { viewers: viewers, onlineCount: onlineCount }, true);
-        return { ok: true, data: data };
-      } catch(e) {
-        var status = e && e.status;
-        if (status === 403 || status === 401) return { erro: 'permissao' };
-        if (status === 404) return { erro: 'nao_encontrada' };
-        return { erro: 'rede' };
+      const MAX_TENTATIVAS = 4;
+      for (let tentativa = 0; tentativa < MAX_TENTATIVAS; tentativa++) {
+        try {
+          var res = await _getComRetry('salas/' + codigo, 4);
+          if (!res.encontrado) return { erro: 'nao_encontrada' };
+          var data = res.data;
+          if (!data || Object.keys(data).length === 0) return { erro: 'nao_encontrada' };
+          if (data.ativa === false) return { erro: 'encerrada' };
+          var viewers = Object.assign({}, data.viewers || {});
+          viewers[viewerUid] = viewerNome;
+          var onlineCount = Object.keys(viewers).length + 1;
+          await _set('salas/' + codigo, { viewers: viewers, onlineCount: onlineCount }, true);
+          return { ok: true, data: data };
+        } catch(e) {
+          var status = e && e.status;
+          if (status === 403 || status === 401) return { erro: 'permissao' };
+          if (status === 404) return { erro: 'nao_encontrada' };
+          // Erro de rede ou conflito de write concorrente — aguarda e tenta novamente
+          if (tentativa === MAX_TENTATIVAS - 1) return { erro: 'rede' };
+          await new Promise(function(r){ setTimeout(r, 150 * (tentativa + 1)); });
+        }
       }
+      return { erro: 'rede' };
     },
     async sairSalaFb(codigo, viewerUid) {
       try {
@@ -7849,11 +7855,11 @@ body.auth-pending #toast {
     <div class="toolbar-central">
       <div class="tool-group">
         <span style="font-size:10px; font-weight:900; color:var(--accent-primary);">TOM</span>
-        <button onclick="transposeAll(-1)" style="background:none; border:none; color:#fff; cursor:pointer; font-size:18px;">-</button>
-        <span id="trans-val" style="font-weight:800; min-width:20px; text-align:center;">0</span>
-        <button onclick="transposeAll(1)" style="background:none; border:none; color:#fff; cursor:pointer; font-size:18px;">+</button>
+        <button onclick="transposeAll(-1)" style="background:none; border:none; color:#fff; cursor:pointer; font-size:18px; touch-action:manipulation; padding:4px 8px;">-</button>
+        <span id="trans-val" onclick="if(parseInt(this.innerText)!==0){var d=-parseInt(this.innerText);transposeAll(d);}" title="Toque para resetar" style="font-weight:800; min-width:24px; text-align:center; cursor:pointer; touch-action:manipulation;">0</span>
+        <button onclick="transposeAll(1)" style="background:none; border:none; color:#fff; cursor:pointer; font-size:18px; touch-action:manipulation; padding:4px 8px;">+</button>
       </div>
-      <button onclick="addPart()" style="background:var(--bg-tertiary); border:1px solid var(--border-color); color:#fff; padding:10px 20px; border-radius:50px; cursor:pointer; font-size:11px; font-weight:800;">+ PARTE</button>
+      <button onclick="addPart()" style="background:var(--bg-tertiary); border:1px solid var(--border-color); color:#fff; padding:10px 20px; border-radius:50px; cursor:pointer; font-size:11px; font-weight:800; touch-action:manipulation;">+ PARTE</button>
       <div id="tom-original-badge" style="display:none; margin-left:auto; background:var(--bg-tertiary); border:1px solid rgba(10,158,110,0.25); border-radius:50px; padding:7px 16px; flex-direction:column; align-items:center; gap:1px;">
         <span style="font-size:8px; font-weight:700; letter-spacing:2px; color:rgba(255,255,255,0.35); text-transform:uppercase;">Tom original</span>
         <span id="tom-original-val" style="font-size:14px; font-weight:900; color:var(--accent-primary); line-height:1;">—</span>
@@ -8074,8 +8080,8 @@ body.auth-pending #toast {
 <div class="modal-evento" id="modal-evento" ontouchend="if(event.target===this){event.preventDefault();_bloquearFantasma();fecharModalEvento();}" onclick="if(event.target===this)fecharModalEvento()">
   <div class="modal-evento-box">
     <div class="modal-evento-title" id="modal-evento-title">Novo Evento</div>
-    <input type="text" id="evento-nome-input" placeholder="Nome do evento (ex: Show de Natal)">
-    <input type="date" id="evento-data-input">
+    <input type="text" id="evento-nome-input" placeholder="Nome do evento (ex: Show de Natal)" onkeydown="if(event.key==='Enter'){event.preventDefault();document.getElementById('evento-data-input').focus();}">
+    <input type="date" id="evento-data-input" onkeydown="if(event.key==='Enter'){event.preventDefault();salvarEvento();}">
     <div class="modal-evento-btns">
       <button class="modal-evento-cancel" onclick="fecharModalEvento()">Cancelar</button>
       <button class="modal-evento-save" onclick="salvarEvento()">Salvar</button>
@@ -10352,12 +10358,15 @@ function _ativarModoShow() {
         var _s = songs[_primeiroIdx];
         bpm = _s.bpm || 120;
         document.getElementById('bpm-display').innerText = bpm;
+        var _dcBpm2 = document.getElementById('dc-bpm');
+        if (_dcBpm2) _dcBpm2.textContent = bpm;
         var _grid = document.getElementById('notes-grid');
         if (_grid) {
-          _grid.innerHTML = '';
+          _grid.innerHTML = ''; // FIX: garante limpeza antes de carregar
           (_s.parts || []).forEach(function(p) { addPart(p.title || '', p.content || ''); });
           _grid.dataset.lastParts = JSON.stringify(_s.parts || []);
         }
+        window.scrollTo(0, 0);
       }
     }
   }
@@ -10524,12 +10533,16 @@ function ativarShowEvento(eventoId, startSongId) {
     currentSongIndex = songs.findIndex(s => s.id === startId);
     bpm = musicaInicial.bpm || 120;
     document.getElementById('bpm-display').innerText = bpm;
+    const dcBpmEl3 = document.getElementById('dc-bpm');
+    if (dcBpmEl3) dcBpmEl3.textContent = bpm;
     const grid = document.getElementById('notes-grid');
-    grid.innerHTML = '';
+    grid.innerHTML = ''; // FIX: garantir limpeza
     (musicaInicial.parts || []).forEach(p => addPart(p.title || '', p.content || ''));
     grid.dataset.lastParts = JSON.stringify(musicaInicial.parts || []);
     window.scrollTo(0, 0);
+    stopScroll(); // FIX: para qualquer scroll em andamento
     atualizarBtnSalvar();
+    _markClean();
   }
 
   fecharBiblioteca();
@@ -10582,19 +10595,24 @@ function navegarSetlist(dir) {
   currentSongIndex = songs.findIndex(x => x.id === s.id);
   showSetlistPos = novaPosLista;
 
-  bpm = s.bpm;
+  // FIX: fallback para bpm e parts undefined
+  bpm = s.bpm || 120;
   document.getElementById('bpm-display').innerText = bpm;
+  var dcBpmEl = document.getElementById('dc-bpm');
+  if (dcBpmEl) dcBpmEl.textContent = bpm;
   const grid = document.getElementById('notes-grid');
   grid.innerHTML = '';
-  s.parts.forEach(p => addPart(p.title, p.content));
-  grid.dataset.lastParts = JSON.stringify(s.parts);
+  (s.parts || []).forEach(p => addPart(p.title || '', p.content || ''));
+  grid.dataset.lastParts = JSON.stringify(s.parts || []);
   window.scrollTo(0, 0);
-  if (scrollInterval) {
-    const spd = parseInt(document.getElementById('scroll-speed').value) || 9;
-    _setScroll(spd);
+  // FIX: para o scroll antes de recomeçar (evita velocidade incorreta)
+  stopScroll();
+  if (scrollInterval || parseInt((document.getElementById('scroll-speed') || {value:'0'}).value) > 0) {
+    const spd = parseInt((document.getElementById('scroll-speed') || {value:'1'}).value) || 1;
+    if (spd > 0) setTimeout(function() { _setScroll(spd); }, 80);
   }
   atualizarIndicador();
-  flashSwipe(dir > 0 ? '>' : '<');
+  flashSwipe(dir > 0 ? '›' : '‹');
   _perfFontCarregar(); // aplica fonte da nova música
   _markClean();
   broadcastEstado();
@@ -10621,7 +10639,8 @@ function _mostrarAlertaProxima() {
     return;
   }
   var proxima = lista[posAtual + 1];
-  document.getElementById('prox-nome').innerText = proxima.name;
+  if (!proxima) return; // FIX: guard against undefined
+  document.getElementById('prox-nome').innerText = proxima.name || '—';
   var bpmTxt = proxima.bpm ? proxima.bpm + ' BPM' : '';
   document.getElementById('prox-bpm').innerText = bpmTxt;
   // Limpa timer anterior
@@ -10640,19 +10659,32 @@ document.addEventListener('touchstart', e => {
   touchStartY = e.touches[0].clientY;
 }, { passive: true });
 
+let _swipeLastT = 0;
 document.addEventListener('touchend', e => {
   if (!document.getElementById('app-body').classList.contains('performance-mode')) return;
+  // FIX: ignora se há modal aberto
+  if (document.querySelector('.modal-overlay.show, [data-confirm-modal], [data-confirmar-modal], #_confirm-sair-show')) return;
+  // FIX: ignora se o toque foi em elemento interativo
+  var _tgt = e.target;
+  if (_tgt && (_tgt.closest('button, input, textarea, select, [role="slider"], .perf-bottom-panel, .harmonic-popup, #sync-bar, #perf-indicator, #perf-font-ctrl, #perf-evento-badge'))) return;
   const dx = e.changedTouches[0].clientX - touchStartX;
   const dy = e.changedTouches[0].clientY - touchStartY;
   if (Math.abs(dx) < 60 || Math.abs(dx) < Math.abs(dy) * 1.5) return; // ignora swipe vertical
+  // FIX: debounce de 400ms entre swipes
+  var agora = Date.now();
+  if (agora - _swipeLastT < 400) return;
+  _swipeLastT = agora;
   navegarSetlist(dx < 0 ? 1 : -1);
 }, { passive: true });
 
 // TECLADO: setas esquerda/direita no modo show
 document.addEventListener('keydown', e => {
   if (!document.getElementById('app-body').classList.contains('performance-mode')) return;
-  if (e.key === 'ArrowRight') navegarSetlist(1);
-  if (e.key === 'ArrowLeft') navegarSetlist(-1);
+  // FIX: não navega se o foco está em campo de texto
+  var _focused = document.activeElement;
+  if (_focused && (_focused.tagName === 'INPUT' || _focused.tagName === 'TEXTAREA' || _focused.isContentEditable)) return;
+  if (e.key === 'ArrowRight' || e.key === 'PageDown') { e.preventDefault(); navegarSetlist(1); }
+  if (e.key === 'ArrowLeft'  || e.key === 'PageUp')   { e.preventDefault(); navegarSetlist(-1); }
   if (e.key === 'Escape') togglePerf();
 });
 
@@ -11316,7 +11348,7 @@ function addPart(title = "PARTE", content = "") {
       + '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg>'
     + '</button>'
     // × — canto superior direito
-    + '<button onclick="this.closest(\'.song-part\').remove(); broadcastEstado();" title="Remover" style="position:absolute;top:6px;right:8px;background:none;border:none;color:rgba(255,255,255,0.25);cursor:pointer;padding:5px;touch-action:manipulation;transition:color 0.15s;font-size:15px;line-height:1;" onmouseenter="this.style.color=\'rgba(255,80,80,0.8)\'" onmouseleave="this.style.color=\'rgba(255,255,255,0.25)\'">&times;</button>'
+    + '<button onclick="this.closest(\'.song-part\').remove(); _markDirty(); broadcastEstado();" title="Remover" style="position:absolute;top:6px;right:8px;background:none;border:none;color:rgba(255,255,255,0.25);cursor:pointer;padding:5px;touch-action:manipulation;transition:color 0.15s;font-size:15px;line-height:1;" onmouseenter="this.style.color=\'rgba(255,80,80,0.8)\'" onmouseleave="this.style.color=\'rgba(255,255,255,0.25)\'">&times;</button>'
     // Seta ▼ — canto inferior direito
     + '<button onclick="_partMover(this,\'down\')" title="Mover para baixo" style="position:absolute;bottom:6px;right:8px;background:none;border:none;color:rgba(255,255,255,0.25);cursor:pointer;padding:5px;touch-action:manipulation;transition:color 0.15s;line-height:1;" onmouseenter="this.style.color=\'#0A9E6E\'" onmouseleave="this.style.color=\'rgba(255,255,255,0.25)\'">'
       + '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>'
@@ -11324,6 +11356,18 @@ function addPart(title = "PARTE", content = "") {
   document.getElementById('notes-grid').appendChild(div);
   const ta = div.querySelector('textarea');
   ta.style.height = ta.scrollHeight + 'px';
+  _markDirty();
+  // FIX: Enter no campo título avança para o textarea de acordes
+  const titleInp = div.querySelector('input');
+  if (titleInp) {
+    titleInp.addEventListener('keydown', function(e) {
+      if (e.key === 'Enter') { e.preventDefault(); ta.focus(); }
+    });
+  }
+  // FIX: se a parte foi adicionada manualmente (sem conteúdo), foca o título
+  if (!content) {
+    setTimeout(function() { if (titleInp) { titleInp.select(); titleInp.focus(); } }, 50);
+  }
 }
 
 function _partMover(btn, dir) {
@@ -11336,6 +11380,7 @@ function _partMover(btn, dir) {
   } else if (dir === 'down' && idx < parts.length - 1) {
     grid.insertBefore(parts[idx + 1], part);
   }
+  _markDirty(); // FIX: marcar alteração ao mover
   broadcastEstado();
 }
 
@@ -11361,7 +11406,12 @@ function onChordInput(ta) {
 
 // ─── TRANSPOSIÇÃO ─────────────────────────────────────────────────────────
 function transposeAll(dir) {
-  document.getElementById('trans-val').innerText = parseInt(document.getElementById('trans-val').innerText) + dir;
+  var _el = document.getElementById('trans-val');
+  var _cur = parseInt(_el.innerText) || 0;
+  // FIX: limitar a ±12 semitons (uma oitava)
+  var _novo = Math.max(-12, Math.min(12, _cur + dir));
+  if (_novo === _cur) return; // já no limite, não transpõe
+  _el.innerText = _novo;
   var _SHARP = ['C','C#','D','D#','E','F','F#','G','G#','A','A#','B'];
   var _FLAT  = ['C','Db','D','Eb','E','F','Gb','G','Ab','A','Bb','B'];
   function _noteIdx(n) { var i=_SHARP.indexOf(n); if(i!==-1)return i; return _FLAT.indexOf(n); }
@@ -11383,6 +11433,7 @@ function transposeAll(dir) {
     });
     area.style.height = 'auto'; area.style.height = area.scrollHeight + 'px';
   });
+  _markDirty(); // FIX: marcar como alterado
   broadcastEstado();
 }
 
@@ -11408,6 +11459,7 @@ function saveSong() {
     songs[currentSongIndex].parts = parts;
     updateStorage();
     _markClean();
+    renderSetlist(); // FIX: atualiza lista lateral com info de partes atualizada
     showToast('Alterações salvas!');
   } else {
     // Nova música — usa modal customizado em vez de prompt() nativo (bloqueado no iOS)
@@ -11879,6 +11931,8 @@ async function compartilharSetlist() {
         if (ok) {
           ev._pubSlug = slug;
           _setlistPubSlug = slug;
+          // FIX: persistir slug no evento para reutilizar o mesmo link
+          salvarEventos();
           link = window.location.origin + window.location.pathname + '?setlist=' + slug;
           textoShare += (link ? '\n\n ' + link : '');
         }
@@ -11904,12 +11958,13 @@ async function compartilharSetlist() {
     document.getElementById('setlist-pub-data').innerText = dataStr;
     document.getElementById('setlist-pub-link').innerText = link || textoShare;
     document.getElementById('setlist-pub-lista').innerHTML = lista.map(function(s, i) {
+      var _es = function(v) { return String(v||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); };
       var tags = (s.tags && s.tags.length)
-        ? '<span style="font-size:9px;color:#0A9E6E;margin-left:4px;">' + s.tags.join(' · ') + '</span>' : '';
+        ? '<span style="font-size:9px;color:#0A9E6E;margin-left:4px;">' + s.tags.map(_es).join(' · ') + '</span>' : '';
       return '<div style="display:flex;align-items:center;gap:10px;padding:8px 10px;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.06);border-radius:9px;">'
         + '<span style="font-size:11px;font-weight:800;color:rgba(255,255,255,0.25);min-width:18px;text-align:center;">' + (i+1) + '</span>'
         + '<div style="flex:1;min-width:0;"><div style="font-size:13px;font-weight:700;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">'
-        + (s.name||'').replace(/</g,'&lt;') + tags + '</div></div>'
+        + _es(s.name) + tags + '</div></div>'
         + '<span style="font-size:11px;font-weight:700;color:rgba(255,62,62,0.7);white-space:nowrap;">' + (s.bpm||'—') + ' BPM</span>'
         + '</div>';
     }).join('');
@@ -11975,11 +12030,12 @@ async function _verificarSetlistPublico() {
   view.style.display = 'block';
   document.getElementById('srv-titulo').innerText = 'Carregando…';
 
-  // Aguarda Firebase inicializar
-  var tentativas = 0;
-  while (!window._fb && tentativas < 20) {
-    await new Promise(function(r){ setTimeout(r, 300); });
-    tentativas++;
+  // FIX: aguarda Firebase com timeout mais robusto
+  if (!window._fb) {
+    await new Promise(function(resolve) {
+      var t = setTimeout(resolve, 8000); // timeout 8s
+      window.addEventListener('firebase-ready', function() { clearTimeout(t); resolve(); }, { once: true });
+    });
   }
 
   var dados = window._fb ? await window._fb._get('setlists_publicos/' + slug) : null;
@@ -11994,15 +12050,17 @@ async function _verificarSetlistPublico() {
   document.getElementById('srv-data').innerText = dataStr;
 
   var musicas = dados.musicas || [];
+  var _ep = function(v) { return String(v||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); };
   document.getElementById('srv-lista').innerHTML = musicas.map(function(m) {
-    var tags = m.tags ? '<div style="font-size:10px;color:#0A9E6E;margin-top:2px;">' + m.tags + '</div>' : '';
+    var tagsStr = Array.isArray(m.tags) ? m.tags.join(', ') : (m.tags || '');
+    var tags = tagsStr ? '<div style="font-size:10px;color:#0A9E6E;margin-top:2px;">' + _ep(tagsStr) + '</div>' : '';
     return '<div style="display:flex;align-items:center;gap:12px;padding:12px 14px;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.07);border-radius:10px;">'
-      + '<span style="font-size:12px;font-weight:800;color:rgba(255,255,255,0.25);min-width:22px;text-align:center;">' + (m.pos||'') + '</span>'
+      + '<span style="font-size:12px;font-weight:800;color:rgba(255,255,255,0.25);min-width:22px;text-align:center;">' + _ep(String(m.pos||'')) + '</span>'
       + '<div style="flex:1;min-width:0;">'
-      +   '<div style="font-size:15px;font-weight:800;color:#fff;">' + (m.nome||'').replace(/</g,'&lt;') + '</div>'
+      +   '<div style="font-size:15px;font-weight:800;color:#fff;">' + _ep(m.nome) + '</div>'
       +   tags
       + '</div>'
-      + '<span style="font-size:12px;font-weight:700;color:rgba(255,62,62,0.65);white-space:nowrap;">' + (m.bpm||'—') + ' BPM</span>'
+      + '<span style="font-size:12px;font-weight:700;color:rgba(255,62,62,0.65);white-space:nowrap;">' + _ep(String(m.bpm||'—')) + ' BPM</span>'
       + '</div>';
   }).join('');
   return true;
@@ -12631,9 +12689,14 @@ function _mergeEventos(local, backup) {
   if (!backup || !backup.length) return local;
   if (!local || !local.length) return backup;
   var mapa = {};
-  local.forEach(function(e) { if (e.id) mapa[e.id] = e; });
-  backup.forEach(function(e) { if (e.id && !mapa[e.id]) mapa[e.id] = e; });
-  return Object.values(mapa).sort(function(a, b) { return (a.data || '').localeCompare(b.data || ''); });
+  // FIX: local tem prioridade; backup só adiciona eventos inexistentes localmente
+  backup.forEach(function(e) { if (e.id) mapa[e.id] = e; });
+  local.forEach(function(e) { if (e.id) mapa[e.id] = e; }); // local sobrescreve backup
+  return Object.values(mapa).sort(function(a, b) {
+    // Ordena por data; se igual, mais recente primeiro (id maior = criado depois)
+    var dataCmp = (a.data || '').localeCompare(b.data || '');
+    return dataCmp !== 0 ? dataCmp : (b.id || 0) - (a.id || 0);
+  });
 }
 
 let eventos = (function(){ try { return _lsGet('map_pro_eventos_v1', []) || []; } catch(e) { return []; } })();
@@ -13046,11 +13109,15 @@ function abrirEditarEvento(id, e) {
   editarEventoId = id;
   const ev = eventos.find(x => x.id === id);
   if (!ev) return;
+  _lockScroll(); // FIX: paridade com abrirModalEvento
   document.getElementById('modal-evento-title').textContent = 'Editar Evento';
   document.getElementById('evento-nome-input').value = ev.nome;
   document.getElementById('evento-data-input').value = ev.data || '';
   document.getElementById('modal-evento').classList.add('show');
-  setTimeout(() => document.getElementById('evento-nome-input').focus(), 100);
+  setTimeout(function() {
+    var inp = document.getElementById('evento-nome-input');
+    if (inp) inp.focus();
+  }, 100);
 }
 
 function abrirEditarEventoAtual() {
@@ -13244,16 +13311,16 @@ function fecharModalEvento() {
 
 function salvarEvento() {
   const nome = document.getElementById('evento-nome-input').value.trim();
-  if (!nome) { document.getElementById('evento-nome-input').focus(); return; }
+  if (!nome) { document.getElementById('evento-nome-input').focus(); showToast('Digite o nome do evento'); return; }
   const data = document.getElementById('evento-data-input').value;
   if (editarEventoId) {
     // Editar existente
     const ev = eventos.find(x => x.id === editarEventoId);
     if (ev) { ev.nome = nome; ev.data = data; }
-    salvarEventos();
-    // Atualiza título se detalhe estiver aberto
+    // FIX: Atualiza título se detalhe estiver aberto
     if (eventoAbertoId === editarEventoId) {
-      document.getElementById('evento-detalhe-title').textContent = nome;
+      var titleEl = document.getElementById('evento-detalhe-title');
+      if (titleEl) titleEl.textContent = nome;
     }
     showToast('Evento atualizado!');
   } else {
@@ -13261,12 +13328,15 @@ function salvarEvento() {
     eventos.push({ id: Date.now(), nome, data, musicIds: [] });
     showToast('Evento criado!');
   }
+  // FIX: chamar salvarEventos apenas uma vez (já inclui _fbBackupEventos internamente)
   salvarEventos();
-  _fbBackupEventos();
   verificarEventosProximos();
   fecharModalEvento();
-  if (bibTabAtiva === 'eventos') renderEventos('');
-  else document.getElementById('biblioteca-grid').classList.remove('eventos-mode');
+  if (bibTabAtiva === 'eventos') {
+    _evLastSig = null;  // FIX: força re-render mesmo com busca ativa
+    var searchEl = document.getElementById('biblioteca-search');
+    renderEventos(searchEl ? searchEl.value : '');
+  } else document.getElementById('biblioteca-grid').classList.remove('eventos-mode');
 }
 
 function deletarEvento(id, e) {
@@ -13376,8 +13446,9 @@ function renderEventoDetalhe() {
   var lista = songs.filter(function(s) {
     return musicIds.includes(s.id) && (s.name || '').toLowerCase().includes(filtro);
   });
-  // Preservar ordem definida no evento
-  lista.sort(function(a, b) { return musicIds.indexOf(a.id) - musicIds.indexOf(b.id); });
+  // FIX: normalizar IDs para Number antes de comparar (evita string vs number mismatch)
+  var musicIdsNum = musicIds.map(Number);
+  lista.sort(function(a, b) { return musicIdsNum.indexOf(Number(a.id)) - musicIdsNum.indexOf(Number(b.id)); });
 
   if (!lista.length) {
     grid.innerHTML = '<div class="biblioteca-vazia" style="grid-column:1/-1">'
@@ -13388,13 +13459,14 @@ function renderEventoDetalhe() {
     return;
   }
 
+    var _ev2 = function(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); };
   grid.innerHTML = lista.map(function(s) {
     var cor = albumColor(s.id || 0);
     var words = (s.name || '').trim().split(/\s+/);
     var ini  = words[0] ? words[0].charAt(0).toUpperCase() : '?';
     var ini2 = words.length > 1 ? words[words.length - 1].charAt(0).toUpperCase() : '';
     var partes = s.parts ? s.parts.length : 0;
-    var bpm = s.bpm || '—';
+    var sBpm = s.bpm || '—';
     return '<div class="album-card" draggable="true" data-id="' + s.id + '">'
       + '<div class="album-cover" style="--ac1:' + cor.ac1 + ';--ac2:' + cor.ac2 + '" onclick="loadSongBiblioteca(' + s.id + ')">'
       +   '<div class="drag-handle" title="Arrastar para reordenar" onmousedown="event.stopPropagation()" ontouchstart="event.stopPropagation()">'
@@ -13404,7 +13476,7 @@ function renderEventoDetalhe() {
       +   '<div class="album-cover-shine"></div>'
       +   '<div class="album-cover-body">'
       +     '<div class="album-cover-initials">' + ini + '<span class="album-cover-initial2">' + ini2 + '</span></div>'
-      +     '<div class="album-cover-bpm">' + bpm + ' <span>BPM</span></div>'
+      +     '<div class="album-cover-bpm">' + sBpm + ' <span>BPM</span></div>'
       +   '</div>'
       +   '<button onclick="event.stopPropagation();ativarShowEvento(eventoAbertoId,' + s.id + ')" title="Modo Show" class="album-show-btn">'
       +     '<svg width="9" height="9" viewBox="0 0 24 24" fill="#0A9E6E"><polygon points="5 3 19 12 5 21 5 3"/></svg>'
@@ -13414,8 +13486,8 @@ function renderEventoDetalhe() {
       +   '</button>'
       + '</div>'
       + '<div class="album-info">'
-      +   '<div class="album-name" title="' + (s.name||'').replace(/"/g,'&quot;') + '">' + (s.name||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;') + '</div>'
-      +   '<div class="album-meta">' + (partes > 0 ? partes + ' parte' + (partes !== 1 ? 's' : '') : 'sem partes') + ' · ' + bpm + ' BPM</div>'
+      +   '<div class="album-name" title="' + _ev2(s.name) + '">' + _ev2(s.name) + '</div>'
+      +   '<div class="album-meta">' + (partes > 0 ? partes + ' parte' + (partes !== 1 ? 's' : '') : 'sem partes') + ' · ' + sBpm + ' BPM</div>'
       + '</div>'
       + '</div>';
   }).join('');
@@ -13469,8 +13541,7 @@ function _initEventoDragDrop(grid) {
     ids.splice(fromIdx, 1);
     ids.splice(toIdx, 0, dragSrcId);
     ev.musicIds = ids;
-    salvarEventos();
-    _fbBackupEventos();
+    salvarEventos(); // FIX: salvarEventos já chama _fbBackupEventos internamente
     renderEventoDetalhe();
   }
 
@@ -13482,7 +13553,7 @@ function _initEventoDragDrop(grid) {
   var _longPressActive = false;
   var _touchStartX   = 0;
   var _touchStartY   = 0;
-  var _LONG_PRESS_MS = 1000; // 1 segundo
+  var _LONG_PRESS_MS = 600; // FIX: reduzido de 1000ms para resposta mais rápida
 
   function _cancelLongPress() {
     if (_longPressTimer) { clearTimeout(_longPressTimer); _longPressTimer = null; }
@@ -13600,8 +13671,7 @@ function _initEventoDragDrop(grid) {
           ids.splice(fromIdx, 1);
           ids.splice(toIdx, 0, _touchDragId);
           ev.musicIds = ids;
-          salvarEventos();
-          _fbBackupEventos();
+          salvarEventos(); // FIX: salvarEventos já chama _fbBackupEventos
           renderEventoDetalhe();
         }
       }
@@ -17079,16 +17149,22 @@ async function _fbBackupMusicas() {
   _backupTimer = setTimeout(async () => {
     try {
       const uid = _getUid();
+      if (!uid || uid === 'admin_local' || uid === 'admin') return;
+      // FIX: guarda snapshot local para evitar race condition se songs muda durante await
+      const musicasSnap = typeof songs !== 'undefined' ? songs.slice() : [];
       const eventosAtuais = _lsGet('map_pro_eventos_v1', []);
-      // Salva músicas e eventos juntos para garantir consistência
       let ok;
       if (window._fb.salvarBackupCompleto) {
-        ok = await window._fb.salvarBackupCompleto(uid, songs, eventosAtuais);
+        ok = await window._fb.salvarBackupCompleto(uid, musicasSnap, eventosAtuais);
       } else {
-        ok = await window._fb.backupMusicas(uid, songs);
+        ok = await window._fb.backupMusicas(uid, musicasSnap);
       }
-      if (ok) _fbAtualizarStats();
-    } catch(e) {}
+      // FIX: atualiza timestamp local após sucesso confirmado
+      if (ok) {
+        localStorage.setItem('map_backup_ts_v1', String(Date.now()));
+        _fbAtualizarStats();
+      }
+    } catch(e) { if (window._DEBUG) console.error('Backup erro:', e); }
   }, 2000);
 }
 
@@ -17143,10 +17219,15 @@ async function _fbRestaurarBackup() {
     if (totalM > 0) {
       songs = backup.musicas;
       try { localStorage.setItem('map_pro_elite_v1', JSON.stringify(songs)); } catch(e) {}
-      // Reseta índice da música atual — pode apontar para posição inexistente após restaurar
+      // FIX: resetar índice e limpar a tela de partes
       if (typeof currentSongIndex !== 'undefined') {
         currentSongIndex = -1;
+        var grid = document.getElementById('notes-grid');
+        if (grid) grid.innerHTML = '';
+        var dcName = document.getElementById('dc-song-name');
+        if (dcName) dcName.textContent = '—';
         if (typeof atualizarBtnSalvar === 'function') atualizarBtnSalvar();
+        if (typeof _markClean === 'function') _markClean();
       }
       if (typeof renderSetlist === 'function') renderSetlist();
       if (typeof renderBiblioteca === 'function') renderBiblioteca();
@@ -22361,9 +22442,10 @@ async function _fbFazerBackupAgora(btn) {
       ok = true;
     }
     if (ok) {
-      showToast(songs.length + ' músicas salvas na nuvem');
+      localStorage.setItem('map_backup_ts_v1', String(Date.now())); // FIX: atualiza timestamp
+      showToast(songs.length + ' música' + (songs.length !== 1 ? 's' : '') + ' salva' + (songs.length !== 1 ? 's' : '') + ' na nuvem');
       _fbAtualizarStats();
-      if (btn) { btn.textContent = 'Salvo!'; setTimeout(function(){ if(btn){ btn.disabled=false; btn.textContent='Fazer Backup'; }}, 2000); }
+      if (btn) { btn.textContent = '✓ Salvo!'; setTimeout(function(){ if(btn){ btn.disabled=false; btn.textContent='Fazer Backup'; }}, 2500); }
     } else {
       showToast('Erro ao fazer backup');
       if (btn) { btn.disabled = false; btn.textContent = 'Fazer Backup'; }
@@ -25573,6 +25655,7 @@ function _calSalvarLS() {
 function abrirCalendario() {
   _calCarregar();
   var el = document.getElementById('cal-overlay');
+  el.style.opacity = '0';  // FIX: garante ponto de partida correto para a animação
   el.style.display = 'flex';
   requestAnimationFrame(function(){ el.style.opacity = '1'; });
   _calAno = new Date().getFullYear();
@@ -25581,7 +25664,9 @@ function abrirCalendario() {
 }
 
 function fecharCalendario() {
-  document.getElementById('cal-overlay').style.display = 'none';
+  var el = document.getElementById('cal-overlay');
+  el.style.opacity = '0';  // FIX: limpa opacidade para que a próxima abertura anime corretamente
+  el.style.display = 'none';
 }
 
 function calNavMes(dir) {
