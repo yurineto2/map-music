@@ -782,11 +782,6 @@ window._DEBUG = (window.location.hostname === 'localhost' || window.location.hos
           if (!data || Object.keys(data).length === 0) return { erro: 'nao_encontrada' };
           if (data.ativa === false) return { erro: 'encerrada' };
           var viewers = Object.assign({}, data.viewers || {});
-          // Limite: host + 9 viewers = máximo 10 pessoas
-          var jaEsta = !!viewers[viewerUid];
-          if (!jaEsta && Object.keys(viewers).length >= 9) {
-            return { erro: 'lotada' };
-          }
           viewers[viewerUid] = viewerNome;
           var onlineCount = Object.keys(viewers).length + 1;
           await _set('salas/' + codigo, { viewers: viewers, onlineCount: onlineCount }, true);
@@ -4036,8 +4031,8 @@ body { font-family: -apple-system, 'Inter', BlinkMacSystemFont, 'Segoe UI', sans
 
 /* ── 4x4 Pad Grid ── */
 .dc-pads-grid {
-  display: grid; grid-template-columns: repeat(4, 1fr);
-  grid-template-rows: repeat(4, 1fr);
+  display: grid; grid-template-columns: repeat(3, 1fr);
+  grid-template-rows: repeat(2, 1fr);
   gap: 8px; flex: 1; min-height: 0; height: 100%;
   touch-action: none;
 }
@@ -4562,7 +4557,7 @@ body { font-family: -apple-system, 'Inter', BlinkMacSystemFont, 'Segoe UI', sans
 /* Desktop: sem restrição de largura */
 @media (min-width: 641px) {
   .dc-machine { width: 100%; padding: 8px 12px 10px; }
-  .dc-pads-grid { gap: 8px; }
+  .dc-pads-grid { gap: 10px; }
   .dc-pad { border-radius: 14px; }
   .dc-fx-modal-box { max-width: 560px; }
   .drumcam-header { padding: 16px 24px 12px; }
@@ -4572,7 +4567,7 @@ body { font-family: -apple-system, 'Inter', BlinkMacSystemFont, 'Segoe UI', sans
 /* Large desktop */
 @media (min-width: 1025px) {
   .dc-machine { padding: 10px 16px 12px; }
-  .dc-pads-grid { gap: 10px; }
+  .dc-pads-grid { gap: 14px; }
   .dc-topbar { margin-bottom: 4px; }
 }
 
@@ -10036,7 +10031,6 @@ async function entrarNaSala() {
     let msg;
     if (tipo === 'nao_encontrada') msg = 'Sala não encontrada. Verifique o código.';
     else if (tipo === 'encerrada')  msg = 'Esta sala foi encerrada pelo host.';
-    else if (tipo === 'lotada')     msg = 'Sala cheia (máximo 10 pessoas).';
     else if (tipo === 'permissao')  msg = 'Sem permissão no Firestore (403). Verifique as Regras no Firebase Console.';
     else                            msg = 'Erro de rede. Verifique sua internet e tente novamente.';
     setConnStatus(msg, 'error');
@@ -12731,9 +12725,8 @@ function abrirBiblioteca() {
   _bibLastSig = null;
   _evLastSig  = null;
   _tagAtiva   = null;
-  // Mantém a aba que estava ativa; se não houver músicas, força eventos
-  var abaInicial = bibTabAtiva || (songs.length > 0 ? 'musicas' : 'eventos');
-  if (!songs.length) abaInicial = 'eventos';
+  // Abre na aba músicas se houver músicas, senão eventos
+  var abaInicial = songs.length > 0 ? 'musicas' : 'eventos';
   bibTabAtiva = abaInicial;
   mostrarBibMain();
   ativarTab(abaInicial);
@@ -13203,7 +13196,7 @@ function renderEventos(filtro = '') {
   const termo = (filtro || '').toLowerCase();
   const lista = eventos.filter(e => (e.nome || '').toLowerCase().includes(termo));
 
-  const sig = filtro + '||' + lista.map(e => e.id + '|' + (e.nome || '') + '|' + (e.data || '') + '|' + (e.musicIds ? e.musicIds.length : 0)).join(',');
+  const sig = filtro + '||' + lista.map(e => e.id + '|' + (e.nome || '') + '|' + (e.data || '') + '|' + (e.musicas ? e.musicas.length : 0)).join(',');
   if (sig === _evLastSig) return;
   _evLastSig = sig;
 
@@ -13924,7 +13917,7 @@ function _dcGetSlots(bankIdx) {
 
 function _dcSetSlot(bankIdx, slotIdx, padIdx) {
   var slots = _dcCarregarSlots();
-  if (!slots[bankIdx]) slots[bankIdx] = [0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15];
+  if (!slots[bankIdx]) slots[bankIdx] = [0,1,2,3,4,5];
   slots[bankIdx][slotIdx] = padIdx;
   _dcSalvarSlots(slots);
 }
