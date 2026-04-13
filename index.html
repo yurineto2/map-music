@@ -694,12 +694,15 @@ window._DEBUG = (window.location.hostname === 'localhost' || window.location.hos
         const testUrl = 'https://firestore.googleapis.com/v1/projects/' + _PROJECT + '/databases/(default)/documents?key=' + _API_KEY + '&pageSize=1';
         try {
           const testR = await _ft(testUrl);
-          if (!testR.ok) {
-            const testErr = await testR.json().catch(() => ({}));
-            if (window._DEBUG) console.error('Firebase conectividade:', testR.status, JSON.stringify(testErr));
-          } else {
-              }
-        } catch(te) { if (window._DEBUG) console.error('Firebase rede:', te.message); }
+          if (!testR.ok && testR.status !== 400) {
+            // 400 é esperado (sem pageSize params corretos) — qualquer outro erro bloqueia
+            if (window._DEBUG) console.error('Firebase conectividade:', testR.status);
+            return false;
+          }
+        } catch(te) {
+          if (window._DEBUG) console.error('Firebase rede:', te.message);
+          return false;
+        }
 
         const result = await _set('salas/' + codigo, {
           codigo, hostUid, hostNome,
@@ -9749,9 +9752,11 @@ async function criarSala() {
     if (window._DEBUG) console.error('criarSala exception:', e);
   }
   if (!ok) {
-    const msg = navigator.onLine
-      ? 'Erro Firestore. Vê o console para detalhes.'
-      : 'Sem internet. Liga a rede e tenta novamente.';
+    const msg = !navigator.onLine
+      ? 'Sem internet. Verifique sua conexão.'
+      : window.location.protocol === 'file:'
+        ? 'Erro: abra via servidor HTTP, não como arquivo local.'
+        : 'Erro ao criar sala. Tente novamente.';
     document.getElementById('criar-status').innerText = msg;
     showToast(msg);
     el.classList.remove('loading');
@@ -9808,7 +9813,28 @@ async function criarSala() {
 }
 
 function copiarCodigo() {
-  navigator.clipboard.writeText(myRoomCode).then(() => showToast('Código copiado: ' + myRoomCode)).catch(function() { showToast('Não foi possível copiar automaticamente.'); });
+  if (!myRoomCode) return;
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(myRoomCode)
+      .then(function() { showToast('Código copiado: ' + myRoomCode); })
+      .catch(function() { _copiarCodigoFallback(); });
+  } else {
+    _copiarCodigoFallback();
+  }
+}
+function _copiarCodigoFallback() {
+  try {
+    var ta = document.createElement('textarea');
+    ta.value = myRoomCode;
+    ta.style.cssText = 'position:fixed;top:-999px;left:-999px;opacity:0;';
+    document.body.appendChild(ta);
+    ta.select();
+    document.execCommand('copy');
+    ta.remove();
+    showToast('Código copiado: ' + myRoomCode);
+  } catch(e) {
+    showToast('Código: ' + myRoomCode);
+  }
 }
 
 // ── HOST: Broadcast de Estado ────────────────────────────────────────────────
@@ -10197,8 +10223,13 @@ async function encerrarSala() {
   if (!isHost) return;
   if (_mensagensListener) { _mensagensListener(); _mensagensListener = null; }
   clearInterval(_salaOnlineTimer);
-  if (myRoomCode && _fbReady && window._fb) {
-    await window._fb.encerrarSala(myRoomCode);
+  _salaOnlineTimer = null;
+  try {
+    if (myRoomCode && _fbReady && window._fb) {
+      await window._fb.encerrarSala(myRoomCode);
+    }
+  } catch(e2) {
+    if (window._DEBUG) console.error('encerrarSala Firebase:', e2);
   }
   isHost = false;
   window._emSala = false;
@@ -10212,7 +10243,11 @@ async function encerrarSala() {
   showToast('Sala encerrada');
 
   } catch(e) {
-    showToast('Erro ao encerrar sala.');
+    // Garante limpeza local mesmo com erro
+    isHost = false; window._emSala = false; myRoomCode = null;
+    clearInterval(_salaOnlineTimer); _salaOnlineTimer = null;
+    atualizarSyncBar();
+    showToast('Sala encerrada (com erro).');
   }
 }
 
@@ -10377,6 +10412,8 @@ function _ativarModoShow() {
     }
   }
   _showIniciadoEm = Date.now(); // marca início para calcular duração
+  // Re-adquire wake lock (pode ter sido liberado se app ficou em background)
+  if (!_wakeLock) ativarWakeLock();
   setTimeout(atualizarLetreiroDrumCam, 50);
   document.getElementById('app-body').classList.add('performance-mode');
   _perfFontCarregar(); // aplica fonte da música atual no show
@@ -11358,7 +11395,7 @@ function addPart(title = "PARTE", content = "") {
   div.className = 'song-part';
   var _esc = function(s){ return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); };
   div.innerHTML =
-    '<input type="text" value="' + _esc(title) + '" class="part-title-input" style="background:none;border:none;color:var(--accent-primary);font-weight:900;font-size:11px;width:calc(100% - 60px);outline:none;text-transform:uppercase;" oninput="broadcastEstado()">'
+    '<input type="text" value="' + _esc(title) + '" class="part-title-input" style="background:none;border:none;color:var(--accent-primary);font-weight:900;font-size:11px;width:calc(100% - 60px);outline:none;text-transform:uppercase;" oninput="_markDirty();broadcastEstado()">'
     + '<textarea class="chord-area" oninput="onChordInput(this)" placeholder="C G Am F">' + _esc(content) + '</textarea>'
     // Seta ▲ — canto superior direito
     + '<button onclick="_partMover(this,\'up\')" title="Mover para cima" style="position:absolute;top:6px;right:34px;background:none;border:none;color:rgba(255,255,255,0.25);cursor:pointer;padding:5px;touch-action:manipulation;transition:color 0.15s;line-height:1;" onmouseenter="this.style.color=\'#0A9E6E\'" onmouseleave="this.style.color=\'rgba(255,255,255,0.25)\'">'
@@ -11405,6 +11442,7 @@ function _partMover(btn, dir) {
 
 function onChordInput(ta) {
   ta.style.height = ''; ta.style.height = ta.scrollHeight + 'px';
+  _markDirty(); // FIX: editar acordes deve marcar como não salvo
   broadcastEstado();
 
   // Detecção com debounce de 600ms
@@ -11476,7 +11514,7 @@ function saveSong() {
     songs[currentSongIndex].parts = parts;
     updateStorage();
     _markClean();
-    renderSetlist(); // FIX: atualiza lista lateral com info de partes atualizada
+    renderSetlist();
     showToast('Alterações salvas!');
   } else {
     // Nova música — usa modal customizado em vez de prompt() nativo (bloqueado no iOS)
@@ -11484,7 +11522,7 @@ function saveSong() {
     if (_prevSave) _prevSave.remove();
     var overlay = document.createElement('div');
     overlay.setAttribute('data-confirm-modal', '1');
-    overlay.style.cssText = _overlayBg();
+    overlay.style.cssText = _overlayBg() + 'z-index:999999999;';
     // Inicializa tags temporárias para o modal de salvar
     _tagsSelecionadas = [];
     var _inpStyle = 'width:100%;padding:12px 14px;border-radius:12px;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.1);color:#fff;font-size:14px;font-family:inherit;outline:none;box-sizing:border-box;';
@@ -11563,8 +11601,17 @@ function saveSong() {
       currentSongIndex = songs.length - 1;
       updateStorage();
       _fbBackupMusicas();
+      // FIX: recarrega o grid com as partes salvas (garante consistência visual)
+      var _gridS = document.getElementById('notes-grid');
+      if (_gridS) {
+        _gridS.innerHTML = '';
+        (parts || []).forEach(function(p) { addPart(p.title || '', p.content || ''); });
+      }
+      _markClean();
+      renderSetlist();
       showToast('Música salva!', 'success');
       atualizarBtnSalvar();
+      document.getElementById('dc-song-name').textContent = name;
     };
     document.getElementById('_save-cancel').onclick  = function(){ overlay.remove(); };
     document.getElementById('_save-confirm').onclick = _doSave;
@@ -18431,6 +18478,8 @@ let _wakeLockTimer = null;
 let _noSleepVideo = null; // fallback para Safari/iOS
 
 function ativarWakeLock() {
+  // FIX: evita chamadas múltiplas
+  if (_wakeLock) return;
   // ── Método 1: Screen Wake Lock API (Chrome, Edge, Android) ──
   if ('wakeLock' in navigator && navigator.wakeLock) {
     try {
@@ -18542,8 +18591,17 @@ document.addEventListener('visibilitychange', function() {
     if (_audioWakeLockCtx && _audioWakeLockCtx.state === 'suspended') {
       _audioWakeLockCtx.resume().catch(function() {});
     }
-    // Fallback completamente destruído (ex: saiu do show) — relança tudo
-    if (!_wakeLock && !_noSleepVideo && !_audioWakeLockCtx && !_wakeLockTimer) {
+    // Re-adquire Screen Wake Lock se estava no show e o sistema revogou
+    var _emShow = document.getElementById('app-body') &&
+      document.getElementById('app-body').classList.contains('performance-mode');
+    if (_emShow && !_wakeLock && 'wakeLock' in navigator && navigator.wakeLock) {
+      navigator.wakeLock.request('screen').then(function(lock) {
+        _wakeLock = lock;
+        lock.addEventListener('release', function() { _wakeLock = null; });
+      }).catch(function() {});
+    }
+    // Fallback completamente destruído E está no show — relança tudo
+    if (_emShow && !_wakeLock && !_noSleepVideo && !_audioWakeLockCtx && !_wakeLockTimer) {
       ativarWakeLock();
     }
   }
