@@ -10031,9 +10031,9 @@ async function diagnosticarSala() {
 // ── VIEWER: Entrar na Sala ───────────────────────────────────────────────────
 async function entrarNaSala() {
   const code = ['d0','d1','d2','d3']
-    .map(id => document.getElementById(id).value).join('').trim().toUpperCase();
+    .map(id => (document.getElementById(id).value || '').replace(/\D/g,'')).join('').trim();
 
-  if (code.length !== 4) { showToast('Código inválido'); return; }
+  if (code.length !== 4 || !/^\d{4}$/.test(code)) { showToast('Código deve ter 4 dígitos numéricos'); return; }
   // Verifica Firebase
   if (!_fbReady && window._fbReady && window._fb) _fbReady = true;
   if (!window._fb) { showToast('Firebase indisponivel. Verifique conexao.'); return; }
@@ -10204,7 +10204,16 @@ async function _sairDaSala() {
 
   isViewer = false;
   window._emSala = false;
+  window._viewerUltimoNomeMusica = null; // FIX: limpa nome da música ao sair
   document.getElementById('app-body').classList.remove('viewer-mode');
+  // FIX: reset sync-bar song name
+  var _sbSair = document.getElementById('sync-bar-song-name');
+  if (_sbSair) _sbSair.style.display = 'none';
+  // FIX: reset connect-status e btn-entrar para próxima vez
+  var _csEl = document.getElementById('connect-status');
+  if (_csEl) { _csEl.textContent = ''; _csEl.className = 'connect-status'; }
+  var _btnE = document.getElementById('btn-entrar');
+  if (_btnE) _btnE.disabled = false;
   atualizarSyncBar();
   atualizarLetreiroDrumCam();
   // Recarrega música local para restaurar acordes do usuário
@@ -10827,11 +10836,25 @@ function switchTab(tab) {
 
 // Inputs do código — navegar entre campos
 function nextDigit(el, nextIdx) {
-  el.value = el.value.replace(/\D/,'');
-  if (el.value && nextIdx >= 0) document.getElementById('d'+nextIdx).focus();
+  // FIX: remove TODOS os não-dígitos (replace global)
+  el.value = el.value.replace(/\D/g,'').slice(0,1);
+  if (el.value) {
+    if (nextIdx >= 0) {
+      document.getElementById('d'+nextIdx).focus();
+    } else {
+      // Último dígito preenchido — tenta entrar automaticamente
+      var allFilled = ['d0','d1','d2','d3'].every(function(id) {
+        return document.getElementById(id).value.length === 1;
+      });
+      if (allFilled) entrarNaSala();
+    }
+  }
 }
 function prevDigit(e, idx) {
-  if (e.key === 'Backspace' && !e.target.value && idx > 0) document.getElementById('d'+(idx-1)).focus();
+  if (e.key === 'Backspace' && !e.target.value && idx > 0) {
+    document.getElementById('d'+(idx-1)).focus();
+  }
+  if (e.key === 'Enter') { e.preventDefault(); entrarNaSala(); }
 }
 
 // ─── UI ───────────────────────────────────────────────────────────────────
