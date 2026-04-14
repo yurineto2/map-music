@@ -5190,17 +5190,28 @@ body.performance-mode #perf-font-ctrl { display: flex; }
 /* CAMPO HARMONICO — POPUP */
 .harmonic-popup {
   position: fixed; z-index: 4000;
+  /* FIX: ancora no FUNDO da tela, acima do teclado — nunca bloqueia a edição */
+  bottom: calc(12px + env(safe-area-inset-bottom, 0px));
+  left: 50%;
+  transform: translateX(-50%);
+  /* Largura adaptável — máx 340px */
+  width: min(340px, calc(100vw - 24px));
   background: rgba(10,10,18,0.97);
   border: 1px solid rgba(10,158,110,0.25);
   border-radius: 14px;
   backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
   box-shadow: 0 16px 48px rgba(0,0,0,0.7), 0 0 0 1px rgba(255,255,255,0.03) inset;
-  padding: 14px 16px 16px;
-  width: 280px;
+  padding: 12px 14px 14px;
   display: none;
   flex-direction: column;
-  gap: 10px;
+  gap: 8px;
   pointer-events: auto;
+  /* Transição suave */
+  animation: harmonicSlideUp 0.2s ease;
+}
+@keyframes harmonicSlideUp {
+  from { opacity: 0; transform: translateX(-50%) translateY(16px); }
+  to   { opacity: 1; transform: translateX(-50%) translateY(0); }
 }
 .harmonic-popup.visible { display: flex; }
 
@@ -7478,11 +7489,11 @@ body.auth-pending #toast {
 </div>
 
 <!-- AVISO DA SALA — banner flutuante para viewers -->
-<div id="sala-aviso-banner">
+<div id="sala-aviso-banner" onclick="this.classList.remove('show')" style="cursor:pointer;" title="Toque para fechar">
   <div class="aviso-icon">
     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#0A9E6E" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M22 17H2a3 3 0 0 0 3-3V9a7 7 0 0 1 14 0v5a3 3 0 0 0 3 3z"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
   </div>
-  <div>
+  <div style="flex:1;min-width:0;">
     <div class="aviso-label" id="sala-aviso-nome">Host</div>
     <div class="aviso-texto" id="sala-aviso-texto"></div>
   </div>
@@ -9871,7 +9882,8 @@ function enviarAvisoSala() {
   var input = document.getElementById('sala-chat-input');
   if (!input) return;
   var texto = (input ? input.value || '' : '').trim();
-  if (!texto || !isHost || !myRoomCode) return;
+  if (!isHost || !myRoomCode) return;
+  if (!texto) { showToast('Digite um aviso antes de enviar'); input.focus(); return; }
   var perfil = _getPerfilLocal();
   var uid    = _getUid();
   var hora   = new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
@@ -11267,50 +11279,28 @@ function mostrarHarmonic(textarea, acordes) {
   popup.classList.add('visible');
   activeTextarea = textarea;
 
-  const posicionarPopup = function() {
-    // Usa a seção pai (.song-part) como referência — mais estável que o textarea
-    var refEl = textarea.closest('.song-part') || textarea;
-    const rect    = refEl.getBoundingClientRect();
-    const popupH  = popup.offsetHeight || 170;
-    const popupW  = popup.offsetWidth  || 280;
-    const margin  = 8;
-    const visH    = window.innerHeight; // já considera teclado no iOS
-
-    // Sempre tenta acima da seção
-    var top = rect.top - popupH - margin;
-
-    // Se não couber acima (muito perto do topo), coloca abaixo mas só se houver espaço
-    if (top < 60) {
-      var topAbaixo = rect.bottom + margin;
-      // Só vai abaixo se houver espaço suficiente antes do teclado
-      if (topAbaixo + popupH < visH * 0.6) {
-        top = topAbaixo;
-      } else {
-        // Não cabe nem acima nem abaixo — ancora no topo seguro
-        top = Math.max(60, rect.top - popupH - margin);
-      }
-    }
-
-    // Garante limites verticais
-    top = Math.max(60, Math.min(top, visH - popupH - margin));
-
-    // Posição horizontal — alinha com a seção
-    var left = rect.left;
-    if (left + popupW > window.innerWidth - 10) left = window.innerWidth - popupW - 10;
-    left = Math.max(10, left);
-
-    popup.style.top  = top + 'px';
-    popup.style.left = left + 'px';
-  };
-
-  posicionarPopup();
-  requestAnimationFrame(posicionarPopup);
+  // FIX: posição agora é controlada pelo CSS (bottom fixo) — JS não precisa calcular
 }
 
 function fecharHarmonic() {
   document.getElementById('harmonic-popup').classList.remove('visible');
   activeTextarea = null;
 }
+
+// FIX: fecha o popup harmônico ao rolar a página (não bloqueia leitura)
+(function() {
+  var _lastScroll = 0;
+  window.addEventListener('scroll', function() {
+    var popup = document.getElementById('harmonic-popup');
+    if (popup && popup.classList.contains('visible')) {
+      var now = Date.now();
+      if (now - _lastScroll > 300) { // debounce para não fechar ao carregar
+        fecharHarmonic();
+      }
+      _lastScroll = now;
+    }
+  }, { passive: true });
+})();
 
 // Insere o acorde clicado no final da linha atual do textarea
 function inserirAcorde(acorde, e) {
