@@ -8189,6 +8189,7 @@ body.auth-pending #toast {
         <div class="dc-fx-chip" data-fx="filter"    onclick="dcFxToggleChip('filter')">Filter</div>
         <div class="dc-fx-chip" data-fx="pitch"     onclick="dcFxToggleChip('pitch')">Pitch</div>
         <div class="dc-fx-chip" data-fx="sidechain" onclick="dcFxToggleChip('sidechain')">Sidechain</div>
+        <div class="dc-fx-chip" data-fx="eq"        onclick="dcFxToggleChip('eq')">EQ 4B</div>
       </div>
     </div>
     <!-- FX Panel original mantido no DOM para compatibilidade JS -->
@@ -8341,6 +8342,38 @@ body.auth-pending #toast {
           </div>
         </div>
       </div>
+      <div class="dc-fx-block" id="dc-fxb-eq">
+          <div class="dc-fx-block-header">
+            <span class="dc-fx-name">EQ 4 Bandas</span>
+            <button class="dc-fx-onoff" id="dc-fx-on-eq" onclick="dcFxOnOff('eq')"></button>
+          </div>
+          <div class="dc-fx-knobs">
+            <div class="dc-fx-knob-wrap">
+              <div class="dc-fx-knob-label">Sub (60Hz)</div>
+              <input type="range" class="dc-fx-slider" id="dc-fx-eq-sub" min="-18" max="18" value="0" step="1"
+                oninput="dcFxParam('eq','sub',this.value);this.nextElementSibling.textContent=(this.value>0?'+':'')+this.value+'dB'">
+              <div class="dc-fx-knob-val">0dB</div>
+            </div>
+            <div class="dc-fx-knob-wrap">
+              <div class="dc-fx-knob-label">Low (200Hz)</div>
+              <input type="range" class="dc-fx-slider" id="dc-fx-eq-low" min="-18" max="18" value="0" step="1"
+                oninput="dcFxParam('eq','low',this.value);this.nextElementSibling.textContent=(this.value>0?'+':'')+this.value+'dB'">
+              <div class="dc-fx-knob-val">0dB</div>
+            </div>
+            <div class="dc-fx-knob-wrap">
+              <div class="dc-fx-knob-label">Mid (2kHz)</div>
+              <input type="range" class="dc-fx-slider" id="dc-fx-eq-mid" min="-18" max="18" value="0" step="1"
+                oninput="dcFxParam('eq','mid',this.value);this.nextElementSibling.textContent=(this.value>0?'+':'')+this.value+'dB'">
+              <div class="dc-fx-knob-val">0dB</div>
+            </div>
+            <div class="dc-fx-knob-wrap">
+              <div class="dc-fx-knob-label">High (8kHz)</div>
+              <input type="range" class="dc-fx-slider" id="dc-fx-eq-high" min="-18" max="18" value="0" step="1"
+                oninput="dcFxParam('eq','high',this.value);this.nextElementSibling.textContent=(this.value>0?'+':'')+this.value+'dB'">
+              <div class="dc-fx-knob-val">0dB</div>
+            </div>
+          </div>
+        </div>
       <div class="dc-fx-block" id="dc-fxb-sidechain">
         <div class="dc-fx-block-header">
           <span class="dc-fx-name">Sidechain (ducker)</span>
@@ -9852,15 +9885,8 @@ function _copiarCodigoFallback() {
 function broadcastEstado() {
   if (!isHost || syncPaused) return;
   const estado = capturarEstado();
-  // LOG SEMPRE para diagnóstico
-  console.log('[MAP HOST] broadcastEstado:', JSON.stringify({
-    currentSongName: estado.currentSongName,
-    currentSongIndex: estado.currentSongIndex,
-    setlistPos: estado.setlistPos,
-    songTotal: estado.songTotal,
-    setlistNomes: estado.setlistNomes,
-    perfMode: estado.perfMode
-  }));
+  // Log apenas em modo debug
+  if (window._DEBUG) console.log('[MAP HOST] broadcastEstado:', estado.currentSongName);
   if (_fbReady && window._fb && myRoomCode) {
     const onlineUids = Object.keys(_viewersOnline || {});
     // FIX: inclui ultimoAviso no payload principal para que viewers recebam aviso via ouvirSala
@@ -10163,15 +10189,7 @@ async function entrarNaSala() {
     }
     try {
       const estado = JSON.parse(data.estado || '{}');
-      // LOG SEMPRE (não só em _DEBUG) para diagnóstico
-      console.log('[MAP VIEWER] estado recebido:', JSON.stringify({
-        currentSongName: estado.currentSongName,
-        currentSongIndex: estado.currentSongIndex,
-        setlistPos: estado.setlistPos,
-        setlistNomes: estado.setlistNomes,
-        songTotal: estado.songTotal,
-        perfMode: estado.perfMode
-      }));
+      if (window._DEBUG) console.log('[MAP VIEWER] estado recebido:', estado.currentSongName);
       if (estado && Object.keys(estado).length > 0) aplicarEstado(estado);
       // Atualiza contagem online (lê onlineCount do Firestore)
       const total = data.onlineCount || (data.online || []).length || 1;
@@ -10285,6 +10303,7 @@ function atualizarSyncBar(code) {
     bar.classList.remove('viewer');
     label.innerText = 'HOST';
     codeEl.innerText = myRoomCode || code || '';
+    // FIX: usa Firestore como fonte de verdade; fallback para contagem local
     const total = window._onlineCountCache || (1 + Object.keys(_viewersOnline || {}).length);
     guests.style.display = 'flex';
     guests.querySelector('#sync-guests-count').innerText = total + ' online';
@@ -11871,14 +11890,23 @@ function desconectar() {
     // Reset estado
     isHost = false; isViewer = false;
     myRoomCode = null;
+    window._emSala = false;
+    window._onlineCountCache = null;           // FIX: limpa cache do contador
+    window._viewerUltimoNomeMusica = null;     // FIX: limpa nome da música
+    _salaOnlineTimer = null;
     try { _viewersOnline = {}; } catch(e){}
     try { document.getElementById('app-body').classList.remove('viewer-mode'); } catch(e){}
     try { document.getElementById('sync-bar').classList.remove('visible', 'viewer'); } catch(e){}
+    // Limpa nome da música na sync-bar
+    try { var _sb = document.getElementById('sync-bar-song-name'); if (_sb) _sb.style.display = 'none'; } catch(e){}
+    // Reset connect-status e btn-entrar para próxima vez
+    try { var _cs = document.getElementById('connect-status'); if (_cs) { _cs.textContent = ''; _cs.className = 'connect-status'; } } catch(e){}
+    try { var _be = document.getElementById('btn-entrar'); if (_be) _be.disabled = false; } catch(e){}
     // Fecha modal e mostra toast
     try { document.getElementById('modal-sala').classList.remove('show'); } catch(e){}
     try { mostrarEscolhaSala(); } catch(e){}
     try { atualizarSyncBar(''); } catch(e){}
-    showToast('Sala encerrada.');
+    showToast('Desconectado da sala.');
   } catch(e) {
     if (window._DEBUG) console.error('desconectar erro:', e);
     showToast('Sala encerrada.');
@@ -14547,7 +14575,7 @@ function _dcSynth(ctx, pad, vol, _anyFxActive) {
 // FX state
 var _dcFxEnabled = {
   reverb: false, delay: false, comp: false,
-  dist: false, filter: false, pitch: false, sidechain: false
+  dist: false, filter: false, pitch: false, sidechain: false, eq: false
 };
 var _dcFxParams = {
   reverb:    { size: 40, mix: 30 },
@@ -14556,7 +14584,8 @@ var _dcFxParams = {
   dist:      { drive: 40, tone: 3000, mix: 50 },
   filter:    { freq: 8000, type: 'lowpass', q: 1 },
   pitch:     { semi: 0, cents: 0 },
-  sidechain: { depth: 70, attack: 5, release: 120, src: 0 }
+  sidechain: { depth: 70, attack: 5, release: 120, src: 0 },
+  eq:        { sub: 0, low: 0, mid: 0, high: 0 }
 };
 var _dcFxPanelOpen = false;
 
@@ -14673,6 +14702,37 @@ function _dcBuildFxChain(ctx, dryGain) {
     chain.connect(dlDry); dlDry.connect(dlOut);
     nodes.push(dNode, fbGain, dlWet, dlDry, dlOut);
     chain = dlOut;
+  }
+
+  // ── EQ 4 bandas ──
+  if (_dcFxEnabled.eq) {
+    var eqP = _dcFxParams.eq;
+    // Sub: peaking a 60Hz
+    var eqSub = ctx.createBiquadFilter();
+    eqSub.type = 'peaking';
+    eqSub.frequency.value = 60;
+    eqSub.Q.value = 0.7;
+    eqSub.gain.value = parseFloat(eqP.sub) || 0;
+    // Low: peaking a 200Hz
+    var eqLow = ctx.createBiquadFilter();
+    eqLow.type = 'peaking';
+    eqLow.frequency.value = 200;
+    eqLow.Q.value = 0.9;
+    eqLow.gain.value = parseFloat(eqP.low) || 0;
+    // Mid: peaking a 2kHz
+    var eqMid = ctx.createBiquadFilter();
+    eqMid.type = 'peaking';
+    eqMid.frequency.value = 2000;
+    eqMid.Q.value = 1.0;
+    eqMid.gain.value = parseFloat(eqP.mid) || 0;
+    // High: highshelf a 8kHz
+    var eqHigh = ctx.createBiquadFilter();
+    eqHigh.type = 'highshelf';
+    eqHigh.frequency.value = 8000;
+    eqHigh.gain.value = parseFloat(eqP.high) || 0;
+    chain.connect(eqSub); eqSub.connect(eqLow); eqLow.connect(eqMid); eqMid.connect(eqHigh);
+    nodes.push(eqSub, eqLow, eqMid, eqHigh);
+    chain = eqHigh;
   }
 
   // ── Sidechain ducker ──
@@ -14878,7 +14938,7 @@ var _dcPadFx = {};
 // ─── Modal FX Global ─────────────────────────────────────────────────────────
 var _DC_FX_LABELS = {
   reverb:'Reverb', delay:'Delay', comp:'Compressor',
-  dist:'Distortion', filter:'Filter', pitch:'Pitch', sidechain:'Sidechain'
+  dist:'Distortion', filter:'Filter', pitch:'Pitch', sidechain:'Sidechain', eq:'EQ 4 Bandas'
 };
 
 function dcAbrirFxModal() {
@@ -14954,6 +15014,12 @@ function _dcFxKnobsHtml(fx) {
     _dcSliderHtml('Attack',  'sidechain','attack',  1,100,  p.attack||5,   'ms') +
     _dcSliderHtml('Release', 'sidechain','release', 10,500, p.release||120,'ms')
   );
+  if (fx === 'eq') return (
+    _dcSliderHtml('Sub 60Hz',  'eq','sub',  -18,18, p.sub||0,  'dB') +
+    _dcSliderHtml('Low 200Hz', 'eq','low',  -18,18, p.low||0,  'dB') +
+    _dcSliderHtml('Mid 2kHz',  'eq','mid',  -18,18, p.mid||0,  'dB') +
+    _dcSliderHtml('High 8kHz', 'eq','high', -18,18, p.high||0, 'dB')
+  );
   return '';
 }
 
@@ -14975,7 +15041,7 @@ function dcFxModalToggle(fx) {
 
 // ─── Modal FX por pad ────────────────────────────────────────────────────────
 var _dcPadFxTarget = -1;
-var _DC_FX_TYPES = ['reverb','delay','comp','dist','filter','pitch'];
+var _DC_FX_TYPES = ['reverb','delay','comp','dist','filter','pitch','eq'];
 
 function dcAbrirPadFxModal(padIdx) {
   _dcPadFxTarget = padIdx;
@@ -15043,6 +15109,7 @@ function _dcPadFxParamsHtml(fx, p) {
   if (fx === 'dist')   return slider('Drive','drive',0,100,p.drive||40,'%')+slider('Mix','mix',0,100,p.mix||50,'%');
   if (fx === 'filter') return slider('Freq','freq',80,18000,p.freq||8000,'Hz')+slider('Q','q',0.1,20,p.q||1,'',0.1);
   if (fx === 'pitch')  return slider('Semitoms','semi',-12,12,p.semi||0,'')+slider('Cents','cents',-100,100,p.cents||0,'');
+  if (fx === 'eq')     return slider('Sub 60Hz','sub',-18,18,p.sub||0,'dB')+slider('Low 200Hz','low',-18,18,p.low||0,'dB')+slider('Mid 2kHz','mid',-18,18,p.mid||0,'dB')+slider('High 8kHz','high',-18,18,p.high||0,'dB');
   return '';
 }
 
