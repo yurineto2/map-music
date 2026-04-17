@@ -10960,13 +10960,21 @@ function resetSection() {
 var _tapBtn = document.getElementById('tap-btn');
 if (_tapBtn) _tapBtn.addEventListener('click', function() {
   const now = performance.now();
+  // FIX: reset taps se ficou inativo mais de 2.5s (usuário recomeçou o tap)
+  if (tapTimes.length > 0 && now - tapTimes[tapTimes.length - 1] > 2500) {
+    tapTimes = [];
+  }
   tapTimes.push(now);
-  if (tapTimes.length > 4) tapTimes.shift();
+  if (tapTimes.length > 6) tapTimes.shift(); // usa até 6 taps para melhor média
   if (tapTimes.length > 1) {
     let sum = 0;
     for (let i = 1; i < tapTimes.length; i++) sum += tapTimes[i] - tapTimes[i-1];
-    bpm = Math.min(Math.max(Math.round(60000 / (sum / (tapTimes.length - 1))), 40), 860);
+    bpm = Math.min(Math.max(Math.round(60000 / (sum / (tapTimes.length - 1))), 40), 300);
     document.getElementById('bpm-display').innerText = bpm;
+    var dcBpm = document.getElementById('dc-bpm');
+    if (dcBpm) dcBpm.textContent = bpm;
+    // FIX: se metrônomo está tocando, a mudança de bpm é aplicada imediatamente
+    // (scheduler já usa a variável global bpm)
     broadcastEstado();
   }
 });
@@ -11023,7 +11031,10 @@ function scheduler() {
   var actx = _getAudioCtx(); if (!actx) return;
   if (timerID) { clearTimeout(timerID); timerID = null; }
   if (!isPlaying) return;
-  if (document.hidden) { timerID = setTimeout(scheduler, 200); return; }
+  // FIX: não pausa em background se estiver no modo show (iOS precisa continuar)
+  var _emShow = document.getElementById('app-body') &&
+    document.getElementById('app-body').classList.contains('performance-mode');
+  if (document.hidden && !_emShow) { timerID = setTimeout(scheduler, 200); return; }
   if (nextNoteTime < actx.currentTime - 0.5) { nextNoteTime = actx.currentTime; metroBeatIndex = 0; metroSubIndex = 0; }
   var secondsPerBeat = 60.0 / bpm;
   var secondsPerSub  = secondsPerBeat / metroSubdivision;
@@ -11065,6 +11076,9 @@ function togglePlay() {
     btn.innerText = "PARAR"; btn.style.background = "#ff3e3e";
     if (fab) fab.classList.add('metro-ativo');
     if (badge) badge.innerText = bpm + ' BPM';
+    // FIX: sync dc-bpm ao iniciar
+    var _dcBpmEl = document.getElementById('dc-bpm');
+    if (_dcBpmEl) _dcBpmEl.textContent = bpm;
   } else {
     clearTimeout(timerID); timerID = null;
     btn.innerText = "INICIAR"; btn.style.background = "var(--accent-primary)";
@@ -11074,8 +11088,11 @@ function togglePlay() {
   atualizarBtnMetroDC();
 }
 function adj(v) {
-  bpm = Math.min(Math.max(bpm + v, 40), 860);
+  bpm = Math.min(Math.max(bpm + v, 40), 300);
   document.getElementById('bpm-display').innerText = bpm;
+  var dcBpm = document.getElementById('dc-bpm');
+  if (dcBpm) dcBpm.textContent = bpm;
+  if (isPlaying) { /* scheduler já usa bpm atualizado */ }
   broadcastEstado();
 }
 
@@ -13803,6 +13820,9 @@ function _initEventoDragDrop(grid) {
   }
 
   grid.querySelectorAll('.album-card[draggable]').forEach(function(card) {
+    // FIX: evita acumulo de listeners no mesmo elemento
+    if (card.dataset.dragInit) return;
+    card.dataset.dragInit = '1';
     card.addEventListener('dragstart',   onDragStart);
     card.addEventListener('dragend',     onDragEnd);
     card.addEventListener('dragover',    onDragOver);
@@ -15641,11 +15661,8 @@ function _lockScroll() {
 }
 
 function _unlockScroll() {
-  // Desativado — causava conflito com position:fixed em iOS
-  document.body.style.overflow = '';
-  document.body.style.position = '';
-  document.body.style.top      = '';
-  document.body.style.width    = '';
+  // FIX: não aplica estilos que não foram definidos por _lockScroll
+  // (estava limpando body styles desnecessariamente causando flickers)
 }
 
 // Garante que o body não tenha estilos residuais que travem modais
@@ -15654,6 +15671,37 @@ function _limparBodyStyles() {
   document.body.style.position = '';
   document.body.style.top      = '';
   document.body.style.width    = '';
+}
+
+// FIX: função de recuperação de estado — chama ao detectar bug
+function _resetarEstadoApp() {
+  try {
+    // Limpa body styles residuais
+    _limparBodyStyles();
+    // Fecha todos os overlays e modais abertos
+    document.querySelectorAll('.modal-overlay.show, .biblioteca-overlay.show').forEach(function(el) {
+      el.classList.remove('show');
+    });
+    document.querySelectorAll('[style*="display: flex"][style*="modal"], [style*="display:flex"][style*="modal"]').forEach(function(el) {
+      if (el.id && el.id.includes('modal')) el.style.display = 'none';
+    });
+    // Limpa pointer-events bloqueados
+    document.querySelectorAll('[style*="pointer-events: none"]').forEach(function(el) {
+      if (!el.classList.contains('harmonic-popup') && !el.classList.contains('tuner-btn-led')) {
+        el.style.pointerEvents = '';
+      }
+    });
+    // Cancela RAF loops perdidos
+    if (window._scrollRafId) { cancelAnimationFrame(window._scrollRafId); window._scrollRafId = null; }
+    scrollInterval = null;
+    // Resume AudioContext se suspenso
+    if (typeof audioCtx !== 'undefined' && audioCtx && audioCtx.state === 'suspended') {
+      audioCtx.resume().catch(function(){});
+    }
+    showToast('App recuperado', 'success');
+  } catch(e) {
+    if (window._DEBUG) console.error('_resetarEstadoApp:', e);
+  }
 }
 
 // ─── Afinador Cromático — Rack Style ────────────────────────────────────────
@@ -15801,7 +15849,10 @@ function tunerSetString(idx) {
 async function toggleTunerMic() {
   if (_tunerAtivo) { _tunerPararMic(); return; }
   try {
-    _tunerStream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
+    // FIX: garante que recursos anteriores foram liberados
+    if (_tunerCtx && _tunerCtx.state !== 'closed') { try { _tunerCtx.close(); } catch(e) {} _tunerCtx = null; }
+    if (_tunerStream) { _tunerStream.getTracks().forEach(function(t){ t.stop(); }); _tunerStream = null; }
+    _tunerStream = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: false, noiseSuppression: false, autoGainControl: false }, video: false });
     _tunerCtx    = new (window.AudioContext || window.webkitAudioContext)();
     _tunerAnalyser = _tunerCtx.createAnalyser();
     _tunerAnalyser.fftSize = 4096;
@@ -15858,7 +15909,8 @@ function _tunerLoop(timestamp) {
       _tunerUpdateDisplay(avgFreq);
     }
   } else {
-    if (_tunerFreqBuf.length > 0) _tunerFreqBuf = [];
+    // FIX: não zera buffer inteiro em um frame sem sinal — reduz o de buffer gradualmente
+    if (_tunerFreqBuf.length > 2) _tunerFreqBuf.shift();
   }
   _tunerRaf = requestAnimationFrame(_tunerLoop);
 }
@@ -15896,7 +15948,7 @@ function _tunerACF(buf, sampleRate) {
   // Clarity check: pico deve ser forte em relação ao início da correlação
   // Sinal limpo tem clarity > 0.85; ruído ambiente fica abaixo disso
   var clarity = c[0] > 0 ? maxVal / c[0] : 0;
-  if (clarity < 0.85) return -1;
+  if (clarity < 0.75) return -1; // FIX: 0.85 era muito exigente para uso ao vivo
 
   return sampleRate / T0;
 }
@@ -15934,14 +15986,23 @@ function _tunerUpdateDisplay(freq) {
     if (Math.abs(centsDiff) <= 5) {
       var strEl = document.getElementById('tstr-' + _tunerStringIdx);
       if (strEl) strEl.classList.add('tuned');
-      clearTimeout(_tunerAutoNext);
-      _tunerAutoNext = setTimeout(function() {
-        if (_tunerStringIdx < strings.length - 1) {
-          _tunerStringIdx++;
-          _tunerRenderStrings();
-          if (navigator.vibrate) navigator.vibrate([30,50,30]);
-        }
-      }, 1200);
+      if (!_tunerAutoNext) { // FIX: não reinicia timer se já está contando
+        var _advIdx = _tunerStringIdx;
+        _tunerAutoNext = setTimeout(function() {
+          _tunerAutoNext = null;
+          // FIX: só avança se a mesma corda ainda está selecionada
+          if (_tunerStringIdx === _advIdx && _tunerStringIdx < strings.length - 1) {
+            _tunerStringIdx++;
+            _tunerRenderStrings();
+            if (navigator.vibrate) navigator.vibrate([30,50,30]);
+          }
+        }, 1500); // aumentado para 1.5s — mais tempo para confirmar afinação
+      }
+    } else {
+      // FIX: cancela avanço se saiu da zona de afinação
+      if (_tunerAutoNext) { clearTimeout(_tunerAutoNext); _tunerAutoNext = null; }
+      var strElUntuned = document.getElementById('tstr-' + _tunerStringIdx);
+      if (strElUntuned) strElUntuned.classList.remove('tuned');
     }
   } else {
     _tunerSetLeds(cents);
@@ -15978,12 +16039,15 @@ function _tunerSetLeds(cents) {
 (function _tunerShockLoop() {
   _tunerShockTimer = setTimeout(function() {
     var btn = document.getElementById('tuner-btn');
-    if (btn && !_tunerAberto) {
+    // FIX: animação apenas quando afinador fechado e em modo normal (não show)
+    var emShow = document.getElementById('app-body') &&
+      document.getElementById('app-body').classList.contains('performance-mode');
+    if (btn && !_tunerAberto && !emShow) {
       btn.classList.add('shock');
       setTimeout(function() { btn.classList.remove('shock'); }, 600);
     }
     _tunerShockLoop();
-  }, 5000);
+  }, 8000); // FIX: aumentado de 5s para 8s — menos intrusivo
 })();
 
 // ── Fim Afinador ──────────────────────────────────────────────────────────────
@@ -16102,7 +16166,18 @@ function _dcDrumAtualizarRange() {
 async function dcToggleAfinadorBateria() {
   if (_dcDrumTuner.ativo) { _dcDrumPararMic(); return; }
   try {
-    _dcDrumTuner.stream   = await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
+    // FIX: libera recursos anteriores antes de criar novos
+    if (_dcDrumTuner.ctx && _dcDrumTuner.ctx.state !== 'closed') {
+      try { _dcDrumTuner.ctx.close(); } catch(e) {} _dcDrumTuner.ctx = null;
+    }
+    if (_dcDrumTuner.stream) {
+      _dcDrumTuner.stream.getTracks().forEach(function(t){ t.stop(); });
+      _dcDrumTuner.stream = null;
+    }
+    _dcDrumTuner.stream   = await navigator.mediaDevices.getUserMedia({
+      audio: { echoCancellation: false, noiseSuppression: false, autoGainControl: false },
+      video: false
+    });
     _dcDrumTuner.ctx      = new (window.AudioContext || window.webkitAudioContext)();
     if (_dcDrumTuner.ctx.state === 'suspended') await _dcDrumTuner.ctx.resume();
     _dcDrumTuner.analyser = _dcDrumTuner.ctx.createAnalyser();
@@ -16174,8 +16249,8 @@ function _dcDrumLoop(timestamp) {
   }
   var media = count > 0 ? soma / count : 0;
 
-  // Limiar alto (80) para ambiente de bateria + dominância: pico deve ser 1.5x a média
-  if (maxVal > 80 && maxIdx > 0 && maxVal > media * 1.5) {
+  // FIX: limiar 55 (mais compatível com microfones fracos) + dominância 1.3x
+  if (maxVal > 55 && maxIdx > 0 && maxVal > media * 1.3) {
     var freq = maxIdx * binHz;
     // Média móvel de frequência
     _dcDrumFreqBuf.push(freq);
@@ -16185,8 +16260,8 @@ function _dcDrumLoop(timestamp) {
       _dcDrumAtualizar(avgFreq);
     }
   } else {
-    // Sinal fraco ou ruído difuso — limpa o buffer
-    if (_dcDrumFreqBuf.length > 0) _dcDrumFreqBuf = [];
+    // FIX: reduz buffer gradualmente em vez de apagar tudo (mais estável)
+    if (_dcDrumFreqBuf.length > 2) _dcDrumFreqBuf.shift();
   }
 
   _dcDrumTuner.raf = requestAnimationFrame(_dcDrumLoop);
@@ -16203,9 +16278,20 @@ function _dcDrumAtualizar(freq) {
   var pct = Math.max(2, Math.min(98, ((freq - FREQ_MIN) / (FREQ_MAX - FREQ_MIN)) * 100));
   if (ind) ind.style.left = pct + '%';
   var status, cor;
-  if (freq < r.min)      { status = '▼ ABAIXO';   cor = '#f59e0b'; }
-  else if (freq > r.max) { status = '▲ ACIMA';    cor = '#f472b6'; }
-  else                   { status = 'NO PONTO'; cor = '#00ff64'; }
+  var diffMin = Math.round(freq - r.min);
+  var diffMax = Math.round(freq - r.max);
+  if (freq < r.min) {
+    status = '▼ ABAIXO  ' + Math.abs(diffMin) + ' Hz';
+    cor = '#f59e0b';
+  } else if (freq > r.max) {
+    status = '▲ ACIMA  +' + diffMax + ' Hz';
+    cor = '#f472b6';
+  } else {
+    // FIX: mostra posição dentro da faixa
+    var pctFaixa = Math.round(((freq - r.min) / (r.max - r.min)) * 100);
+    status = '✓ NO PONTO  (' + pctFaixa + '%)';
+    cor = '#00ff64';
+  }
   if (statusEl) { statusEl.textContent = status; statusEl.style.color = cor; }
   if (freqEl)   freqEl.style.color = cor;
   if (ind)      ind.style.background = cor;
@@ -18688,6 +18774,23 @@ document.addEventListener('visibilitychange', function() {
 });
 
 window.addEventListener('load', function() {
+  // FIX: health check periódico a cada 60s — limpa estados órfãos
+  setInterval(function() {
+    // Limpa body styles residuais que travam o scroll
+    if (document.body.style.overflow === 'hidden' && 
+        !document.querySelector('.modal-overlay.show, .biblioteca-overlay.show')) {
+      document.body.style.overflow = '';
+      document.body.style.position = '';
+      document.body.style.top = '';
+    }
+    // Resume AudioContext se suspenso sem estar no show
+    if (typeof audioCtx !== 'undefined' && audioCtx && audioCtx.state === 'suspended') {
+      var emShow = document.getElementById('app-body') &&
+        document.getElementById('app-body').classList.contains('performance-mode');
+      if (emShow) audioCtx.resume().catch(function(){});
+    }
+  }, 60000);
+
   // Activa Wake Lock ao abrir o app
   ativarWakeLock();
   renderNotifPanel();
