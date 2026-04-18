@@ -9301,10 +9301,6 @@ function _renderHistoricoShow() {
   try { hist = JSON.parse(localStorage.getItem('map_historico_shows_v1') || '[]'); } catch(e) {}
 
   // Atualiza contagem no botão do perfil e no header do modal
-  // Atualiza todos os elementos com contagem (podem existir ou não)
-  document.querySelectorAll('[id="hist-shows-count"]').forEach(function(el) {
-    el.textContent = hist.length ? '(' + hist.length + ')' : '';
-  });
   var countEl = document.getElementById('hist-shows-count');
   if (countEl) countEl.textContent = hist.length ? '(' + hist.length + ')' : '';
   var modalCount = document.getElementById('hist-modal-count');
@@ -9886,7 +9882,7 @@ function broadcastEstado() {
   if (!isHost || syncPaused) return;
   const estado = capturarEstado();
   // Log apenas em modo debug
-  if (window._DEBUG) console.log('[MAP HOST] broadcastEstado:', estado.currentSongName);
+  // debug: window._DEBUG && console.log('[MAP HOST] broadcastEstado:', estado.currentSongName);
   if (_fbReady && window._fb && myRoomCode) {
     const onlineUids = Object.keys(_viewersOnline || {});
     // FIX: inclui ultimoAviso no payload principal para que viewers recebam aviso via ouvirSala
@@ -10189,7 +10185,7 @@ async function entrarNaSala() {
     }
     try {
       const estado = JSON.parse(data.estado || '{}');
-      if (window._DEBUG) console.log('[MAP VIEWER] estado recebido:', estado.currentSongName);
+      // debug: window._DEBUG && console.log('[MAP VIEWER] estado:', estado.currentSongName);
       if (estado && Object.keys(estado).length > 0) aplicarEstado(estado);
       // Atualiza contagem online (lê onlineCount do Firestore)
       const total = data.onlineCount || (data.online || []).length || 1;
@@ -16890,7 +16886,7 @@ function dcTap() {
   if (tapTimes.length > 1) {
     var sum = 0;
     for (var i = 1; i < tapTimes.length; i++) sum += tapTimes[i] - tapTimes[i-1];
-    bpm = Math.min(Math.max(Math.round(60000 / (sum / (tapTimes.length - 1))), 40), 860);
+    bpm = Math.min(Math.max(Math.round(60000 / (sum / (tapTimes.length - 1))), 40), 300);
     document.getElementById('bpm-display').innerText = bpm;
     document.getElementById('dc-bpm').textContent = bpm;
     var btn = document.getElementById('dc-tap-btn');
@@ -18985,7 +18981,7 @@ function aplicarEstado(estado) {
   }
 
   // Nome e posição da música
-  if (window._DEBUG && isViewer) console.log('[MAP] aplicarEstado currentSongName=', estado.currentSongName, 'setlistPos=', estado.setlistPos, 'setlistNomes=', estado.setlistNomes, 'currentSongIndex=', estado.currentSongIndex);
+  // debug: window._DEBUG && console.log('[MAP] aplicarEstado', estado.currentSongName);
   // FIX: usa setlistPos (posição na setlist ativa) para fallback, não currentSongIndex (índice no songs[] do host)
   var _setlistPosViewer = (estado.setlistPos !== undefined && estado.setlistPos >= 0)
     ? estado.setlistPos
@@ -23728,7 +23724,7 @@ async function _fbFazerBackupAgora(btn) {
       <div id="pp-inst" style="font-size:12px;color:rgba(255,255,255,0.45);font-weight:600;"></div>
       <div id="pp-id" style="font-size:11px;color:rgba(10,158,110,0.5);font-family:monospace;font-weight:700;letter-spacing:1px;margin-top:2px;"></div>
       <!-- Link social — só aparece para amigos -->
-      <a id="pp-link" href="#" target="_blank" rel="noopener noreferrer" style="display:none;margin-top:8px;padding:10px 14px;border-radius:12px;background:rgba(10,158,110,0.07);border:1px solid rgba(10,158,110,0.2);color:#0A9E6E;font-size:12px;font-weight:800;text-decoration:none;display:none;align-items:center;gap:8px;transition:background 0.15s;" onmouseenter="this.style.background='rgba(10,158,110,0.14)'" onmouseleave="this.style.background='rgba(10,158,110,0.07)'">
+      <a id="pp-link" href="#" target="_blank" rel="noopener noreferrer" style="display:none;margin-top:8px;padding:10px 14px;border-radius:12px;background:rgba(10,158,110,0.07);border:1px solid rgba(10,158,110,0.2);color:#0A9E6E;font-size:12px;font-weight:800;text-decoration:none;align-items:center;gap:8px;transition:background 0.15s;" onmouseenter="this.style.background='rgba(10,158,110,0.14)'" onmouseleave="this.style.background='rgba(10,158,110,0.07)'">
         <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
         <span id="pp-link-label">Ver perfil</span>
       </a>
