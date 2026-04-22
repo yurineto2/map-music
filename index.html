@@ -7490,16 +7490,7 @@ body.auth-pending #toast {
   </div>
 </div>
 
-<!-- AVISO DA SALA — banner flutuante para viewers -->
-<div id="sala-aviso-banner" onclick="this.classList.remove('show')" style="cursor:pointer;" title="Toque para fechar">
-  <div class="aviso-icon">
-    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#0A9E6E" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M22 17H2a3 3 0 0 0 3-3V9a7 7 0 0 1 14 0v5a3 3 0 0 0 3 3z"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
-  </div>
-  <div style="flex:1;min-width:0;">
-    <div class="aviso-label" id="sala-aviso-nome">Host</div>
-    <div class="aviso-texto" id="sala-aviso-texto"></div>
-  </div>
-</div>
+<!-- aviso sala removido -->
 
 <div class="sync-bar" id="sync-bar">
   <div class="sync-dot"></div>
@@ -8591,7 +8582,7 @@ body.auth-pending #toast {
 <div class="perf-song-indicator" id="perf-indicator">
   <span id="perf-song-pos">1/1</span>
   <span class="perf-song-name" id="perf-song-name">—</span>
-  <span id="perf-debug-btn" onclick="(function(){var e=capturarEstado?capturarEstado():{};alert('HOST Estado:\ncurrentSongName: '+e.currentSongName+'\ncurrentSongIndex: '+e.currentSongIndex+'\nsetlistPos: '+e.setlistPos+'\nsetlistNomes: '+JSON.stringify(e.setlistNomes)+'\nsongTotal: '+e.songTotal+'\nviewerNome: '+(window._viewerUltimoNomeMusica||'null')+'\nisHost: '+isHost+'\nisViewer: '+isViewer);})()" style="cursor:pointer;font-size:9px;background:rgba(255,0,0,0.3);padding:2px 6px;border-radius:4px;margin-left:6px;">DBG</span>
+
 </div>
 
 <!-- Controle de fonte por música no modo show -->
@@ -9946,17 +9937,8 @@ function _renderAvisosChat() {
 }
 
 function _mostrarAvisoBanner(nomeHost, texto) {
-  var banner = document.getElementById('sala-aviso-banner');
-  var nomeEl = document.getElementById('sala-aviso-nome');
-  var textoEl = document.getElementById('sala-aviso-texto');
-  if (!banner || !nomeEl || !textoEl) return;
-  nomeEl.innerText = nomeHost || 'Host';
-  textoEl.innerText = texto;
-  banner.classList.add('show');
-  if (_avisoTimer) clearTimeout(_avisoTimer);
-  _avisoTimer = setTimeout(function() {
-    banner.classList.remove('show');
-  }, 5000);
+  // Banner removido — mostra como toast em vez disso
+  if (texto) showToast((nomeHost ? nomeHost + ': ' : '') + texto, 'info');
 }
 
 // ── HOST: Escuta mensagens dos viewers ───────────────────────────────────────
@@ -10159,12 +10141,25 @@ async function entrarNaSala() {
     }
     document.getElementById('perf-song-name').innerText = window._viewerUltimoNomeMusica;
   }
-  // FIX Bug contador: usa onlineCount do Firestore (fonte de verdade) ao entrar,
-  // não o valor do estado JSON que pode estar desatualizado (só conta host=1).
+  // FIX Bug contador: força re-leitura após 2s para pegar contagem atualizada
+  // (entrarSalaFb já incrementou o onlineCount, mas salaData veio antes do update)
   var _joinOnlineCount = salaData.onlineCount || 1;
   window._onlineCountCache = _joinOnlineCount;
   var _scJoin = document.getElementById('sync-guests-count');
   if (_scJoin) _scJoin.innerText = _joinOnlineCount + ' online';
+  // Re-lê após 2s para pegar contagem atualizada (após nosso próprio join ser processado)
+  setTimeout(async function() {
+    if (!isViewer || !window._fb) return;
+    try {
+      var _freshSala = await window._fb._get('salas/' + code);
+      if (_freshSala && _freshSala.onlineCount) {
+        window._onlineCountCache = _freshSala.onlineCount;
+        var _sc2 = document.getElementById('sync-guests-count');
+        if (_sc2) _sc2.innerText = _freshSala.onlineCount + ' online';
+        atualizarSyncBar(code);
+      }
+    } catch(e) {}
+  }, 2000);
   atualizarLetreiroDrumCam();
   setConnStatus('Conectado!', 'success');
   // Disparar evento para solicitar permissão de notificação
@@ -19039,9 +19034,18 @@ function aplicarEstado(estado) {
       }
     }
   } else {
-    document.getElementById('perf-song-name').innerText = 'Nenhuma musica';
-    document.getElementById('perf-song-pos').innerText = '—';
-    document.getElementById('dc-song-name').textContent = '—';
+    // FIX: se tem setlistNomes, mostra a posição mesmo sem nome resolvido
+    if (estado.setlistNomes && estado.setlistNomes.length > 0 && _setlistPosViewer >= 0) {
+      var _nomeFallback = estado.setlistNomes[_setlistPosViewer] || '—';
+      document.getElementById('perf-song-name').innerText = _nomeFallback;
+      document.getElementById('perf-song-pos').innerText = (_setlistPosViewer + 1) + '/' + estado.setlistNomes.length;
+      document.getElementById('dc-song-name').textContent = _nomeFallback;
+      if (isViewer) window._viewerUltimoNomeMusica = _nomeFallback;
+    } else {
+      document.getElementById('perf-song-name').innerText = '—';
+      document.getElementById('perf-song-pos').innerText = '—';
+      document.getElementById('dc-song-name').textContent = '—';
+    }
   }
   atualizarLetreiroDrumCam();
 
