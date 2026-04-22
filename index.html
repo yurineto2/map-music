@@ -694,14 +694,16 @@ window._DEBUG = (window.location.hostname === 'localhost' || window.location.hos
         const testUrl = 'https://firestore.googleapis.com/v1/projects/' + _PROJECT + '/databases/(default)/documents?key=' + _API_KEY + '&pageSize=1';
         try {
           const testR = await _ft(testUrl);
-          if (!testR.ok && testR.status !== 400) {
-            // 400 é esperado (sem pageSize params corretos) — qualquer outro erro bloqueia
-            if (window._DEBUG) console.error('Firebase conectividade:', testR.status);
+          // Apenas verifica se chegou resposta — qualquer HTTP code significa que o Firestore responde
+          // (401/403 são normais sem auth, 200/400 são OK também)
+          if (window._DEBUG) console.log('Firebase ping:', testR.status);
+        } catch(te) {
+          // Sem resposta alguma = sem internet
+          if (!navigator.onLine) {
+            if (window._DEBUG) console.error('Firebase rede:', te.message);
             return false;
           }
-        } catch(te) {
-          if (window._DEBUG) console.error('Firebase rede:', te.message);
-          return false;
+          // Se online mas ping falhou, tenta criar mesmo assim (pode ser CORS bloqueado pelo browser)
         }
 
         const result = await _set('salas/' + codigo, {
@@ -19680,6 +19682,9 @@ function fecharBpmMic() {
   const modal = document.getElementById('modal-bpm-mic');
   if (modal) modal.style.display = 'none';
   _bpmMicPararVoz();
+  // FIX: limpa status e resultados ao fechar
+  var statusEl = document.getElementById('bpm-mic-status');
+  if (statusEl) statusEl.textContent = '';
 }
 
 function _bpmMicValidar() {
@@ -19699,6 +19704,8 @@ function _bpmMicVoz() {
     return;
   }
   if (_bpmVozAtiva) { _bpmMicPararVoz(); return; }
+  // FIX: para qualquer reconhecimento anterior antes de iniciar novo
+  if (_bpmSpeechRecog) { try { _bpmSpeechRecog.abort(); } catch(e) {} _bpmSpeechRecog = null; }
   _bpmVozAtiva = true;
   const btn = document.getElementById('bpm-mic-voice-btn');
   if (btn) { btn.style.background = 'rgba(255,80,80,0.2)'; btn.style.borderColor = '#ff5050'; btn.style.color = '#ff5050'; }
@@ -21310,7 +21317,7 @@ async function _bpmMicBuscar() {
   try {
 
   var termo = ((document.getElementById('bpm-mic-input') || {}).value || '').trim();
-  if (termo.length < 2) return;
+  if (termo.length < 2) { _bpmMicValidar(); return; }
 
   var statusEl  = document.getElementById('bpm-mic-status');
   var resultsEl = document.getElementById('bpm-mic-results');
@@ -21466,14 +21473,25 @@ function _bpmMicAplicar(bpmVal, titulo) {
     if (typeof updateStorage === 'function') updateStorage();
   }
 
-  // 3. Reiniciar metrônomo se estiver tocando
-  if (typeof isPlaying !== 'undefined' && isPlaying && typeof togglePlay === 'function') {
-    togglePlay();
-    setTimeout(togglePlay, 80);
+  // 2b. Atualiza dc-bpm também
+  var dcBpmEl = document.getElementById('dc-bpm');
+  if (dcBpmEl) dcBpmEl.textContent = bpmVal;
+
+  // 3. Se metrônomo tocando, apenas atualiza o BPM sem reiniciar
+  // (o scheduler já lê a variável global bpm a cada tick)
+  if (typeof isPlaying !== 'undefined' && isPlaying) {
+    var badge = document.getElementById('metro-fab-bpm-badge');
+    if (badge) badge.innerText = bpmVal + ' BPM';
   }
 
+  // 4. Atualiza badge do metrônomo FAB
+  var bpmBadge = document.getElementById('metro-fab-bpm-badge');
+  if (bpmBadge && typeof isPlaying !== 'undefined' && isPlaying) bpmBadge.innerText = bpmVal + ' BPM';
+
+  if (typeof broadcastEstado === 'function') broadcastEstado();
+
   fecharBpmMic();
-  if (typeof showToast === 'function') showToast(bpmVal + ' BPM aplicado — ' + titulo);
+  if (typeof showToast === 'function') showToast(bpmVal + ' BPM aplicado — ' + (titulo || ''), 'success');
 }
 
 // ─── CONFIGURAÇÕES DE ÁUDIO ───────────────────────────────────────────────────
