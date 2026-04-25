@@ -6016,35 +6016,48 @@ body.theme-light .chat-global-input-row { border-top-color: rgba(0,0,0,0.07); }
   border-top: 1px solid rgba(255,255,255,0.05);
   flex-shrink: 0;
 }
-.pads-oct-btn {
-  width: 30px; height: 30px; border-radius: 8px;
-  background: rgba(255,255,255,0.04);
-  border: 1px solid rgba(255,255,255,0.08);
-  color: rgba(255,255,255,0.5); cursor: pointer;
+.pads-footer {
   display: flex; align-items: center; justify-content: center;
-  transition: all 0.15s; flex-shrink: 0;
+  padding: 10px 20px calc(10px + env(safe-area-inset-bottom, 0px));
+  flex-shrink: 0;
+  border-top: 1px solid rgba(255,255,255,0.05);
+  background: #08080e;
+}
+.pads-oct-btn { display: none; } /* legado — substituído por pads-oct-pill */
+.pads-oct-track { display: none; }
+.pads-oct-pip { display: none; }
+.pads-oct-label { display: none; }
+
+/* Pill elegante de oitava */
+.pads-oct-pill {
+  display: inline-flex; align-items: center; gap: 0;
+  background: rgba(255,255,255,0.06);
+  border: 1px solid rgba(255,255,255,0.10);
+  border-radius: 50px;
+  overflow: hidden;
+  height: 38px;
+}
+.pads-oct-pill-btn {
+  width: 42px; height: 38px;
+  background: none; border: none;
+  color: rgba(255,255,255,0.55);
+  cursor: pointer; display: flex; align-items: center; justify-content: center;
+  transition: background 0.15s, color 0.15s;
   -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+  flex-shrink: 0;
 }
-.pads-oct-btn:hover { background: rgba(255,255,255,0.08); color: #fff; }
-.pads-oct-btn:active { transform: scale(0.9); }
-.pads-oct-track {
-  flex: 1; height: 4px; background: rgba(255,255,255,0.07);
-  border-radius: 2px; position: relative; max-width: 140px;
+.pads-oct-pill-btn:active { background: rgba(10,158,110,0.18); color: #0A9E6E; }
+.pads-oct-pill-label {
+  font-size: 11px; font-weight: 800;
+  color: rgba(255,255,255,0.55);
+  padding: 0 14px; white-space: nowrap;
+  letter-spacing: 0.3px;
+  border-left: 1px solid rgba(255,255,255,0.08);
+  border-right: 1px solid rgba(255,255,255,0.08);
+  line-height: 38px;
 }
-.pads-oct-pip {
-  position: absolute; top: 50%; transform: translateY(-50%);
-  width: 14px; height: 14px; border-radius: 50%;
-  background: #0A9E6E;
-  box-shadow: 0 0 10px rgba(10,158,110,0.5);
-  transition: left 0.2s cubic-bezier(0.34,1.56,0.64,1);
-  left: 25%; /* default oct 3 out of 2-6 range */
-}
-.pads-oct-label {
-  font-size: 10px; font-weight: 700;
-  color: rgba(255,255,255,0.3); letter-spacing: 0.5px;
-  margin-left: auto;
-}
-.pads-oct-label strong { color: rgba(255,255,255,0.7); }
+.pads-oct-pill-label strong { color: #0A9E6E; font-size: 13px; }
 
 /* MODAL IMPORTAR CIFRA */
 .cifra-textarea {
@@ -7842,18 +7855,18 @@ body.auth-pending #toast {
 
   <!-- Footer: oitava -->
   <div class="pads-footer">
-    <button class="pads-oct-btn" onclick="padsOitavaStep(-1)">
-      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
-    </button>
-    <div class="pads-oct-track">
-      <div class="pads-oct-pip" id="pads-oct-pip"></div>
+    <div class="pads-oct-pill">
+      <button class="pads-oct-pill-btn" onclick="padsOitavaStep(-1)" title="Oitava abaixo" touch-action="manipulation">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+      </button>
+      <span class="pads-oct-pill-label">Oitava <strong id="pads-octave-val">3</strong></span>
+      <button class="pads-oct-pill-btn" onclick="padsOitavaStep(1)" title="Oitava acima" touch-action="manipulation">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+      </button>
     </div>
-    <button class="pads-oct-btn" onclick="padsOitavaStep(1)">
-      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
-    </button>
-    <span class="pads-oct-label">Oitava <strong id="pads-octave-val">3</strong></span>
     <input type="range" id="pads-octave" min="2" max="6" value="3"
       oninput="padsOitavaChange(this.value)" style="display:none">
+    <div id="pads-oct-pip" style="display:none"></div>
   </div>
 
 </div>
@@ -10122,7 +10135,8 @@ async function entrarNaSala() {
       var _freshData = await window._fb._get('salas/' + code);
       if (_freshData && _freshData.estado) {
         var _freshEstado = JSON.parse(_freshData.estado);
-        if (_freshEstado && _freshEstado.currentSongName && !window._viewerUltimoNomeMusica) {
+        if (_freshEstado && Object.keys(_freshEstado).length > 0) {
+          // FIX: sempre aplica o estado fresco — garante nome e setlist atualizados
           aplicarEstado(_freshEstado);
         }
       }
@@ -12489,7 +12503,7 @@ function renderPads() {
       return '<div class="pad ' + (black ? 'pad-black' : 'pad-white') + ' ' + playing + '"' +
         ' data-midi="' + midi + '" data-qual="" data-idx="' + i + '"' +
         ' onmousedown="iniciarPad(this)"' +
-        ' ontouchstart="iniciarPad(this); event.preventDefault()">' +
+        ' ontouchstart="this._padTouchTime=Date.now(); iniciarPad(this); event.preventDefault()">' +
         '<span class="pad-chord">' + sharp + '</span>' +
         '<span class="pad-type">' + NOTA_ALT[i] + '</span>' +
         '</div>';
@@ -12501,9 +12515,13 @@ function renderPads() {
   }
 }
 
+var _padLastTouch = {}; // guard: evita mousedown sintético após touchstart no mobile
+
 function iniciarPad(el) {
   if (_getAudioCtx().state === 'suspended') _getAudioCtx().resume();
   const idx = parseInt(el.dataset.idx);
+  // FIX: bloqueia mousedown sintético que o browser emite ~300ms após touchstart
+  if (el._padTouchTime && Date.now() - el._padTouchTime < 500) return;
   if (padNodes[idx]) { pararPad(idx); return; }
   el.classList.add('playing');
 
@@ -14383,9 +14401,9 @@ function _dcSynth(ctx, pad, vol, _anyFxActive) {
   var now = ctx.currentTime;
   var t = pad.synth;
 
-  // Master gain — route through FX chain if any effect is active
-  // Saída final vai para o master node (compressor + limiter) em vez de ctx.destination
+  // Master gain → FX chain → master compressor
   var mg = ctx.createGain();
+  mg.gain.value = 1;
   var _masterOut = _getDcMasterNode(ctx);
   if (_anyFxActive === undefined) _anyFxActive = typeof _dcFxEnabled !== 'undefined' && Object.values(_dcFxEnabled).some(Boolean);
   if (_anyFxActive) {
@@ -14395,190 +14413,413 @@ function _dcSynth(ctx, pad, vol, _anyFxActive) {
     mg.connect(_masterOut);
   }
 
-  // FIX: calcula multiplicador de pitch para sons sintéticos
-  var _pitchMult = 1.0;
+  // Pitch multiplier
+  var _pm = 1.0;
   if (_dcFxEnabled.pitch) {
-    var _pSemi  = parseFloat(_dcFxParams.pitch.semi  || 0);
-    var _pCents = parseFloat(_dcFxParams.pitch.cents || 0);
-    _pitchMult = Math.pow(2, (_pSemi * 100 + _pCents) / 1200);
+    var _pS = parseFloat(_dcFxParams.pitch.semi || 0);
+    var _pC = parseFloat(_dcFxParams.pitch.cents || 0);
+    _pm = Math.pow(2, (_pS * 100 + _pC) / 1200);
   }
 
-  if (t === 'kick' || t === '808') {
-    // Sub kick / 808
-    var osc = ctx.createOscillator();
-    osc.frequency.setValueAtTime((t === '808' ? 55 : 150) * _pitchMult, now);
-    osc.frequency.exponentialRampToValueAtTime((t === '808' ? 28 : 40) * _pitchMult, now + (t === '808' ? 1.2 : 0.5));
-    var env = ctx.createGain();
-    env.gain.setValueAtTime(vol * 0.85, now); // reduzido de vol para vol*0.85
-    env.gain.exponentialRampToValueAtTime(0.001, now + (t === '808' ? 1.6 : 0.6));
-    osc.connect(env); env.connect(mg);
-    // Click transient — atenuado para não estourar na saída via cabo
-    var click = ctx.createOscillator(); click.frequency.value = 2400;
-    var cg = ctx.createGain(); cg.gain.setValueAtTime(vol * 0.25, now); cg.gain.exponentialRampToValueAtTime(0.001, now + 0.02);
-    click.connect(cg); cg.connect(mg);
-    osc.start(now); osc.stop(now + (t === '808' ? 1.7 : 0.65));
-    click.start(now); click.stop(now + 0.03);
+  // ─── Helper: make noise buffer ───────────────────────────────────────────
+  function noiseBuffer(seconds, channelCount) {
+    var len = Math.ceil(ctx.sampleRate * seconds);
+    var buf = ctx.createBuffer(channelCount || 1, len, ctx.sampleRate);
+    for (var ch = 0; ch < (channelCount || 1); ch++) {
+      var d = buf.getChannelData(ch);
+      // Pink-ish noise via Voss algorithm approximation
+      var b0=0,b1=0,b2=0,b3=0,b4=0,b5=0,b6=0;
+      for (var i = 0; i < len; i++) {
+        var white = Math.random() * 2 - 1;
+        b0=0.99886*b0+white*0.0555179; b1=0.99332*b1+white*0.0750759;
+        b2=0.96900*b2+white*0.1538520; b3=0.86650*b3+white*0.3104856;
+        b4=0.55000*b4+white*0.5329522; b5=-0.7616*b5-white*0.0168980;
+        d[i] = (b0+b1+b2+b3+b4+b5+b6+white*0.5362)*0.11;
+        b6 = white * 0.115926;
+      }
+    }
+    return buf;
+  }
+  function whiteBuffer(seconds) {
+    var len = Math.ceil(ctx.sampleRate * seconds);
+    var buf = ctx.createBuffer(1, len, ctx.sampleRate);
+    var d = buf.getChannelData(0);
+    for (var i = 0; i < len; i++) d[i] = Math.random() * 2 - 1;
+    return buf;
+  }
 
+  // ─── KICK ────────────────────────────────────────────────────────────────
+  if (t === 'kick') {
+    // Sub: deep sine punch
+    var sub = ctx.createOscillator(); sub.type = 'sine';
+    sub.frequency.setValueAtTime(180 * _pm, now);
+    sub.frequency.exponentialRampToValueAtTime(38 * _pm, now + 0.08);
+    sub.frequency.exponentialRampToValueAtTime(28 * _pm, now + 0.45);
+    var subG = ctx.createGain();
+    subG.gain.setValueAtTime(vol * 1.1, now);
+    subG.gain.exponentialRampToValueAtTime(vol * 0.6, now + 0.06);
+    subG.gain.exponentialRampToValueAtTime(0.001, now + 0.55);
+    sub.connect(subG); subG.connect(mg);
+    sub.start(now); sub.stop(now + 0.6);
+
+    // Click: high noise transient
+    var clkN = ctx.createBufferSource(); clkN.buffer = whiteBuffer(0.02);
+    var clkBp = ctx.createBiquadFilter(); clkBp.type = 'bandpass';
+    clkBp.frequency.value = 4500; clkBp.Q.value = 0.8;
+    var clkG = ctx.createGain();
+    clkG.gain.setValueAtTime(vol * 0.7, now);
+    clkG.gain.exponentialRampToValueAtTime(0.001, now + 0.018);
+    clkN.connect(clkBp); clkBp.connect(clkG); clkG.connect(mg);
+    clkN.start(now); clkN.stop(now + 0.025);
+
+    // Body: mid sine for punch
+    var body = ctx.createOscillator(); body.type = 'sine';
+    body.frequency.setValueAtTime(80 * _pm, now);
+    body.frequency.exponentialRampToValueAtTime(50 * _pm, now + 0.12);
+    var bodyG = ctx.createGain();
+    bodyG.gain.setValueAtTime(vol * 0.5, now);
+    bodyG.gain.exponentialRampToValueAtTime(0.001, now + 0.18);
+    body.connect(bodyG); bodyG.connect(mg);
+    body.start(now); body.stop(now + 0.22);
+
+  // ─── 808 SUB KICK ────────────────────────────────────────────────────────
+  } else if (t === '808') {
+    var s808 = ctx.createOscillator(); s808.type = 'sine';
+    s808.frequency.setValueAtTime(60 * _pm, now);
+    s808.frequency.exponentialRampToValueAtTime(42 * _pm, now + 0.15);
+    s808.frequency.exponentialRampToValueAtTime(28 * _pm, now + 1.4);
+    var g808 = ctx.createGain();
+    g808.gain.setValueAtTime(vol * 1.2, now);
+    g808.gain.linearRampToValueAtTime(vol * 0.9, now + 0.08);
+    g808.gain.exponentialRampToValueAtTime(0.001, now + 1.6);
+    // Soft clip via WaveShaper for warmth
+    var ws808 = ctx.createWaveShaper();
+    var wc = new Float32Array(256);
+    for (var wci = 0; wci < 256; wci++) {
+      var wx = (wci * 2 / 255) - 1;
+      wc[wci] = (Math.PI + 300) * wx / (Math.PI + 300 * Math.abs(wx));
+    }
+    ws808.curve = wc;
+    s808.connect(ws808); ws808.connect(g808); g808.connect(mg);
+    s808.start(now); s808.stop(now + 1.7);
+    // Click
+    var c808 = ctx.createBufferSource(); c808.buffer = whiteBuffer(0.015);
+    var cb808 = ctx.createBiquadFilter(); cb808.type = 'highpass'; cb808.frequency.value = 3000;
+    var cg808 = ctx.createGain(); cg808.gain.setValueAtTime(vol * 0.4, now); cg808.gain.exponentialRampToValueAtTime(0.001, now + 0.012);
+    c808.connect(cb808); cb808.connect(cg808); cg808.connect(mg);
+    c808.start(now); c808.stop(now + 0.02);
+
+  // ─── SNARE ───────────────────────────────────────────────────────────────
   } else if (t === 'snare' || t === 'snare2') {
-    // Snare: tonal body + noise
-    var osc2 = ctx.createOscillator(); osc2.frequency.value = (t === 'snare2' ? 220 : 200) * _pitchMult;
-    var env2 = ctx.createGain();
-    env2.gain.setValueAtTime(vol * 0.4, now); env2.gain.exponentialRampToValueAtTime(0.001, now + 0.15);
-    osc2.connect(env2); env2.connect(mg);
-    var buf = ctx.createBuffer(1, ctx.sampleRate * 0.25, ctx.sampleRate);
-    var data = buf.getChannelData(0);
-    for (var k = 0; k < data.length; k++) data[k] = (Math.random() * 2 - 1);
-    var noise = ctx.createBufferSource(); noise.buffer = buf;
-    var hpf = ctx.createBiquadFilter(); hpf.type = 'highpass'; hpf.frequency.value = 1200;
-    var ng = ctx.createGain(); ng.gain.setValueAtTime(vol, now); ng.gain.exponentialRampToValueAtTime(0.001, now + 0.2);
-    noise.connect(hpf); hpf.connect(ng); ng.connect(mg);
-    osc2.start(now); osc2.stop(now + 0.2);
-    noise.start(now); noise.stop(now + 0.25);
+    var isSnare2 = t === 'snare2';
+    // Tonal body: two detuned sines (fundamental + overtone)
+    [[190, 0.5], [330, 0.3]].forEach(function(pair) {
+      var so = ctx.createOscillator(); so.type = 'triangle';
+      so.frequency.setValueAtTime(pair[0] * _pm, now);
+      so.frequency.exponentialRampToValueAtTime(pair[0] * _pm * 0.7, now + 0.12);
+      var sg = ctx.createGain();
+      sg.gain.setValueAtTime(vol * pair[1], now);
+      sg.gain.exponentialRampToValueAtTime(0.001, now + (isSnare2 ? 0.09 : 0.13));
+      so.connect(sg); sg.connect(mg);
+      so.start(now); so.stop(now + 0.18);
+    });
+    // Snare noise — filtered pink noise for wire rattle
+    var snN = ctx.createBufferSource(); snN.buffer = noiseBuffer(0.3);
+    var snHp = ctx.createBiquadFilter(); snHp.type = 'highpass'; snHp.frequency.value = 1800;
+    var snBp = ctx.createBiquadFilter(); snBp.type = 'peaking'; snBp.frequency.value = 3500; snBp.gain.value = 8;
+    var snG = ctx.createGain();
+    snG.gain.setValueAtTime(vol * (isSnare2 ? 1.1 : 0.9), now);
+    snG.gain.exponentialRampToValueAtTime(vol * 0.3, now + 0.02);
+    snG.gain.exponentialRampToValueAtTime(0.001, now + (isSnare2 ? 0.18 : 0.25));
+    snN.connect(snHp); snHp.connect(snBp); snBp.connect(snG); snG.connect(mg);
+    snN.start(now); snN.stop(now + 0.3);
+    // Attack crack — very short bright noise
+    var crN = ctx.createBufferSource(); crN.buffer = whiteBuffer(0.008);
+    var crBp = ctx.createBiquadFilter(); crBp.type = 'bandpass'; crBp.frequency.value = 5500; crBp.Q.value = 0.5;
+    var crG = ctx.createGain(); crG.gain.setValueAtTime(vol * 0.7, now); crG.gain.exponentialRampToValueAtTime(0.001, now + 0.006);
+    crN.connect(crBp); crBp.connect(crG); crG.connect(mg);
+    crN.start(now); crN.stop(now + 0.01);
 
+  // ─── HI-HAT FECHADO ──────────────────────────────────────────────────────
   } else if (t === 'hihat' || t === 'hihat2') {
-    var buf2 = ctx.createBuffer(1, ctx.sampleRate * 0.08, ctx.sampleRate);
-    var d2 = buf2.getChannelData(0);
-    for (var k2 = 0; k2 < d2.length; k2++) d2[k2] = Math.random() * 2 - 1;
-    var hn = ctx.createBufferSource(); hn.buffer = buf2;
-    var hhpf = ctx.createBiquadFilter(); hhpf.type = 'highpass'; hhpf.frequency.value = 8000;
-    var hg = ctx.createGain(); hg.gain.setValueAtTime(vol * 0.7, now); hg.gain.exponentialRampToValueAtTime(0.001, now + 0.06);
-    hn.connect(hhpf); hhpf.connect(hg); hg.connect(mg);
-    hn.start(now); hn.stop(now + 0.1);
+    // Metallic character: 6 oscillators at cymbal-like frequency ratios × noise
+    var hhFreqs = [205, 369, 524, 774, 1028, 1485];
+    var hhMix = ctx.createGain(); hhMix.gain.value = 0.15; hhMix.connect(mg);
+    hhFreqs.forEach(function(f) {
+      var ho = ctx.createOscillator(); ho.type = 'square';
+      ho.frequency.value = f * _pm;
+      ho.connect(hhMix); ho.start(now); ho.stop(now + 0.08);
+    });
+    // Noise layer shaped for hat character
+    var hhN = ctx.createBufferSource(); hhN.buffer = whiteBuffer(0.09);
+    var hhHp = ctx.createBiquadFilter(); hhHp.type = 'highpass'; hhHp.frequency.value = 9000;
+    var hhPk = ctx.createBiquadFilter(); hhPk.type = 'peaking'; hhPk.frequency.value = 12000; hhPk.gain.value = 6;
+    var hhG = ctx.createGain();
+    hhG.gain.setValueAtTime(vol * 0.55, now);
+    hhG.gain.exponentialRampToValueAtTime(0.001, now + (t === 'hihat2' ? 0.04 : 0.06));
+    hhN.connect(hhHp); hhHp.connect(hhPk); hhPk.connect(hhG); hhG.connect(mg);
+    hhN.start(now); hhN.stop(now + 0.1);
 
+  // ─── HI-HAT ABERTO ───────────────────────────────────────────────────────
   } else if (t === 'openhat' || t === 'openhat2') {
-    var buf3 = ctx.createBuffer(1, ctx.sampleRate * 0.4, ctx.sampleRate);
-    var d3 = buf3.getChannelData(0);
-    for (var k3 = 0; k3 < d3.length; k3++) d3[k3] = Math.random() * 2 - 1;
-    var on2 = ctx.createBufferSource(); on2.buffer = buf3;
-    var ohpf = ctx.createBiquadFilter(); ohpf.type = 'highpass'; ohpf.frequency.value = 6000;
-    var og = ctx.createGain(); og.gain.setValueAtTime(vol * 0.6, now); og.gain.exponentialRampToValueAtTime(0.001, now + 0.35);
-    on2.connect(ohpf); ohpf.connect(og); og.connect(mg);
-    on2.start(now); on2.stop(now + 0.42);
+    var ohFreqs = [205, 369, 524, 774, 1028, 1485];
+    var ohMix = ctx.createGain(); ohMix.gain.value = 0.12; ohMix.connect(mg);
+    ohFreqs.forEach(function(f) {
+      var oho = ctx.createOscillator(); oho.type = 'square';
+      oho.frequency.value = f * _pm;
+      oho.connect(ohMix); oho.start(now); oho.stop(now + 0.5);
+    });
+    var ohN = ctx.createBufferSource(); ohN.buffer = whiteBuffer(0.55);
+    var ohHp = ctx.createBiquadFilter(); ohHp.type = 'highpass'; ohHp.frequency.value = 7000;
+    var ohPk = ctx.createBiquadFilter(); ohPk.type = 'peaking'; ohPk.frequency.value = 10000; ohPk.gain.value = 5;
+    var ohG = ctx.createGain();
+    ohG.gain.setValueAtTime(vol * 0.6, now);
+    ohG.gain.setValueAtTime(vol * 0.5, now + 0.02);
+    ohG.gain.exponentialRampToValueAtTime(0.001, now + 0.45);
+    ohN.connect(ohHp); ohHp.connect(ohPk); ohPk.connect(ohG); ohG.connect(mg);
+    ohN.start(now); ohN.stop(now + 0.55);
 
+  // ─── TOMS ────────────────────────────────────────────────────────────────
   } else if (t === 'tomh' || t === 'tomm' || t === 'toml' || t === 'tom1' || t === 'tom2') {
-    var freqs = { tomh:200, tomm:130, toml:80, tom1:180, tom2:110 };
-    var to = ctx.createOscillator(); to.frequency.setValueAtTime(freqs[t] || 140, now);
-    to.frequency.exponentialRampToValueAtTime((freqs[t] || 140) * 0.4, now + 0.3);
-    var tg = ctx.createGain(); tg.gain.setValueAtTime(vol, now); tg.gain.exponentialRampToValueAtTime(0.001, now + 0.35);
-    to.connect(tg); tg.connect(mg);
-    to.start(now); to.stop(now + 0.4);
+    var tomFreqs = { tomh:230, tomm:155, toml:85, tom1:200, tom2:125 };
+    var tf = (tomFreqs[t] || 140) * _pm;
+    var tdur = t === 'toml' ? 0.5 : (t === 'tomm' || t === 'tom2') ? 0.4 : 0.32;
+    // Main pitch envelope
+    var tMain = ctx.createOscillator(); tMain.type = 'sine';
+    tMain.frequency.setValueAtTime(tf * 1.8, now);
+    tMain.frequency.exponentialRampToValueAtTime(tf, now + 0.015);
+    tMain.frequency.exponentialRampToValueAtTime(tf * 0.55, now + tdur);
+    var tMainG = ctx.createGain();
+    tMainG.gain.setValueAtTime(vol * 0.9, now);
+    tMainG.gain.exponentialRampToValueAtTime(0.001, now + tdur + 0.05);
+    tMain.connect(tMainG); tMainG.connect(mg);
+    tMain.start(now); tMain.stop(now + tdur + 0.1);
+    // Shell resonance — 2nd harmonic, shorter
+    var tHarm = ctx.createOscillator(); tHarm.type = 'sine';
+    tHarm.frequency.setValueAtTime(tf * 3.5, now);
+    tHarm.frequency.exponentialRampToValueAtTime(tf * 1.8, now + 0.04);
+    var tHarmG = ctx.createGain();
+    tHarmG.gain.setValueAtTime(vol * 0.2, now);
+    tHarmG.gain.exponentialRampToValueAtTime(0.001, now + 0.06);
+    tHarm.connect(tHarmG); tHarmG.connect(mg);
+    tHarm.start(now); tHarm.stop(now + 0.08);
+    // Stick attack noise
+    var tN = ctx.createBufferSource(); tN.buffer = whiteBuffer(0.02);
+    var tNBp = ctx.createBiquadFilter(); tNBp.type = 'bandpass'; tNBp.frequency.value = 2500; tNBp.Q.value = 1;
+    var tNG = ctx.createGain(); tNG.gain.setValueAtTime(vol * 0.4, now); tNG.gain.exponentialRampToValueAtTime(0.001, now + 0.015);
+    tN.connect(tNBp); tNBp.connect(tNG); tNG.connect(mg);
+    tN.start(now); tN.stop(now + 0.025);
 
+  // ─── CRASH ───────────────────────────────────────────────────────────────
   } else if (t === 'crash' || t === 'crash2') {
-    var cBuf = ctx.createBuffer(1, ctx.sampleRate * 1.5, ctx.sampleRate);
-    var cData = cBuf.getChannelData(0);
-    for (var ci = 0; ci < cData.length; ci++) cData[ci] = Math.random() * 2 - 1;
-    var cs = ctx.createBufferSource(); cs.buffer = cBuf;
-    var cbpf = ctx.createBiquadFilter(); cbpf.type = 'bandpass'; cbpf.frequency.value = 5000; cbpf.Q.value = 0.5;
-    var cGain = ctx.createGain(); cGain.gain.setValueAtTime(vol * 0.5, now); cGain.gain.exponentialRampToValueAtTime(0.001, now + 1.4);
-    cs.connect(cbpf); cbpf.connect(cGain); cGain.connect(mg);
-    cs.start(now); cs.stop(now + 1.55);
+    var cDur = t === 'crash2' ? 1.2 : 1.8;
+    // Metallic partials
+    var cFreqs = [287, 432, 748, 1155, 1843, 2680];
+    var cMix = ctx.createGain(); cMix.gain.value = 0.08;
+    var cMixG = ctx.createGain();
+    cMixG.gain.setValueAtTime(vol * 0.35, now);
+    cMixG.gain.exponentialRampToValueAtTime(0.001, now + cDur);
+    cMix.connect(cMixG); cMixG.connect(mg);
+    cFreqs.forEach(function(f) {
+      var co = ctx.createOscillator(); co.type = 'sawtooth';
+      co.frequency.value = f * _pm;
+      co.connect(cMix); co.start(now); co.stop(now + cDur + 0.1);
+    });
+    // Noise wash — shimmer
+    var cN = ctx.createBufferSource(); cN.buffer = whiteBuffer(cDur + 0.2);
+    var cHp = ctx.createBiquadFilter(); cHp.type = 'highpass'; cHp.frequency.value = 5000;
+    var cPk = ctx.createBiquadFilter(); cPk.type = 'peaking'; cPk.frequency.value = 8500; cPk.gain.value = 7;
+    var cNG = ctx.createGain();
+    cNG.gain.setValueAtTime(vol * 0.55, now);
+    cNG.gain.exponentialRampToValueAtTime(vol * 0.2, now + 0.12);
+    cNG.gain.exponentialRampToValueAtTime(0.001, now + cDur * 0.9);
+    cN.connect(cHp); cHp.connect(cPk); cPk.connect(cNG); cNG.connect(mg);
+    cN.start(now); cN.stop(now + cDur + 0.1);
 
+  // ─── RIDE ────────────────────────────────────────────────────────────────
   } else if (t === 'ride') {
-    var rBuf = ctx.createBuffer(1, ctx.sampleRate * 1.0, ctx.sampleRate);
-    var rData = rBuf.getChannelData(0);
-    for (var ri = 0; ri < rData.length; ri++) rData[ri] = Math.random() * 2 - 1;
-    var rs = ctx.createBufferSource(); rs.buffer = rBuf;
-    var rbpf = ctx.createBiquadFilter(); rbpf.type = 'bandpass'; rbpf.frequency.value = 4000; rbpf.Q.value = 2;
-    var rGain = ctx.createGain(); rGain.gain.setValueAtTime(vol * 0.4, now); rGain.gain.exponentialRampToValueAtTime(0.001, now + 0.9);
-    rs.connect(rbpf); rbpf.connect(rGain); rGain.connect(mg);
-    rs.start(now); rs.stop(now + 1.05);
+    // Bell ping
+    var rBell = ctx.createOscillator(); rBell.type = 'sine';
+    rBell.frequency.value = 820 * _pm;
+    var rBellG = ctx.createGain();
+    rBellG.gain.setValueAtTime(vol * 0.6, now);
+    rBellG.gain.exponentialRampToValueAtTime(0.001, now + 1.0);
+    rBell.connect(rBellG); rBellG.connect(mg);
+    rBell.start(now); rBell.stop(now + 1.1);
+    // Shimmer — metallic partials
+    [324, 582, 892, 1480].forEach(function(f) {
+      var ro2 = ctx.createOscillator(); ro2.type = 'sawtooth';
+      ro2.frequency.value = f * _pm;
+      var roG = ctx.createGain(); roG.gain.setValueAtTime(vol * 0.04, now); roG.gain.exponentialRampToValueAtTime(0.001, now + 0.7);
+      ro2.connect(roG); roG.connect(mg);
+      ro2.start(now); ro2.stop(now + 0.75);
+    });
+    // Stick noise
+    var rN = ctx.createBufferSource(); rN.buffer = whiteBuffer(0.04);
+    var rHp = ctx.createBiquadFilter(); rHp.type = 'highpass'; rHp.frequency.value = 6000;
+    var rNG = ctx.createGain(); rNG.gain.setValueAtTime(vol * 0.3, now); rNG.gain.exponentialRampToValueAtTime(0.001, now + 0.03);
+    rN.connect(rHp); rHp.connect(rNG); rNG.connect(mg);
+    rN.start(now); rN.stop(now + 0.05);
 
+  // ─── CLAP ────────────────────────────────────────────────────────────────
   } else if (t === 'clap' || t === 'clap2') {
-    // Layered clap — gain por camada reduzido de 0.6 para 0.38 (3 camadas: soma máx ~1.14 → ~0.72)
-    [0, 0.01, 0.02].forEach(function(delay) {
-      var cb = ctx.createBuffer(1, ctx.sampleRate * 0.12, ctx.sampleRate);
-      var cd = cb.getChannelData(0);
-      for (var ci2 = 0; ci2 < cd.length; ci2++) cd[ci2] = Math.random() * 2 - 1;
-      var clapS = ctx.createBufferSource(); clapS.buffer = cb;
-      var clapBpf = ctx.createBiquadFilter(); clapBpf.type = 'bandpass'; clapBpf.frequency.value = 1200; clapBpf.Q.value = 0.5;
-      var clapG = ctx.createGain(); clapG.gain.setValueAtTime(vol * 0.38, now + delay); clapG.gain.exponentialRampToValueAtTime(0.001, now + delay + 0.15);
-      clapS.connect(clapBpf); clapBpf.connect(clapG); clapG.connect(mg);
-      clapS.start(now + delay); clapS.stop(now + delay + 0.18);
+    var isClap2 = t === 'clap2';
+    // 3 layered bursts + tail — real clap character
+    [0, 0.008, 0.018, 0.032].forEach(function(delay, li) {
+      var cBuf = ctx.createBufferSource();
+      cBuf.buffer = whiteBuffer(li < 3 ? 0.025 : 0.08);
+      var cHp = ctx.createBiquadFilter(); cHp.type = 'highpass'; cHp.frequency.value = 800;
+      var cPk = ctx.createBiquadFilter(); cPk.type = 'peaking'; cPk.frequency.value = isClap2 ? 2500 : 1800; cPk.gain.value = 10;
+      var cGain = ctx.createGain();
+      var amplitude = li < 3 ? vol * 0.75 : vol * 0.3;
+      cGain.gain.setValueAtTime(amplitude, now + delay);
+      cGain.gain.exponentialRampToValueAtTime(0.001, now + delay + (li < 3 ? 0.025 : 0.1));
+      cBuf.connect(cHp); cHp.connect(cPk); cPk.connect(cGain); cGain.connect(mg);
+      cBuf.start(now + delay); cBuf.stop(now + delay + (li < 3 ? 0.03 : 0.12));
     });
 
+  // ─── RIMSHOT ─────────────────────────────────────────────────────────────
   } else if (t === 'rimshot' || t === 'rim2') {
-    var ro = ctx.createOscillator(); ro.frequency.value = 1500;
-    var rBuf2 = ctx.createBuffer(1, ctx.sampleRate * 0.04, ctx.sampleRate);
-    var rD2 = rBuf2.getChannelData(0);
-    for (var ri2 = 0; ri2 < rD2.length; ri2++) rD2[ri2] = Math.random() * 2 - 1;
-    var rn = ctx.createBufferSource(); rn.buffer = rBuf2;
-    var rGain2 = ctx.createGain(); rGain2.gain.setValueAtTime(vol * 0.5, now); rGain2.gain.exponentialRampToValueAtTime(0.001, now + 0.04);
-    ro.connect(rGain2); rn.connect(rGain2); rGain2.connect(mg);
-    ro.start(now); ro.stop(now + 0.04); rn.start(now); rn.stop(now + 0.05);
+    // Stick on rim: sharp click + ping
+    var rimo = ctx.createOscillator(); rimo.type = 'sine';
+    rimo.frequency.setValueAtTime(1500 * _pm, now);
+    rimo.frequency.exponentialRampToValueAtTime(400 * _pm, now + 0.06);
+    var rimG = ctx.createGain(); rimG.gain.setValueAtTime(vol * 0.8, now); rimG.gain.exponentialRampToValueAtTime(0.001, now + 0.07);
+    rimo.connect(rimG); rimG.connect(mg); rimo.start(now); rimo.stop(now + 0.08);
+    var rimN = ctx.createBufferSource(); rimN.buffer = whiteBuffer(0.01);
+    var rimBp = ctx.createBiquadFilter(); rimBp.type = 'bandpass'; rimBp.frequency.value = 3000; rimBp.Q.value = 2;
+    var rimNG = ctx.createGain(); rimNG.gain.setValueAtTime(vol * 0.6, now); rimNG.gain.exponentialRampToValueAtTime(0.001, now + 0.008);
+    rimN.connect(rimBp); rimBp.connect(rimNG); rimNG.connect(mg);
+    rimN.start(now); rimN.stop(now + 0.015);
 
+  // ─── COWBELL ─────────────────────────────────────────────────────────────
   } else if (t === 'cowbell') {
-    [554, 844].forEach(function(freq) {
-      var co = ctx.createOscillator(); co.type = 'square'; co.frequency.value = freq;
-      var cog = ctx.createGain(); cog.gain.setValueAtTime(vol * 0.3, now); cog.gain.exponentialRampToValueAtTime(0.001, now + 0.5);
-      co.connect(cog); cog.connect(mg);
-      co.start(now); co.stop(now + 0.55);
+    [540, 815, 1095].forEach(function(f, i) {
+      var cwo = ctx.createOscillator(); cwo.type = 'square'; cwo.frequency.value = f * _pm;
+      var cwBp = ctx.createBiquadFilter(); cwBp.type = 'bandpass'; cwBp.frequency.value = f * _pm; cwBp.Q.value = 8;
+      var cwG = ctx.createGain(); cwG.gain.setValueAtTime(vol * (0.4 - i * 0.08), now); cwG.gain.exponentialRampToValueAtTime(0.001, now + 0.55 - i * 0.1);
+      cwo.connect(cwBp); cwBp.connect(cwG); cwG.connect(mg);
+      cwo.start(now); cwo.stop(now + 0.6);
     });
 
+  // ─── SHAKER ──────────────────────────────────────────────────────────────
   } else if (t === 'shaker' || t === 'shaker2') {
-    var shBuf = ctx.createBuffer(1, ctx.sampleRate * 0.1, ctx.sampleRate);
-    var shData = shBuf.getChannelData(0);
-    for (var shi = 0; shi < shData.length; shi++) shData[shi] = Math.random() * 2 - 1;
-    var sh = ctx.createBufferSource(); sh.buffer = shBuf;
-    var shHpf = ctx.createBiquadFilter(); shHpf.type = 'highpass'; shHpf.frequency.value = 5000;
-    var shG = ctx.createGain(); shG.gain.setValueAtTime(vol * 0.5, now); shG.gain.exponentialRampToValueAtTime(0.001, now + 0.08);
-    sh.connect(shHpf); shHpf.connect(shG); shG.connect(mg);
-    sh.start(now); sh.stop(now + 0.12);
+    var shN = ctx.createBufferSource(); shN.buffer = whiteBuffer(0.12);
+    var shHp = ctx.createBiquadFilter(); shHp.type = 'highpass'; shHp.frequency.value = 6000;
+    var shBp = ctx.createBiquadFilter(); shBp.type = 'peaking'; shBp.frequency.value = 9000; shBp.gain.value = 8;
+    var shG = ctx.createGain();
+    shG.gain.setValueAtTime(vol * 0.4, now);
+    shG.gain.linearRampToValueAtTime(vol * 0.6, now + 0.01);
+    shG.gain.exponentialRampToValueAtTime(0.001, now + 0.1);
+    shN.connect(shHp); shHp.connect(shBp); shBp.connect(shG); shG.connect(mg);
+    shN.start(now); shN.stop(now + 0.14);
 
+  // ─── TAMBORIM ────────────────────────────────────────────────────────────
   } else if (t === 'tamb') {
-    [0, 0.015, 0.03].forEach(function(d) {
-      var tb = ctx.createBuffer(1, ctx.sampleRate * 0.08, ctx.sampleRate);
-      var td = tb.getChannelData(0);
-      for (var ti = 0; ti < td.length; ti++) td[ti] = Math.random() * 2 - 1;
-      var ts = ctx.createBufferSource(); ts.buffer = tb;
-      var tH = ctx.createBiquadFilter(); tH.type = 'bandpass'; tH.frequency.value = 3500;
-      var tg = ctx.createGain(); tg.gain.setValueAtTime(vol * 0.4, now + d); tg.gain.exponentialRampToValueAtTime(0.001, now + d + 0.1);
-      ts.connect(tH); tH.connect(tg); tg.connect(mg);
-      ts.start(now + d); ts.stop(now + d + 0.12);
+    [0, 0.012, 0.026].forEach(function(d) {
+      var tn = ctx.createBufferSource(); tn.buffer = whiteBuffer(0.06);
+      var tHp = ctx.createBiquadFilter(); tHp.type = 'highpass'; tHp.frequency.value = 4000;
+      var tBp = ctx.createBiquadFilter(); tBp.type = 'peaking'; tBp.frequency.value = 6500; tBp.gain.value = 9;
+      var tG = ctx.createGain(); tG.gain.setValueAtTime(vol * 0.5, now + d); tG.gain.exponentialRampToValueAtTime(0.001, now + d + 0.08);
+      tn.connect(tHp); tHp.connect(tBp); tBp.connect(tG); tG.connect(mg);
+      tn.start(now + d); tn.stop(now + d + 0.1);
     });
+    // Tambourine ring ping
+    var tRing = ctx.createOscillator(); tRing.type = 'sine'; tRing.frequency.value = 3200 * _pm;
+    var tRG = ctx.createGain(); tRG.gain.setValueAtTime(vol * 0.2, now); tRG.gain.exponentialRampToValueAtTime(0.001, now + 0.15);
+    tRing.connect(tRG); tRG.connect(mg); tRing.start(now); tRing.stop(now + 0.18);
 
+  // ─── SNAP ────────────────────────────────────────────────────────────────
   } else if (t === 'snap') {
-    var sno = ctx.createOscillator(); sno.frequency.value = 3200;
-    var sng = ctx.createGain(); sng.gain.setValueAtTime(vol * 0.6, now); sng.gain.exponentialRampToValueAtTime(0.001, now + 0.03);
-    sno.connect(sng); sng.connect(mg);
-    sno.start(now); sno.stop(now + 0.04);
+    var snapN = ctx.createBufferSource(); snapN.buffer = whiteBuffer(0.015);
+    var snapHp = ctx.createBiquadFilter(); snapHp.type = 'highpass'; snapHp.frequency.value = 3500;
+    var snapBp = ctx.createBiquadFilter(); snapBp.type = 'peaking'; snapBp.frequency.value = 5000; snapBp.gain.value = 12;
+    var snapG = ctx.createGain(); snapG.gain.setValueAtTime(vol * 0.9, now); snapG.gain.exponentialRampToValueAtTime(0.001, now + 0.012);
+    snapN.connect(snapHp); snapHp.connect(snapBp); snapBp.connect(snapG); snapG.connect(mg);
+    snapN.start(now); snapN.stop(now + 0.02);
 
+  // ─── PERCUSSÃO / FX ──────────────────────────────────────────────────────
+  } else if (t === 'perc1') {
+    // Conga-like: high pitched tom
+    var p1o = ctx.createOscillator(); p1o.type = 'sine';
+    p1o.frequency.setValueAtTime(450 * _pm, now); p1o.frequency.exponentialRampToValueAtTime(200 * _pm, now + 0.12);
+    var p1G = ctx.createGain(); p1G.gain.setValueAtTime(vol * 0.8, now); p1G.gain.exponentialRampToValueAtTime(0.001, now + 0.16);
+    p1o.connect(p1G); p1G.connect(mg); p1o.start(now); p1o.stop(now + 0.2);
+    var p1N = ctx.createBufferSource(); p1N.buffer = whiteBuffer(0.015);
+    var p1Bp = ctx.createBiquadFilter(); p1Bp.type = 'bandpass'; p1Bp.frequency.value = 3000; p1Bp.Q.value = 2;
+    var p1NG = ctx.createGain(); p1NG.gain.setValueAtTime(vol * 0.3, now); p1NG.gain.exponentialRampToValueAtTime(0.001, now + 0.012);
+    p1N.connect(p1Bp); p1Bp.connect(p1NG); p1NG.connect(mg); p1N.start(now); p1N.stop(now + 0.02);
+
+  } else if (t === 'perc2' || t === 'percs') {
+    // Bongo-like
+    var p2o = ctx.createOscillator(); p2o.type = 'sine';
+    p2o.frequency.setValueAtTime(320 * _pm, now); p2o.frequency.exponentialRampToValueAtTime(160 * _pm, now + 0.1);
+    var p2G = ctx.createGain(); p2G.gain.setValueAtTime(vol * 0.7, now); p2G.gain.exponentialRampToValueAtTime(0.001, now + 0.14);
+    p2o.connect(p2G); p2G.connect(mg); p2o.start(now); p2o.stop(now + 0.18);
+
+  } else if (t === 'sub') {
+    // Sub bass drop
+    var subo = ctx.createOscillator(); subo.type = 'sine';
+    subo.frequency.setValueAtTime(80 * _pm, now); subo.frequency.exponentialRampToValueAtTime(30 * _pm, now + 0.6);
+    var subG2 = ctx.createGain(); subG2.gain.setValueAtTime(vol * 1.0, now); subG2.gain.exponentialRampToValueAtTime(0.001, now + 0.65);
+    subo.connect(subG2); subG2.connect(mg); subo.start(now); subo.stop(now + 0.7);
+
+  } else if (t === 'fx1') {
+    // Sweep up
+    var fxo = ctx.createOscillator(); fxo.type = 'sawtooth';
+    fxo.frequency.setValueAtTime(100 * _pm, now); fxo.frequency.exponentialRampToValueAtTime(2000 * _pm, now + 0.5);
+    var fxLp = ctx.createBiquadFilter(); fxLp.type = 'lowpass'; fxLp.frequency.value = 3000;
+    var fxG = ctx.createGain(); fxG.gain.setValueAtTime(vol * 0.6, now); fxG.gain.exponentialRampToValueAtTime(0.001, now + 0.55);
+    fxo.connect(fxLp); fxLp.connect(fxG); fxG.connect(mg); fxo.start(now); fxo.stop(now + 0.6);
+
+  } else if (t === 'fx2') {
+    // Reverse sweep / riser noise
+    var fx2N = ctx.createBufferSource(); fx2N.buffer = noiseBuffer(0.6);
+    var fx2Hp = ctx.createBiquadFilter(); fx2Hp.type = 'highpass'; fx2Hp.frequency.value = 200;
+    fx2Hp.frequency.exponentialRampToValueAtTime(8000, now + 0.6);
+    var fx2G = ctx.createGain(); fx2G.gain.setValueAtTime(0.001, now); fx2G.gain.exponentialRampToValueAtTime(vol * 0.7, now + 0.55);
+    fx2N.connect(fx2Hp); fx2Hp.connect(fx2G); fx2G.connect(mg); fx2N.start(now); fx2N.stop(now + 0.65);
+
+  } else if (t === 'foley') {
+    // Foley hit — complex noise burst
+    var foN = ctx.createBufferSource(); foN.buffer = noiseBuffer(0.15);
+    var foLp = ctx.createBiquadFilter(); foLp.type = 'lowpass'; foLp.frequency.value = 2000;
+    var foG = ctx.createGain(); foG.gain.setValueAtTime(vol * 0.6, now); foG.gain.exponentialRampToValueAtTime(0.001, now + 0.12);
+    foN.connect(foLp); foLp.connect(foG); foG.connect(mg); foN.start(now); foN.stop(now + 0.18);
+
+  // ─── MELODIC TONE ────────────────────────────────────────────────────────
   } else if (t === 'tone') {
-    // Melodic tone (banks 2-3)
-    var freq2 = midiToFreq(pad.midi || 60) * _pitchMult;
-    var to2 = ctx.createOscillator(); to2.type = 'sine';
-    to2.frequency.setValueAtTime(freq2, now);
-    var lpf2 = ctx.createBiquadFilter(); lpf2.type = 'lowpass'; lpf2.frequency.value = 3000;
-    var tg2 = ctx.createGain(); tg2.gain.setValueAtTime(0, now); tg2.gain.linearRampToValueAtTime(vol, now + 0.01);
-    tg2.gain.setValueAtTime(vol, now + 0.5); tg2.gain.exponentialRampToValueAtTime(0.001, now + 1.2);
-    to2.connect(lpf2); lpf2.connect(tg2); tg2.connect(mg);
-    to2.start(now); to2.stop(now + 1.3);
+    var toneFreq = midiToFreq(pad.midi || 60) * _pm;
+    // Sine + slight harmonics for warmth
+    var to2 = ctx.createOscillator(); to2.type = 'sine'; to2.frequency.value = toneFreq;
+    var to2H = ctx.createOscillator(); to2H.type = 'triangle'; to2H.frequency.value = toneFreq * 2;
+    var to2Lp = ctx.createBiquadFilter(); to2Lp.type = 'lowpass'; to2Lp.frequency.value = 4000;
+    var toneG = ctx.createGain(); toneG.gain.setValueAtTime(0, now); toneG.gain.linearRampToValueAtTime(vol * 0.9, now + 0.008);
+    toneG.gain.setValueAtTime(vol * 0.9, now + 0.4); toneG.gain.exponentialRampToValueAtTime(0.001, now + 1.1);
+    var toneH2G = ctx.createGain(); toneH2G.gain.value = 0.12;
+    to2.connect(to2Lp); to2H.connect(toneH2G); toneH2G.connect(to2Lp); to2Lp.connect(toneG); toneG.connect(mg);
+    to2.start(now); to2H.start(now); to2.stop(now + 1.2); to2H.stop(now + 1.2);
 
+  // ─── CHORD ───────────────────────────────────────────────────────────────
   } else if (t === 'chord') {
-    // Chord (bank 3) — gain por nota reduzido de 0.55 para 0.32 (3 notas: soma máx ~0.96)
     (pad.chord || [pad.midi]).forEach(function(m) {
-      var cf = midiToFreq(m) * _pitchMult;
-      var co2 = ctx.createOscillator(); co2.type = 'sine';
-      co2.frequency.value = cf;
-      var clpf = ctx.createBiquadFilter(); clpf.type = 'lowpass'; clpf.frequency.value = 2800;
-      var cg2 = ctx.createGain(); cg2.gain.setValueAtTime(0, now); cg2.gain.linearRampToValueAtTime(vol * 0.32, now + 0.015);
-      cg2.gain.setValueAtTime(vol * 0.32, now + 0.6); cg2.gain.exponentialRampToValueAtTime(0.001, now + 1.5);
-      co2.connect(clpf); clpf.connect(cg2); cg2.connect(mg);
-      co2.start(now); co2.stop(now + 1.6);
+      var cf = midiToFreq(m) * _pm;
+      var co2 = ctx.createOscillator(); co2.type = 'sine'; co2.frequency.value = cf;
+      var coH = ctx.createOscillator(); coH.type = 'triangle'; coH.frequency.value = cf * 2;
+      var coLp = ctx.createBiquadFilter(); coLp.type = 'lowpass'; coLp.frequency.value = 3500;
+      var coG = ctx.createGain(); coG.gain.setValueAtTime(0, now); coG.gain.linearRampToValueAtTime(vol * 0.28, now + 0.012);
+      coG.gain.setValueAtTime(vol * 0.28, now + 0.5); coG.gain.exponentialRampToValueAtTime(0.001, now + 1.4);
+      var coHG = ctx.createGain(); coHG.gain.value = 0.1;
+      co2.connect(coLp); coH.connect(coHG); coHG.connect(coLp); coLp.connect(coG); coG.connect(mg);
+      co2.start(now); coH.start(now); co2.stop(now + 1.5); coH.stop(now + 1.5);
     });
 
-  } else if (t === 'fx1' || t === 'fx2' || t === 'sub' || t === 'foley' || t === 'percs' || t === 'perc1' || t === 'perc2') {
-    // Generic percussive FX
-    var fo = ctx.createOscillator(); fo.frequency.value = t === 'sub' ? 40 : 600;
-    fo.frequency.exponentialRampToValueAtTime(t === 'sub' ? 20 : 100, now + 0.3);
-    var fg = ctx.createGain(); fg.gain.setValueAtTime(vol, now); fg.gain.exponentialRampToValueAtTime(0.001, now + 0.35);
-    fo.connect(fg); fg.connect(mg);
-    fo.start(now); fo.stop(now + 0.4);
   } else {
-    // Fallback: short click
-    var fb = ctx.createOscillator(); fb.frequency.value = 800;
-    var fbg = ctx.createGain(); fbg.gain.setValueAtTime(vol * 0.3, now); fbg.gain.exponentialRampToValueAtTime(0.001, now + 0.04);
-    fb.connect(fbg); fbg.connect(mg);
-    fb.start(now); fb.stop(now + 0.05);
+    // Generic click fallback
+    var gN = ctx.createBufferSource(); gN.buffer = whiteBuffer(0.015);
+    var gBp = ctx.createBiquadFilter(); gBp.type = 'bandpass'; gBp.frequency.value = 1000; gBp.Q.value = 2;
+    var gG = ctx.createGain(); gG.gain.setValueAtTime(vol * 0.4, now); gG.gain.exponentialRampToValueAtTime(0.001, now + 0.012);
+    gN.connect(gBp); gBp.connect(gG); gG.connect(mg); gN.start(now); gN.stop(now + 0.02);
   }
 }
 
@@ -18864,16 +19105,35 @@ function capturarEstado() {
           return _melhorMusica.name;
         }
       }
-      // 4. Fallback final: lê do elemento visual do indicador
-      var _el = document.getElementById('perf-song-name');
-      var _n = _el ? _el.innerText : '';
-      return (_n && _n !== 'Nenhuma musica' && _n !== '—' && _n !== '-') ? _n : null;
+      // 4. Fallback: lê do dc-song-name
+      var _dcEl = document.getElementById('dc-song-name');
+      var _dcTxt = _dcEl ? (_dcEl.textContent || '').trim() : '';
+      if (_dcTxt && _dcTxt !== '—' && _dcTxt !== '-' && _dcTxt !== '') return _dcTxt;
+      // 5. Fallback final: lê do perf-song-name
+      var _perfEl = document.getElementById('perf-song-name');
+      var _perfTxt = _perfEl ? (_perfEl.innerText || '').trim() : '';
+      if (_perfTxt && _perfTxt !== 'Nenhuma musica' && _perfTxt !== '—' && _perfTxt !== '-') return _perfTxt;
+      // 6. Fallback: usa setlistNomes[setlistPos] diretamente
+      if (showSetlist && showSetlist.length > 0) {
+        var _lista2 = _getShowSongs();
+        var _cur2 = null;
+        if (_lista2 && _lista2.length > 0) {
+          // tenta achar pelo dc-song-name
+          var _n2 = _lista2[Math.max(0, showSetlistPos || 0)];
+          if (_n2) return _n2.name;
+          return _lista2[0].name;
+        }
+      }
+      return null;
     })(),
     setlistPos: (function() {
+      // FIX: usa showSetlistPos como fonte primária (mais confiável)
+      if (typeof showSetlistPos !== 'undefined' && showSetlistPos >= 0) return showSetlistPos;
       var lista = _getShowSongs();
       var cur = currentSongIndex >= 0 ? songs[currentSongIndex] : null;
-      if (!cur || !lista.length) return -1;
-      return lista.findIndex(function(s) { return s.id === cur.id; });
+      if (!cur || !lista.length) return 0; // FIX: retorna 0 em vez de -1 para evitar fallback quebrar
+      var pos = lista.findIndex(function(s) { return s.id === cur.id; });
+      return pos >= 0 ? pos : 0;
     })(),
     songTotal: songs.length,
     setlistNomes: (showSetlist && showSetlist.length)
@@ -18983,10 +19243,12 @@ function aplicarEstado(estado) {
   var _setlistPosViewer = (estado.setlistPos !== undefined && estado.setlistPos >= 0)
     ? estado.setlistPos
     : (estado.currentSongIndex >= 0 ? estado.currentSongIndex : -1);
-  var _resolvedSongName = estado.currentSongName ||
-    (estado.setlistNomes && _setlistPosViewer >= 0
-      ? (estado.setlistNomes[_setlistPosViewer] || null)
-      : null);
+  // FIX: resolve nome com múltiplos fallbacks
+  var _resolvedSongName = estado.currentSongName
+    || (estado.setlistNomes && estado.setlistNomes.length > 0
+        ? (estado.setlistNomes[Math.max(0, _setlistPosViewer)] || estado.setlistNomes[0] || null)
+        : null)
+    || (isViewer ? (window._viewerUltimoNomeMusica || null) : null);
   if (_resolvedSongName) {
     estado.currentSongName = _resolvedSongName; // normaliza para o restante do bloco
     // Para o viewer (sem songs locais), usa a variável de controle própria
@@ -19004,7 +19266,16 @@ function aplicarEstado(estado) {
     document.getElementById('perf-song-pos').innerText =
       (_posDisplay + 1) + '/' + _totalDisplay;
     document.getElementById('dc-song-name').textContent = estado.currentSongName;
-    if (isViewer) { window._viewerUltimoNomeMusica = estado.currentSongName; atualizarSyncBar(); } // atualiza nome na sync-bar do viewer
+    if (isViewer) {
+      window._viewerUltimoNomeMusica = estado.currentSongName;
+      // FIX: atualiza sync-bar e mostra nome da música
+      var _sbSong = document.getElementById('sync-bar-song-name');
+      if (_sbSong) {
+        _sbSong.innerText = '♪ ' + estado.currentSongName;
+        _sbSong.style.display = 'inline-block';
+      }
+      atualizarSyncBar();
+    }
     // Notificar mudança de música (apenas se mudou de fato)
     // FIX: _nomeAnterior pode ser null na primeira recepção do viewer — ainda assim notifica
     var _musicaMudou = _nomeAnterior !== null && _nomeAnterior !== undefined
