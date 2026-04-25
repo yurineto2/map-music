@@ -14542,42 +14542,41 @@ function _dcSynth(ctx, pad, vol, _anyFxActive) {
 
   // ─── HI-HAT FECHADO ──────────────────────────────────────────────────────
   } else if (t === 'hihat' || t === 'hihat2') {
-    // Metallic character: 6 oscillators at cymbal-like frequency ratios × noise
-    var hhFreqs = [205, 369, 524, 774, 1028, 1485];
-    var hhMix = ctx.createGain(); hhMix.gain.value = 0.15; hhMix.connect(mg);
-    hhFreqs.forEach(function(f) {
-      var ho = ctx.createOscillator(); ho.type = 'square';
-      ho.frequency.value = f * _pm;
-      ho.connect(hhMix); ho.start(now); ho.stop(now + 0.08);
-    });
-    // Noise layer shaped for hat character
-    var hhN = ctx.createBufferSource(); hhN.buffer = whiteBuffer(0.09);
-    var hhHp = ctx.createBiquadFilter(); hhHp.type = 'highpass'; hhHp.frequency.value = 9000;
-    var hhPk = ctx.createBiquadFilter(); hhPk.type = 'peaking'; hhPk.frequency.value = 12000; hhPk.gain.value = 6;
+    var hhDur = t === 'hihat2' ? 0.045 : 0.065;
+    // Principal: ruído branco filtrado — coração do chimbal real
+    var hhN = ctx.createBufferSource(); hhN.buffer = whiteBuffer(hhDur + 0.02);
+    // Highpass agressivo corta tudo abaixo de 7kHz (som metálico de prato)
+    var hhHp = ctx.createBiquadFilter(); hhHp.type = 'highpass'; hhHp.frequency.value = 7000;
+    // Shelf de alta frequência para brilho sem buzziness
+    var hhSh = ctx.createBiquadFilter(); hhSh.type = 'highshelf'; hhSh.frequency.value = 10000; hhSh.gain.value = 4;
     var hhG = ctx.createGain();
-    hhG.gain.setValueAtTime(vol * 0.55, now);
-    hhG.gain.exponentialRampToValueAtTime(0.001, now + (t === 'hihat2' ? 0.04 : 0.06));
-    hhN.connect(hhHp); hhHp.connect(hhPk); hhPk.connect(hhG); hhG.connect(mg);
-    hhN.start(now); hhN.stop(now + 0.1);
+    hhG.gain.setValueAtTime(vol * 0.7, now);
+    hhG.gain.exponentialRampToValueAtTime(0.001, now + hhDur);
+    hhN.connect(hhHp); hhHp.connect(hhSh); hhSh.connect(hhG); hhG.connect(mg);
+    hhN.start(now); hhN.stop(now + hhDur + 0.02);
+    // Pequeno ping metálico (sine curto, não square) para ataque
+    var hhPing = ctx.createOscillator(); hhPing.type = 'sine';
+    hhPing.frequency.value = 9000 * _pm;
+    var hhPG = ctx.createGain(); hhPG.gain.setValueAtTime(vol * 0.12, now); hhPG.gain.exponentialRampToValueAtTime(0.001, now + 0.008);
+    hhPing.connect(hhPG); hhPG.connect(mg); hhPing.start(now); hhPing.stop(now + 0.01);
 
   // ─── HI-HAT ABERTO ───────────────────────────────────────────────────────
   } else if (t === 'openhat' || t === 'openhat2') {
-    var ohFreqs = [205, 369, 524, 774, 1028, 1485];
-    var ohMix = ctx.createGain(); ohMix.gain.value = 0.12; ohMix.connect(mg);
-    ohFreqs.forEach(function(f) {
-      var oho = ctx.createOscillator(); oho.type = 'square';
-      oho.frequency.value = f * _pm;
-      oho.connect(ohMix); oho.start(now); oho.stop(now + 0.5);
-    });
-    var ohN = ctx.createBufferSource(); ohN.buffer = whiteBuffer(0.55);
-    var ohHp = ctx.createBiquadFilter(); ohHp.type = 'highpass'; ohHp.frequency.value = 7000;
-    var ohPk = ctx.createBiquadFilter(); ohPk.type = 'peaking'; ohPk.frequency.value = 10000; ohPk.gain.value = 5;
+    var ohDur = 0.5;
+    // Ruído filtrado com decay longo — chimbal aberto real
+    var ohN = ctx.createBufferSource(); ohN.buffer = whiteBuffer(ohDur + 0.1);
+    var ohHp = ctx.createBiquadFilter(); ohHp.type = 'highpass'; ohHp.frequency.value = 6000;
+    var ohSh = ctx.createBiquadFilter(); ohSh.type = 'highshelf'; ohSh.frequency.value = 9000; ohSh.gain.value = 5;
     var ohG = ctx.createGain();
-    ohG.gain.setValueAtTime(vol * 0.6, now);
-    ohG.gain.setValueAtTime(vol * 0.5, now + 0.02);
-    ohG.gain.exponentialRampToValueAtTime(0.001, now + 0.45);
-    ohN.connect(ohHp); ohHp.connect(ohPk); ohPk.connect(ohG); ohG.connect(mg);
-    ohN.start(now); ohN.stop(now + 0.55);
+    ohG.gain.setValueAtTime(vol * 0.65, now);
+    ohG.gain.exponentialRampToValueAtTime(vol * 0.4, now + 0.04);
+    ohG.gain.exponentialRampToValueAtTime(0.001, now + ohDur);
+    ohN.connect(ohHp); ohHp.connect(ohSh); ohSh.connect(ohG); ohG.connect(mg);
+    ohN.start(now); ohN.stop(now + ohDur + 0.1);
+    // Ping de ataque
+    var ohPing = ctx.createOscillator(); ohPing.type = 'sine'; ohPing.frequency.value = 8500 * _pm;
+    var ohPG = ctx.createGain(); ohPG.gain.setValueAtTime(vol * 0.15, now); ohPG.gain.exponentialRampToValueAtTime(0.001, now + 0.01);
+    ohPing.connect(ohPG); ohPG.connect(mg); ohPing.start(now); ohPing.stop(now + 0.015);
 
   // ─── TOMS ────────────────────────────────────────────────────────────────
   } else if (t === 'tomh' || t === 'tomm' || t === 'toml' || t === 'tom1' || t === 'tom2') {
@@ -14614,17 +14613,10 @@ function _dcSynth(ctx, pad, vol, _anyFxActive) {
   } else if (t === 'crash' || t === 'crash2') {
     var cDur = t === 'crash2' ? 1.2 : 1.8;
     // Metallic partials
-    var cFreqs = [287, 432, 748, 1155, 1843, 2680];
-    var cMix = ctx.createGain(); cMix.gain.value = 0.08;
-    var cMixG = ctx.createGain();
-    cMixG.gain.setValueAtTime(vol * 0.35, now);
-    cMixG.gain.exponentialRampToValueAtTime(0.001, now + cDur);
-    cMix.connect(cMixG); cMixG.connect(mg);
-    cFreqs.forEach(function(f) {
-      var co = ctx.createOscillator(); co.type = 'sawtooth';
-      co.frequency.value = f * _pm;
-      co.connect(cMix); co.start(now); co.stop(now + cDur + 0.1);
-    });
+    // Crash: ruído + ping inicial (sem osciladores sawtooth que soam sintéticos)
+    var cPing = ctx.createOscillator(); cPing.type = 'sine'; cPing.frequency.value = 5200 * _pm;
+    var cPingG = ctx.createGain(); cPingG.gain.setValueAtTime(vol * 0.3, now); cPingG.gain.exponentialRampToValueAtTime(0.001, now + 0.08);
+    cPing.connect(cPingG); cPingG.connect(mg); cPing.start(now); cPing.stop(now + 0.1);
     // Noise wash — shimmer
     var cN = ctx.createBufferSource(); cN.buffer = whiteBuffer(cDur + 0.2);
     var cHp = ctx.createBiquadFilter(); cHp.type = 'highpass'; cHp.frequency.value = 5000;
@@ -14646,14 +14638,11 @@ function _dcSynth(ctx, pad, vol, _anyFxActive) {
     rBellG.gain.exponentialRampToValueAtTime(0.001, now + 1.0);
     rBell.connect(rBellG); rBellG.connect(mg);
     rBell.start(now); rBell.stop(now + 1.1);
-    // Shimmer — metallic partials
-    [324, 582, 892, 1480].forEach(function(f) {
-      var ro2 = ctx.createOscillator(); ro2.type = 'sawtooth';
-      ro2.frequency.value = f * _pm;
-      var roG = ctx.createGain(); roG.gain.setValueAtTime(vol * 0.04, now); roG.gain.exponentialRampToValueAtTime(0.001, now + 0.7);
-      ro2.connect(roG); roG.connect(mg);
-      ro2.start(now); ro2.stop(now + 0.75);
-    });
+    // Shimmer — ruído filtrado curto para shimmer natural
+    var rShim = ctx.createBufferSource(); rShim.buffer = whiteBuffer(0.5);
+    var rShHp = ctx.createBiquadFilter(); rShHp.type = 'highpass'; rShHp.frequency.value = 5000;
+    var rShG = ctx.createGain(); rShG.gain.setValueAtTime(vol * 0.15, now); rShG.gain.exponentialRampToValueAtTime(0.001, now + 0.4);
+    rShim.connect(rShHp); rShHp.connect(rShG); rShG.connect(mg); rShim.start(now); rShim.stop(now + 0.55);
     // Stick noise
     var rN = ctx.createBufferSource(); rN.buffer = whiteBuffer(0.04);
     var rHp = ctx.createBiquadFilter(); rHp.type = 'highpass'; rHp.frequency.value = 6000;
